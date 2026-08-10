@@ -115,3 +115,83 @@ def test_list_recent_rejects_invalid_limit(
 ) -> None:
     with pytest.raises(ValueError):
         task_repository.list_recent(limit=limit)
+
+
+def test_list_recent_filters_tasks_by_status_priority_and_agent(
+    task_repository: TaskRepository,
+) -> None:
+    matching = task_repository.create(
+        title="Pasujące zadanie",
+        priority=TaskPriority.HIGH,
+        assigned_agent="analyst",
+    )
+    task_repository.transition(
+        matching.id,
+        TaskStatus.IN_PROGRESS,
+    )
+
+    task_repository.create(
+        title="Inny status",
+        priority=TaskPriority.HIGH,
+        assigned_agent="analyst",
+    )
+    task_repository.create(
+        title="Inny priorytet",
+        priority=TaskPriority.LOW,
+        assigned_agent="analyst",
+    )
+    task_repository.create(
+        title="Inny agent",
+        priority=TaskPriority.HIGH,
+        assigned_agent="writer",
+    )
+
+    tasks = task_repository.list_recent(
+        status=TaskStatus.IN_PROGRESS,
+        priority=TaskPriority.HIGH,
+        assigned_agent=" analyst ",
+    )
+
+    assert [task.id for task in tasks] == [matching.id]
+
+
+def test_assign_sets_and_removes_agent(
+    task_repository: TaskRepository,
+) -> None:
+    created = task_repository.create(title="Przypisz zadanie")
+
+    assigned = task_repository.assign(created.id, " analyst ")
+    assert assigned.assigned_agent == "analyst"
+    assert (
+        task_repository.get_required(created.id).assigned_agent
+        == "analyst"
+    )
+
+    unassigned = task_repository.assign(created.id, "   ")
+    assert unassigned.assigned_agent is None
+    assert task_repository.get_required(created.id).assigned_agent is None
+
+
+def test_assign_rejects_agent_name_longer_than_100_characters(
+    task_repository: TaskRepository,
+) -> None:
+    created = task_repository.create(title="Przypisz zadanie")
+
+    with pytest.raises(ValueError, match="100 znaków"):
+        task_repository.assign(created.id, "a" * 101)
+
+    assert task_repository.get_required(created.id).assigned_agent is None
+
+
+def test_assign_raises_error_for_missing_task(
+    task_repository: TaskRepository,
+) -> None:
+    with pytest.raises(TaskNotFoundError):
+        task_repository.assign(999999, "analyst")
+
+
+def test_list_recent_rejects_blank_agent_filter(
+    task_repository: TaskRepository,
+) -> None:
+    with pytest.raises(ValueError, match="nie może być pusty"):
+        task_repository.list_recent(assigned_agent="   ")
