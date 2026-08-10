@@ -32,6 +32,10 @@ finance:
   maximum_single_cost: 0.0
   maximum_project_budget: 0.0
 
+
+database:
+  url: "sqlite:///./data/ai_company.db"
+
 memory:
   persistent_memory_enabled: false
   project_memory_enabled: true

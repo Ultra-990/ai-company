@@ -65,6 +65,11 @@ class FinanceSettings:
 
 
 @dataclass(frozen=True)
+class DatabaseSettings:
+    url: str
+
+
+@dataclass(frozen=True)
 class MemorySettings:
     persistent_memory_enabled: bool
     project_memory_enabled: bool
@@ -86,6 +91,7 @@ class Settings:
     agents: AgentSettings
     safety: SafetySettings
     finance: FinanceSettings
+    database: DatabaseSettings
     memory: MemorySettings
     logging: LoggingSettings
 
@@ -109,6 +115,7 @@ def _build_settings(data: dict[str, Any]) -> Settings:
             agents=AgentSettings(**_require_section(data, "agents")),
             safety=SafetySettings(**_require_section(data, "safety")),
             finance=FinanceSettings(**_require_section(data, "finance")),
+            database=DatabaseSettings(**_require_section(data, "database")),
             memory=MemorySettings(**_require_section(data, "memory")),
             logging=LoggingSettings(**_require_section(data, "logging")),
         )
@@ -160,6 +167,11 @@ def _validate(settings: Settings) -> None:
 
     if settings.finance.maximum_project_budget < 0:
         raise ConfigurationError("Budżet projektu nie może być ujemny.")
+
+    if not settings.database.url.startswith("sqlite:///"):
+        raise ConfigurationError(
+            "W wersji lokalnej dozwolona jest wyłącznie baza SQLite."
+        )
 
     if settings.logging.level not in ALLOWED_LOG_LEVELS:
         raise ConfigurationError("Nieprawidłowy poziom logowania.")
