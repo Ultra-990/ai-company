@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
+from app.api.system import router as system_router
+
+
 app = FastAPI(
     title="AI Company",
     description="Lokalny system zarządzania firmą agentów AI",
@@ -72,3 +75,5 @@ def dashboard() -> str:
     </body>
     </html>
     """
+
+app.include_router(system_router)
