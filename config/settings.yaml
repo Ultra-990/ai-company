@@ -1,0 +1,44 @@
+system:
+  name: "AI Company"
+  version: "0.1.0"
+  environment: "development"
+  language: "pl"
+  owner: "Marcin"
+
+server:
+  host: "127.0.0.1"
+  port: 8000
+  reload: true
+
+agents:
+  enabled: false
+  default_autonomy_level: "A0"
+  maximum_autonomy_level: "A1"
+  allow_agent_creation: false
+  require_owner_approval: true
+  maximum_task_depth: 3
+
+safety:
+  emergency_stop: false
+  external_actions_enabled: false
+  financial_actions_enabled: false
+  publishing_enabled: false
+  network_access_enabled: false
+  audit_logging_enabled: true
+
+finance:
+  mode: "simulation"
+  currency: "PLN"
+  maximum_single_cost: 0.0
+  maximum_project_budget: 0.0
+
+memory:
+  persistent_memory_enabled: false
+  project_memory_enabled: true
+  experience_memory_enabled: false
+  owner_approval_for_permanent_changes: true
+
+logging:
+  level: "INFO"
+  directory: "logs"
+  audit_file: "audit.log"
