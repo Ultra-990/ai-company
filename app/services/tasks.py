@@ -14,6 +14,7 @@ from app.models.task import (
     TaskStatus,
     utc_now,
 )
+from app.services.documentation import generate_status_document
 
 
 class TaskNotFoundError(LookupError):
@@ -22,6 +23,10 @@ class TaskNotFoundError(LookupError):
 
 class TaskRepository:
     """Warstwa trwałego zapisu i odczytu zadań."""
+    def _refresh_documentation(self) -> None:
+        """Aktualizuje automatyczną dokumentację na podstawie zadań."""
+        tasks = self.list_recent(limit=100)
+        generate_status_document(tasks)
 
     def __init__(
         self,
@@ -82,6 +87,8 @@ class TaskRepository:
             session.commit()
             session.refresh(task)
             session.expunge(task)
+
+        self._refresh_documentation()
 
         return task
 
@@ -169,6 +176,8 @@ class TaskRepository:
             session.refresh(task)
             session.expunge(task)
 
+        self._refresh_documentation()
+
         return task
 
     def assign(
@@ -203,6 +212,8 @@ class TaskRepository:
             session.commit()
             session.refresh(task)
             session.expunge(task)
+
+        self._refresh_documentation()
 
         return task
 

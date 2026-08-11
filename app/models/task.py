@@ -1,54 +1,32 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from enum import Enum
+from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, Enum as SqlEnum, Integer, String, Text
+from sqlalchemy import DateTime, Enum, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 
 
 def utc_now() -> datetime:
+    """Zwraca aktualny czas w UTC."""
     return datetime.now(timezone.utc)
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(str, PyEnum):
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
-    BLOCKED = "blocked"
     COMPLETED = "completed"
+    BLOCKED = "blocked"
     CANCELLED = "cancelled"
 
 
-class TaskPriority(str, Enum):
+class TaskPriority(str, PyEnum):
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
     CRITICAL = "critical"
-
-
-ALLOWED_STATUS_TRANSITIONS: dict[TaskStatus, frozenset[TaskStatus]] = {
-    TaskStatus.PENDING: frozenset({
-        TaskStatus.IN_PROGRESS,
-        TaskStatus.CANCELLED,
-    }),
-    TaskStatus.IN_PROGRESS: frozenset({
-        TaskStatus.BLOCKED,
-        TaskStatus.COMPLETED,
-        TaskStatus.CANCELLED,
-    }),
-    TaskStatus.BLOCKED: frozenset({
-        TaskStatus.IN_PROGRESS,
-        TaskStatus.CANCELLED,
-    }),
-    TaskStatus.COMPLETED: frozenset(),
-    TaskStatus.CANCELLED: frozenset(),
-}
-
-
-class TaskTransitionError(ValueError):
-    """Niedozwolona zmiana statusu zadania."""
 
 
 class Task(Base):
@@ -57,55 +35,59 @@ class Task(Base):
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
-        autoincrement=True,
+        index=True,
     )
+
     title: Mapped[str] = mapped_column(
         String(200),
         nullable=False,
+        index=True,
     )
+
     description: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
+
     status: Mapped[TaskStatus] = mapped_column(
-        SqlEnum(
-            TaskStatus,
-            values_callable=lambda enum_class: [
-                item.value for item in enum_class
-            ],
-            native_enum=False,
-            validate_strings=True,
-            length=32,
-        ),
+        Enum(TaskStatus),
         default=TaskStatus.PENDING,
         nullable=False,
         index=True,
     )
+
     priority: Mapped[TaskPriority] = mapped_column(
-        SqlEnum(
-            TaskPriority,
-            values_callable=lambda enum_class: [
-                item.value for item in enum_class
-            ],
-            native_enum=False,
-            validate_strings=True,
-            length=16,
-        ),
+        Enum(TaskPriority),
         default=TaskPriority.NORMAL,
         nullable=False,
         index=True,
     )
+
     assigned_agent: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         index=True,
     )
+
+    progress: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    stages: Mapped[list[dict]] = mapped_column(
+        JSON,
+        default=list,
+        nullable=False,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,
         nullable=False,
         index=True,
     )
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,
@@ -113,15 +95,24 @@ class Task(Base):
         nullable=False,
     )
 
-    def can_transition_to(self, new_status: TaskStatus) -> bool:
-        return new_status in ALLOWED_STATUS_TRANSITIONS[self.status]
+    def update_progress(self, progress: int) -> None:
+        """
+        Aktualizuje postęp zadania i automatycznie zmienia jego status.
+        """
 
-    def transition_to(self, new_status: TaskStatus) -> None:
-        if not self.can_transition_to(new_status):
-            raise TaskTransitionError(
-                f"Niedozwolone przejście statusu: "
-                f"{self.status.value} -> {new_status.value}"
+        if not 0 <= progress <= 100:
+            raise ValueError(
+                "Postęp musi mieścić się w zakresie 0–100"
             )
 
-        self.status = new_status
+        self.progress = progress
         self.updated_at = utc_now()
+
+        if progress == 100:
+            self.status = TaskStatus.COMPLETED
+
+        elif progress > 0 and self.status == TaskStatus.PENDING:
+            self.status = TaskStatus.IN_PROGRESS
+
+        elif progress == 0 and self.status == TaskStatus.IN_PROGRESS:
+            self.status = TaskStatus.PENDING
