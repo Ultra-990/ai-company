@@ -1,17 +1,30 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
+from app.core.database import Base
+from app.db.database import engine
+from app.db.migrations import migrate_task_queue_schema
 from app.api.system import router as system_router
 from app.api.tasks import router as tasks_router
 from app.api.progress import router as progress_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Tworzy aktualny schemat bazy i stosuje bezpieczne migracje."""
+    Base.metadata.create_all(bind=engine)
+    migrate_task_queue_schema(engine)
+    yield
 
 
 app = FastAPI(
     title="AI Company",
     description="Lokalny system zarządzania firmą agentów AI",
     version="0.1.0",
+    lifespan=lifespan,
 )
-
 
 @app.get("/health")
 def health_check() -> dict:
