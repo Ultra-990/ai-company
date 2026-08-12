@@ -1,11 +1,15 @@
 from collections.abc import Generator
+from datetime import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import load_settings
 from app.models.task import (
+    ResourceClass,
+    RiskLevel,
     Task,
     TaskPriority,
     TaskStatus,
@@ -25,20 +29,27 @@ class TaskResponse(BaseModel):
     description: str | None
     status: TaskStatus
     priority: TaskPriority
+    resource_class: ResourceClass
+    risk_level: RiskLevel
     assigned_agent: str | None
-    created_at: object
-    updated_at: object
+    created_at: datetime
+    updated_at: datetime
+    queued_at: datetime | None
+    started_at: datetime | None
+    completed_at: datetime | None
+
 
 class TaskCreateRequest(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: str | None = None
     priority: TaskPriority = TaskPriority.NORMAL
+    resource_class: ResourceClass = ResourceClass.LIGHT
+    risk_level: RiskLevel = RiskLevel.LOW
     assigned_agent: str | None = Field(default=None, max_length=100)
+
 
 class StatusUpdateRequest(BaseModel):
     status: TaskStatus
-
-
 
 
 class AssignmentRequest(BaseModel):
@@ -54,20 +65,29 @@ def get_repository() -> Generator[TaskRepository, None, None]:
         repository.close()
 
 
+RepositoryDependency = Annotated[
+    TaskRepository,
+    Depends(get_repository),
+]
+
+
 @router.get("", response_model=list[TaskResponse])
 def list_tasks(
+    repository: RepositoryDependency,
     limit: int = Query(default=50, ge=1, le=100),
     status: TaskStatus | None = Query(default=None),
     priority: TaskPriority | None = Query(default=None),
+    resource_class: ResourceClass | None = Query(default=None),
+    risk_level: RiskLevel | None = Query(default=None),
     assigned_agent: str | None = Query(default=None),
 ) -> list[Task]:
-    repository = TaskRepository(load_settings().database.url)
-
     try:
         return repository.list_recent(
             limit=limit,
             status=status,
             priority=priority,
+            resource_class=resource_class,
+            risk_level=risk_level,
             assigned_agent=assigned_agent,
         )
     except ValueError as exc:
@@ -77,18 +97,36 @@ def list_tasks(
             status_code=503,
             detail="Repozytorium zadań jest niedostępne",
         ) from exc
-    finally:
-        repository.close()
+
+
+@router.get("/{task_id}", response_model=TaskResponse)
+def get_task(
+    repository: RepositoryDependency,
+    task_id: int = Path(ge=1),
+) -> Task:
+    try:
+        return repository.get_required(task_id)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Repozytorium zadań jest niedostępne",
+        ) from exc
+
 
 @router.post("", response_model=TaskResponse, status_code=201)
-def create_task(payload: TaskCreateRequest) -> Task:
-    repository = TaskRepository(load_settings().database.url)
-
+def create_task(
+    payload: TaskCreateRequest,
+    repository: RepositoryDependency,
+) -> Task:
     try:
         return repository.create(
             title=payload.title,
             description=payload.description,
             priority=payload.priority,
+            resource_class=payload.resource_class,
+            risk_level=payload.risk_level,
             assigned_agent=payload.assigned_agent,
         )
     except ValueError as exc:
@@ -98,8 +136,6 @@ def create_task(payload: TaskCreateRequest) -> Task:
             status_code=503,
             detail="Repozytorium zadań jest niedostępne",
         ) from exc
-    finally:
-        repository.close()
 
 
 @router.patch(
@@ -108,10 +144,9 @@ def create_task(payload: TaskCreateRequest) -> Task:
 )
 def update_status(
     payload: StatusUpdateRequest,
+    repository: RepositoryDependency,
     task_id: int = Path(ge=1),
 ) -> Task:
-    repository = TaskRepository(load_settings().database.url)
-
     try:
         return repository.transition(task_id, payload.status)
     except TaskNotFoundError as exc:
@@ -123,8 +158,6 @@ def update_status(
             status_code=503,
             detail="Repozytorium zadań jest niedostępne",
         ) from exc
-    finally:
-        repository.close()
 
 
 @router.patch(
@@ -133,10 +166,9 @@ def update_status(
 )
 def update_assignment(
     payload: AssignmentRequest,
+    repository: RepositoryDependency,
     task_id: int = Path(ge=1),
 ) -> Task:
-    repository = TaskRepository(load_settings().database.url)
-
     try:
         return repository.assign(task_id, payload.assigned_agent)
     except TaskNotFoundError as exc:
@@ -148,5 +180,3 @@ def update_assignment(
             status_code=503,
             detail="Repozytorium zadań jest niedostępne",
         ) from exc
-    finally:
-        repository.close()

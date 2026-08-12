@@ -6,23 +6,35 @@ from pathlib import Path
 import pytest
 
 from app.api.system import get_audit_repository
+from app.api.tasks import get_repository
 from app.main import app
 from app.services.audit import AuditRepository
+from app.services.tasks import TaskRepository
 
 
 @pytest.fixture(autouse=True)
-def isolated_audit_database(
+def isolated_databases(
     tmp_path: Path,
-) -> Iterator[AuditRepository]:
-    database_path = tmp_path / "audit_test.sqlite3"
-    repository = AuditRepository(
-        f"sqlite:///{database_path}",
+) -> Iterator[None]:
+    audit_database_path = tmp_path / "audit_test.sqlite3"
+    task_database_path = tmp_path / "tasks_test.sqlite3"
+
+    audit_repository = AuditRepository(
+        f"sqlite:///{audit_database_path}",
+    )
+    task_repository = TaskRepository(
+        f"sqlite:///{task_database_path}",
     )
 
-    app.dependency_overrides[get_audit_repository] = lambda: repository
+    app.dependency_overrides[get_audit_repository] = (
+        lambda: audit_repository
+    )
+    app.dependency_overrides[get_repository] = lambda: task_repository
 
     try:
-        yield repository
+        yield
     finally:
         app.dependency_overrides.pop(get_audit_repository, None)
-        repository.close()
+        app.dependency_overrides.pop(get_repository, None)
+        audit_repository.close()
+        task_repository.close()
