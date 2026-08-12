@@ -183,6 +183,7 @@ class Task(Base):
             self.started_at = now
 
         if new_status is TaskStatus.COMPLETED:
+            self.progress = 100
             self.completed_at = now
 
         self.updated_at = now
