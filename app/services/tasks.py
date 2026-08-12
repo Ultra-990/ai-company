@@ -127,6 +127,8 @@ class TaskRepository:
         limit: int = 50,
         status: TaskStatus | None = None,
         priority: TaskPriority | None = None,
+        resource_class: ResourceClass | None = None,
+        risk_level: RiskLevel | None = None,
         assigned_agent: str | None = None,
     ) -> list[Task]:
         if not 1 <= limit <= 100:
@@ -149,6 +151,14 @@ class TaskRepository:
 
         if priority is not None:
             statement = statement.where(Task.priority == priority)
+
+        if resource_class is not None:
+            statement = statement.where(
+                Task.resource_class == resource_class
+            )
+
+        if risk_level is not None:
+            statement = statement.where(Task.risk_level == risk_level)
 
         if normalized_agent is not None:
             statement = statement.where(
