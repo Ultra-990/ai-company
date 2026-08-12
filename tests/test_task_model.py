@@ -62,3 +62,26 @@ def test_invalid_transition_is_rejected(
         task.transition_to(new_status)
 
     assert task.status is current_status
+
+
+def test_update_progress_starts_pending_task_and_sets_timestamp() -> None:
+    task = make_task()
+
+    task.update_progress(1)
+
+    assert task.status is TaskStatus.IN_PROGRESS
+    assert task.started_at is not None
+    assert task.completed_at is None
+    assert task.updated_at == task.started_at
+
+
+def test_update_progress_completes_pending_task_with_timestamps() -> None:
+    task = make_task()
+
+    task.update_progress(100)
+
+    assert task.status is TaskStatus.COMPLETED
+    assert task.started_at is not None
+    assert task.completed_at is not None
+    assert task.updated_at == task.started_at
+    assert task.started_at == task.completed_at

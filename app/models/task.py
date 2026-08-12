@@ -35,6 +35,24 @@ class TaskPriority(str, PyEnum):
     CRITICAL = "critical"
 
 
+class ResourceClass(str, PyEnum):
+    LIGHT = "light"
+    CPU = "cpu"
+    CPU_HEAVY = "cpu_heavy"
+    GPU_LIGHT = "gpu_light"
+    GPU_HEAVY = "gpu_heavy"
+    NETWORK = "network"
+    RESTRICTED = "restricted"
+
+
+class RiskLevel(str, PyEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+
 class Task(Base):
     __tablename__ = "tasks"
 
@@ -65,6 +83,19 @@ class Task(Base):
     priority: Mapped[TaskPriority] = mapped_column(
         Enum(TaskPriority),
         default=TaskPriority.NORMAL,
+        nullable=False,
+        index=True,
+    )
+    resource_class: Mapped[ResourceClass] = mapped_column(
+        Enum(ResourceClass),
+        default=ResourceClass.LIGHT,
+        nullable=False,
+        index=True,
+    )
+
+    risk_level: Mapped[RiskLevel] = mapped_column(
+        Enum(RiskLevel),
+        default=RiskLevel.LOW,
         nullable=False,
         index=True,
     )
@@ -101,6 +132,21 @@ class Task(Base):
         nullable=False,
     )
 
+    queued_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     def transition_to(self, new_status: TaskStatus) -> None:
         """Zmienia status tylko zgodnie z dozwolonym cyklem życia."""
@@ -131,7 +177,16 @@ class Task(Base):
             )
 
         self.status = new_status
-        self.updated_at = utc_now()
+        now = utc_now()
+
+        if new_status is TaskStatus.IN_PROGRESS and self.started_at is None:
+            self.started_at = now
+
+        if new_status is TaskStatus.COMPLETED:
+            self.completed_at = now
+
+        self.updated_at = now
+
 
 
 
@@ -145,14 +200,24 @@ class Task(Base):
                 "Postęp musi mieścić się w zakresie 0–100"
             )
 
+        now = utc_now()
+
         self.progress = progress
-        self.updated_at = utc_now()
+        self.updated_at = now
 
         if progress == 100:
             self.status = TaskStatus.COMPLETED
 
+            if self.started_at is None:
+                self.started_at = now
+
+            self.completed_at = now
+
         elif progress > 0 and self.status == TaskStatus.PENDING:
             self.status = TaskStatus.IN_PROGRESS
+
+            if self.started_at is None:
+                self.started_at = now
 
         elif progress == 0 and self.status == TaskStatus.IN_PROGRESS:
             self.status = TaskStatus.PENDING

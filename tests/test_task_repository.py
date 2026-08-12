@@ -195,3 +195,28 @@ def test_list_recent_rejects_blank_agent_filter(
 ) -> None:
     with pytest.raises(ValueError, match="nie może być pusty"):
         task_repository.list_recent(assigned_agent="   ")
+
+
+def test_create_persists_queue_resource_and_risk_data(
+    task_repository: TaskRepository,
+) -> None:
+    from app.models.task import ResourceClass, RiskLevel
+
+    created = task_repository.create(
+        title="Przetwarzanie wymagające CPU",
+        resource_class=ResourceClass.CPU_HEAVY,
+        risk_level=RiskLevel.HIGH,
+    )
+    loaded = task_repository.get_required(created.id)
+
+    assert created.resource_class is ResourceClass.CPU_HEAVY
+    assert created.risk_level is RiskLevel.HIGH
+    assert created.queued_at is not None
+    assert created.started_at is None
+    assert created.completed_at is None
+
+    assert loaded.resource_class is ResourceClass.CPU_HEAVY
+    assert loaded.risk_level is RiskLevel.HIGH
+    assert loaded.queued_at is not None
+    assert loaded.started_at is None
+    assert loaded.completed_at is None

@@ -1,6 +1,6 @@
 # Aktualny status projektu
 
-Ostatnia aktualizacja: **2026-08-12 00:29:42 UTC**
+Ostatnia aktualizacja: **2026-08-12 12:50:38 UTC**
 
 ## Podsumowanie
 
@@ -11,7 +11,7 @@ Ostatnia aktualizacja: **2026-08-12 00:29:42 UTC**
 
 ## Zadania
 
-- **Przypisz zadanie** — status: `pending`, postęp: **0%**
+- **Przetwarzanie wymagające CPU** — status: `pending`, postęp: **0%**
 
 ## Informacja
 

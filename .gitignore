@@ -35,3 +35,6 @@ Thumbs.db
 node_modules/
 
 data/*.backup-*
+
+# Lokalne kopie zapasowe SQLite
+backups/
