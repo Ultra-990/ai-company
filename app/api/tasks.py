@@ -5,7 +5,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import load_settings
-from app.models.task import Task, TaskPriority, TaskStatus
+from app.models.task import (
+    Task,
+    TaskPriority,
+    TaskStatus,
+    TaskTransitionError,
+)
 from app.services.tasks import TaskNotFoundError, TaskRepository
 
 
@@ -29,6 +34,12 @@ class TaskCreateRequest(BaseModel):
     description: str | None = None
     priority: TaskPriority = TaskPriority.NORMAL
     assigned_agent: str | None = Field(default=None, max_length=100)
+
+class StatusUpdateRequest(BaseModel):
+    status: TaskStatus
+
+
+
 
 class AssignmentRequest(BaseModel):
     assigned_agent: str | None = Field(default=None, max_length=100)
@@ -81,6 +92,31 @@ def create_task(payload: TaskCreateRequest) -> Task:
             assigned_agent=payload.assigned_agent,
         )
     except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Repozytorium zadań jest niedostępne",
+        ) from exc
+    finally:
+        repository.close()
+
+
+@router.patch(
+    "/{task_id}/status",
+    response_model=TaskResponse,
+)
+def update_status(
+    payload: StatusUpdateRequest,
+    task_id: int = Path(ge=1),
+) -> Task:
+    repository = TaskRepository(load_settings().database.url)
+
+    try:
+        return repository.transition(task_id, payload.status)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except TaskTransitionError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except SQLAlchemyError as exc:
         raise HTTPException(

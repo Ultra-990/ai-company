@@ -22,6 +22,12 @@ class TaskStatus(str, PyEnum):
     CANCELLED = "cancelled"
 
 
+class TaskTransitionError(ValueError):
+    """Niedozwolona zmiana statusu zadania."""
+
+
+
+
 class TaskPriority(str, PyEnum):
     LOW = "low"
     NORMAL = "normal"
@@ -94,6 +100,40 @@ class Task(Base):
         onupdate=utc_now,
         nullable=False,
     )
+
+
+    def transition_to(self, new_status: TaskStatus) -> None:
+        """Zmienia status tylko zgodnie z dozwolonym cyklem życia."""
+
+        allowed_transitions: dict[TaskStatus, set[TaskStatus]] = {
+            TaskStatus.PENDING: {
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.BLOCKED,
+                TaskStatus.CANCELLED,
+            },
+            TaskStatus.IN_PROGRESS: {
+                TaskStatus.COMPLETED,
+                TaskStatus.BLOCKED,
+                TaskStatus.CANCELLED,
+            },
+            TaskStatus.BLOCKED: {
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.CANCELLED,
+            },
+            TaskStatus.COMPLETED: set(),
+            TaskStatus.CANCELLED: set(),
+        }
+
+        if new_status not in allowed_transitions[self.status]:
+            raise TaskTransitionError(
+                f"Niedozwolona zmiana statusu: "
+                f"{self.status.value} → {new_status.value}"
+            )
+
+        self.status = new_status
+        self.updated_at = utc_now()
+
+
 
     def update_progress(self, progress: int) -> None:
         """

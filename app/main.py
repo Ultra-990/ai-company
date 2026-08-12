@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from app.api.system import router as system_router
+from app.api.tasks import router as tasks_router
+from app.api.progress import router as progress_router
 
 
 app = FastAPI(
@@ -77,3 +79,5 @@ def dashboard() -> str:
     """
 
 app.include_router(system_router)
+app.include_router(tasks_router)
+app.include_router(progress_router)

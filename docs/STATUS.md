@@ -1,6 +1,6 @@
 # Aktualny status projektu
 
-Ostatnia aktualizacja: **2026-08-11 23:35:44 UTC**
+Ostatnia aktualizacja: **2026-08-12 00:29:42 UTC**
 
 ## Podsumowanie
 
@@ -11,7 +11,7 @@ Ostatnia aktualizacja: **2026-08-11 23:35:44 UTC**
 
 ## Zadania
 
-- **Test automatycznej dokumentacji** — status: `pending`, postęp: **0%**
+- **Przypisz zadanie** — status: `pending`, postęp: **0%**
 
 ## Informacja
 
