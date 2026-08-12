@@ -1,8 +1,66 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
+from app.core.config import load_settings
+from app.services.tasks import TaskRepository
+
 
 router = APIRouter()
+
+
+
+@router.get("/api/progress")
+def get_progress() -> dict:
+    """Zwraca aktualny postęp zadań zapisanych w lokalnej bazie SQLite."""
+    repository = TaskRepository(load_settings().database.url)
+
+    status_labels = {
+        "pending": "Zaplanowany",
+        "in_progress": "W trakcie",
+        "completed": "Ukończony",
+        "blocked": "Zablokowany",
+        "cancelled": "Anulowany",
+    }
+
+    try:
+        tasks = repository.list_recent(limit=100)
+
+        serialized_tasks = [
+            {
+                "id": task.id,
+                "title": task.title,
+                "description": task.description,
+                "status": task.status.value,
+                "status_label": status_labels[task.status.value],
+                "priority": task.priority.value,
+                "assigned_agent": task.assigned_agent,
+                "progress": task.progress,
+                "updated_at": task.updated_at.isoformat(),
+            }
+            for task in tasks
+        ]
+
+        total_progress = round(
+            sum(task["progress"] for task in serialized_tasks)
+            / len(serialized_tasks)
+        ) if serialized_tasks else 0
+
+        counts = {
+            status: sum(
+                task["status"] == status
+                for task in serialized_tasks
+            )
+            for status in status_labels
+        }
+
+        return {
+            "total_progress": total_progress,
+            "task_count": len(serialized_tasks),
+            "counts": counts,
+            "tasks": serialized_tasks,
+        }
+    finally:
+        repository.close()
 
 
 @router.get("/progress", response_class=HTMLResponse)
@@ -480,7 +538,7 @@ def progress_page() -> str:
 
         <section class="panel">
             <div class="summary-top">
-                <span class="summary-title">Postęp całego systemu</span>
+                <span class="summary-title">Postęp zadań zapisanych w systemie</span>
                 <span class="summary-percent" id="total-percent">0%</span>
             </div>
 
@@ -745,6 +803,9 @@ def progress_page() -> str:
             }
         ];
 
+        const baseProcesses = processes;
+        let apiTotalProgress = null;
+
         const statusColors = {
             "Ukończony": "var(--green)",
             "W trakcie": "var(--blue)",
@@ -851,7 +912,7 @@ def progress_page() -> str:
         }
 
         function renderTotalProgress() {
-            const total = Math.round(
+            const total = apiTotalProgress ?? Math.round(
                 processes.reduce(
                     (sum, process) => sum + process.progress,
                     0
@@ -866,8 +927,66 @@ def progress_page() -> str:
             );
         }
 
+        async function refreshProgressFromApi() {
+            try {
+                const response = await fetch("/api/progress", {
+                    cache: "no-store"
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                apiTotalProgress = data.total_progress;
+
+                const liveTasksProcess = {
+                    title: `Bieżące zadania systemowe (${data.task_count})`,
+                    icon: "📋",
+                    progress: data.total_progress,
+                    status: data.task_count
+                        ? "W trakcie"
+                        : "Zaplanowany",
+                    color: data.counts.blocked
+                        ? "var(--red)"
+                        : "var(--blue)",
+                    description: data.task_count
+                        ? "Dane pobierane automatycznie z lokalnej bazy SQLite."
+                        : "Brak zapisanych zadań. Utwórz zadanie przez Task API.",
+                    open: true,
+                    steps: data.tasks.length
+                        ? data.tasks.map(task => [
+                            `#${task.id} · ${task.title}`,
+                            task.status_label,
+                            `${task.progress}% · Priorytet: ${task.priority}` +
+                            (task.assigned_agent
+                                ? ` · Agent: ${task.assigned_agent}`
+                                : "")
+                        ])
+                        : [[
+                            "Brak zadań",
+                            "Zaplanowany",
+                            "Nie utworzono jeszcze żadnego zadania."
+                        ]]
+                };
+
+                processes = [...baseProcesses, liveTasksProcess];
+                renderProcesses();
+                renderTotalProgress();
+            } catch (error) {
+                console.error(
+                    "Nie udało się pobrać danych postępu:",
+                    error
+                );
+            }
+        }
+
         renderProcesses();
         renderTotalProgress();
+        refreshProgressFromApi();
+
+        // Odświeżenie mapy co 10 sekund bez przeładowania strony.
+        window.setInterval(refreshProgressFromApi, 10000);
     </script>
 </body>
 </html>
