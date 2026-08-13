@@ -1,11 +1,11 @@
 # AI Company — Continuity Context
 
 > Dokument wygenerowany automatycznie.
-> Ostatnia aktualizacja: 2026-08-13T13:54:59.725389+00:00
+> Ostatnia aktualizacja: 2026-08-13T14:07:09.014331+00:00
 
 ## Aktualny stan
 
-- Ostatni commit: `23643f9 Integrate project progress with progress API`
+- Ostatni commit: `6f0d4fb Add project progress map`
 - Postęp projektu: **0%**
 
 ## Ukończone zadania
@@ -23,13 +23,8 @@
 ## Zmodyfikowane pliki
 
 ```text
-M app/api/progress.py
- M app/services/tasks.py
+M docs/CONTINUITY.md
  M docs/STATUS.md
-?? app/services/context.py
-?? app/services/scheduler.py
-?? docs/CONTINUITY.md
-?? tests/test_progress_map_api.py
 
 ```
 ## Instrukcja dla kolejnej rozmowy
