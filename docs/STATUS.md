@@ -1,20 +1,17 @@
 # Aktualny status projektu
 
-Ostatnia aktualizacja: **2026-08-12 13:54:16 UTC**
+Ostatnia aktualizacja: **2026-08-13 13:57:18 UTC**
 
 ## Podsumowanie
 
-- Łączna liczba zadań: **4**
+- Łączna liczba zadań: **1**
 - Zadania ukończone: **0**
-- Zadania aktywne: **4**
+- Zadania aktywne: **1**
 - Średni postęp: **0%**
 
 ## Zadania
 
-- **Test POST API** — status: `pending`, postęp: **0%**
-- **Test wartości enumów** — status: `pending`, postęp: **0%**
-- **Test pełnego cyklu statusu** — status: `in_progress`, postęp: **0%**
-- **Test automatycznej dokumentacji** — status: `pending`, postęp: **0%**
+- **Przetwarzanie wymagające CPU** — status: `pending`, postęp: **0%**
 
 ## Informacja
 

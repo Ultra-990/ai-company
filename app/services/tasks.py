@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Engine, Select, select
+from sqlalchemy import Engine, Select, case, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import (
@@ -229,6 +229,50 @@ class TaskRepository:
 
             task.assigned_agent = normalized_agent
             task.updated_at = utc_now()
+            session.commit()
+            session.refresh(task)
+            session.expunge(task)
+
+        self._refresh_documentation()
+
+        return task
+
+    def claim_next_pending_task(self) -> Task | None:
+        """
+        Wybiera i rezerwuje następne oczekujące zadanie.
+
+        Kolejność:
+        1. tylko zadania pending,
+        2. critical, high, normal, low,
+        3. najstarsze queued_at,
+        4. najniższe id.
+        """
+        priority_order = case(
+            (Task.priority == TaskPriority.CRITICAL, 0),
+            (Task.priority == TaskPriority.HIGH, 1),
+            (Task.priority == TaskPriority.NORMAL, 2),
+            (Task.priority == TaskPriority.LOW, 3),
+            else_=4,
+        )
+
+        statement: Select[tuple[Task]] = (
+            select(Task)
+            .where(Task.status == TaskStatus.PENDING)
+            .order_by(
+                priority_order.asc(),
+                Task.queued_at.asc(),
+                Task.id.asc(),
+            )
+            .limit(1)
+        )
+
+        with self._session_factory() as session:
+            task = session.scalar(statement)
+
+            if task is None:
+                return None
+
+            task.transition_to(TaskStatus.IN_PROGRESS)
             session.commit()
             session.refresh(task)
             session.expunge(task)

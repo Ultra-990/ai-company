@@ -524,7 +524,50 @@ def progress_page() -> str:
                 transition-duration: 0.01ms !important;
             }
         }
-    </style>
+
+        .project-progress-section {
+            margin: 2rem 0;
+        }
+
+        .project-progress-summary {
+            margin: 1rem 0 2rem;
+        }
+
+        #project-progress-value {
+            display: block;
+            font-size: 2rem;
+            margin-bottom: .75rem;
+        }
+
+        .project-stages {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .project-stage-card {
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, .06);
+        }
+
+        .project-stage-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: .75rem;
+        }
+
+        .project-stage-status {
+            opacity: .8;
+            font-size: .9rem;
+        }
+
+        .project-stage-progress {
+            font-weight: 700;
+        }
+
+</style>
 </head>
 
 <body>
@@ -545,7 +588,7 @@ def progress_page() -> str:
             </div>
 
             <div class="progress-track">
-                <div class="progress-fill" id="total-progress"
+                <div class="progress-fill" id="project-progress"
                      style="--progress: 0%">
                 </div>
             </div>
@@ -574,7 +617,47 @@ def progress_page() -> str:
                 </span>
             </div>
         </section>
-    </main>
+
+            <section class="project-progress-section">
+                <h2>Postęp budowy organizacji</h2>
+
+                <div class="project-progress-summary">
+                    <strong id="project-progress-value">0%</strong>
+                    <div class="progress-track">
+                        <div
+                            class="progress-fill"
+                            id="project-progress-fill"
+                            style="--progress: 0%"
+                        ></div>
+                    </div>
+                </div>
+
+                <div id="project-stages" class="project-stages">
+                    <p>Ładowanie postępu projektu...</p>
+                </div>
+            </section>
+
+
+            <section class="project-progress-section">
+                <h2>Postęp budowy organizacji</h2>
+
+                <div class="project-progress-summary">
+                    <strong id="project-progress-value">0%</strong>
+                    <div class="progress-track">
+                        <div
+                            class="progress-fill"
+                            id="project-progress-fill"
+                            style="--progress: 0%"
+                        ></div>
+                    </div>
+                </div>
+
+                <div id="project-stages" class="project-stages">
+                    <p>Ładowanie postępu projektu...</p>
+                </div>
+            </section>
+
+</main>
 
     <script>
         const processes = [
@@ -989,7 +1072,107 @@ def progress_page() -> str:
 
         // Odświeżenie mapy co 10 sekund bez przeładowania strony.
         window.setInterval(refreshProgressFromApi, 10000);
-    </script>
+
+        function projectStatusLabel(status, progress) {
+            if (status === "completed" || progress >= 100) {
+                return "Ukończony";
+            }
+
+            if (status === "blocked") {
+                return "Zablokowany";
+            }
+
+            if (status === "in_progress" || progress > 0) {
+                return "W trakcie";
+            }
+
+            return "Zaplanowany";
+        }
+
+        function renderProjectProgress(projectProgress) {
+            if (!projectProgress) {
+                return;
+            }
+
+            const total = Number(projectProgress.total_progress || 0);
+            const value = document.getElementById("project-progress-value");
+            const fill = document.getElementById("project-progress-fill");
+            const stagesContainer = document.getElementById("project-stages");
+
+            if (value) {
+                value.textContent = `${total}%`;
+            }
+
+            if (fill) {
+                fill.style.setProperty("--progress", `${total}%`);
+            }
+
+            if (!stagesContainer) {
+                return;
+            }
+
+            stagesContainer.replaceChildren();
+
+            for (const stage of projectProgress.stages || []) {
+                const progress = Number(stage.progress || 0);
+                const card = document.createElement("article");
+                card.className = "project-stage-card";
+
+                const header = document.createElement("div");
+                header.className = "project-stage-header";
+
+                const title = document.createElement("strong");
+                title.textContent = stage.name || stage.title || stage.id;
+
+                const percentage = document.createElement("span");
+                percentage.className = "project-stage-progress";
+                percentage.textContent = `${progress}%`;
+
+                header.append(title, percentage);
+
+                const status = document.createElement("div");
+                status.className = "project-stage-status";
+                status.textContent = projectStatusLabel(stage.status, progress);
+
+                const track = document.createElement("div");
+                track.className = "progress-track";
+
+                const progressFill = document.createElement("div");
+                progressFill.className = "progress-fill";
+                progressFill.style.setProperty("--progress", `${progress}%`);
+
+                track.appendChild(progressFill);
+                card.append(header, status, track);
+                stagesContainer.appendChild(card);
+            }
+        }
+
+        async function loadProjectProgressMap() {
+            const response = await fetch("/api/progress", {
+                headers: { "Accept": "application/json" }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            renderProjectProgress(data.project_progress);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadProjectProgressMap().catch(error => {
+                console.error("Nie udało się załadować postępu projektu:", error);
+
+                const container = document.getElementById("project-stages");
+                if (container) {
+                    container.textContent =
+                        "Nie udało się załadować postępu projektu.";
+                }
+            });
+        });
+
+</script>
 </body>
 </html>
 """
