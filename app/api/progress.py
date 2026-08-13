@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
 from app.core.config import load_settings
+from app.services.project_progress import load_project_progress
 from app.services.tasks import TaskRepository
 
 
@@ -58,6 +59,7 @@ def get_progress() -> dict:
             "task_count": len(serialized_tasks),
             "counts": counts,
             "tasks": serialized_tasks,
+            "project_progress": load_project_progress(),
         }
     finally:
         repository.close()

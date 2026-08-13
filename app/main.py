@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from app.core.database import Base
+from app.models.organization import OrganizationUnit
 from app.db.database import engine
 from app.db.migrations import migrate_task_queue_schema
 from app.api.system import router as system_router

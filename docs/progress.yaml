@@ -1,0 +1,38 @@
+project: Virtual Company
+
+stages:
+  - id: foundation
+    name: Fundament FastAPI
+    status: completed
+    progress: 100
+
+  - id: task_api
+    name: Task API
+    status: in_progress
+    progress: 65
+
+  - id: organization
+    name: Struktura organizacyjna
+    status: completed
+    progress: 100
+    items:
+      - name: Model OrganizationUnit
+        status: completed
+      - name: Relacja parent/children
+        status: completed
+      - name: Tabela organization_units
+        status: completed
+      - name: Testy schematu
+        status: completed
+      - name: Dokumentacja
+        status: completed
+
+  - id: department_managers
+    name: Kierownicy działów
+    status: planned
+    progress: 0
+
+  - id: execution_agents
+    name: Agenci wykonawczy
+    status: planned
+    progress: 0

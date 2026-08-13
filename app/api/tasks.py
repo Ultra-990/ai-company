@@ -32,6 +32,8 @@ class TaskResponse(BaseModel):
     resource_class: ResourceClass
     risk_level: RiskLevel
     assigned_agent: str | None
+    progress: int
+    stages: list[dict]
     created_at: datetime
     updated_at: datetime
     queued_at: datetime | None
