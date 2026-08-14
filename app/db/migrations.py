@@ -10,6 +10,9 @@ TASK_QUEUE_COLUMNS = {
     "risk_level": (
         "VARCHAR(16) NOT NULL DEFAULT 'LOW'"
     ),
+    "approval_status": (
+        "VARCHAR(16) NOT NULL DEFAULT 'APPROVED'"
+    ),
     "queued_at": "DATETIME",
     "started_at": "DATETIME",
     "completed_at": "DATETIME",
@@ -114,6 +117,16 @@ def migrate_task_queue_schema(engine: Engine) -> None:
                 """
                 CREATE INDEX IF NOT EXISTS ix_tasks_queued_at
                 ON tasks (queued_at)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                UPDATE tasks
+                SET approval_status = 'APPROVED'
+                WHERE approval_status IS NULL
+                   OR TRIM(approval_status) = ''
                 """
             )
         )

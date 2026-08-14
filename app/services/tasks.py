@@ -8,7 +8,9 @@ from app.core.database import (
     create_database_engine,
     create_session_factory,
 )
+from app.models.audit import AuditEvent
 from app.models.task import (
+    ApprovalStatus,
     ResourceClass,
     RiskLevel,
     Task,
@@ -17,6 +19,8 @@ from app.models.task import (
     utc_now,
 )
 from app.services.documentation import generate_status_document
+from app.services.audit import AuditRepository
+
 
 from app.db.migrations import migrate_task_queue_schema
 
@@ -34,7 +38,7 @@ class TaskRepository:
 
     def __init__(
         self,
-        database_url: str,
+        database_url: str = "sqlite:///./app.db",
         *,
         initialize: bool = True,
     ) -> None:
@@ -85,6 +89,7 @@ class TaskRepository:
             title=normalized_title,
             description=description,
             status=TaskStatus.PENDING,
+            approval_status=ApprovalStatus.PENDING,
             priority=priority,
             resource_class=resource_class,
             risk_level=risk_level,
@@ -126,6 +131,7 @@ class TaskRepository:
         *,
         limit: int = 50,
         status: TaskStatus | None = None,
+        approval_status: ApprovalStatus | None = None,
         priority: TaskPriority | None = None,
         resource_class: ResourceClass | None = None,
         risk_level: RiskLevel | None = None,
@@ -148,6 +154,11 @@ class TaskRepository:
 
         if status is not None:
             statement = statement.where(Task.status == status)
+
+        if approval_status is not None:
+                statement = statement.where(
+                    Task.approval_status == approval_status
+            )
 
         if priority is not None:
             statement = statement.where(Task.priority == priority)
@@ -177,6 +188,67 @@ class TaskRepository:
                 session.expunge(task)
 
         return tasks
+
+    def _set_approval_status(
+        self,
+        task_id: int,
+        approval_status: ApprovalStatus,
+        *,
+        decision: str,
+        reason: str,
+    ) -> Task:
+        with self._session_factory() as session:
+            task = session.get(Task, task_id)
+
+            if task is None:
+                raise TaskNotFoundError(
+                    f"Nie znaleziono zadania o identyfikatorze {task_id}"
+                )
+
+            task.approval_status = approval_status
+            task.updated_at = utc_now()
+
+            audit_event = AuditEvent(
+                event_type="task_approval",
+                operation=decision,
+                decision=decision,
+                allowed=approval_status == ApprovalStatus.APPROVED,
+                reason=reason,
+            )
+
+            session.add(audit_event)
+            session.commit()
+            session.refresh(task)
+            session.expunge(task)
+
+        self._refresh_documentation()
+        return task
+
+    def approve(
+        self,
+        task_id: int,
+        *,
+        reason: str = "Zadanie zatwierdzone przez właściciela",
+    ) -> Task:
+        return self._set_approval_status(
+            task_id,
+            ApprovalStatus.APPROVED,
+            decision="approve",
+            reason=reason,
+        )
+
+    def reject(
+        self,
+        task_id: int,
+        *,
+        reason: str = "Zadanie odrzucone przez właściciela",
+    ) -> Task:
+        return self._set_approval_status(
+            task_id,
+            ApprovalStatus.REJECTED,
+            decision="reject",
+            reason=reason,
+        )
 
     def transition(
         self,
