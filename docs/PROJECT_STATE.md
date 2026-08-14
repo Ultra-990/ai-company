@@ -18,6 +18,15 @@ Następnym etapem jest trwały dziennik audytowy SQLite.
 - bezpieczne ustawienia domyślne,
 - automatyczne testy API i bezpieczeństwa,
 - punkt kontrolny Git.
+- model AuditEvent,
+- repozytorium zapisu i odczytu audytu,
+- rejestrowanie decyzji bramki bezpieczeństwa,
+- endpoint /api/audit/events,
+- izolowane testy audytu;
+- Ostatni potwierdzony wynik — 50 passed, 1 warning;
+- Najbliższy etap — wybierz kolejny rzeczywisty element roadmapy, np. system zatwierdzeń Właściciela;
+- usuń dziennik audytowy z listy elementów jeszcze niezaimplementowanych.
+
 
 ## Aktualne zasady bezpieczeństwa
 
