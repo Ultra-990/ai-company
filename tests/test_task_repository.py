@@ -3,10 +3,13 @@ from pathlib import Path
 import pytest
 
 from app.models.task import (
+    ApprovalStatus,
     TaskPriority,
     TaskStatus,
     TaskTransitionError,
 )
+from app.services.audit import AuditRepository
+
 from app.services.tasks import (
     TaskNotFoundError,
     TaskRepository,
@@ -220,3 +223,78 @@ def test_create_persists_queue_resource_and_risk_data(
     assert loaded.queued_at is not None
     assert loaded.started_at is None
     assert loaded.completed_at is None
+
+def test_approve_sets_approval_status(
+    task_repository: TaskRepository,
+) -> None:
+    created = task_repository.create(title="Zadanie do akceptacji")
+
+    approved = task_repository.approve(created.id)
+    loaded = task_repository.get_required(created.id)
+
+    assert approved.approval_status is ApprovalStatus.APPROVED
+    assert loaded.approval_status is ApprovalStatus.APPROVED
+
+
+def test_reject_sets_approval_status(
+    task_repository: TaskRepository,
+) -> None:
+    created = task_repository.create(title="Zadanie do odrzucenia")
+
+    rejected = task_repository.reject(created.id)
+    loaded = task_repository.get_required(created.id)
+
+    assert rejected.approval_status is ApprovalStatus.REJECTED
+    assert loaded.approval_status is ApprovalStatus.REJECTED
+
+
+def test_approval_status_filter(
+    task_repository: TaskRepository,
+) -> None:
+    approved = task_repository.create(title="Zaakceptowane")
+    rejected = task_repository.create(title="Odrzucone")
+    pending = task_repository.create(title="Oczekujące")
+
+    task_repository.approve(approved.id)
+    task_repository.reject(rejected.id)
+
+    approved_tasks = task_repository.list_recent(
+        approval_status=ApprovalStatus.APPROVED,
+    )
+    rejected_tasks = task_repository.list_recent(
+        approval_status=ApprovalStatus.REJECTED,
+    )
+    pending_tasks = task_repository.list_recent(
+        approval_status=ApprovalStatus.PENDING,
+    )
+
+    assert [task.id for task in approved_tasks] == [approved.id]
+    assert [task.id for task in rejected_tasks] == [rejected.id]
+    assert [task.id for task in pending_tasks] == [pending.id]
+
+def test_approve_and_reject_record_audit_events(
+    task_repository: TaskRepository,
+) -> None:
+    approved_task = task_repository.create(
+        title="Zadanie do akceptacji",
+    )
+    rejected_task = task_repository.create(
+        title="Zadanie do odrzucenia",
+    )
+
+    task_repository.approve(approved_task.id)
+    task_repository.reject(rejected_task.id)
+
+    audit_repository = AuditRepository(
+        str(task_repository._engine.url),
+    )
+
+    try:
+        events = audit_repository.list_recent(limit=20)
+    finally:
+        audit_repository.close()
+
+    decisions = [event.decision for event in events]
+
+    assert "approve" in decisions
+    assert "reject" in decisions

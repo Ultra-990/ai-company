@@ -22,6 +22,13 @@ class TaskStatus(str, PyEnum):
     CANCELLED = "cancelled"
 
 
+class ApprovalStatus(str, PyEnum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+
 class TaskTransitionError(ValueError):
     """Niedozwolona zmiana statusu zadania."""
 
@@ -80,12 +87,20 @@ class Task(Base):
         index=True,
     )
 
+    approval_status: Mapped[ApprovalStatus] = mapped_column(
+        Enum(ApprovalStatus),
+        default=ApprovalStatus.PENDING,
+        nullable=False,
+        index=True,
+    )
+
     priority: Mapped[TaskPriority] = mapped_column(
         Enum(TaskPriority),
         default=TaskPriority.NORMAL,
         nullable=False,
         index=True,
     )
+
     resource_class: Mapped[ResourceClass] = mapped_column(
         Enum(ResourceClass),
         default=ResourceClass.LIGHT,

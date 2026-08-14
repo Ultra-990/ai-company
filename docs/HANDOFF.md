@@ -48,11 +48,25 @@ Działają:
 - walidacja ustawień,
 - status systemu,
 - bramka bezpieczeństwa,
-- testy endpointów i decyzji bezpieczeństwa.
+- trwały dziennik audytowy SQLite,
+- model `AuditEvent`,
+- repozytorium zapisu i odczytu zdarzeń audytowych,
+- rejestrowanie decyzji bramki bezpieczeństwa:
+  - `allowed`,
+  - `blocked`,
+  - `approval_required`,
+  - odrzucenie nieznanej operacji,
+- ograniczony endpoint odczytu dziennika pod adresem
+  `/api/audit/events`,
+- testy endpointów, decyzji bezpieczeństwa i dziennika audytowego.
+
+Dziennik audytowy nie zapisuje sekretów ani pełnych danych wrażliwych.
+Testy audytu korzystają z izolowanej bazy testowej i nie zanieczyszczają
+produkcyjnej ani lokalnej bazy użytkownika.
 
 Ostatni potwierdzony wynik testów:
 
-    9 passed, 1 warning
+    50 passed, 1 warning
 
 Ostrzeżenie pochodzi z zależności FastAPI/Starlette TestClient i nie powoduje
 niepowodzenia testów.
@@ -63,24 +77,32 @@ Punkt kontrolny:
 
 ## Następne zadanie
 
-Zaimplementować trwały dziennik audytowy SQLite.
+Zaimplementować system zatwierdzania operacji przez Właściciela.
 
 Plan:
 
-1. Najpierw zbadać aktualny kod i konfigurację.
-2. Wykorzystać istniejący SQLAlchemy, jeśli jest poprawnie zainstalowany.
-3. Wydzielić konfigurację bazy, model i warstwę repozytorium.
-4. Zapisywać decyzje bramki:
-   - `allowed`,
-   - `blocked`,
-   - `approval_required`,
-   - odrzucenie nieznanej operacji.
-5. Nie zapisywać sekretów ani pełnych danych wrażliwych.
-6. Dodać ograniczony endpoint odczytu dziennika.
-7. Testy nie mogą zanieczyszczać produkcyjnej/lokalnej bazy użytkownika.
-   Powinny korzystać z izolowanej bazy testowej lub jawnego nadpisania
-   zależności.
-8. Zachować zgodność ze wszystkimi istniejącymi testami.
+1. Najpierw zbadać aktualny model zadań, bramkę bezpieczeństwa i dziennik
+   audytowy.
+2. Zdefiniować jawny model żądania zatwierdzenia operacji.
+3. Określić stany zatwierdzenia, co najmniej:
+   - `pending`,
+   - `approved`,
+   - `rejected`,
+   - `expired`.
+4. Zapisywać w dzienniku audytowym utworzenie, zatwierdzenie, odrzucenie
+   i wygaśnięcie żądania.
+5. Nie wykonywać operacji wymagających zatwierdzenia przed uzyskaniem
+   jednoznacznej decyzji Właściciela.
+6. Nie zapisywać sekretów ani pełnych danych wrażliwych w żądaniach,
+   odpowiedziach ani dzienniku.
+7. Udostępnić ograniczone endpointy do przeglądania i rozstrzygania
+   oczekujących żądań.
+8. Zapewnić jednoznaczną autoryzację decyzji Właściciela.
+9. Dodać testy dla wszystkich stanów i przejść zatwierdzenia.
+10. Testy muszą korzystać z izolowanych zasobów i nie mogą zanieczyszczać
+    produkcyjnej ani lokalnej bazy użytkownika.
+11. Zachować zgodność ze wszystkimi istniejącymi testami i nie osłabiać
+    obecnych reguł bramki bezpieczeństwa.
 
 ## Polecenia diagnostyczne
 

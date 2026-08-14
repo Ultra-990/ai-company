@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import load_settings
 from app.models.task import (
+    ApprovalStatus,
     ResourceClass,
     RiskLevel,
     Task,
@@ -28,6 +29,7 @@ class TaskResponse(BaseModel):
     title: str
     description: str | None
     status: TaskStatus
+    approval_status: ApprovalStatus
     priority: TaskPriority
     resource_class: ResourceClass
     risk_level: RiskLevel

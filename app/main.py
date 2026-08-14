@@ -10,6 +10,8 @@ from app.db.migrations import migrate_task_queue_schema
 from app.api.system import router as system_router
 from app.api.tasks import router as tasks_router
 from app.api.progress import router as progress_router
+from app.api.owner import router as owner_router
+
 
 
 @asynccontextmanager
@@ -95,3 +97,4 @@ def dashboard() -> str:
 app.include_router(system_router)
 app.include_router(tasks_router)
 app.include_router(progress_router)
+app.include_router(owner_router)

@@ -7,7 +7,7 @@
 - [x] Model zadań
 - [x] Task API
 - [x] Panel postępu
-- [ ] Automatyczna dokumentacja statusu
+- [x] Automatyczna dokumentacja statusu
 
 ## System agentów
 
@@ -18,7 +18,7 @@
 
 ## Bezpieczeństwo i audyt
 
-- [ ] Rejestr zdarzeń
+- [x] Rejestr zdarzeń
 - [ ] Historia zmian
 - [ ] Walidacja operacji
 - [ ] Uprawnienia agentów
