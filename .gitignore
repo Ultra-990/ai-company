@@ -38,3 +38,5 @@ data/*.backup-*
 
 # Lokalne kopie zapasowe SQLite
 backups/
+
+app.db
