@@ -1,27 +1,30 @@
 from collections import Counter
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.services.project_progress import load_project_progress
-from app.api.owner import APPROVALS
+from app.api.tasks import get_repository
+from app.models.task import ApprovalStatus
+from app.services.tasks import TaskRepository
 
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 
-def _approval_summary() -> dict[str, Any]:
-    """Zwraca podsumowanie elementów znajdujących się w kolejce akceptacji."""
-    statuses = Counter(
-        item.get("status", "UNKNOWN")
-        for item in APPROVALS.values()
-    )
+def _approval_summary(
+    repository: TaskRepository,
+) -> dict[str, Any]:
+    """Zwraca podsumowanie statusów akceptacji z repozytorium zadań."""
+    tasks = repository.list_recent(limit=100)
+
+    statuses = Counter(task.approval_status for task in tasks)
 
     return {
-        "total": len(APPROVALS),
-        "pending": statuses.get("PENDING", 0),
-        "approved": statuses.get("APPROVED", 0),
-        "rejected": statuses.get("REJECTED", 0),
+        "total": len(tasks),
+        "pending": statuses.get(ApprovalStatus.PENDING, 0),
+        "approved": statuses.get(ApprovalStatus.APPROVED, 0),
+        "rejected": statuses.get(ApprovalStatus.REJECTED, 0),
     }
 
 
@@ -37,7 +40,9 @@ def _project_summary() -> dict[str, Any]:
 
 
 @router.get("")
-def dashboard_home() -> dict[str, Any]:
+def dashboard_home(
+    repository: TaskRepository = Depends(get_repository),
+) -> dict[str, Any]:
     """Zwraca bieżący snapshot dashboardu."""
     return {
         "status": "ok",
@@ -49,7 +54,7 @@ def dashboard_home() -> dict[str, Any]:
             "rejected": 0,
             "source": "not_available",
         },
-        "approvals": _approval_summary(),
+        "approvals": _approval_summary(repository),
         "system": {
             "status": "ok",
         },
@@ -57,10 +62,12 @@ def dashboard_home() -> dict[str, Any]:
 
 
 @router.get("/summary")
-def dashboard_summary() -> dict[str, Any]:
+def dashboard_summary(
+    repository: TaskRepository = Depends(get_repository),
+) -> dict[str, Any]:
     """Zwraca skrócone podsumowanie dashboardu."""
     project = _project_summary()
-    approvals = _approval_summary()
+    approvals = _approval_summary(repository)
 
     return {
         "status": "ok",
