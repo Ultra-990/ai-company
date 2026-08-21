@@ -19,7 +19,7 @@ def test_dashboard_home_returns_aggregated_data():
     assert "tasks" in data
     assert "system" in data
 
-    assert data["tasks"]["source"] == "not_available"
+    assert data["tasks"]["source"] == "task_repository"
     assert isinstance(data["approvals"]["total"], int)
 
 
@@ -34,7 +34,7 @@ def test_dashboard_summary_returns_project_progress():
     assert isinstance(data["project"], str)
     assert isinstance(data["progress"], (int, float))
     assert "approvals" in data
-    assert data["tasks"]["source"] == "not_available"
+    assert data["tasks"]["source"] == "task_repository"
 
 
 def test_dashboard_endpoints_are_consistent():

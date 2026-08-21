@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Engine, Select, select
+from sqlalchemy import Engine, Select, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import (
@@ -308,6 +308,44 @@ class TaskRepository:
         self._refresh_documentation()
 
         return task
+
+    def summary(self) -> dict[str, int]:
+        """Zwraca pełne statystyki zadań bez limitu listowania."""
+        with self._session_factory() as session:
+            total = session.scalar(
+                select(func.count()).select_from(Task)
+            ) or 0
+
+            pending = session.scalar(
+                select(func.count())
+                .select_from(Task)
+                .where(
+                    Task.approval_status == ApprovalStatus.PENDING
+                )
+            ) or 0
+
+            approved = session.scalar(
+                select(func.count())
+                .select_from(Task)
+                .where(
+                    Task.approval_status == ApprovalStatus.APPROVED
+                )
+            ) or 0
+
+            rejected = session.scalar(
+                select(func.count())
+                .select_from(Task)
+                .where(
+                    Task.approval_status == ApprovalStatus.REJECTED
+                )
+            ) or 0
+
+        return {
+            "total": int(total),
+            "pending": int(pending),
+            "approved": int(approved),
+            "rejected": int(rejected),
+        }
 
     def close(self) -> None:
         self._engine.dispose()

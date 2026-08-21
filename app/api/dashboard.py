@@ -1,30 +1,22 @@
-from collections import Counter
 from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app.services.project_progress import load_project_progress
 from app.api.tasks import get_repository
-from app.models.task import ApprovalStatus
+from app.services.project_progress import load_project_progress
 from app.services.tasks import TaskRepository
 
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 
-def _approval_summary(
+def _task_summary(
     repository: TaskRepository,
 ) -> dict[str, Any]:
-    """Zwraca podsumowanie statusów akceptacji z repozytorium zadań."""
-    tasks = repository.list_recent(limit=100)
-
-    statuses = Counter(task.approval_status for task in tasks)
-
+    """Zwraca pełne podsumowanie zadań z repozytorium."""
     return {
-        "total": len(tasks),
-        "pending": statuses.get(ApprovalStatus.PENDING, 0),
-        "approved": statuses.get(ApprovalStatus.APPROVED, 0),
-        "rejected": statuses.get(ApprovalStatus.REJECTED, 0),
+        **repository.summary(),
+        "source": "task_repository",
     }
 
 
@@ -44,17 +36,18 @@ def dashboard_home(
     repository: TaskRepository = Depends(get_repository),
 ) -> dict[str, Any]:
     """Zwraca bieżący snapshot dashboardu."""
+    tasks = _task_summary(repository)
+
     return {
         "status": "ok",
         "project": _project_summary(),
-        "tasks": {
-            "total": 0,
-            "pending": 0,
-            "approved": 0,
-            "rejected": 0,
-            "source": "not_available",
+        "tasks": tasks,
+        "approvals": {
+            "total": tasks["total"],
+            "pending": tasks["pending"],
+            "approved": tasks["approved"],
+            "rejected": tasks["rejected"],
         },
-        "approvals": _approval_summary(repository),
         "system": {
             "status": "ok",
         },
@@ -67,15 +60,20 @@ def dashboard_summary(
 ) -> dict[str, Any]:
     """Zwraca skrócone podsumowanie dashboardu."""
     project = _project_summary()
-    approvals = _approval_summary(repository)
+    tasks = _task_summary(repository)
 
     return {
         "status": "ok",
         "project": project["name"],
         "progress": project["total_progress"],
-        "approvals": approvals,
+        "approvals": {
+            "total": tasks["total"],
+            "pending": tasks["pending"],
+            "approved": tasks["approved"],
+            "rejected": tasks["rejected"],
+        },
         "tasks": {
-            "total": 0,
-            "source": "not_available",
+            "total": tasks["total"],
+            "source": tasks["source"],
         },
     }
