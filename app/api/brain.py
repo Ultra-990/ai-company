@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.api.system import get_audit_repository
+from app.api.tasks import get_repository
 from collections.abc import Generator
 from typing import Annotated
 
@@ -11,22 +13,6 @@ from app.services.audit import AuditRepository
 from app.services.tasks import TaskRepository
 
 settings = load_settings()
-
-
-def get_task_repository() -> Generator[TaskRepository, None, None]:
-    repository = TaskRepository(settings.database.url)
-    try:
-        yield repository
-    finally:
-        repository.close()
-
-
-def get_audit_repository() -> Generator[AuditRepository, None, None]:
-    repository = AuditRepository(settings.database.url)
-    try:
-        yield repository
-    finally:
-        repository.close()
 
 
 def get_orchestrator(
@@ -83,13 +69,13 @@ class SafetyCheckResponse(BaseModel):
 @router.get('/tasks', response_model=list[TaskResponse])
 def list_brain_tasks(
     limit: int = Query(default=50, ge=1, le=100),
-    task_repository: TaskRepository = Depends(get_task_repository),
+    task_repository: TaskRepository = Depends(get_repository),
 ) -> list[TaskResponse]:
     tasks = task_repository.list_recent(limit=limit)
     return [TaskResponse.model_validate(task) for task in tasks]
 
 @router.post('/tasks', response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
-def create_brain_task(payload: TaskCreateRequest, task_repository: TaskRepository = Depends(get_task_repository), orchestrator: Orchestrator = Depends(get_orchestrator)) -> TaskResponse:
+def create_brain_task(payload: TaskCreateRequest, task_repository: TaskRepository = Depends(get_repository), orchestrator: Orchestrator = Depends(get_orchestrator)) -> TaskResponse:
     try:
         task = task_repository.create(title=payload.title, description=payload.description, priority=payload.priority, resource_class=payload.resource_class, risk_level=payload.risk_level, assigned_agent=payload.assigned_agent)
     except ValueError as exc:
@@ -98,7 +84,7 @@ def create_brain_task(payload: TaskCreateRequest, task_repository: TaskRepositor
     return TaskResponse.model_validate(task)
 
 @router.post('/plan', response_model=PlanResponse)
-def create_plan(task_repository: TaskRepository = Depends(get_task_repository), orchestrator: Orchestrator = Depends(get_orchestrator)) -> PlanResponse:
+def create_plan(task_repository: TaskRepository = Depends(get_repository), orchestrator: Orchestrator = Depends(get_orchestrator)) -> PlanResponse:
     """
     Synchronizuje zadania z bazy, a następnie generuje plan.
     """
@@ -115,7 +101,7 @@ def create_plan(task_repository: TaskRepository = Depends(get_task_repository), 
     return PlanResponse(steps=[result])
 
 @router.get('/report')
-def get_report(task_repository: TaskRepository = Depends(get_task_repository), orchestrator: Orchestrator = Depends(get_orchestrator)) -> dict[str, Any]:
+def get_report(task_repository: TaskRepository = Depends(get_repository), orchestrator: Orchestrator = Depends(get_orchestrator)) -> dict[str, Any]:
     """
     Synchronizuje zadania z bazy i zwraca raport bieżącego stanu.
     """
