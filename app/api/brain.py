@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -35,7 +36,10 @@ class TaskCreateRequest(BaseModel):
 
 
 class TaskResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        use_enum_values=True,
+    )
 
     id: int
     title: str
@@ -47,6 +51,20 @@ class TaskResponse(BaseModel):
     risk_level: str
     assigned_agent: str | None
     progress: int
+
+
+class PlanResponse(BaseModel):
+    steps: list[Any]
+
+
+class SafetyCheckRequest(BaseModel):
+    action_type: str = Field(..., min_length=1, max_length=100)
+    requires_approval: bool = False
+
+
+class SafetyCheckResponse(BaseModel):
+    allowed: bool
+    reason: str
 
 
 @router.get("/tasks", response_model=list[TaskResponse])
@@ -81,3 +99,76 @@ def create_brain_task(payload: TaskCreateRequest) -> TaskResponse:
     orchestrator.register_persistent_task(task)
 
     return TaskResponse.model_validate(task)
+
+
+@router.post("/plan", response_model=PlanResponse)
+def create_plan() -> PlanResponse:
+    """
+    Synchronizuje zadania z bazy, a następnie generuje plan.
+    """
+    orchestrator.load_tasks(task_repository)
+    result = orchestrator.plan()
+
+    if result is None:
+        return PlanResponse(steps=[])
+
+    if isinstance(result, list):
+        return PlanResponse(steps=result)
+
+    if isinstance(result, tuple):
+        return PlanResponse(steps=list(result))
+
+    if hasattr(result, "steps"):
+        return PlanResponse(steps=list(result.steps))
+
+    return PlanResponse(steps=[result])
+
+
+@router.get("/report")
+def get_report() -> dict[str, Any]:
+    """
+    Synchronizuje zadania z bazy i zwraca raport bieżącego stanu.
+    """
+    orchestrator.load_tasks(task_repository)
+    report = orchestrator.report()
+
+    if isinstance(report, dict):
+        return report
+
+    if hasattr(report, "model_dump"):
+        return report.model_dump()
+
+    if hasattr(report, "__dict__"):
+        return dict(report.__dict__)
+
+    return {"report": report}
+
+
+@router.post(
+    "/safety-check",
+    response_model=SafetyCheckResponse,
+)
+def safety_check(
+    payload: SafetyCheckRequest,
+) -> SafetyCheckResponse:
+    """
+    Wykonuje kontrolę bezpieczeństwa dla żądanej akcji.
+    """
+    result = orchestrator.run_safety_check(
+        action_type=payload.action_type,
+        requires_approval=payload.requires_approval,
+    )
+
+    if hasattr(result, "allowed") and hasattr(result, "reason"):
+        return SafetyCheckResponse(
+            allowed=bool(result.allowed),
+            reason=str(result.reason),
+        )
+
+    if isinstance(result, dict):
+        return SafetyCheckResponse.model_validate(result)
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Safety check returned an invalid result",
+    )
