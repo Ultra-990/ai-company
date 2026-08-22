@@ -38,7 +38,7 @@ class TaskRepository:
 
     def __init__(
         self,
-        database_url: str = "sqlite:///./app.db",
+        database_url: str,
         *,
         initialize: bool = True,
     ) -> None:
