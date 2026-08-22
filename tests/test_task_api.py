@@ -1,3 +1,4 @@
+from app.services.tasks import TaskRepository
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -110,3 +111,21 @@ def test_get_missing_task_returns_404() -> None:
 
     assert response.status_code == 404
     assert "Nie znaleziono zadania" in response.json()["detail"]
+
+def test_progress_summary_counts_more_than_100_tasks(tmp_path):
+    database_url = f"sqlite:///{tmp_path / 'tasks.db'}"
+    repository = TaskRepository(database_url)
+
+    try:
+        for index in range(150):
+            repository.create(
+                title=f"Task {index}",
+                description="Aggregation test",
+            )
+
+        summary = repository.progress_summary()
+
+        assert summary["task_count"] == 150
+        assert summary["counts"]["pending"] == 150
+    finally:
+        repository.close()
