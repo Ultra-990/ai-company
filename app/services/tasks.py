@@ -19,7 +19,6 @@ from app.models.task import (
     utc_now,
 )
 from app.services.documentation import generate_status_document
-from app.services.audit import AuditRepository
 
 
 from app.db.migrations import migrate_task_queue_schema
