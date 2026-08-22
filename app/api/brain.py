@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Query
 
 from app.brain.orchestrator import Orchestrator
 from app.core.config import load_settings
@@ -81,7 +81,10 @@ class SafetyCheckResponse(BaseModel):
     reason: str
 
 @router.get('/tasks', response_model=list[TaskResponse])
-def list_brain_tasks(limit: int, task_repository: TaskRepository = Depends(get_task_repository)=Query(default=50, ge=1, le=100)) -> list[TaskResponse]:
+def list_brain_tasks(
+    limit: int = Query(default=50, ge=1, le=100),
+    task_repository: TaskRepository = Depends(get_task_repository),
+) -> list[TaskResponse]:
     tasks = task_repository.list_recent(limit=limit)
     return [TaskResponse.model_validate(task) for task in tasks]
 
