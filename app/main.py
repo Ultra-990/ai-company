@@ -12,6 +12,8 @@ from app.api.tasks import router as tasks_router
 from app.api.progress import router as progress_router
 from app.api.owner import router as owner_router
 from app.api.dashboard import router as dashboard_router
+from app.api.brain import router as brain_router
+
 
 
 
@@ -253,3 +255,5 @@ app.include_router(tasks_router)
 app.include_router(progress_router)
 app.include_router(owner_router)
 app.include_router(dashboard_router)
+
+app.include_router(brain_router)
