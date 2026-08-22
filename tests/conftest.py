@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api.brain import get_orchestrator
 from app.api.system import get_audit_repository
 from app.api.tasks import get_repository
 from app.main import app
