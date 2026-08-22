@@ -347,32 +347,5 @@ class TaskRepository:
             "rejected": int(rejected),
         }
 
-    def progress_summary(self) -> dict[str, int | float | dict[str, int]]:
-        """Zwraca agregaty postępu dla wszystkich zadań."""
-        with self._session_factory() as session:
-            task_count = session.scalar(
-                select(func.count()).select_from(Task)
-            ) or 0
-
-            average_progress = session.scalar(
-                select(func.avg(Task.progress))
-            ) or 0
-
-            counts = {}
-            for status in TaskStatus:
-                counts[status.value] = int(
-                    session.scalar(
-                        select(func.count())
-                        .select_from(Task)
-                        .where(Task.status == status)
-                    ) or 0
-                )
-
-        return {
-            "task_count": int(task_count),
-            "total_progress": round(float(average_progress)),
-            "counts": counts,
-        }
-
     def close(self) -> None:
         self._engine.dispose()
