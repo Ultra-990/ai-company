@@ -10,7 +10,6 @@ from app.brain.orchestrator import Orchestrator
 from app.models.task import TaskStatus
 from app.services.executor import ExecutionResult, TaskExecutor
 from app.services.tasks import TaskRepository
-from app.services.worker import TaskWorker
 
 
 router = APIRouter(prefix="/api/tasks", tags=["task-execution"])
@@ -24,12 +23,11 @@ class ExecutionResponse(BaseModel):
 
 
 class NotConfiguredExecutor:
-    """Zastępczy wykonawca — wymaga podmiany na właściwą implementację."""
+    """Executor używany, gdy nie skonfigurowano właściwej implementacji."""
 
     def execute(self, task) -> ExecutionResult:
-        return ExecutionResult(
-            success=True,
-            reason=f"Zadanie {task.id} wykonane przez wykonawcę domyślnego",
+        raise RuntimeError(
+            f"Brak skonfigurowanego wykonawcy dla zadania {task.id}"
         )
 
 
