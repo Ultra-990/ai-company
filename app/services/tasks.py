@@ -358,6 +358,80 @@ class TaskRepository:
         self._refresh_documentation()
         return task
 
+    def _finish_execution(
+        self,
+        task_id: int,
+        new_status: TaskStatus,
+        *,
+        reason: str,
+    ) -> Task:
+        """Kończy wykonanie zadania i zapisuje zmianę w audycie."""
+
+        normalized_reason = reason.strip()
+
+        if not normalized_reason:
+            raise ValueError("Powód operacji nie może być pusty")
+
+        with self._session_factory() as session:
+            task = session.get(Task, task_id)
+
+            if task is None:
+                raise TaskNotFoundError(
+                    f"Nie znaleziono zadania o identyfikatorze {task_id}"
+                )
+
+            if task.status is not TaskStatus.IN_PROGRESS:
+                raise TaskTransitionError(
+                    "Zadanie musi mieć status IN_PROGRESS, "
+                    f"aby wykonać operację {new_status.value}"
+                )
+
+            task.transition_to(new_status)
+
+            audit_event = AuditEvent(
+                event_type="task_execution",
+                operation=new_status.value,
+                decision=new_status.value,
+                allowed=True,
+                reason=normalized_reason,
+            )
+
+            session.add(audit_event)
+            session.commit()
+            session.refresh(task)
+            session.expunge(task)
+
+        self._refresh_documentation()
+        return task
+
+    def complete(
+        self,
+        task_id: int,
+        *,
+        reason: str = "Zadanie wykonane",
+    ) -> Task:
+        """Oznacza wykonywane zadanie jako ukończone."""
+
+        return self._finish_execution(
+            task_id,
+            TaskStatus.COMPLETED,
+            reason=reason,
+        )
+
+    def block(
+        self,
+        task_id: int,
+        *,
+        reason: str,
+    ) -> Task:
+        """Blokuje wykonywane zadanie i zapisuje powód w audycie."""
+
+        return self._finish_execution(
+            task_id,
+            TaskStatus.BLOCKED,
+            reason=reason,
+        )
+
     def transition(
         self,
         task_id: int,

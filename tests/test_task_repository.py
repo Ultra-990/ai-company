@@ -432,3 +432,126 @@ def test_claim_rejects_missing_task(
 ) -> None:
     with pytest.raises(TaskNotFoundError):
         task_repository.claim(999999)
+
+
+def test_complete_marks_in_progress_task_as_completed(
+    task_repository: TaskRepository,
+) -> None:
+    created = task_repository.create(title="Zadanie do ukończenia")
+    task_repository.approve(created.id)
+    task_repository.claim(created.id)
+
+    completed = task_repository.complete(
+        created.id,
+        reason="Wykonanie zakończone poprawnie",
+    )
+    loaded = task_repository.get_required(created.id)
+
+    assert completed.status is TaskStatus.COMPLETED
+    assert completed.progress == 100
+    assert completed.completed_at is not None
+    assert loaded.status is TaskStatus.COMPLETED
+    assert loaded.progress == 100
+    assert loaded.completed_at is not None
+
+
+def test_block_marks_in_progress_task_as_blocked(
+    task_repository: TaskRepository,
+) -> None:
+    created = task_repository.create(title="Zadanie do zablokowania")
+    task_repository.approve(created.id)
+    task_repository.claim(created.id)
+
+    blocked = task_repository.block(
+        created.id,
+        reason="Brak wymaganych danych wejściowych",
+    )
+    loaded = task_repository.get_required(created.id)
+
+    assert blocked.status is TaskStatus.BLOCKED
+    assert blocked.completed_at is None
+    assert loaded.status is TaskStatus.BLOCKED
+    assert loaded.completed_at is None
+
+
+@pytest.mark.parametrize("operation", ["complete", "block"])
+def test_execution_operation_requires_in_progress_task(
+    task_repository: TaskRepository,
+    operation: str,
+) -> None:
+    created = task_repository.create(title="Nieuruchomione zadanie")
+
+    with pytest.raises(TaskTransitionError, match="IN_PROGRESS"):
+        if operation == "complete":
+            task_repository.complete(created.id)
+        else:
+            task_repository.block(
+                created.id,
+                reason="Zadanie nie zostało uruchomione",
+            )
+
+
+def test_block_requires_non_empty_reason(
+    task_repository: TaskRepository,
+) -> None:
+    created = task_repository.create(title="Zadanie bez powodu")
+    task_repository.approve(created.id)
+    task_repository.claim(created.id)
+
+    with pytest.raises(ValueError, match="Powód"):
+        task_repository.block(created.id, reason="   ")
+
+    loaded = task_repository.get_required(created.id)
+    assert loaded.status is TaskStatus.IN_PROGRESS
+
+
+def test_complete_and_block_record_execution_audit_events(
+    task_repository: TaskRepository,
+    tmp_path: Path,
+) -> None:
+    completed_task = task_repository.create(title="Audyt complete")
+    blocked_task = task_repository.create(title="Audyt block")
+
+    task_repository.approve(completed_task.id)
+    task_repository.approve(blocked_task.id)
+    task_repository.claim(completed_task.id)
+    task_repository.claim(blocked_task.id)
+
+    task_repository.complete(
+        completed_task.id,
+        reason="Zakończono",
+    )
+    task_repository.block(
+        blocked_task.id,
+        reason="Zablokowano przez brak danych",
+    )
+
+    audit_repository = AuditRepository(
+        f"sqlite:///{tmp_path / 'tasks_test.sqlite3'}",
+    )
+    try:
+        events = audit_repository.list_recent(limit=20)
+    finally:
+        audit_repository.close()
+
+    execution_events = [
+        event
+        for event in events
+        if event.event_type == "task_execution"
+        and event.operation in {"completed", "blocked"}
+    ]
+
+    assert any(
+        event.operation == "completed"
+        and event.decision == "completed"
+        and event.reason == "Zakończono"
+        and event.allowed is True
+        for event in execution_events
+    )
+    assert any(
+        event.operation == "blocked"
+        and event.decision == "blocked"
+        and event.reason == "Zablokowano przez brak danych"
+        and event.allowed is True
+        for event in execution_events
+    )
