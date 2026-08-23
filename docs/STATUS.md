@@ -1,6 +1,6 @@
 # Aktualny status projektu
 
-Ostatnia aktualizacja: **2026-08-23 09:00:39 UTC**
+Ostatnia aktualizacja: **2026-08-23 09:10:17 UTC**
 
 ## Podsumowanie
 
@@ -11,7 +11,7 @@ Ostatnia aktualizacja: **2026-08-23 09:00:39 UTC**
 
 ## Zadania
 
-- **Niezaakceptowane** — status: `pending`, postęp: **0%**
+- **Zadanie dla orkiestratora** — status: `in_progress`, postęp: **0%**
 
 ## Informacja
 
