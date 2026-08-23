@@ -298,3 +298,137 @@ def test_approve_and_reject_record_audit_events(
 
     assert "approve" in decisions
     assert "reject" in decisions
+
+
+def test_list_ready_returns_only_approved_pending_tasks(
+    task_repository: TaskRepository,
+) -> None:
+    ready_first = task_repository.create(title="Gotowe pierwsze")
+    ready_second = task_repository.create(title="Gotowe drugie")
+    pending_approval = task_repository.create(
+        title="Czeka na akceptację",
+    )
+    started = task_repository.create(title="Już rozpoczęte")
+
+    task_repository.approve(ready_first.id)
+    task_repository.approve(ready_second.id)
+    task_repository.approve(started.id)
+    task_repository.transition(started.id, TaskStatus.IN_PROGRESS)
+
+    ready_tasks = task_repository.list_ready()
+
+    assert [task.id for task in ready_tasks] == [
+        ready_first.id,
+        ready_second.id,
+    ]
+    assert pending_approval.id not in {task.id for task in ready_tasks}
+    assert started.id not in {task.id for task in ready_tasks}
+
+
+def test_list_ready_respects_limit(
+    task_repository: TaskRepository,
+) -> None:
+    created_tasks = [
+        task_repository.create(title=f"Gotowe {index}")
+        for index in range(3)
+    ]
+
+    for task in created_tasks:
+        task_repository.approve(task.id)
+
+    ready_tasks = task_repository.list_ready(limit=2)
+
+    assert [task.id for task in ready_tasks] == [
+        created_tasks[0].id,
+        created_tasks[1].id,
+    ]
+
+
+def test_list_ready_rejects_invalid_limit(
+    task_repository: TaskRepository,
+) -> None:
+    with pytest.raises(ValueError, match="limit"):
+        task_repository.list_ready(limit=0)
+
+    with pytest.raises(ValueError, match="limit"):
+        task_repository.list_ready(limit=101)
+
+
+def test_claim_moves_approved_task_to_in_progress(
+    task_repository: TaskRepository,
+) -> None:
+    created = task_repository.create(title="Zadanie do wykonania")
+    task_repository.approve(created.id)
+
+    claimed = task_repository.claim(
+        created.id,
+        worker_id="worker-1",
+    )
+    loaded = task_repository.get_required(created.id)
+
+    assert claimed.status is TaskStatus.IN_PROGRESS
+    assert claimed.started_at is not None
+    assert loaded.status is TaskStatus.IN_PROGRESS
+    assert loaded.started_at is not None
+
+
+def test_claim_rejects_unapproved_task(
+    task_repository: TaskRepository,
+) -> None:
+    created = task_repository.create(title="Niezaakceptowane zadanie")
+
+    with pytest.raises(TaskTransitionError, match="nie jest gotowe"):
+        task_repository.claim(created.id)
+
+    loaded = task_repository.get_required(created.id)
+    assert loaded.status is TaskStatus.PENDING
+    assert loaded.started_at is None
+
+
+def test_claim_cannot_be_repeated(
+    task_repository: TaskRepository,
+) -> None:
+    created = task_repository.create(title="Jednorazowe pobranie")
+    task_repository.approve(created.id)
+
+    task_repository.claim(created.id)
+
+    with pytest.raises(TaskTransitionError, match="zostało już przejęte"):
+        task_repository.claim(created.id)
+
+
+def test_claim_records_audit_event(
+    task_repository: TaskRepository,
+    tmp_path: Path,
+) -> None:
+    created = task_repository.create(title="Audytowane pobranie")
+    task_repository.approve(created.id)
+
+    task_repository.claim(created.id, worker_id="worker-7")
+
+    audit_repository = AuditRepository(
+        f"sqlite:///{tmp_path / 'tasks_test.sqlite3'}",
+    )
+    try:
+        events = audit_repository.list_recent(limit=10)
+    finally:
+        audit_repository.close()
+
+    claim_events = [
+        event
+        for event in events
+        if event.event_type == "task_execution"
+        and event.operation == "claim"
+    ]
+
+    assert len(claim_events) == 1
+    assert claim_events[0].decision == "claim"
+    assert claim_events[0].allowed is True
+    assert "worker=worker-7" in claim_events[0].reason
+
+
+def test_claim_rejects_missing_task(
+    task_repository: TaskRepository,
+) -> None:
+    with pytest.raises(TaskNotFoundError):
+        task_repository.claim(999999)

@@ -1,18 +1,17 @@
 # Aktualny status projektu
 
-Ostatnia aktualizacja: **2026-08-22 04:05:42 UTC**
+Ostatnia aktualizacja: **2026-08-23 08:50:55 UTC**
 
 ## Podsumowanie
 
-- Łączna liczba zadań: **2**
+- Łączna liczba zadań: **1**
 - Zadania ukończone: **0**
-- Zadania aktywne: **2**
+- Zadania aktywne: **1**
 - Średni postęp: **0%**
 
 ## Zadania
 
-- **Zadanie do odrzucenia** — status: `pending`, postęp: **0%**
-- **Zadanie do akceptacji** — status: `pending`, postęp: **0%**
+- **Audytowane pobranie** — status: `in_progress`, postęp: **0%**
 
 ## Informacja
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Engine, Select, func, select
+from sqlalchemy import Engine, Select, func, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import (
@@ -16,6 +16,7 @@ from app.models.task import (
     Task,
     TaskPriority,
     TaskStatus,
+    TaskTransitionError,
     utc_now,
 )
 from app.services.documentation import generate_status_document
@@ -188,6 +189,37 @@ class TaskRepository:
 
         return tasks
 
+    def list_ready(
+        self,
+        *,
+        limit: int = 50,
+    ) -> list[Task]:
+        """Zwraca zatwierdzone zadania oczekujące na wykonanie."""
+        if not 1 <= limit <= 100:
+            raise ValueError("limit musi mieścić się w zakresie 1–100")
+
+        statement = (
+            select(Task)
+            .where(
+                Task.status == TaskStatus.PENDING,
+                Task.approval_status == ApprovalStatus.APPROVED,
+                Task.queued_at.is_not(None),
+            )
+            .order_by(
+                Task.queued_at.asc(),
+                Task.id.asc(),
+            )
+            .limit(limit)
+        )
+
+        with self._session_factory() as session:
+            tasks = list(session.scalars(statement).all())
+
+            for task in tasks:
+                session.expunge(task)
+
+        return tasks
+
     def _set_approval_status(
         self,
         task_id: int,
@@ -248,6 +280,83 @@ class TaskRepository:
             decision="reject",
             reason=reason,
         )
+
+    def claim(
+        self,
+        task_id: int,
+        *,
+        worker_id: str | None = None,
+        reason: str = "Zadanie pobrane do wykonania",
+    ) -> Task:
+        """Atomowo pobiera zatwierdzone zadanie z kolejki do wykonania."""
+
+        normalized_worker = (
+            worker_id.strip()
+            if worker_id is not None
+            else None
+        )
+
+        if normalized_worker == "":
+            normalized_worker = None
+
+        if normalized_worker is not None and len(normalized_worker) > 100:
+            raise ValueError(
+                "Identyfikator workera nie może przekraczać 100 znaków"
+            )
+
+        audit_reason = reason
+        if normalized_worker is not None:
+            audit_reason = f"{reason}; worker={normalized_worker}"
+
+        now = utc_now()
+
+        with self._session_factory() as session:
+            task_exists = session.get(Task, task_id)
+
+            if task_exists is None:
+                raise TaskNotFoundError(
+                    f"Nie znaleziono zadania o identyfikatorze {task_id}"
+                )
+
+            result = session.execute(
+                update(Task)
+                .where(
+                    Task.id == task_id,
+                    Task.status == TaskStatus.PENDING,
+                    Task.approval_status == ApprovalStatus.APPROVED,
+                    Task.queued_at.is_not(None),
+                )
+                .values(
+                    status=TaskStatus.IN_PROGRESS,
+                    started_at=now,
+                    updated_at=now,
+                )
+            )
+
+            if result.rowcount != 1:
+                session.rollback()
+                raise TaskTransitionError(
+                    "Zadanie nie jest gotowe do wykonania "
+                    "albo zostało już przejęte"
+                )
+
+            audit_event = AuditEvent(
+                event_type="task_execution",
+                operation="claim",
+                decision="claim",
+                allowed=True,
+                reason=audit_reason,
+            )
+            session.add(audit_event)
+
+            session.commit()
+
+            task = session.get(Task, task_id)
+            assert task is not None
+            session.expunge(task)
+
+        self._refresh_documentation()
+        return task
 
     def transition(
         self,
