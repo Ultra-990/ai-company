@@ -14,6 +14,7 @@ from app.brain.reporter import Reporter
 from app.brain.safety_gate import SafetyGate
 from app.models.task import Task as PersistentTask
 from app.services.audit import AuditRepository
+from app.services.worker import TaskWorker
 
 
 class Orchestrator:
@@ -122,6 +123,21 @@ class Orchestrator:
             self.register_persistent_task(task)
             for task in reversed(persistent_tasks)
         ]
+
+    def claim_next_task(
+        self,
+        repository: TaskRepository,
+        *,
+        worker_id: str,
+    ) -> PersistentTask | None:
+        """Atomowo pobiera następne zadanie i ładuje je do kontekstu."""
+        worker = TaskWorker(repository, worker_id=worker_id)
+        task = worker.claim_next()
+
+        if task is not None:
+            self.register_persistent_task(task)
+
+        return task
 
     def plan(self) -> List[Dict[str, Any]]:
         plan = self.planner.build_plan(self.context.tasks)
