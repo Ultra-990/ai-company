@@ -5,6 +5,8 @@ from fastapi.testclient import TestClient
 from app.api.execution import get_task_executor, get_orchestrator
 from app.main import app
 from app.services.executor import ExecutionResult
+from app.models.task import TaskStatus
+
 
 
 @dataclass
@@ -97,3 +99,20 @@ def test_execution_endpoint_is_registered():
 
     assert "/api/tasks/execute-next" in schema["paths"]
     assert "post" in schema["paths"]["/api/tasks/execute-next"]
+
+def test_execute_next_returns_500_when_executor_is_not_configured(
+    task_repository,
+    approved_task,
+):
+    client = TestClient(app, raise_server_exceptions=False)
+
+    response = client.post(
+        "/api/tasks/execute-next",
+        params={"worker_id": "api-worker"},
+    )
+
+    assert response.status_code == 500
+
+    refreshed_task = task_repository.get(approved_task.id)
+    assert refreshed_task.status == TaskStatus.BLOCKED
+
