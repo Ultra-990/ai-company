@@ -14,6 +14,8 @@ from app.brain.reporter import Reporter
 from app.brain.safety_gate import SafetyGate
 from app.models.task import Task as PersistentTask
 from app.services.audit import AuditRepository
+from app.services.executor import ExecutionResult, TaskExecutor
+from app.services.tasks import TaskRepository
 from app.services.worker import TaskWorker
 
 
@@ -138,6 +140,37 @@ class Orchestrator:
             self.register_persistent_task(task)
 
         return task
+
+    def execute_next_task(
+        self,
+        repository: TaskRepository,
+        executor: TaskExecutor,
+        *,
+        worker_id: str,
+    ) -> ExecutionResult | None:
+        """Pobiera i wykonuje następne zatwierdzone zadanie z kolejki."""
+        task = self.claim_next_task(
+            repository,
+            worker_id=worker_id,
+        )
+
+        if task is None:
+            return None
+
+        result = executor.execute(task)
+
+        if result.success:
+            repository.complete(
+                task.id,
+                reason=result.reason,
+            )
+        else:
+            repository.block(
+                task.id,
+                reason=result.reason,
+            )
+
+        return result
 
     def plan(self) -> List[Dict[str, Any]]:
         plan = self.planner.build_plan(self.context.tasks)
