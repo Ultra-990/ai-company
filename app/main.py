@@ -13,6 +13,7 @@ from app.api.progress import router as progress_router
 from app.api.owner import router as owner_router
 from app.api.dashboard import router as dashboard_router
 from app.api.brain import router as brain_router
+from app.api.execution import router as execution_router
 
 
 
@@ -35,6 +36,15 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+app.include_router(system_router)
+app.include_router(execution_router)
+app.include_router(tasks_router)
+app.include_router(progress_router)
+app.include_router(owner_router)
+app.include_router(dashboard_router)
+app.include_router(brain_router)
+
 
 @app.get("/health")
 def health_check() -> dict:
@@ -250,10 +260,4 @@ def dashboard() -> str:
     </html>
     """
 
-app.include_router(system_router)
-app.include_router(tasks_router)
-app.include_router(progress_router)
-app.include_router(owner_router)
-app.include_router(dashboard_router)
 
-app.include_router(brain_router)
