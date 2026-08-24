@@ -124,3 +124,44 @@ def test_default_task_executor_is_fail_safe() -> None:
 
     with pytest.raises(RuntimeError, match="Brak skonfigurowanego wykonawcy"):
         executor.execute(type("TaskStub", (), {"id": 999})())
+
+
+def test_enabled_mock_provider_returns_production_executor(monkeypatch):
+    from app.api import execution
+    from app.core.config import load_settings
+    from app.services.production_executor import ProductionTaskExecutor
+
+    settings = load_settings()
+    enabled_agents = settings.agents.__class__(
+        enabled=True,
+        default_autonomy_level=settings.agents.default_autonomy_level,
+        maximum_autonomy_level=settings.agents.maximum_autonomy_level,
+        allow_agent_creation=settings.agents.allow_agent_creation,
+        require_owner_approval=settings.agents.require_owner_approval,
+        maximum_task_depth=settings.agents.maximum_task_depth,
+        provider="mock",
+        model=settings.agents.model,
+        base_url=settings.agents.base_url,
+        timeout_seconds=settings.agents.timeout_seconds,
+    )
+
+    enabled_settings = settings.__class__(
+        system=settings.system,
+        server=settings.server,
+        agents=enabled_agents,
+        safety=settings.safety,
+        finance=settings.finance,
+        database=settings.database,
+        memory=settings.memory,
+        logging=settings.logging,
+    )
+
+    monkeypatch.setattr(
+        execution,
+        "load_settings",
+        lambda: enabled_settings,
+    )
+
+    executor = execution.get_task_executor()
+
+    assert isinstance(executor, ProductionTaskExecutor)

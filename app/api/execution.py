@@ -9,7 +9,10 @@ from app.api.tasks import get_repository
 from app.brain.orchestrator import Orchestrator
 from app.models.task import TaskStatus
 from app.services.executor import ExecutionResult, TaskExecutor
+from app.services.agent_factory import get_agent_client
+from app.services.production_executor import ProductionTaskExecutor
 from app.services.tasks import TaskRepository
+from app.core.config import load_settings
 
 
 router = APIRouter(prefix="/api/tasks", tags=["task-execution"])
@@ -32,7 +35,20 @@ class NotConfiguredExecutor:
 
 
 def get_task_executor() -> TaskExecutor:
-    return NotConfiguredExecutor()
+    settings = load_settings()
+
+    if not settings.agents.enabled:
+        return NotConfiguredExecutor()
+
+    client = get_agent_client(settings)
+
+    def execute_with_agent(task) -> str:
+        return client.run(
+            agent="task-executor",
+            prompt=str(task),
+        )
+
+    return ProductionTaskExecutor(execute_with_agent)
 
 
 def get_orchestrator() -> Orchestrator:
