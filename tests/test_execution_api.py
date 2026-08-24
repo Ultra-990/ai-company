@@ -1,3 +1,4 @@
+import pytest
 from dataclasses import dataclass
 
 from fastapi.testclient import TestClient
@@ -116,3 +117,10 @@ def test_execute_next_returns_500_when_executor_is_not_configured(
     refreshed_task = task_repository.get(approved_task.id)
     assert refreshed_task.status == TaskStatus.BLOCKED
 
+
+
+def test_default_task_executor_is_fail_safe() -> None:
+    executor = get_task_executor()
+
+    with pytest.raises(RuntimeError, match="Brak skonfigurowanego wykonawcy"):
+        executor.execute(type("TaskStub", (), {"id": 999})())
