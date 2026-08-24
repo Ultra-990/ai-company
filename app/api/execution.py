@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.services.agent_task_operation import AgentTaskOperation
 
 from typing import Annotated
 
@@ -41,14 +42,9 @@ def get_task_executor() -> TaskExecutor:
         return NotConfiguredExecutor()
 
     client = get_agent_client(settings)
+    operation = AgentTaskOperation(client)
 
-    def execute_with_agent(task) -> str:
-        return client.run(
-            agent="task-executor",
-            prompt=str(task),
-        )
-
-    return ProductionTaskExecutor(execute_with_agent)
+    return ProductionTaskExecutor(operation)
 
 
 def get_orchestrator() -> Orchestrator:
