@@ -164,4 +164,67 @@ def test_enabled_mock_provider_returns_production_executor(monkeypatch):
 
     executor = execution.get_task_executor()
 
+
     assert isinstance(executor, ProductionTaskExecutor)
+
+
+def test_enabled_executor_uses_assigned_agent_and_task_prompt(monkeypatch):
+    from app.api import execution
+    from app.core.config import load_settings
+    from app.services.mock_agent_client import MockAgentClient
+
+    settings = load_settings()
+    enabled_agents = settings.agents.__class__(
+        enabled=True,
+        default_autonomy_level=settings.agents.default_autonomy_level,
+        maximum_autonomy_level=settings.agents.maximum_autonomy_level,
+        allow_agent_creation=settings.agents.allow_agent_creation,
+        require_owner_approval=settings.agents.require_owner_approval,
+        maximum_task_depth=settings.agents.maximum_task_depth,
+        provider="mock",
+        model=settings.agents.model,
+        base_url=settings.agents.base_url,
+        timeout_seconds=settings.agents.timeout_seconds,
+    )
+
+    enabled_settings = settings.__class__(
+        system=settings.system,
+        server=settings.server,
+        agents=enabled_agents,
+        safety=settings.safety,
+        finance=settings.finance,
+        database=settings.database,
+        memory=settings.memory,
+        logging=settings.logging,
+    )
+
+    client = MockAgentClient()
+    monkeypatch.setattr(execution, "load_settings", lambda: enabled_settings)
+    monkeypatch.setattr(
+        execution,
+        "get_agent_client",
+        lambda settings: client,
+    )
+
+    executor = execution.get_task_executor()
+
+    task = type(
+        "TaskStub",
+        (),
+        {
+            "id": 42,
+            "title": "Zadanie testowe",
+            "description": "Opis zadania",
+            "assigned_agent": "agent-42",
+        },
+    )()
+
+    result = executor.execute(task)
+
+    assert result.success is True
+    assert client.calls == [
+        {
+            "agent": "agent-42",
+            "prompt": "Opis zadania",
+        }
+    ]
