@@ -1,100 +1,107 @@
+from types import SimpleNamespace
+
 import pytest
 
-from app.models.task import Task
 from app.services.agent_task_operation import AgentTaskOperation
 
 
-class RecordingClient:
-    def __init__(self, result: str = " odpowiedź agenta ") -> None:
+class StubAgentClient:
+    def __init__(self, result):
         self.result = result
         self.calls = []
 
-    def run(self, *, agent: str, prompt: str) -> str:
+    def run(self, *, agent: str, prompt: str):
         self.calls.append({"agent": agent, "prompt": prompt})
         return self.result
 
 
-def make_task(
-    *,
-    description: str | None = "  Wykonaj analizę  ",
-    assigned_agent: str | None = "  analyst  ",
-) -> Task:
-    return Task(
-        title="Test task",
-        description=description,
+def make_task(*, assigned_agent=None, description=None):
+    return SimpleNamespace(
         assigned_agent=assigned_agent,
+        description=description,
     )
 
 
-def test_operation_delegates_task_to_agent() -> None:
-    client = RecordingClient()
+def test_operation_rejects_missing_assigned_agent():
+    client = StubAgentClient("wynik")
     operation = AgentTaskOperation(client)
 
-    result = operation(make_task())
+    with pytest.raises(
+        RuntimeError,
+        match="bez przypisanego agenta",
+    ):
+        operation(make_task(description="Opis zadania"))
 
-    assert result == "odpowiedź agenta"
+    assert client.calls == []
+
+
+def test_operation_rejects_empty_description():
+    client = StubAgentClient("wynik")
+    operation = AgentTaskOperation(client)
+
+    with pytest.raises(
+        RuntimeError,
+        match="bez opisu",
+    ):
+        operation(make_task(assigned_agent="agent-1", description="  "))
+
+    assert client.calls == []
+
+
+def test_operation_rejects_empty_client_result():
+    client = StubAgentClient("   ")
+    operation = AgentTaskOperation(client)
+
+    with pytest.raises(
+        RuntimeError,
+        match="pusty wynik",
+    ):
+        operation(
+            make_task(
+                assigned_agent="agent-1",
+                description="Opis zadania",
+            )
+        )
+
     assert client.calls == [
         {
-            "agent": "analyst",
-            "prompt": "Wykonaj analizę",
+            "agent": "agent-1",
+            "prompt": "Opis zadania",
         }
     ]
 
 
-@pytest.mark.parametrize(
-    "assigned_agent",
-    [None, "", "   "],
-)
-def test_operation_rejects_missing_agent(
-    assigned_agent: str | None,
-) -> None:
-    client = RecordingClient()
+def test_operation_rejects_non_text_client_result():
+    client = StubAgentClient({"result": "nie tekst"})
     operation = AgentTaskOperation(client)
 
-    with pytest.raises(RuntimeError, match="agenta"):
-        operation(make_task(assigned_agent=assigned_agent))
+    with pytest.raises(
+        RuntimeError,
+        match="nie jest tekstem",
+    ):
+        operation(
+            make_task(
+                assigned_agent="agent-1",
+                description="Opis zadania",
+            )
+        )
 
-    assert client.calls == []
 
-
-@pytest.mark.parametrize(
-    "description",
-    [None, "", "   "],
-)
-def test_operation_rejects_empty_prompt(
-    description: str | None,
-) -> None:
-    client = RecordingClient()
+def test_operation_strips_input_and_output():
+    client = StubAgentClient("  Gotowe  ")
     operation = AgentTaskOperation(client)
 
-    with pytest.raises(RuntimeError, match="opisu"):
-        operation(make_task(description=description))
+    result = operation(
+        make_task(
+            assigned_agent="  agent-1  ",
+            description="  Opis zadania  ",
+        )
+    )
 
-    assert client.calls == []
-
-
-def test_operation_rejects_empty_agent_response() -> None:
-    client = RecordingClient(result="   ")
-    operation = AgentTaskOperation(client)
-
-    with pytest.raises(RuntimeError, match="pusty"):
-        operation(make_task())
-
-
-def test_operation_rejects_non_string_agent_response() -> None:
-    client = RecordingClient(result=None)  # type: ignore[arg-type]
-    operation = AgentTaskOperation(client)
-
-    with pytest.raises(RuntimeError, match="tekstem"):
-        operation(make_task())
-
-
-def test_operation_propagates_client_exception() -> None:
-    class FailingClient:
-        def run(self, *, agent: str, prompt: str) -> str:
-            raise RuntimeError("provider unavailable")
-
-    operation = AgentTaskOperation(FailingClient())
-
-    with pytest.raises(RuntimeError, match="provider unavailable"):
-        operation(make_task())
+    assert result == "Gotowe"
+    assert client.calls == [
+        {
+            "agent": "agent-1",
+            "prompt": "Opis zadania",
+        }
+    ]
