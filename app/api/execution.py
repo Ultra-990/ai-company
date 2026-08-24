@@ -1,7 +1,8 @@
 from __future__ import annotations
-from app.services.agent_task_operation import AgentTaskOperation
 
 from typing import Annotated
+
+from app.services.agent_task_operation import AgentTaskOperation
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
