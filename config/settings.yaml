@@ -16,6 +16,7 @@ agents:
   model: test
   base_url: null
   timeout_seconds: 30
+  max_retries: 2
   default_autonomy_level: "A0"
   maximum_autonomy_level: "A1"
   allow_agent_creation: false

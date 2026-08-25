@@ -111,3 +111,93 @@ def test_http_client_propagates_http_errors(
 
     with pytest.raises(httpx.TimeoutException):
         client.run(agent="analyst", prompt="Zbadaj dane")
+
+
+def test_retries_timeout_then_returns_result(monkeypatch):
+    import httpx
+
+    client = HttpAgentClient(
+        base_url="https://agent.example",
+        model="test-model",
+        timeout_seconds=3,
+        max_retries=2,
+        retry_backoff_seconds=0,
+    )
+
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"result": "success"}
+
+    def fake_post(url, *, json, timeout):
+        calls.append((url, json, timeout))
+        if len(calls) < 3:
+            raise httpx.TimeoutException("temporary timeout")
+        return Response()
+
+    monkeypatch.setattr("httpx.post", fake_post)
+
+    assert client.run(agent="planner", prompt="hello") == "success"
+    assert len(calls) == 3
+
+
+def test_retries_network_error_until_limit(monkeypatch):
+    import httpx
+    import pytest
+
+    client = HttpAgentClient(
+        base_url="https://agent.example",
+        model="test-model",
+        timeout_seconds=3,
+        max_retries=2,
+        retry_backoff_seconds=0,
+    )
+
+    calls = 0
+
+    def fake_post(url, *, json, timeout):
+        nonlocal calls
+        calls += 1
+        raise httpx.NetworkError("connection failed")
+
+    monkeypatch.setattr("httpx.post", fake_post)
+
+    with pytest.raises(httpx.NetworkError):
+        client.run(agent="planner", prompt="hello")
+
+    assert calls == 3
+
+
+def test_http_status_error_is_not_retried(monkeypatch):
+    import httpx
+    import pytest
+
+    client = HttpAgentClient(
+        base_url="https://agent.example",
+        model="test-model",
+        timeout_seconds=3,
+        max_retries=2,
+        retry_backoff_seconds=0,
+    )
+
+    calls = 0
+    response = httpx.Response(
+        503,
+        request=httpx.Request("POST", "https://agent.example/run"),
+    )
+
+    def fake_post(url, *, json, timeout):
+        nonlocal calls
+        calls += 1
+        return response
+
+    monkeypatch.setattr("httpx.post", fake_post)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        client.run(agent="planner", prompt="hello")
+
+    assert calls == 1

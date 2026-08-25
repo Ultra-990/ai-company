@@ -48,6 +48,7 @@ class AgentSettings:
     model: str = "test"
     base_url: str | None = None
     timeout_seconds: float = 30.0
+    max_retries: int = 2
 
 
 @dataclass(frozen=True)
@@ -176,6 +177,11 @@ def _validate(settings: Settings) -> None:
     if settings.agents.timeout_seconds <= 0:
         raise ConfigurationError(
             "Timeout klienta agenta musi być większy od zera."
+        )
+
+    if not 0 <= settings.agents.max_retries <= 10:
+        raise ConfigurationError(
+            "Liczba ponowień klienta agenta musi mieścić się w zakresie 0–10."
         )
 
     if settings.agents.enabled and settings.agents.provider != "mock":

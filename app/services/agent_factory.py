@@ -25,6 +25,7 @@ def get_agent_client(settings: Settings) -> AgentClient:
                 base_url=settings.agents.base_url,
                 model=settings.agents.model,
                 timeout_seconds=settings.agents.timeout_seconds,
+                max_retries=settings.agents.max_retries,
             )
         except ValueError as exc:
             raise ConfigurationError(str(exc)) from exc
