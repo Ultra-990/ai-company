@@ -12,6 +12,10 @@ server:
 
 agents:
   enabled: false
+  provider: mock
+  model: test
+  base_url: null
+  timeout_seconds: 30
   default_autonomy_level: "A0"
   maximum_autonomy_level: "A1"
   allow_agent_creation: false

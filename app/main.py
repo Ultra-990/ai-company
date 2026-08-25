@@ -3,16 +3,23 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
-from app.core.database import Base
+from app.core.config import load_settings
+from app.core.database import Base, create_database_engine
 from app.models.organization import OrganizationUnit
-from app.db.database import engine
 from app.db.migrations import migrate_task_queue_schema
 from app.api.system import router as system_router
 from app.api.tasks import router as tasks_router
 from app.api.progress import router as progress_router
 from app.api.owner import router as owner_router
 from app.api.dashboard import router as dashboard_router
+from app.api.brain import router as brain_router
+from app.api.execution import router as execution_router
 
+
+
+
+settings = load_settings()
+engine = create_database_engine(settings.database.url)
 
 
 @asynccontextmanager
@@ -29,6 +36,15 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+app.include_router(system_router)
+app.include_router(execution_router)
+app.include_router(tasks_router)
+app.include_router(progress_router)
+app.include_router(owner_router)
+app.include_router(dashboard_router)
+app.include_router(brain_router)
+
 
 @app.get("/health")
 def health_check() -> dict:
@@ -244,8 +260,4 @@ def dashboard() -> str:
     </html>
     """
 
-app.include_router(system_router)
-app.include_router(tasks_router)
-app.include_router(progress_router)
-app.include_router(owner_router)
-app.include_router(dashboard_router)
+

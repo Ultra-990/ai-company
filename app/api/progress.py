@@ -24,6 +24,7 @@ def get_progress() -> dict:
     }
 
     try:
+        summary = repository.progress_summary()
         tasks = repository.list_recent(limit=100)
 
         serialized_tasks = [
@@ -41,24 +42,12 @@ def get_progress() -> dict:
             for task in tasks
         ]
 
-        total_progress = round(
-            sum(task["progress"] for task in serialized_tasks)
-            / len(serialized_tasks)
-        ) if serialized_tasks else 0
-
-        counts = {
-            status: sum(
-                task["status"] == status
-                for task in serialized_tasks
-            )
-            for status in status_labels
-        }
-
         return {
-            "total_progress": total_progress,
-            "task_count": len(serialized_tasks),
-            "counts": counts,
+            "total_progress": summary["total_progress"],
+            "task_count": summary["task_count"],
+            "counts": summary["counts"],
             "tasks": serialized_tasks,
+            "tasks_source": "latest_100",
             "project_progress": load_project_progress(),
         }
     finally:

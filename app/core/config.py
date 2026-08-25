@@ -44,6 +44,10 @@ class AgentSettings:
     allow_agent_creation: bool
     require_owner_approval: bool
     maximum_task_depth: int
+    provider: str = "mock"
+    model: str = "test"
+    base_url: str | None = None
+    timeout_seconds: float = 30.0
 
 
 @dataclass(frozen=True)
@@ -157,6 +161,26 @@ def _validate(settings: Settings) -> None:
     if not 1 <= settings.agents.maximum_task_depth <= 10:
         raise ConfigurationError(
             "Maksymalna głębokość zadań musi mieścić się w zakresie 1–10."
+        )
+
+    if not settings.agents.provider.strip():
+        raise ConfigurationError(
+            "Dostawca agenta nie może być pusty."
+        )
+
+    if not settings.agents.model.strip():
+        raise ConfigurationError(
+            "Model agenta nie może być pusty."
+        )
+
+    if settings.agents.timeout_seconds <= 0:
+        raise ConfigurationError(
+            "Timeout klienta agenta musi być większy od zera."
+        )
+
+    if settings.agents.enabled and settings.agents.provider != "mock":
+        raise ConfigurationError(
+            "Włączony jest obecnie wyłącznie provider mock."
         )
 
     if settings.finance.mode not in ALLOWED_FINANCE_MODES:
