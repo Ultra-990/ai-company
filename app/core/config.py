@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -52,6 +52,18 @@ class AgentSettings:
 
 
 @dataclass(frozen=True)
+class LLMSettings:
+    enabled: bool = False
+    provider: str = "openai-compatible"
+    base_url: str = "https://api.openai.com/v1"
+    api_key: str = ""
+    model: str = "gpt-4o-mini"
+    timeout_seconds: float = 30.0
+    max_retries: int = 2
+    retry_backoff_seconds: float = 0.1
+
+
+@dataclass(frozen=True)
 class SafetySettings:
     emergency_stop: bool
     external_actions_enabled: bool
@@ -99,6 +111,7 @@ class Settings:
     database: DatabaseSettings
     memory: MemorySettings
     logging: LoggingSettings
+    llm: LLMSettings = field(default_factory=LLMSettings)
 
 
 def _require_section(data: dict[str, Any], section: str) -> dict[str, Any]:
@@ -118,6 +131,7 @@ def _build_settings(data: dict[str, Any]) -> Settings:
             system=SystemSettings(**_require_section(data, "system")),
             server=ServerSettings(**_require_section(data, "server")),
             agents=AgentSettings(**_require_section(data, "agents")),
+            llm=LLMSettings(**_require_section(data, "llm")),
             safety=SafetySettings(**_require_section(data, "safety")),
             finance=FinanceSettings(**_require_section(data, "finance")),
             database=DatabaseSettings(**_require_section(data, "database")),
@@ -188,6 +202,40 @@ def _validate(settings: Settings) -> None:
         raise ConfigurationError(
             "Włączony jest obecnie wyłącznie provider mock."
         )
+
+    if settings.llm.enabled:
+        if settings.llm.provider.strip().lower() != "openai-compatible":
+            raise ConfigurationError(
+                f"Nieobsługiwany provider LLM: {settings.llm.provider}"
+            )
+
+        if not settings.llm.base_url.strip():
+            raise ConfigurationError(
+                "Włączony provider LLM wymaga ustawienia base_url."
+            )
+
+        if not settings.llm.api_key.strip():
+            raise ConfigurationError(
+                "Włączony provider LLM wymaga ustawienia api_key."
+            )
+
+        if not settings.llm.model.strip():
+            raise ConfigurationError("Model LLM nie może być pusty.")
+
+        if settings.llm.timeout_seconds <= 0:
+            raise ConfigurationError(
+                "Timeout klienta LLM musi być większy od zera."
+            )
+
+        if not 0 <= settings.llm.max_retries <= 10:
+            raise ConfigurationError(
+                "Liczba ponowień klienta LLM musi mieścić się w zakresie 0–10."
+            )
+
+        if settings.llm.retry_backoff_seconds < 0:
+            raise ConfigurationError(
+                "Opóźnienie ponowień klienta LLM nie może być ujemne."
+            )
 
     if settings.finance.mode not in ALLOWED_FINANCE_MODES:
         raise ConfigurationError("Nieprawidłowy tryb finansowy.")
