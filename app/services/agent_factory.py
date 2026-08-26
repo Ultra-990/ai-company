@@ -33,3 +33,33 @@ def get_agent_client(settings: Settings) -> AgentClient:
     raise ConfigurationError(
         f"Nieobsługiwany provider agenta: {settings.agents.provider}"
     )
+
+
+from app.services.llm_client import LLMClient
+from app.services.openai_compatible_llm_client import (
+    OpenAICompatibleLLMClient,
+)
+
+
+def get_llm_client(settings: Settings) -> LLMClient | None:
+    """Tworzy klienta LLM zgodnie z konfiguracją."""
+
+    if not settings.llm.enabled:
+        return None
+
+    if settings.llm.provider.strip().lower() != "openai-compatible":
+        raise ConfigurationError(
+            f"Nieobsługiwany provider LLM: {settings.llm.provider}"
+        )
+
+    try:
+        return OpenAICompatibleLLMClient(
+            base_url=settings.llm.base_url,
+            api_key=settings.llm.api_key,
+            model=settings.llm.model,
+            timeout_seconds=settings.llm.timeout_seconds,
+            max_retries=settings.llm.max_retries,
+            retry_backoff_seconds=settings.llm.retry_backoff_seconds,
+        )
+    except ValueError as exc:
+        raise ConfigurationError(str(exc)) from exc

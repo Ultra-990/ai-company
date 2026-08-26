@@ -23,6 +23,16 @@ agents:
   require_owner_approval: true
   maximum_task_depth: 3
 
+llm:
+  enabled: false
+  provider: openai-compatible
+  base_url: https://api.openai.com/v1
+  api_key: ""
+  model: gpt-4o-mini
+  timeout_seconds: 30.0
+  max_retries: 2
+  retry_backoff_seconds: 0.1
+
 safety:
   emergency_stop: false
   external_actions_enabled: false
