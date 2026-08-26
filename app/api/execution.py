@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from app.services.agent_task_operation import AgentTaskOperation
+from app.services.llm_task_operation import LLMTaskOperation
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
@@ -11,7 +12,7 @@ from app.api.tasks import get_repository
 from app.brain.orchestrator import Orchestrator
 from app.models.task import TaskStatus
 from app.services.executor import ExecutionResult, TaskExecutor
-from app.services.agent_factory import get_agent_client
+from app.services.agent_factory import get_agent_client, get_llm_client
 from app.services.production_executor import ProductionTaskExecutor
 from app.services.tasks import TaskRepository
 from app.core.config import load_settings
@@ -39,13 +40,17 @@ class NotConfiguredExecutor:
 def get_task_executor() -> TaskExecutor:
     settings = load_settings()
 
-    if not settings.agents.enabled:
-        return NotConfiguredExecutor()
+    llm_client = get_llm_client(settings)
+    if llm_client is not None:
+        operation = LLMTaskOperation(llm_client)
+        return ProductionTaskExecutor(operation)
 
-    client = get_agent_client(settings)
-    operation = AgentTaskOperation(client)
+    if settings.agents.enabled:
+        client = get_agent_client(settings)
+        operation = AgentTaskOperation(client)
+        return ProductionTaskExecutor(operation)
 
-    return ProductionTaskExecutor(operation)
+    return NotConfiguredExecutor()
 
 
 def get_orchestrator() -> Orchestrator:
