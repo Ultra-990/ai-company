@@ -40,3 +40,5 @@ data/*.backup-*
 backups/
 
 app.db
+*.pyc
+data/tool_audit.jsonl
