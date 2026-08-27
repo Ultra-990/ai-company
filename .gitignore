@@ -45,3 +45,6 @@ data/tool_audit.jsonl
 
 *.before-*
 backups/
+
+*.before-*
+backups/
