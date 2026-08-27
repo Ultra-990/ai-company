@@ -24,12 +24,12 @@ agents:
   maximum_task_depth: 3
 
 llm:
-  enabled: false
+  enabled: true
   provider: openai-compatible
-  base_url: https://api.openai.com/v1
-  api_key: ""
-  model: gpt-4o-mini
-  timeout_seconds: 30.0
+  base_url: http://localhost:11434/v1
+  api_key: ollama
+  model: qwen3.8:27b
+  timeout_seconds: 120.0
   max_retries: 2
   retry_backoff_seconds: 0.1
 
@@ -61,3 +61,5 @@ logging:
   level: "INFO"
   directory: "logs"
   audit_file: "audit.log"
+
+tool_calling_enabled: false

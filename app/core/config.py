@@ -112,6 +112,7 @@ class Settings:
     memory: MemorySettings
     logging: LoggingSettings
     llm: LLMSettings = field(default_factory=LLMSettings)
+    tool_calling_enabled: bool = False
 
 
 def _require_section(data: dict[str, Any], section: str) -> dict[str, Any]:

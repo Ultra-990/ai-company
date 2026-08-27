@@ -52,7 +52,8 @@ def health_check() -> dict:
         "status": "ok",
         "system": "AI Company",
         "version": "0.1.0",
-        "llm_enabled": False,
+        "llm_enabled": settings.llm.enabled,
+        "llm_model": settings.llm.model if settings.llm.enabled else None,
     }
 
 
