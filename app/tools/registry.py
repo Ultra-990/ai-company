@@ -42,10 +42,15 @@ def get_tool(name: str) -> Tool:
         raise KeyError(f"Nieznane narzędzie: {name}") from exc
 
 
-def execute_tool(name: str, **arguments: Any) -> Any:
+def execute_tool(
+    name: str,
+    *,
+    approved: bool = False,
+    **arguments: Any,
+) -> Any:
     tool = get_tool(name)
 
-    if tool.requires_approval:
+    if tool.requires_approval and not approved:
         raise PermissionError(
             f"Narzędzie {name} wymaga zatwierdzenia użytkownika."
         )
