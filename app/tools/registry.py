@@ -3,7 +3,11 @@ from __future__ import annotations
 from typing import Any
 
 from .base import Tool
-from .filesystem import list_project_files, read_project_file
+from .filesystem import (
+    list_project_files,
+    read_project_file,
+    write_project_file,
+)
 
 
 TOOLS = {
@@ -20,6 +24,13 @@ TOOLS = {
         handler=list_project_files,
         risk_level="low",
         requires_approval=False,
+    ),
+    "write_project_file": Tool(
+        name="write_project_file",
+        description="Zapisuje tekst do dozwolonego pliku projektu.",
+        handler=write_project_file,
+        risk_level="high",
+        requires_approval=True,
     ),
 }
 

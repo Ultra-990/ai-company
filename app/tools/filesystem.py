@@ -2,90 +2,174 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .audit import audit_tool_call
-from .permissions import (
-    ToolSecurityError,
-    is_ignored,
-    project_root,
-    safe_project_path,
-)
+from app.tools import permissions
+from app.tools.permissions import ToolSecurityError
 
 
-MAX_FILE_SIZE = 1_048_576  # 1 MiB
+MAX_READ_SIZE = 1024 * 1024
+MAX_WRITE_SIZE = 1024 * 1024
+
+# Pliki, których narzędzie nigdy nie może odczytywać ani modyfikować.
+SENSITIVE_NAMES = {
+    ".env",
+    ".env.local",
+    ".env.production",
+    ".env.development",
+    "id_rsa",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+    "authorized_keys",
+    "credentials.txt",
+}
+
+# Zapis do kodu źródłowego i konfiguracji wymaga osobnego procesu/deploymentu.
+PROTECTED_SUFFIXES = {
+    ".py",
+    ".pyi",
+    ".toml",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".ini",
+    ".cfg",
+    ".conf",
+}
 
 
-def read_project_file(path: str, max_bytes: int = MAX_FILE_SIZE) -> str:
-    arguments = {"path": path, "max_bytes": max_bytes}
+def _validate_project_file(
+    relative_path: str,
+    *,
+    must_exist: bool = False,
+    for_write: bool = False,
+) -> Path:
+    if not relative_path or not relative_path.strip():
+        raise ToolSecurityError("Ścieżka pliku nie może być pusta.")
 
-    try:
-        if max_bytes <= 0 or max_bytes > MAX_FILE_SIZE:
-            raise ToolSecurityError(
-                f"Limit musi mieścić się w zakresie 1-{MAX_FILE_SIZE} bajtów."
-            )
+    candidate = Path(relative_path)
 
-        file_path = safe_project_path(path, must_be_file=True)
+    if candidate.is_absolute():
+        raise ToolSecurityError("Ścieżki absolutne są niedozwolone.")
 
-        if is_ignored(file_path.relative_to(project_root())):
-            raise ToolSecurityError("Odczyt tej ścieżki jest niedozwolony.")
+    resolved = permissions.safe_project_path(relative_path)
 
-        size = file_path.stat().st_size
-        if size > max_bytes:
-            raise ToolSecurityError(
-                f"Plik jest za duży: {size} bajtów, limit: {max_bytes}."
-            )
-
-        content = file_path.read_text(encoding="utf-8")
-        audit_tool_call(
-            "read_project_file",
-            status="success",
-            arguments=arguments,
+    # Sprawdzenie po normalizacji blokuje np. `.env`, `foo/.env`
+    # oraz ścieżki z przejściem przez katalog wrażliwy.
+    if any(part in SENSITIVE_NAMES for part in resolved.parts):
+        raise ToolSecurityError(
+            "Dostęp do plików wrażliwych jest niedozwolony."
         )
-        return content
 
-    except Exception as exc:
-        audit_tool_call(
-            "read_project_file",
-            status="denied",
-            arguments=arguments,
-            error=str(exc),
+    if resolved.name in SENSITIVE_NAMES:
+        raise ToolSecurityError(
+            "Dostęp do plików wrażliwych jest niedozwolony."
         )
-        raise
+
+    if permissions.is_ignored(resolved):
+        raise ToolSecurityError(
+            "Dostęp do ignorowanych katalogów lub plików jest niedozwolony."
+        )
+
+    if must_exist and not resolved.exists():
+        raise ToolSecurityError("Plik nie istnieje.")
+
+    if resolved.exists() and resolved.is_dir():
+        raise ToolSecurityError("Wskazana ścieżka jest katalogiem.")
+
+    if for_write and resolved.suffix.lower() in PROTECTED_SUFFIXES:
+        raise ToolSecurityError(
+            "Zapis do plików kodu i konfiguracji jest niedozwolony."
+        )
+
+    return resolved
 
 
 def list_project_files(
     path: str = ".",
+    *,
     recursive: bool = False,
 ) -> list[str]:
-    arguments = {"path": path, "recursive": recursive}
+    base_dir = permissions.safe_project_path(path)
+
+    if not base_dir.is_dir():
+        raise ToolSecurityError("Wskazana ścieżka nie jest katalogiem.")
+
+    project_root = permissions.project_root()
+    items: list[str] = []
+
+    iterator = base_dir.rglob("*") if recursive else base_dir.iterdir()
+
+    for entry in iterator:
+        if not entry.is_file():
+            continue
+
+        if permissions.is_ignored(entry):
+            continue
+
+        if any(part in SENSITIVE_NAMES for part in entry.parts):
+            continue
+
+        if recursive:
+            items.append(str(entry.relative_to(project_root)))
+        else:
+            items.append(entry.name)
+
+    return sorted(items)
+
+
+def read_project_file(
+    path: str,
+    *,
+    max_bytes: int | None = None,
+) -> str:
+    resolved = _validate_project_file(path, must_exist=True)
+
+    limit = MAX_READ_SIZE if max_bytes is None else max_bytes
+
+    if not isinstance(limit, int) or isinstance(limit, bool) or limit <= 0:
+        raise ToolSecurityError("Limit max_bytes musi być dodatnią liczbą całkowitą.")
+
+    if resolved.stat().st_size > limit:
+        raise ToolSecurityError(
+            f"Plik przekracza limit {limit} bajtów."
+        )
 
     try:
-        directory = safe_project_path(path)
+        with resolved.open("r", encoding="utf-8") as file:
+            return file.read()
+    except UnicodeDecodeError as exc:
+        raise ToolSecurityError("Plik nie jest poprawnym tekstem UTF-8.") from exc
 
-        if not directory.is_dir():
-            raise ToolSecurityError("Wskazana ścieżka nie jest katalogiem.")
 
-        iterator = directory.rglob("*") if recursive else directory.glob("*")
-        root = project_root()
+def write_project_file(path: str, content: str) -> dict[str, object]:
+    if not isinstance(content, str):
+        raise ToolSecurityError("Treść pliku musi być tekstem.")
 
-        result = sorted(
-            str(item.relative_to(root))
-            for item in iterator
-            if item.is_file()
-            and not is_ignored(item.relative_to(root))
+    encoded_size = len(content.encode("utf-8"))
+
+    if encoded_size > MAX_WRITE_SIZE:
+        raise ToolSecurityError(
+            f"Treść przekracza limit {MAX_WRITE_SIZE} bajtów."
         )
 
-        audit_tool_call(
-            "list_project_files",
-            status="success",
-            arguments=arguments,
-        )
-        return result
+    resolved = _validate_project_file(path, for_write=True)
 
-    except Exception as exc:
-        audit_tool_call(
-            "list_project_files",
-            status="denied",
-            arguments=arguments,
-            error=str(exc),
+    # Nie tworzymy brakujących katalogów automatycznie. Zapobiega to
+    # swobodnemu tworzeniu całych struktur katalogów przez narzędzie.
+    if not resolved.parent.is_dir():
+        raise ToolSecurityError(
+            "Katalog docelowy nie istnieje."
         )
-        raise
+
+    # Ochrona przed symlinkiem wskazującym poza projekt lub na plik wrażliwy.
+    if resolved.exists() and resolved.is_symlink():
+        raise ToolSecurityError(
+            "Zapis przez dowiązanie symboliczne jest niedozwolony."
+        )
+
+    resolved.write_text(content, encoding="utf-8")
+
+    return {
+        "path": str(resolved.relative_to(permissions.project_root())),
+        "bytes_written": encoded_size,
+    }
