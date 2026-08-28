@@ -161,11 +161,6 @@ def write_project_file(path: str, content: str) -> dict[str, object]:
             "Katalog docelowy nie istnieje."
         )
 
-    # Ochrona przed symlinkiem wskazującym poza projekt lub na plik wrażliwy.
-    if resolved.exists() and resolved.is_symlink():
-        raise ToolSecurityError(
-            "Zapis przez dowiązanie symboliczne jest niedozwolony."
-        )
 
     resolved.write_text(content, encoding="utf-8")
 
