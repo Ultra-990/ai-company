@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse
 from app.core.config import load_settings
 from app.core.database import Base, create_database_engine
 from app.models.organization import OrganizationUnit
+from app.models.approval import ApprovalRequest
 from app.db.migrations import migrate_task_queue_schema
 from app.api.system import router as system_router
 from app.api.tasks import router as tasks_router
