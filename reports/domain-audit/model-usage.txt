@@ -1,0 +1,161 @@
+## Użycia Task
+tests/test_task_model.py:4:    Task,
+tests/test_task_model.py:13:) -> Task:
+tests/test_task_model.py:14:    return Task(
+tests/test_task_api.py:122:                title=f"Task {index}",
+app/brain/planner.py:4:from app.brain.context_manager import Task
+app/brain/planner.py:22:    def build_plan(self, tasks: List[Task]) -> List[PlanStep]:
+app/brain/__init__.py:10:    Task,
+app/brain/__init__.py:25:    "Task",
+app/brain/orchestrator.py:9:    Task as ContextTask,
+app/brain/orchestrator.py:15:from app.models.task import Task as PersistentTask
+tests/test_owner_api.py:46:    assert response.json() == {"detail": "Task not found"}
+tests/test_owner_api.py:59:    assert response.json() == {"detail": "Task not found"}
+app/brain/context_manager.py:17:class Task:
+app/brain/context_manager.py:68:        self.tasks: List[Task] = []
+app/brain/context_manager.py:73:    def add_task(self, task: Task) -> Task:
+tests/test_domain_inventory.py:5:    "Task",
+tests/test_tool_calling_task_operation.py:3:from app.models.task import Task
+tests/test_tool_calling_task_operation.py:24:def make_task() -> Task:
+tests/test_tool_calling_task_operation.py:25:    return Task(
+app/models/task.py:63:class Task(Base):
+tests/test_production_executor.py:7:from app.models.task import Task
+tests/test_production_executor.py:12:    task = cast(Task, object())
+tests/test_production_executor.py:13:    received: list[Task] = []
+tests/test_production_executor.py:15:    def operation(input_task: Task) -> str:
+tests/test_production_executor.py:29:    task = cast(Task, object())
+tests/test_production_executor.py:40:    task = cast(Task, object())
+tests/test_production_executor.py:42:    def operation(_: Task) -> str:
+app/api/progress.py:603:                title: "Task API",
+app/api/progress.py:946:                        : "Brak zapisanych zadań. Utwórz zadanie przez Task API.",
+app/api/owner.py:51:            detail="Task not found",
+app/api/owner.py:57:            detail="Task not found",
+app/api/owner.py:74:            detail="Task not found",
+app/api/owner.py:80:            detail="Task not found",
+app/api/tasks.py:14:    Task,
+app/api/tasks.py:87:) -> list[Task]:
+app/api/tasks.py:110:) -> Task:
+app/api/tasks.py:126:) -> Task:
+app/api/tasks.py:153:) -> Task:
+app/api/tasks.py:175:) -> Task:
+app/services/task_operation.py:5:from app.models.task import Task
+app/services/task_operation.py:11:    def __call__(self, task: Task) -> str:
+app/services/scheduler.py:1:from app.models.task import Task
+app/services/scheduler.py:11:    def schedule_next(self) -> Task | None:
+app/services/documentation.py:11:    """Odczytuje pole z obiektu Task albo słownika."""
+app/services/worker.py:3:from app.models.task import Task
+app/services/worker.py:30:    def claim_next(self) -> Task | None:
+app/services/llm_task_operation.py:3:from app.models.task import Task
+app/services/llm_task_operation.py:13:    def __call__(self, task: Task) -> str:
+app/services/executor.py:6:from app.models.task import Task
+app/services/executor.py:24:    def execute(self, task: Task) -> ExecutionResult:
+app/services/agent_task_operation.py:1:from app.models.task import Task
+app/services/agent_task_operation.py:11:    def __call__(self, task: Task) -> str:
+app/services/production_executor.py:3:from app.models.task import Task
+app/services/production_executor.py:14:    def execute(self, task: Task) -> ExecutionResult:
+app/services/tasks.py:16:    Task,
+app/services/tasks.py:63:    ) -> Task:
+app/services/tasks.py:88:        task = Task(
+app/services/tasks.py:110:    def get(self, task_id: int) -> Task | None:
+app/services/tasks.py:112:            task = session.get(Task, task_id)
+app/services/tasks.py:119:    def get_required(self, task_id: int) -> Task:
+app/services/tasks.py:139:    ) -> list[Task]:
+app/services/tasks.py:153:        statement: Select[tuple[Task]] = select(Task)
+app/services/tasks.py:156:            statement = statement.where(Task.status == status)
+app/services/tasks.py:160:                    Task.approval_status == approval_status
+app/services/tasks.py:164:            statement = statement.where(Task.priority == priority)
+app/services/tasks.py:168:                Task.resource_class == resource_class
+app/services/tasks.py:172:            statement = statement.where(Task.risk_level == risk_level)
+app/services/tasks.py:176:                Task.assigned_agent == normalized_agent
+app/services/tasks.py:180:            Task.created_at.desc(),
+app/services/tasks.py:181:            Task.id.desc(),
+app/services/tasks.py:196:    ) -> list[Task]:
+app/services/tasks.py:202:            select(Task)
+app/services/tasks.py:204:                Task.status == TaskStatus.PENDING,
+app/services/tasks.py:205:                Task.approval_status == ApprovalStatus.APPROVED,
+app/services/tasks.py:206:                Task.queued_at.is_not(None),
+app/services/tasks.py:209:                Task.queued_at.asc(),
+app/services/tasks.py:210:                Task.id.asc(),
+app/services/tasks.py:230:    ) -> Task:
+app/services/tasks.py:232:            task = session.get(Task, task_id)
+app/services/tasks.py:263:    ) -> Task:
+app/services/tasks.py:276:    ) -> Task:
+app/services/tasks.py:290:    ) -> Task:
+app/services/tasks.py:314:            task_exists = session.get(Task, task_id)
+app/services/tasks.py:322:                update(Task)
+app/services/tasks.py:324:                    Task.id == task_id,
+app/services/tasks.py:325:                    Task.status == TaskStatus.PENDING,
+app/services/tasks.py:326:                    Task.approval_status == ApprovalStatus.APPROVED,
+app/services/tasks.py:327:                    Task.queued_at.is_not(None),
+app/services/tasks.py:354:            task = session.get(Task, task_id)
+app/services/tasks.py:367:    ) -> Task:
+app/services/tasks.py:376:            task = session.get(Task, task_id)
+app/services/tasks.py:412:    ) -> Task:
+app/services/tasks.py:426:    ) -> Task:
+app/services/tasks.py:439:    ) -> Task:
+app/services/tasks.py:441:            task = session.get(Task, task_id)
+app/services/tasks.py:461:    ) -> Task:
+app/services/tasks.py:477:            task = session.get(Task, task_id)
+app/services/tasks.py:498:                select(func.count()).select_from(Task)
+app/services/tasks.py:503:                .select_from(Task)
+app/services/tasks.py:505:                    Task.approval_status == ApprovalStatus.PENDING
+app/services/tasks.py:511:                .select_from(Task)
+app/services/tasks.py:513:                    Task.approval_status == ApprovalStatus.APPROVED
+app/services/tasks.py:519:                .select_from(Task)
+app/services/tasks.py:521:                    Task.approval_status == ApprovalStatus.REJECTED
+app/services/tasks.py:536:                select(func.count()).select_from(Task)
+app/services/tasks.py:540:                select(func.avg(Task.progress))
+app/services/tasks.py:548:                        .select_from(Task)
+app/services/tasks.py:549:                        .where(Task.status == status)
+app/services/tool_calling_task_operation.py:3:from app.models.task import Task
+app/services/tool_calling_task_operation.py:14:    def __call__(self, task: Task) -> str:
+
+## Użycia ApprovalRequest
+app/main.py:9:from app.models.approval import ApprovalRequest
+app/brain/__init__.py:6:    ApprovalRequest,
+app/brain/__init__.py:21:    "ApprovalRequest",
+app/brain/context_manager.py:55:class ApprovalRequest:
+app/brain/context_manager.py:71:        self.approvals: List[ApprovalRequest] = []
+app/brain/context_manager.py:85:    def add_approval(self, approval: ApprovalRequest) -> ApprovalRequest:
+app/models/approval.py:23:class ApprovalRequest(Base):
+app/services/approvals.py:14:    ApprovalRequest,
+app/services/approvals.py:52:    ) -> ApprovalRequest:
+app/services/approvals.py:66:        request = ApprovalRequest(
+app/services/approvals.py:81:    def get(self, request_id: int) -> ApprovalRequest | None:
+app/services/approvals.py:83:            request = session.get(ApprovalRequest, request_id)
+app/services/approvals.py:88:    def get_required(self, request_id: int) -> ApprovalRequest:
+app/services/approvals.py:96:    def list_pending(self, *, limit: int = 50) -> list[ApprovalRequest]:
+app/services/approvals.py:101:            select(ApprovalRequest)
+app/services/approvals.py:103:                ApprovalRequest.status
+app/services/approvals.py:107:                ApprovalRequest.created_at.asc(),
+app/services/approvals.py:108:                ApprovalRequest.id.asc(),
+app/services/approvals.py:125:    ) -> ApprovalRequest:
+app/services/approvals.py:136:                update(ApprovalRequest)
+app/services/approvals.py:138:                    ApprovalRequest.id == request_id,
+app/services/approvals.py:139:                    ApprovalRequest.status
+app/services/approvals.py:150:                if session.get(ApprovalRequest, request_id) is None:
+app/services/approvals.py:173:            request = session.get(ApprovalRequest, request_id)
+app/services/approvals.py:183:    ) -> ApprovalRequest:
+app/services/approvals.py:195:    ) -> ApprovalRequest:
+app/services/approvals.py:207:    ) -> ApprovalRequest:
+tests/test_domain_inventory.py:10:    "ApprovalRequest",
+
+## Użycia Decision
+app/brain/__init__.py:8:    Decision,
+app/brain/__init__.py:23:    "Decision",
+tests/test_domain_inventory.py:13:    "Decision",
+app/brain/context_manager.py:45:class Decision:
+app/brain/context_manager.py:70:        self.decisions: List[Decision] = []
+app/brain/context_manager.py:81:    def add_decision(self, decision: Decision) -> Decision:
+
+## Użycia AgentProfile
+app/brain/__init__.py:5:    AgentProfile,
+app/brain/__init__.py:20:    "AgentProfile",
+app/brain/context_manager.py:35:class AgentProfile:
+app/brain/context_manager.py:69:        self.agents: List[AgentProfile] = []
+app/brain/context_manager.py:77:    def add_agent(self, agent: AgentProfile) -> AgentProfile:
+
+## Użycia BrainTask
+app/brain/brain.py:15:class BrainTask:
+app/brain/brain.py:31:        self.tasks: List[BrainTask] = []
+app/brain/brain.py:33:    def add_task(self, task: BrainTask) -> None:

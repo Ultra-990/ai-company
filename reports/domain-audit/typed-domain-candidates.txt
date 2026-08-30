@@ -1,18 +1,8 @@
-tests/test_dashboard_api.py:16:    assert data["status"] == "ok"
-tests/test_dashboard_api.py:33:    assert data["status"] == "ok"
 app/core/config.py:118:def _require_section(data: dict[str, Any], section: str) -> dict[str, Any]:
 app/core/config.py:129:def _build_settings(data: dict[str, Any]) -> Settings:
-tests/test_execution_api.py:118:    assert refreshed_task.status == TaskStatus.BLOCKED
 app/domain/contracts/department.py:17:    def to_dict(self) -> dict[str, Any]:
 app/domain/contracts/memory.py:11:    metadata: dict[str, Any] = field(default_factory=dict)
 app/domain/contracts/memory.py:24:    def to_dict(self) -> dict[str, Any]:
-tests/test_system_api.py:34:    assert data["decision"] == "allowed"
-tests/test_system_api.py:46:    assert data["decision"] == "approval_required"
-tests/test_system_api.py:57:    assert data["decision"] == "blocked"
-tests/test_system_api.py:68:    assert data["decision"] == "blocked"
-tests/test_system_api.py:79:    assert data["decision"] == "blocked"
-tests/test_system_api.py:90:    assert data["decision"] == "approval_required"
-tests/test_system_api.py:101:    assert data["decision"] == "approval_required"
 app/brain/persistent_audit.py:24:        payload: dict[str, Any] | None = None,
 app/brain/persistent_audit.py:46:    def export(self) -> list[dict[str, Any]]:
 app/brain/reporter.py:7:    def build_report(self, context: ContextManager) -> Dict[str, Any]:
@@ -24,32 +14,41 @@ app/brain/audit_logger.py:18:    def log(self, event_type: str, message: str, pa
 app/brain/audit_logger.py:28:    def export(self) -> List[Dict[str, Any]]:
 app/brain/brain.py:20:    meta: Dict[str, Any] = field(default_factory=dict)
 app/brain/brain.py:45:    def report(self) -> Dict[str, Any]:
-app/brain/brain.py:49:            "pending_tasks": [t for t in self.tasks if t.status == "PENDING"],
 app/brain/context_manager.py:13:    metadata: Dict[str, Any] = field(default_factory=dict)
 app/brain/context_manager.py:31:    metadata: Dict[str, Any] = field(default_factory=dict)
 app/brain/context_manager.py:41:    metadata: Dict[str, Any] = field(default_factory=dict)
 app/brain/context_manager.py:51:    metadata: Dict[str, Any] = field(default_factory=dict)
 app/brain/context_manager.py:62:    metadata: Dict[str, Any] = field(default_factory=dict)
 app/brain/context_manager.py:101:    def snapshot(self) -> Dict[str, Any]:
-app/models/task.py:194:        self.status = new_status
-app/models/task.py:225:            self.status = TaskStatus.COMPLETED
-app/models/task.py:232:        elif progress > 0 and self.status == TaskStatus.PENDING:
-app/models/task.py:233:            self.status = TaskStatus.IN_PROGRESS
-app/models/task.py:238:        elif progress == 0 and self.status == TaskStatus.IN_PROGRESS:
-app/models/task.py:239:            self.status = TaskStatus.PENDING
+app/models/task.py:130:    stages: Mapped[list[dict]] = mapped_column(
 app/api/brain.py:131:) -> dict[str, Any]:
+app/api/tasks.py:38:    stages: list[dict]
 app/api/dashboard.py:15:) -> dict[str, Any]:
 app/api/dashboard.py:23:def _project_summary() -> dict[str, Any]:
 app/api/dashboard.py:37:) -> dict[str, Any]:
 app/api/dashboard.py:60:) -> dict[str, Any]:
-app/services/openai_compatible_llm_client.py:72:        payload: dict[str, Any] = {
 app/tools/audit.py:94:    arguments: dict[str, Any] | None = None,
 app/tools/audit.py:102:    event: dict[str, Any] = {
+app/services/openai_compatible_llm_client.py:72:        payload: dict[str, Any] = {
+app/services/context.py:41:def _task_lines(tasks: list[dict]) -> str:
+app/services/context.py:55:        if task.get("status") in {"completed", "done"}
+app/services/context.py:59:        if task.get("status") in {"in_progress", "active"}
+app/services/context.py:63:        if task.get("status") in {"planned", "pending", "todo"}
 app/services/tool_calling.py:22:def parse_model_response(response: str | Mapping[str, Any]) -> dict[str, Any]:
 app/services/tool_calling.py:95:        response_type = payload["type"]
-app/services/tasks.py:156:            statement = statement.where(Task.status == status)
-app/services/tasks.py:204:                Task.status == TaskStatus.PENDING,
-app/services/tasks.py:325:                    Task.status == TaskStatus.PENDING,
-app/services/tasks.py:549:                        .where(Task.status == status)
+app/services/tool_calling.py:115:            "tool": payload["name"],
+app/services/mock_agent_client.py:12:        self.calls: list[dict[str, str]] = []
 app/services/project_progress.py:17:def _validate_stage(stage: Any, index: int) -> dict[str, Any]:
+app/services/project_progress.py:29:    if not isinstance(stage["id"], str) or not stage["id"].strip():
+app/services/project_progress.py:32:    if not isinstance(stage["name"], str) or not stage["name"].strip():
+app/services/project_progress.py:35:    if stage["status"] not in VALID_STATUSES:
+app/services/project_progress.py:37:            f"Etap {stage['id']} ma niepoprawny status: "
+app/services/project_progress.py:38:            f"{stage['status']!r}."
+app/services/project_progress.py:41:    progress = stage["progress"]
+app/services/project_progress.py:44:            f"Etap {stage['id']} musi mieć całkowity postęp."
+app/services/project_progress.py:49:            f"Etap {stage['id']} musi mieć postęp od 0 do 100."
+app/services/project_progress.py:55:            f"Elementy etapu {stage['id']} muszą być listą."
 app/services/project_progress.py:63:) -> dict[str, Any]:
+app/services/project_progress.py:92:    ids = [stage["id"] for stage in validated_stages]
+app/services/project_progress.py:97:        sum(stage["progress"] for stage in validated_stages)
+app/services/project_progress.py:102:        "project": data["project"],

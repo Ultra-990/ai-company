@@ -89,28 +89,16 @@
 ./app/core/database.py:9:class Base(DeclarativeBase):
 ./app/domain/repositories/in_memory_memory.py:9:class InMemoryMemoryRepository(MemoryRepository):
 ./app/domain/repositories/memory.py:9:class MemoryRepository(ABC):
+./app/domain/adapters/orchestrator.py:10:class DomainRegistry:
+./app/domain/contracts/department.py:6:class Department:
+./app/domain/contracts/memory.py:7:class MemoryRecord:
 ./app/brain/persistent_audit.py:9:class PersistentAuditLogger:
-./app/api/system.py:27:class SystemStatusResponse(BaseModel):
-./app/api/system.py:40:class SafetyCheckResponse(BaseModel):
-./app/api/system.py:47:class AuditEventResponse(BaseModel):
 ./app/brain/planner.py:15:class PlanStep:
 ./app/brain/planner.py:21:class Planner:
-./app/api/execution.py:27:class ExecutionResponse(BaseModel):
-./app/api/execution.py:34:class NotConfiguredExecutor:
 ./app/brain/safety_gate.py:5:class SafetyResult:
 ./app/brain/safety_gate.py:10:class SafetyGate:
-./app/domain/adapters/orchestrator.py:10:class DomainRegistry:
 ./app/brain/reporter.py:6:class Reporter:
-./app/api/brain.py:28:class TaskCreateRequest(BaseModel):
-./app/api/brain.py:37:class TaskResponse(BaseModel):
-./app/api/brain.py:52:class PlanResponse(BaseModel):
-./app/api/brain.py:56:class SafetyCheckRequest(BaseModel):
-./app/api/brain.py:61:class SafetyCheckResponse(BaseModel):
 ./app/brain/orchestrator.py:24:class Orchestrator:
-./app/api/tasks.py:25:class TaskResponse(BaseModel):
-./app/api/tasks.py:46:class TaskCreateRequest(BaseModel):
-./app/api/tasks.py:55:class StatusUpdateRequest(BaseModel):
-./app/api/tasks.py:59:class AssignmentRequest(BaseModel):
 ./app/brain/audit_logger.py:7:class AuditEntry:
 ./app/brain/audit_logger.py:14:class AuditLogger:
 ./app/brain/brain.py:7:class BrainDecision:
@@ -122,12 +110,6 @@
 ./app/brain/context_manager.py:45:class Decision:
 ./app/brain/context_manager.py:55:class ApprovalRequest:
 ./app/brain/context_manager.py:65:class ContextManager:
-./app/domain/contracts/memory.py:7:class MemoryRecord:
-./app/domain/contracts/department.py:6:class Department:
-./app/services/openai_compatible_llm_client.py:9:class OpenAICompatibleLLMClient:
-./app/services/llm_client.py:7:class LLMClient(Protocol):
-./app/services/scheduler.py:5:class TaskScheduler:
-./app/services/http_agent_client.py:9:class HttpAgentClient:
 ./app/models/task.py:17:class TaskStatus(str, PyEnum):
 ./app/models/task.py:25:class ApprovalStatus(str, PyEnum):
 ./app/models/task.py:32:class TaskTransitionError(ValueError):
@@ -135,30 +117,48 @@
 ./app/models/task.py:45:class ResourceClass(str, PyEnum):
 ./app/models/task.py:55:class RiskLevel(str, PyEnum):
 ./app/models/task.py:63:class Task(Base):
-./app/tools/base.py:8:class Tool:
-./app/services/worker.py:8:class TaskWorker:
 ./app/models/organization.py:15:class OrganizationUnit(Base):
-./app/services/tasks.py:28:class TaskNotFoundError(LookupError):
-./app/services/tasks.py:32:class TaskRepository:
 ./app/models/approval.py:16:class ApprovalRequestStatus(str, PyEnum):
 ./app/models/approval.py:23:class ApprovalRequest(Base):
-./app/tools/permissions.py:18:class ToolSecurityError(ValueError):
-./app/services/production_executor.py:8:class ProductionTaskExecutor:
-./app/services/tool_calling_task_operation.py:8:class ToolCallingLLMTaskOperation:
 ./app/models/audit.py:15:class AuditEvent(Base):
-./app/services/tool_calling.py:18:class ToolCallingError(ValueError):
+./app/api/system.py:27:class SystemStatusResponse(BaseModel):
+./app/api/system.py:40:class SafetyCheckResponse(BaseModel):
+./app/api/system.py:47:class AuditEventResponse(BaseModel):
+./app/api/execution.py:27:class ExecutionResponse(BaseModel):
+./app/api/execution.py:34:class NotConfiguredExecutor:
+./app/api/brain.py:28:class TaskCreateRequest(BaseModel):
+./app/api/brain.py:37:class TaskResponse(BaseModel):
+./app/api/brain.py:52:class PlanResponse(BaseModel):
+./app/api/brain.py:56:class SafetyCheckRequest(BaseModel):
+./app/api/brain.py:61:class SafetyCheckResponse(BaseModel):
+./app/api/tasks.py:25:class TaskResponse(BaseModel):
+./app/api/tasks.py:46:class TaskCreateRequest(BaseModel):
+./app/api/tasks.py:55:class StatusUpdateRequest(BaseModel):
+./app/api/tasks.py:59:class AssignmentRequest(BaseModel):
+./app/tools/base.py:8:class Tool:
+./app/tools/permissions.py:18:class ToolSecurityError(ValueError):
+./app/services/openai_compatible_llm_client.py:9:class OpenAICompatibleLLMClient:
+./app/services/llm_client.py:7:class LLMClient(Protocol):
+./app/services/scheduler.py:5:class TaskScheduler:
+./app/services/http_agent_client.py:9:class HttpAgentClient:
+./app/services/worker.py:8:class TaskWorker:
+./app/services/tasks.py:28:class TaskNotFoundError(LookupError):
+./app/services/tasks.py:32:class TaskRepository:
+./app/services/tool_calling_task_operation.py:8:class ToolCallingLLMTaskOperation:
 ./app/services/agent_task_operation.py:5:class AgentTaskOperation:
-./app/services/executor.py:10:class ExecutionResult:
-./app/services/executor.py:21:class TaskExecutor(Protocol):
-./app/services/approvals.py:21:class ApprovalRequestNotFoundError(LookupError):
-./app/services/approvals.py:25:class ApprovalStateConflictError(RuntimeError):
-./app/services/approvals.py:29:class ApprovalRepository:
+./app/services/production_executor.py:8:class ProductionTaskExecutor:
+./app/services/tool_calling.py:18:class ToolCallingError(ValueError):
 ./app/services/task_operation.py:8:class TaskOperation(Protocol):
-./app/services/llm_task_operation.py:7:class LLMTaskOperation:
 ./app/services/mock_agent_client.py:4:class MockAgentClient:
 ./app/services/agent_client.py:4:class AgentClient(Protocol):
 ./app/services/audit.py:14:class AuditRepository:
 ./app/services/project_progress.py:13:class ProgressConfigError(ValueError):
+./app/services/approvals.py:21:class ApprovalRequestNotFoundError(LookupError):
+./app/services/approvals.py:25:class ApprovalStateConflictError(RuntimeError):
+./app/services/approvals.py:29:class ApprovalRepository:
+./app/services/llm_task_operation.py:7:class LLMTaskOperation:
+./app/services/executor.py:10:class ExecutionResult:
+./app/services/executor.py:21:class TaskExecutor(Protocol):
 
 ## Modele Pydantic, SQLAlchemy i dataclass
 ./app/core/config.py:23:@dataclass(frozen=True)

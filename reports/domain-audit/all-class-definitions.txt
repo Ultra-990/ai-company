@@ -1,0 +1,113 @@
+app/api/brain.py:28:class TaskCreateRequest(BaseModel):
+app/api/brain.py:37:class TaskResponse(BaseModel):
+app/api/brain.py:52:class PlanResponse(BaseModel):
+app/api/brain.py:56:class SafetyCheckRequest(BaseModel):
+app/api/brain.py:61:class SafetyCheckResponse(BaseModel):
+app/api/execution.py:27:class ExecutionResponse(BaseModel):
+app/api/execution.py:34:class NotConfiguredExecutor:
+app/api/system.py:27:class SystemStatusResponse(BaseModel):
+app/api/system.py:40:class SafetyCheckResponse(BaseModel):
+app/api/system.py:47:class AuditEventResponse(BaseModel):
+app/api/tasks.py:25:class TaskResponse(BaseModel):
+app/api/tasks.py:46:class TaskCreateRequest(BaseModel):
+app/api/tasks.py:55:class StatusUpdateRequest(BaseModel):
+app/api/tasks.py:59:class AssignmentRequest(BaseModel):
+app/brain/audit_logger.py:14:class AuditLogger:
+app/brain/audit_logger.py:6:@dataclass
+app/brain/audit_logger.py:7:class AuditEntry:
+app/brain/brain.py:14:@dataclass
+app/brain/brain.py:15:class BrainTask:
+app/brain/brain.py:23:class Brain:
+app/brain/brain.py:6:@dataclass
+app/brain/brain.py:7:class BrainDecision:
+app/brain/context_manager.py:16:@dataclass
+app/brain/context_manager.py:17:class Task:
+app/brain/context_manager.py:34:@dataclass
+app/brain/context_manager.py:35:class AgentProfile:
+app/brain/context_manager.py:44:@dataclass
+app/brain/context_manager.py:45:class Decision:
+app/brain/context_manager.py:54:@dataclass
+app/brain/context_manager.py:55:class ApprovalRequest:
+app/brain/context_manager.py:65:class ContextManager:
+app/brain/context_manager.py:7:@dataclass
+app/brain/context_manager.py:8:class ProjectState:
+app/brain/orchestrator.py:24:class Orchestrator:
+app/brain/persistent_audit.py:9:class PersistentAuditLogger:
+app/brain/planner.py:14:@dataclass
+app/brain/planner.py:15:class PlanStep:
+app/brain/planner.py:21:class Planner:
+app/brain/reporter.py:6:class Reporter:
+app/brain/safety_gate.py:10:class SafetyGate:
+app/brain/safety_gate.py:4:@dataclass
+app/brain/safety_gate.py:5:class SafetyResult:
+app/core/config.py:104:@dataclass(frozen=True)
+app/core/config.py:105:class Settings:
+app/core/config.py:19:class ConfigurationError(RuntimeError):
+app/core/config.py:23:@dataclass(frozen=True)
+app/core/config.py:24:class SystemSettings:
+app/core/config.py:32:@dataclass(frozen=True)
+app/core/config.py:33:class ServerSettings:
+app/core/config.py:39:@dataclass(frozen=True)
+app/core/config.py:40:class AgentSettings:
+app/core/config.py:54:@dataclass(frozen=True)
+app/core/config.py:55:class LLMSettings:
+app/core/config.py:66:@dataclass(frozen=True)
+app/core/config.py:67:class SafetySettings:
+app/core/config.py:76:@dataclass(frozen=True)
+app/core/config.py:77:class FinanceSettings:
+app/core/config.py:84:@dataclass(frozen=True)
+app/core/config.py:85:class DatabaseSettings:
+app/core/config.py:89:@dataclass(frozen=True)
+app/core/config.py:90:class MemorySettings:
+app/core/config.py:97:@dataclass(frozen=True)
+app/core/config.py:98:class LoggingSettings:
+app/core/database.py:9:class Base(DeclarativeBase):
+app/core/safety.py:10:class OperationType(str, Enum):
+app/core/safety.py:20:class SafetyDecision(str, Enum):
+app/core/safety.py:26:@dataclass(frozen=True)
+app/core/safety.py:27:class SafetyResult:
+app/core/safety.py:45:class SafetyGate:
+app/domain/adapters/orchestrator.py:10:class DomainRegistry:
+app/domain/contracts/department.py:5:@dataclass(frozen=True)
+app/domain/contracts/department.py:6:class Department:
+app/domain/contracts/memory.py:6:@dataclass(frozen=True)
+app/domain/contracts/memory.py:7:class MemoryRecord:
+app/domain/repositories/in_memory_memory.py:9:class InMemoryMemoryRepository(MemoryRepository):
+app/domain/repositories/memory.py:9:class MemoryRepository(ABC):
+app/models/approval.py:16:class ApprovalRequestStatus(str, PyEnum):
+app/models/approval.py:23:class ApprovalRequest(Base):
+app/models/audit.py:15:class AuditEvent(Base):
+app/models/organization.py:15:class OrganizationUnit(Base):
+app/models/task.py:17:class TaskStatus(str, PyEnum):
+app/models/task.py:25:class ApprovalStatus(str, PyEnum):
+app/models/task.py:32:class TaskTransitionError(ValueError):
+app/models/task.py:38:class TaskPriority(str, PyEnum):
+app/models/task.py:45:class ResourceClass(str, PyEnum):
+app/models/task.py:55:class RiskLevel(str, PyEnum):
+app/models/task.py:63:class Task(Base):
+app/services/agent_client.py:4:class AgentClient(Protocol):
+app/services/agent_task_operation.py:5:class AgentTaskOperation:
+app/services/approvals.py:21:class ApprovalRequestNotFoundError(LookupError):
+app/services/approvals.py:25:class ApprovalStateConflictError(RuntimeError):
+app/services/approvals.py:29:class ApprovalRepository:
+app/services/audit.py:14:class AuditRepository:
+app/services/executor.py:10:class ExecutionResult:
+app/services/executor.py:21:class TaskExecutor(Protocol):
+app/services/executor.py:9:@dataclass(frozen=True)
+app/services/http_agent_client.py:9:class HttpAgentClient:
+app/services/llm_client.py:7:class LLMClient(Protocol):
+app/services/llm_task_operation.py:7:class LLMTaskOperation:
+app/services/mock_agent_client.py:4:class MockAgentClient:
+app/services/openai_compatible_llm_client.py:9:class OpenAICompatibleLLMClient:
+app/services/production_executor.py:8:class ProductionTaskExecutor:
+app/services/project_progress.py:13:class ProgressConfigError(ValueError):
+app/services/scheduler.py:5:class TaskScheduler:
+app/services/task_operation.py:8:class TaskOperation(Protocol):
+app/services/tasks.py:28:class TaskNotFoundError(LookupError):
+app/services/tasks.py:32:class TaskRepository:
+app/services/tool_calling.py:18:class ToolCallingError(ValueError):
+app/services/tool_calling_task_operation.py:8:class ToolCallingLLMTaskOperation:
+app/services/worker.py:8:class TaskWorker:
+app/tools/base.py:7:@dataclass(frozen=True)
+app/tools/base.py:8:class Tool:
+app/tools/permissions.py:18:class ToolSecurityError(ValueError):
