@@ -1,0 +1,144 @@
+## Task.stages
+127-        nullable=False,
+128-    )
+129-
+130:    stages: Mapped[list[dict]] = mapped_column(
+131-        JSON,
+132-        default=list,
+133-        nullable=False,
+
+## project_progress
+8-PROGRESS_FILE = BASE_DIR / "docs" / "progress.yaml"
+9-
+10:VALID_STATUSES = {"completed", "in_progress", "planned"}
+11-
+12-
+--
+15-
+16-
+17:def _validate_stage(stage: Any, index: int) -> dict[str, Any]:
+18-    if not isinstance(stage, dict):
+19-        raise ProgressConfigError(f"Etap nr {index} musi być obiektem.")
+--
+27-        )
+28-
+29:    if not isinstance(stage["id"], str) or not stage["id"].strip():
+30-        raise ProgressConfigError(f"Etap nr {index} ma niepoprawne id.")
+31-
+32:    if not isinstance(stage["name"], str) or not stage["name"].strip():
+33-        raise ProgressConfigError(f"Etap nr {index} ma niepoprawną nazwę.")
+34-
+35:    if stage["status"] not in VALID_STATUSES:
+36-        raise ProgressConfigError(
+37:            f"Etap {stage['id']} ma niepoprawny status: "
+38:            f"{stage['status']!r}."
+39-        )
+40-
+41:    progress = stage["progress"]
+42-    if isinstance(progress, bool) or not isinstance(progress, int):
+43-        raise ProgressConfigError(
+44:            f"Etap {stage['id']} musi mieć całkowity postęp."
+45-        )
+46-
+47-    if not 0 <= progress <= 100:
+48-        raise ProgressConfigError(
+49:            f"Etap {stage['id']} musi mieć postęp od 0 do 100."
+50-        )
+51-
+--
+53-    if not isinstance(items, list):
+54-        raise ProgressConfigError(
+55:            f"Elementy etapu {stage['id']} muszą być listą."
+56-        )
+57-
+--
+61-def load_project_progress(
+62-    path: Path = PROGRESS_FILE,
+63:) -> dict[str, Any]:
+64-    """Wczytuje i waliduje konfigurację postępu projektu."""
+65-    try:
+--
+90-    ]
+91-
+92:    ids = [stage["id"] for stage in validated_stages]
+93-    if len(ids) != len(set(ids)):
+94-        raise ProgressConfigError("Identyfikatory etapów muszą być unikalne.")
+95-
+96-    total_progress = round(
+97:        sum(stage["progress"] for stage in validated_stages)
+98-        / len(validated_stages)
+99-    )
+
+## Tool risk_level
+app/tools/base.py-9-    name: str
+app/tools/base.py-10-    description: str
+app/tools/base.py-11-    handler: Callable[..., Any]
+app/tools/base.py:12:    risk_level: str = "low"
+app/tools/base.py:13:    requires_approval: bool = False
+app/tools/base.py-14-
+app/tools/base.py-15-    def execute(self, **kwargs: Any) -> Any:
+app/tools/base.py-16-        return self.handler(**kwargs)
+--
+app/tools/registry.py-15-        name="read_project_file",
+app/tools/registry.py-16-        description="Odczytuje tekstowy plik znajdujący się w katalogu projektu.",
+app/tools/registry.py-17-        handler=read_project_file,
+app/tools/registry.py:18:        risk_level="low",
+app/tools/registry.py:19:        requires_approval=False,
+app/tools/registry.py-20-    ),
+app/tools/registry.py-21-    "list_project_files": Tool(
+app/tools/registry.py-22-        name="list_project_files",
+app/tools/registry.py-23-        description="Wyświetla dozwolone pliki projektu.",
+app/tools/registry.py-24-        handler=list_project_files,
+app/tools/registry.py:25:        risk_level="low",
+app/tools/registry.py:26:        requires_approval=False,
+app/tools/registry.py-27-    ),
+app/tools/registry.py-28-    "write_project_file": Tool(
+app/tools/registry.py-29-        name="write_project_file",
+app/tools/registry.py-30-        description="Zapisuje tekst do dozwolonego pliku projektu.",
+app/tools/registry.py-31-        handler=write_project_file,
+app/tools/registry.py:32:        risk_level="high",
+app/tools/registry.py:33:        requires_approval=True,
+app/tools/registry.py-34-    ),
+app/tools/registry.py-35-}
+app/tools/registry.py-36-
+--
+app/tools/registry.py-50-) -> Any:
+app/tools/registry.py-51-    tool = get_tool(name)
+app/tools/registry.py-52-
+app/tools/registry.py:53:    if tool.requires_approval and not approved:
+app/tools/registry.py-54-        raise PermissionError(
+app/tools/registry.py-55-            f"Narzędzie {name} wymaga zatwierdzenia użytkownika."
+app/tools/registry.py-56-        )
+--
+app/services/tasks.py-58-        description: str | None = None,
+app/services/tasks.py-59-        priority: TaskPriority = TaskPriority.NORMAL,
+app/services/tasks.py-60-        resource_class: ResourceClass = ResourceClass.LIGHT,
+app/services/tasks.py:61:        risk_level: RiskLevel = RiskLevel.LOW,
+app/services/tasks.py-62-        assigned_agent: str | None = None,
+app/services/tasks.py-63-    ) -> Task:
+app/services/tasks.py-64-        normalized_title = title.strip()
+--
+app/services/tasks.py-92-            approval_status=ApprovalStatus.PENDING,
+app/services/tasks.py-93-            priority=priority,
+app/services/tasks.py-94-            resource_class=resource_class,
+app/services/tasks.py:95:            risk_level=risk_level,
+app/services/tasks.py-96-            assigned_agent=normalized_agent,
+app/services/tasks.py-97-            queued_at=utc_now(),
+app/services/tasks.py-98-        )
+--
+app/services/tasks.py-134-        approval_status: ApprovalStatus | None = None,
+app/services/tasks.py-135-        priority: TaskPriority | None = None,
+app/services/tasks.py-136-        resource_class: ResourceClass | None = None,
+app/services/tasks.py:137:        risk_level: RiskLevel | None = None,
+app/services/tasks.py-138-        assigned_agent: str | None = None,
+app/services/tasks.py-139-    ) -> list[Task]:
+app/services/tasks.py-140-        if not 1 <= limit <= 100:
+--
+app/services/tasks.py-168-                Task.resource_class == resource_class
+app/services/tasks.py-169-            )
+app/services/tasks.py-170-
+app/services/tasks.py:171:        if risk_level is not None:
+app/services/tasks.py:172:            statement = statement.where(Task.risk_level == risk_level)
+app/services/tasks.py-173-
+app/services/tasks.py-174-        if normalized_agent is not None:
+app/services/tasks.py-175-            statement = statement.where(
