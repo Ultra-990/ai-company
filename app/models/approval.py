@@ -21,6 +21,12 @@ class ApprovalRequestStatus(str, PyEnum):
 
 
 class ApprovalRequest(Base):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        if self.status is None:
+            self.status = ApprovalRequestStatus.PENDING
+
     __tablename__ = "approval_requests"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
