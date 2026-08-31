@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, Enum, Integer, JSON, String, Text
+from sqlalchemy import DateTime, Enum, Integer, JSON, String, Text, event
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -298,3 +298,10 @@ class Task(Base):
 
         elif progress == 0 and self.status == TaskStatus.IN_PROGRESS:
             self.status = TaskStatus.PENDING
+
+
+@event.listens_for(Task, "before_insert")
+@event.listens_for(Task, "before_update")
+def validate_task_stages_before_save(mapper, connection, target: Task) -> None:
+    """Nie pozwala zapisać zadania z niepoprawnymi etapami."""
+    target.validate_stages()
