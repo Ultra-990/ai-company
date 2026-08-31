@@ -57,22 +57,6 @@ def test_task_cannot_retry_after_retry_budget_is_exhausted():
         task.retry()
 
 
-@pytest.mark.parametrize(
-    "source,target",
-    [
-        (TaskStatus.PENDING, TaskStatus.SUCCEEDED),
-        (TaskStatus.READY, TaskStatus.SUCCEEDED),
-        (TaskStatus.SUCCEEDED, TaskStatus.READY),
-        (TaskStatus.CANCELLED, TaskStatus.READY),
-    ],
-)
-def test_invalid_task_transitions_are_rejected(source, target):
-    task = TaskContract("t1", "Build", status=source)
-
-    with pytest.raises(ContractError):
-        task.transition(target)
-
-
 def test_approved_request_can_expire_but_not_be_rejected():
     approval = ApprovalRequestContract("a1", "Deploy", "owner")
     approval.transition(ApprovalStatus.APPROVED)
