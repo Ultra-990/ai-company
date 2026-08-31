@@ -1,3 +1,4 @@
+from .contracts import Department, MemoryRecord
 from .contracts import (
     AgentContract,
     ApprovalRequestContract,
@@ -15,6 +16,8 @@ from .contracts import (
 )
 
 __all__ = [
+    "Department",
+    "MemoryRecord",
     "AgentContract",
     "ApprovalRequestContract",
     "ApprovalStatus",
