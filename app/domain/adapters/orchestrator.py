@@ -1,4 +1,11 @@
 from __future__ import annotations
+from app.domain.contracts import ContractError
+from app.domain.contracts import ContractError
+from app.domain.contracts import ContractError
+
+from typing import Any
+
+from app.domain.contracts import TaskContract, TaskStatus
 
 from app.domain.contracts import Department, MemoryRecord
 from app.domain.repositories import (
@@ -14,6 +21,7 @@ class DomainRegistry:
         self,
         memory_repository: MemoryRepository | None = None,
     ) -> None:
+        self._tasks: dict[str, TaskContract] = {}
         self._departments: dict[str, Department] = {}
         self._memory_repository = (
             memory_repository
@@ -56,3 +64,52 @@ class DomainRegistry:
 
     def delete_memory(self, memory_id: str) -> bool:
         return self._memory_repository.delete(memory_id)
+
+    def register_task(self, task: TaskContract) -> None:
+        if task.id in self._tasks:
+            raise ContractError(
+                f"Task '{task.id}' is already registered"
+            )
+        self._tasks[task.id] = task
+
+    def get_task(self, task_id: str) -> TaskContract:
+        try:
+            return self._tasks[task_id]
+        except KeyError as exc:
+            raise ContractError(
+                f"Task '{task_id}' is not registered"
+            ) from exc
+
+
+class TaskContractAdapter:
+    """Adapter izolujący TaskContract od istniejącego Orchestratora."""
+
+    def __init__(self, task: TaskContract) -> None:
+        self.task = task
+
+    @property
+    def task_id(self) -> str:
+        return self.task.id
+
+    @property
+    def status(self) -> TaskStatus:
+        return self.task.status
+
+    def transition(self, target: TaskStatus) -> None:
+        self.task.transition(target)
+
+    def retry(self) -> None:
+        self.task.retry()
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.task.id,
+            "title": self.task.title,
+            "status": self.task.status.value,
+            "parent_id": self.task.parent_id,
+            "retry_count": self.task.retry_count,
+            "max_retries": self.task.max_retries,
+            "metadata": dict(self.task.metadata),
+        }
+
+
