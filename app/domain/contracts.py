@@ -50,7 +50,21 @@ class TaskContract:
     max_retries: int = 0
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if not self.id.strip():
+            raise ContractError("task id must not be empty")
+        if not self.title.strip():
+            raise ContractError("task title must not be empty")
+        if self.retry_count < 0:
+            raise ContractError("retry_count must not be negative")
+        if self.max_retries < 0:
+            raise ContractError("max_retries must not be negative")
+        if self.retry_count > self.max_retries:
+            raise ContractError("retry_count cannot exceed max_retries")
+
     def transition(self, target: TaskStatus) -> None:
+        if not isinstance(target, TaskStatus):
+            raise ContractError("target must be a TaskStatus")
         allowed = {
             TaskStatus.PENDING: {TaskStatus.READY, TaskStatus.BLOCKED, TaskStatus.CANCELLED},
             TaskStatus.READY: {TaskStatus.RUNNING, TaskStatus.BLOCKED, TaskStatus.CANCELLED},
@@ -83,7 +97,17 @@ class ApprovalRequestContract:
     autonomy: AutonomyLevel = AutonomyLevel.A0
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if not self.id.strip():
+            raise ContractError("approval id must not be empty")
+        if not self.subject.strip():
+            raise ContractError("approval subject must not be empty")
+        if not self.requested_by.strip():
+            raise ContractError("requested_by must not be empty")
+
     def transition(self, target: ApprovalStatus) -> None:
+        if not isinstance(target, ApprovalStatus):
+            raise ContractError("target must be an ApprovalStatus")
         allowed = {
             ApprovalStatus.PENDING: {ApprovalStatus.APPROVED, ApprovalStatus.REJECTED, ApprovalStatus.EXPIRED},
             ApprovalStatus.APPROVED: {ApprovalStatus.EXPIRED},
