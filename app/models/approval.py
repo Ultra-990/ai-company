@@ -18,7 +18,9 @@ class ApprovalRequestStatus(str, PyEnum):
     APPROVED = "approved"
     REJECTED = "rejected"
     EXPIRED = "expired"
+    EXECUTING = "executing"
     EXECUTED = "executed"
+    EXECUTION_FAILED = "execution_failed"
 
 
 class ApprovalRequest(Base):

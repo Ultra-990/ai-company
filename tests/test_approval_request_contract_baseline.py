@@ -32,6 +32,9 @@ def test_approval_request_status_is_pending_by_default():
         ApprovalRequestStatus.PENDING,
         ApprovalRequestStatus.APPROVED,
         ApprovalRequestStatus.REJECTED,
+        ApprovalRequestStatus.EXECUTING,
+        ApprovalRequestStatus.EXECUTED,
+        ApprovalRequestStatus.EXECUTION_FAILED,
     ],
 )
 def test_approval_request_accepts_supported_statuses(status):

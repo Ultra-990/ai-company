@@ -13,13 +13,17 @@ from app.core.database import (
     create_database_engine,
     create_session_factory,
 )
-from app.db.migrations import migrate_approval_request_schema
+from app.db.migrations import (
+    migrate_approval_request_schema,
+    migrate_pending_tool_execution_schema,
+)
 from app.models.approval import (
     ApprovalRequest,
     ApprovalRequestStatus,
     utc_now,
 )
 from app.models.audit import AuditEvent
+from app.models.pending_tool_execution import PendingToolExecution
 
 
 class ApprovalRequestNotFoundError(LookupError):
@@ -38,13 +42,17 @@ class ApprovalArgumentsMismatchError(ApprovalExecutionDeniedError):
     """Argumenty wykonania różnią się od zatwierdzonych."""
 
 
-def canonical_arguments_digest(arguments: Mapping[str, Any]) -> str:
-    """Zwraca SHA-256 kanonicznej reprezentacji JSON argumentów."""
+class ApprovalExecutionInProgressError(ApprovalExecutionDeniedError):
+    """Wykonanie zatwierdzonego wniosku już trwa."""
+
+
+def canonical_arguments_json(arguments: Mapping[str, Any]) -> str:
+    """Zwraca deterministyczną, kanoniczną reprezentację JSON argumentów."""
     if not isinstance(arguments, Mapping):
         raise ValueError("Argumenty muszą być obiektem mapującym.")
 
     try:
-        canonical = json.dumps(
+        return json.dumps(
             dict(arguments),
             ensure_ascii=False,
             sort_keys=True,
@@ -56,6 +64,10 @@ def canonical_arguments_digest(arguments: Mapping[str, Any]) -> str:
             "Argumenty narzędzia muszą być serializowalne do JSON."
         ) from exc
 
+
+def canonical_arguments_digest(arguments: Mapping[str, Any]) -> str:
+    """Zwraca SHA-256 kanonicznej reprezentacji JSON argumentów."""
+    canonical = canonical_arguments_json(arguments)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -119,6 +131,7 @@ class ApprovalRepository:
         if initialize:
             Base.metadata.create_all(self._engine)
             migrate_approval_request_schema(self._engine)
+            migrate_pending_tool_execution_schema(self._engine)
 
     def create(
         self,
@@ -189,6 +202,7 @@ class ApprovalRepository:
             normalized_tool_name,
             arguments,
         )
+        arguments_json = canonical_arguments_json(arguments)
         arguments_digest = canonical_arguments_digest(arguments)
 
         request = ApprovalRequest(
@@ -202,6 +216,17 @@ class ApprovalRepository:
 
         with self._session_factory() as session:
             session.add(request)
+            session.flush()
+
+            session.add(
+                PendingToolExecution(
+                    approval_request_id=request.id,
+                    tool_name=normalized_tool_name,
+                    arguments_json=arguments_json,
+                    arguments_digest=arguments_digest,
+                )
+            )
+
             session.commit()
             session.refresh(request)
             session.expunge(request)
@@ -401,6 +426,198 @@ class ApprovalRepository:
                     reason=(
                         f"approval_request_id={request_id}; "
                         f"tool_name={normalized_tool_name}; status=executed"
+                    ),
+                )
+            )
+            session.commit()
+
+            request = session.get(ApprovalRequest, request_id)
+            assert request is not None
+            session.expunge(request)
+            return request
+
+
+    def begin_execution(
+        self,
+        request_id: int,
+        *,
+        tool_name: str,
+        arguments_digest: str,
+    ) -> ApprovalRequest:
+        """
+        Atomowo rezerwuje zatwierdzony wniosek do wykonania.
+
+        Wyłącznie jedna równoległa próba może wykonać przejście
+        APPROVED → EXECUTING.
+        """
+        if (
+            not isinstance(request_id, int)
+            or isinstance(request_id, bool)
+            or request_id <= 0
+        ):
+            raise ApprovalExecutionDeniedError(
+                "Niepoprawny approval_request_id."
+            )
+        if not isinstance(tool_name, str) or not tool_name.strip():
+            raise ApprovalExecutionDeniedError(
+                "Niepoprawna nazwa narzędzia."
+            )
+        if (
+            not isinstance(arguments_digest, str)
+            or len(arguments_digest) != 64
+        ):
+            raise ApprovalExecutionDeniedError(
+                "Niepoprawny odcisk argumentów."
+            )
+
+        normalized_tool_name = tool_name.strip()
+
+        with self._session_factory() as session:
+            result = session.execute(
+                update(ApprovalRequest)
+                .where(
+                    ApprovalRequest.id == request_id,
+                    ApprovalRequest.status == ApprovalRequestStatus.APPROVED,
+                    ApprovalRequest.tool_name == normalized_tool_name,
+                    ApprovalRequest.arguments_digest == arguments_digest,
+                    ApprovalRequest.executed_at.is_(None),
+                )
+                .values(status=ApprovalRequestStatus.EXECUTING)
+            )
+
+            if result.rowcount != 1:
+                request = session.get(ApprovalRequest, request_id)
+
+                if request is None:
+                    raise ApprovalRequestNotFoundError(
+                        f"Nie znaleziono wniosku {request_id}"
+                    )
+                if request.arguments_digest != arguments_digest:
+                    raise ApprovalArgumentsMismatchError(
+                        "Argumenty różnią się od zatwierdzonych."
+                    )
+                if request.tool_name != normalized_tool_name:
+                    raise ApprovalExecutionDeniedError(
+                        "Zgoda dotyczy innego narzędzia."
+                    )
+                if request.status == ApprovalRequestStatus.EXECUTING:
+                    raise ApprovalExecutionInProgressError(
+                        "Wykonanie wniosku już trwa."
+                    )
+                if request.status in {
+                    ApprovalRequestStatus.EXECUTED,
+                    ApprovalRequestStatus.EXECUTION_FAILED,
+                }:
+                    raise ApprovalExecutionDeniedError(
+                        "Wniosek został już wykorzystany."
+                    )
+                raise ApprovalExecutionDeniedError(
+                    "Wniosek nie jest zatwierdzony."
+                )
+
+            session.add(
+                AuditEvent(
+                    event_type="approval_request",
+                    operation="execution_started",
+                    decision="execution_started",
+                    allowed=True,
+                    reason=(
+                        f"approval_request_id={request_id}; "
+                        f"tool_name={normalized_tool_name}; "
+                        "status=executing"
+                    ),
+                )
+            )
+            session.commit()
+
+            request = session.get(ApprovalRequest, request_id)
+            assert request is not None
+            session.expunge(request)
+            return request
+
+    def finish_execution(self, request_id: int) -> ApprovalRequest:
+        """Oznacza wcześniej zarezerwowane wykonanie jako udane."""
+        with self._session_factory() as session:
+            result = session.execute(
+                update(ApprovalRequest)
+                .where(
+                    ApprovalRequest.id == request_id,
+                    ApprovalRequest.status == ApprovalRequestStatus.EXECUTING,
+                )
+                .values(
+                    status=ApprovalRequestStatus.EXECUTED,
+                    executed_at=utc_now(),
+                )
+            )
+
+            if result.rowcount != 1:
+                raise ApprovalExecutionDeniedError(
+                    "Nie można zakończyć wykonania wniosku."
+                )
+
+            session.add(
+                AuditEvent(
+                    event_type="approval_request",
+                    operation="executed",
+                    decision="executed",
+                    allowed=True,
+                    reason=(
+                        f"approval_request_id={request_id}; "
+                        "status=executed"
+                    ),
+                )
+            )
+            session.commit()
+
+            request = session.get(ApprovalRequest, request_id)
+            assert request is not None
+            session.expunge(request)
+            return request
+
+    def fail_execution(
+        self,
+        request_id: int,
+        *,
+        reason: str = "Wykonanie narzędzia zakończyło się błędem.",
+    ) -> ApprovalRequest:
+        """
+        Kończy zarezerwowane wykonanie błędem.
+
+        Nie zapisuje komunikatu oryginalnego wyjątku, ponieważ mógłby zawierać
+        treść pliku, ścieżki lub inne dane wrażliwe.
+        """
+        safe_reason = reason.strip()[:500]
+        if not safe_reason:
+            safe_reason = "Wykonanie narzędzia zakończyło się błędem."
+
+        with self._session_factory() as session:
+            result = session.execute(
+                update(ApprovalRequest)
+                .where(
+                    ApprovalRequest.id == request_id,
+                    ApprovalRequest.status == ApprovalRequestStatus.EXECUTING,
+                )
+                .values(
+                    status=ApprovalRequestStatus.EXECUTION_FAILED,
+                    resolved_at=utc_now(),
+                    reason=safe_reason,
+                )
+            )
+
+            if result.rowcount != 1:
+                raise ApprovalExecutionDeniedError(
+                    "Nie można oznaczyć wykonania jako nieudane."
+                )
+
+            session.add(
+                AuditEvent(
+                    event_type="approval_request",
+                    operation="execution_failed",
+                    decision="execution_failed",
+                    allowed=False,
+                    reason=(
+                        f"approval_request_id={request_id}; "
+                        "status=execution_failed"
                     ),
                 )
             )
