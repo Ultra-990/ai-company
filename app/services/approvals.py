@@ -59,6 +59,49 @@ def canonical_arguments_digest(arguments: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def build_tool_approval_preview(
+    tool_name: str,
+    arguments: Mapping[str, Any],
+) -> str:
+    """
+    Buduje bezpieczny, deterministyczny podgląd dla właściciela.
+
+    Podgląd nie może zależeć od opisu dostarczonego przez klienta i nie
+    zawiera wrażliwej treści argumentu ``content``.
+    """
+    if not isinstance(tool_name, str):
+        raise ValueError("Nazwa narzędzia musi być tekstem.")
+    if not isinstance(arguments, Mapping):
+        raise ValueError("Argumenty muszą być obiektem mapującym.")
+
+    normalized_tool_name = tool_name.strip()
+
+    if normalized_tool_name != "write_project_file":
+        raise ValueError(
+            "Tworzenie wniosków jest dozwolone wyłącznie dla obsługiwanych "
+            "narzędzi wymagających zatwierdzenia."
+        )
+
+    path = arguments.get("path")
+    content = arguments.get("content")
+
+    if not isinstance(path, str) or not path.strip():
+        raise ValueError("Argument path musi być niepustym tekstem.")
+    if not isinstance(content, str):
+        raise ValueError("Argument content musi być tekstem.")
+
+    encoded_content = content.encode("utf-8")
+    content_digest = hashlib.sha256(encoded_content).hexdigest()
+
+    return (
+        "Zapis pliku projektu:\n"
+        f"- ścieżka: {path.strip()}\n"
+        "- operacja: utworzenie lub nadpisanie pliku\n"
+        f"- rozmiar treści UTF-8: {len(encoded_content)} B\n"
+        f"- SHA-256 treści: {content_digest}"
+    )
+
+
 class ApprovalRepository:
     """Trwałe repozytorium wniosków o zatwierdzenie."""
 
@@ -118,8 +161,21 @@ class ApprovalRepository:
         task_id: int,
         tool_name: str,
         arguments: Mapping[str, Any],
-        description: str,
+        description: str | None = None,
     ) -> ApprovalRequest:
+        """
+        Tworzy kompletny kontrakt wykonania narzędzia w jednej transakcji.
+
+        Parametr ``description`` pozostaje tymczasowo dla zgodności wstecznej,
+        lecz nie jest zaufany i nie wpływa na opis widoczny dla właściciela.
+        """
+        if (
+            not isinstance(task_id, int)
+            or isinstance(task_id, bool)
+            or task_id <= 0
+        ):
+            raise ValueError("task_id musi być dodatni")
+
         if not isinstance(tool_name, str):
             raise ValueError("Nazwa narzędzia musi być tekstem.")
 
@@ -129,21 +185,28 @@ class ApprovalRepository:
         if len(normalized_tool_name) > 128:
             raise ValueError("Nazwa narzędzia nie może przekraczać 128 znaków.")
 
-        request = self.create(
+        preview = build_tool_approval_preview(
+            normalized_tool_name,
+            arguments,
+        )
+        arguments_digest = canonical_arguments_digest(arguments)
+
+        request = ApprovalRequest(
             task_id=task_id,
             operation_type="tool_call",
-            description=description,
+            description=preview,
+            status=ApprovalRequestStatus.PENDING,
+            tool_name=normalized_tool_name,
+            arguments_digest=arguments_digest,
         )
 
         with self._session_factory() as session:
-            stored = session.get(ApprovalRequest, request.id)
-            assert stored is not None
-            stored.tool_name = normalized_tool_name
-            stored.arguments_digest = canonical_arguments_digest(arguments)
+            session.add(request)
             session.commit()
-            session.refresh(stored)
-            session.expunge(stored)
-            return stored
+            session.refresh(request)
+            session.expunge(request)
+
+        return request
 
     def get(self, request_id: int) -> ApprovalRequest | None:
         with self._session_factory() as session:
