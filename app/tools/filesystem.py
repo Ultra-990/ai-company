@@ -8,6 +8,7 @@ from app.tools.permissions import ToolSecurityError
 
 MAX_READ_SIZE = 1024 * 1024
 MAX_WRITE_SIZE = 1024 * 1024
+MAX_LIST_ITEMS = 500
 
 # Pliki, których narzędzie nigdy nie może odczytywać ani modyfikować.
 SENSITIVE_NAMES = {
@@ -88,18 +89,43 @@ def list_project_files(
     path: str = ".",
     *,
     recursive: bool = False,
+    max_items: int = MAX_LIST_ITEMS,
 ) -> list[str]:
+    """Bezpiecznie listuje pliki projektu bez ujawniania symlinków."""
+    if (
+        not isinstance(max_items, int)
+        or isinstance(max_items, bool)
+        or max_items <= 0
+        or max_items > MAX_LIST_ITEMS
+    ):
+        raise ToolSecurityError(
+            f"Limit max_items musi mieścić się w zakresie 1-{MAX_LIST_ITEMS}."
+        )
+
+    root = permissions.project_root()
+    requested_path = root / Path(path)
+
+    # Wykrycie symlinku przed resolve(), które może ukryć jego naturę.
+    if requested_path.is_symlink():
+        raise ToolSecurityError(
+            "Nie można listować katalogu będącego dowiązaniem symbolicznym."
+        )
+
     base_dir = permissions.safe_project_path(path)
 
     if not base_dir.is_dir():
         raise ToolSecurityError("Wskazana ścieżka nie jest katalogiem.")
 
-    project_root = permissions.project_root()
+    resolved_root = root.resolve()
+    iterator = base_dir.rglob("*") if recursive else base_dir.iterdir()
     items: list[str] = []
 
-    iterator = base_dir.rglob("*") if recursive else base_dir.iterdir()
-
     for entry in iterator:
+        # Symlink może wskazywać wewnątrz albo poza projektem:
+        # w obu przypadkach nie ujawniamy go na liście.
+        if entry.is_symlink():
+            continue
+
         if not entry.is_file():
             continue
 
@@ -109,12 +135,22 @@ def list_project_files(
         if any(part in SENSITIVE_NAMES for part in entry.parts):
             continue
 
-        if recursive:
-            items.append(str(entry.relative_to(project_root)))
-        else:
-            items.append(entry.name)
+        try:
+            entry.resolve().relative_to(resolved_root)
+        except ValueError:
+            continue
+
+        if len(items) >= max_items:
+            raise ToolSecurityError(
+                f"Lista plików przekracza limit {max_items} pozycji."
+            )
+
+        items.append(
+            str(entry.relative_to(resolved_root)) if recursive else entry.name
+        )
 
     return sorted(items)
+
 
 
 def read_project_file(

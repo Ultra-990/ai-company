@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -138,3 +139,87 @@ def test_registry_requires_approval_for_write_tool():
 
     assert tool.risk_level == "high"
     assert tool.requires_approval is True
+
+def test_list_project_files_omits_internal_symlink(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+
+    target = root / "visible.txt"
+    target.write_text("content", encoding="utf-8")
+
+    link = root / "visible-link.txt"
+    os.symlink(target.name, link)
+
+    monkeypatch.setattr("app.tools.permissions.project_root", lambda: root)
+
+    files = list_project_files()
+
+    assert "visible.txt" in files
+    assert "visible-link.txt" not in files
+
+
+def test_list_project_files_omits_external_symlink(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+
+    outside = tmp_path / "secret.txt"
+    outside.write_text("SECRET=1", encoding="utf-8")
+
+    link = root / "outside-link.txt"
+    os.symlink(outside, link)
+
+    monkeypatch.setattr("app.tools.permissions.project_root", lambda: root)
+
+    assert "outside-link.txt" not in list_project_files()
+
+
+def test_list_project_files_rejects_symlink_directory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+
+    target = root / "target"
+    target.mkdir()
+
+    link = root / "linked-directory"
+    os.symlink(target.name, link)
+
+    monkeypatch.setattr("app.tools.permissions.project_root", lambda: root)
+
+    with pytest.raises(ToolSecurityError):
+        list_project_files("linked-directory")
+
+
+def test_list_project_files_enforces_item_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+
+    for index in range(3):
+        (root / f"file-{index}.txt").write_text(
+            "content",
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr("app.tools.permissions.project_root", lambda: root)
+
+    with pytest.raises(ToolSecurityError, match="przekracza limit"):
+        list_project_files(max_items=2)
+
+
+@pytest.mark.parametrize("max_items", [0, -1, True, "2"])
+def test_list_project_files_rejects_invalid_item_limit(
+    max_items: object,
+) -> None:
+    with pytest.raises(ToolSecurityError, match="max_items"):
+        list_project_files(max_items=max_items)  # type: ignore[arg-type]
