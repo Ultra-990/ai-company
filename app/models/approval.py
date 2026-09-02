@@ -18,6 +18,7 @@ class ApprovalRequestStatus(str, PyEnum):
     APPROVED = "approved"
     REJECTED = "rejected"
     EXPIRED = "expired"
+    EXECUTED = "executed"
 
 
 class ApprovalRequest(Base):
@@ -39,12 +40,25 @@ class ApprovalRequest(Base):
         nullable=False,
         index=True,
     )
+    tool_name: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+        index=True,
+    )
+    arguments_digest: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,
         nullable=False,
     )
     resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    executed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )

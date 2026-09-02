@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
+import hashlib
+import json
+from collections.abc import Mapping
+from typing import Any
 
 from sqlalchemy import Engine, select, update
 from sqlalchemy.orm import Session, sessionmaker
@@ -10,6 +13,7 @@ from app.core.database import (
     create_database_engine,
     create_session_factory,
 )
+from app.db.migrations import migrate_approval_request_schema
 from app.models.approval import (
     ApprovalRequest,
     ApprovalRequestStatus,
@@ -24,6 +28,35 @@ class ApprovalRequestNotFoundError(LookupError):
 
 class ApprovalStateConflictError(RuntimeError):
     """Wniosek ma już rozstrzygnięty status."""
+
+
+class ApprovalExecutionDeniedError(PermissionError):
+    """Wniosek nie może autoryzować wykonania narzędzia."""
+
+
+class ApprovalArgumentsMismatchError(ApprovalExecutionDeniedError):
+    """Argumenty wykonania różnią się od zatwierdzonych."""
+
+
+def canonical_arguments_digest(arguments: Mapping[str, Any]) -> str:
+    """Zwraca SHA-256 kanonicznej reprezentacji JSON argumentów."""
+    if not isinstance(arguments, Mapping):
+        raise ValueError("Argumenty muszą być obiektem mapującym.")
+
+    try:
+        canonical = json.dumps(
+            dict(arguments),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "Argumenty narzędzia muszą być serializowalne do JSON."
+        ) from exc
+
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 class ApprovalRepository:
@@ -42,6 +75,7 @@ class ApprovalRepository:
 
         if initialize:
             Base.metadata.create_all(self._engine)
+            migrate_approval_request_schema(self._engine)
 
     def create(
         self,
@@ -50,7 +84,7 @@ class ApprovalRepository:
         operation_type: str,
         description: str,
     ) -> ApprovalRequest:
-        if task_id <= 0:
+        if not isinstance(task_id, int) or isinstance(task_id, bool) or task_id <= 0:
             raise ValueError("task_id musi być dodatni")
 
         operation = operation_type.strip()
@@ -78,6 +112,39 @@ class ApprovalRepository:
 
         return request
 
+    def create_tool_request(
+        self,
+        *,
+        task_id: int,
+        tool_name: str,
+        arguments: Mapping[str, Any],
+        description: str,
+    ) -> ApprovalRequest:
+        if not isinstance(tool_name, str):
+            raise ValueError("Nazwa narzędzia musi być tekstem.")
+
+        normalized_tool_name = tool_name.strip()
+        if not normalized_tool_name:
+            raise ValueError("Nazwa narzędzia nie może być pusta.")
+        if len(normalized_tool_name) > 128:
+            raise ValueError("Nazwa narzędzia nie może przekraczać 128 znaków.")
+
+        request = self.create(
+            task_id=task_id,
+            operation_type="tool_call",
+            description=description,
+        )
+
+        with self._session_factory() as session:
+            stored = session.get(ApprovalRequest, request.id)
+            assert stored is not None
+            stored.tool_name = normalized_tool_name
+            stored.arguments_digest = canonical_arguments_digest(arguments)
+            session.commit()
+            session.refresh(stored)
+            session.expunge(stored)
+            return stored
+
     def get(self, request_id: int) -> ApprovalRequest | None:
         with self._session_factory() as session:
             request = session.get(ApprovalRequest, request_id)
@@ -99,10 +166,7 @@ class ApprovalRepository:
 
         statement = (
             select(ApprovalRequest)
-            .where(
-                ApprovalRequest.status
-                == ApprovalRequestStatus.PENDING
-            )
+            .where(ApprovalRequest.status == ApprovalRequestStatus.PENDING)
             .order_by(
                 ApprovalRequest.created_at.asc(),
                 ApprovalRequest.id.asc(),
@@ -136,8 +200,7 @@ class ApprovalRepository:
                 update(ApprovalRequest)
                 .where(
                     ApprovalRequest.id == request_id,
-                    ApprovalRequest.status
-                    == ApprovalRequestStatus.PENDING,
+                    ApprovalRequest.status == ApprovalRequestStatus.PENDING,
                 )
                 .values(
                     status=new_status,
@@ -160,8 +223,7 @@ class ApprovalRepository:
                     event_type="approval_request",
                     operation=new_status.value,
                     decision=new_status.value,
-                    allowed=new_status
-                    == ApprovalRequestStatus.APPROVED,
+                    allowed=new_status == ApprovalRequestStatus.APPROVED,
                     reason=(
                         f"approval_request_id={request_id}; "
                         f"status={new_status.value}; reason={safe_reason}"
@@ -210,6 +272,81 @@ class ApprovalRepository:
             ApprovalRequestStatus.EXPIRED,
             reason=reason,
         )
+
+    def consume_approved_request(
+        self,
+        request_id: int,
+        *,
+        tool_name: str,
+        arguments_digest: str,
+    ) -> ApprovalRequest:
+        if not isinstance(request_id, int) or isinstance(request_id, bool) or request_id <= 0:
+            raise ApprovalExecutionDeniedError("Niepoprawny approval_request_id.")
+        if not isinstance(tool_name, str) or not tool_name.strip():
+            raise ApprovalExecutionDeniedError("Niepoprawna nazwa narzędzia.")
+        if not isinstance(arguments_digest, str) or len(arguments_digest) != 64:
+            raise ApprovalExecutionDeniedError("Niepoprawny odcisk argumentów.")
+
+        normalized_tool_name = tool_name.strip()
+        now = utc_now()
+
+        with self._session_factory() as session:
+            result = session.execute(
+                update(ApprovalRequest)
+                .where(
+                    ApprovalRequest.id == request_id,
+                    ApprovalRequest.status == ApprovalRequestStatus.APPROVED,
+                    ApprovalRequest.tool_name == normalized_tool_name,
+                    ApprovalRequest.arguments_digest == arguments_digest,
+                    ApprovalRequest.executed_at.is_(None),
+                )
+                .values(
+                    status=ApprovalRequestStatus.EXECUTED,
+                    executed_at=now,
+                )
+            )
+
+            if result.rowcount != 1:
+                request = session.get(ApprovalRequest, request_id)
+
+                if request is None:
+                    raise ApprovalRequestNotFoundError(
+                        f"Nie znaleziono wniosku {request_id}"
+                    )
+                if request.arguments_digest != arguments_digest:
+                    raise ApprovalArgumentsMismatchError(
+                        "Argumenty różnią się od zatwierdzonych."
+                    )
+                if request.tool_name != normalized_tool_name:
+                    raise ApprovalExecutionDeniedError(
+                        "Zgoda dotyczy innego narzędzia."
+                    )
+                if request.status == ApprovalRequestStatus.EXECUTED:
+                    raise ApprovalExecutionDeniedError(
+                        "Wniosek został już zużyty."
+                    )
+                raise ApprovalExecutionDeniedError(
+                    "Wniosek nie jest zatwierdzony lub nie może zostać użyty."
+                )
+
+            session.add(
+                AuditEvent(
+                    event_type="approval_request",
+                    operation="executed",
+                    decision="executed",
+                    allowed=True,
+                    reason=(
+                        f"approval_request_id={request_id}; "
+                        f"tool_name={normalized_tool_name}; status=executed"
+                    ),
+                )
+            )
+            session.commit()
+
+            request = session.get(ApprovalRequest, request_id)
+            assert request is not None
+            session.expunge(request)
+            return request
 
     def close(self) -> None:
         self._engine.dispose()
