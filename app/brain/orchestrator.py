@@ -1,5 +1,4 @@
 from __future__ import annotations
-from app.domain.adapters.orchestrator import TaskContractAdapter
 
 from dataclasses import asdict, is_dataclass
 from typing import Any, Dict, List
@@ -18,7 +17,11 @@ from app.services.audit import AuditRepository
 from app.services.executor import ExecutionResult, TaskExecutor
 from app.services.tasks import TaskRepository
 from app.services.worker import TaskWorker
-from app.domain.adapters.orchestrator import DomainRegistry
+from app.domain import TaskContract
+from app.domain.adapters.orchestrator import (
+    DomainRegistry,
+    TaskContractAdapter,
+)
 
 
 
@@ -242,8 +245,18 @@ class Orchestrator:
         return item
 
 
-    def register_task_contract(self, task):
+    def register_task_contract(
+        self,
+        task: TaskContract,
+    ) -> TaskContractAdapter:
         self.domain_registry.register_task(task)
+        return TaskContractAdapter(task)
+
+    def get_task_contract_adapter(
+        self,
+        task_id: str,
+    ) -> TaskContractAdapter:
+        task = self.domain_registry.get_task(task_id)
         return TaskContractAdapter(task)
 
     def register_department(self, department):
