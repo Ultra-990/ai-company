@@ -119,7 +119,25 @@ def test_execute_next_returns_500_when_executor_is_not_configured(
 
 
 
-def test_default_task_executor_is_fail_safe() -> None:
+def test_default_task_executor_is_fail_safe(monkeypatch) -> None:
+    from dataclasses import replace
+
+    from app.api import execution
+    from app.core.config import load_settings
+
+    settings = load_settings()
+    settings = replace(
+        settings,
+        llm=replace(settings.llm, enabled=False),
+        agents=replace(settings.agents, enabled=False),
+    )
+
+    monkeypatch.setattr(
+        execution,
+        "load_settings",
+        lambda: settings,
+    )
+
     executor = get_task_executor()
 
     with pytest.raises(RuntimeError, match="Brak skonfigurowanego wykonawcy"):

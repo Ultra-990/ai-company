@@ -1,0 +1,12 @@
+MODEL;STATUS;LOCATIONS
+Agent;MISSING;-
+ApprovalRequest;FOUND;app/models/approval.py, app/brain/context_manager.py
+AuditEvent;FOUND;app/models/audit.py
+Decision;FOUND;app/brain/context_manager.py
+Department;FOUND;app/domain/contracts/department.py
+Manager;MISSING;-
+MemoryRecord;FOUND;app/domain/contracts/memory.py
+Report;MISSING;-
+Risk;MISSING;-
+Task;FOUND;app/models/task.py, app/brain/context_manager.py
+Tool;FOUND;app/tools/base.py

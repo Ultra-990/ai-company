@@ -17,6 +17,12 @@ from app.services.audit import AuditRepository
 from app.services.executor import ExecutionResult, TaskExecutor
 from app.services.tasks import TaskRepository
 from app.services.worker import TaskWorker
+from app.domain import TaskContract
+from app.domain.adapters.orchestrator import (
+    DomainRegistry,
+    TaskContractAdapter,
+)
+
 
 
 class Orchestrator:
@@ -28,7 +34,14 @@ class Orchestrator:
         audit_logger: AuditLogger | None = None,
         reporter: Reporter | None = None,
         audit_repository: AuditRepository | None = None,
+        domain_registry: DomainRegistry | None = None,
     ):
+        self.domain_registry = (
+            domain_registry
+            if domain_registry is not None
+            else DomainRegistry()
+        )
+
         self.context = context or ContextManager()
         self.planner = planner or Planner()
         self.safety_gate = safety_gate or SafetyGate()
@@ -230,3 +243,30 @@ class Orchestrator:
                 for key, value in item.items()
             }
         return item
+
+
+    def register_task_contract(
+        self,
+        task: TaskContract,
+    ) -> TaskContractAdapter:
+        self.domain_registry.register_task(task)
+        return TaskContractAdapter(task)
+
+    def get_task_contract_adapter(
+        self,
+        task_id: str,
+    ) -> TaskContractAdapter:
+        task = self.domain_registry.get_task(task_id)
+        return TaskContractAdapter(task)
+
+    def register_department(self, department):
+        return self.domain_registry.register_department(department)
+
+    def register_memory(self, memory):
+        return self.domain_registry.register_memory(memory)
+
+    def get_department(self, department_id):
+        return self.domain_registry.get_department(department_id)
+
+    def get_memory(self, memory_id):
+        return self.domain_registry.get_memory(memory_id)

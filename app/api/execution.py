@@ -4,6 +4,9 @@ from typing import Annotated
 
 from app.services.agent_task_operation import AgentTaskOperation
 from app.services.llm_task_operation import LLMTaskOperation
+from app.services.tool_calling_task_operation import (
+    ToolCallingLLMTaskOperation,
+)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
@@ -42,7 +45,11 @@ def get_task_executor() -> TaskExecutor:
 
     llm_client = get_llm_client(settings)
     if llm_client is not None:
-        operation = LLMTaskOperation(llm_client)
+        if getattr(settings, "tool_calling_enabled", False):
+            operation = ToolCallingLLMTaskOperation(llm_client)
+        else:
+            operation = LLMTaskOperation(llm_client)
+
         return ProductionTaskExecutor(operation)
 
     if settings.agents.enabled:

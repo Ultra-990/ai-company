@@ -1,5 +1,6 @@
 """Brain v1 package."""
 
+from app.brain.brain import Brain, BrainDecision, BrainTask
 from app.brain.audit_logger import AuditEntry, AuditLogger
 from app.brain.context_manager import (
     AgentProfile,
@@ -15,6 +16,9 @@ from app.brain.reporter import Reporter
 from app.brain.safety_gate import SafetyGate, SafetyResult
 
 __all__ = [
+    "Brain",
+    "BrainDecision",
+    "BrainTask",
     "AuditEntry",
     "AuditLogger",
     "AgentProfile",

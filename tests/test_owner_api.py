@@ -1,3 +1,13 @@
+import os
+
+OWNER_HEADERS = {
+    "Authorization": (
+        "Bearer "
+        + os.environ.get("OWNER_API_TOKEN", "test-owner-token")
+    )
+}
+
+import os
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -17,7 +27,7 @@ def test_pending_approvals_returns_only_pending_tasks(monkeypatch):
 
     monkeypatch.setattr(TaskRepository, "list_recent", fake_list_recent)
 
-    response = client.get("/api/owner/pending-approvals")
+    response = client.get("/api/owner/pending-approvals", headers=OWNER_HEADERS)
 
     assert response.status_code == 200
     assert response.json() == []
@@ -30,7 +40,7 @@ def test_approve_task_returns_404_for_missing_task(monkeypatch):
         lambda self, task_id: None,
     )
 
-    response = client.post("/api/owner/tasks/999999/approve")
+    response = client.post("/api/owner/tasks/999999/approve", headers=OWNER_HEADERS)
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Task not found"}
@@ -43,7 +53,7 @@ def test_reject_task_returns_404_for_missing_task(monkeypatch):
         lambda self, task_id: None,
     )
 
-    response = client.post("/api/owner/tasks/999999/reject")
+    response = client.post("/api/owner/tasks/999999/reject", headers=OWNER_HEADERS)
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Task not found"}

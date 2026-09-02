@@ -1,0 +1,1103 @@
+
+## Pliki aplikacji
+./app/agents/__init__.py
+./app/api/brain.py
+./app/api/dashboard.py
+./app/api/execution.py
+./app/api/__init__.py
+./app/api/owner.py
+./app/api/progress.py
+./app/api/system.py
+./app/api/tasks.py
+./app/brain/audit_logger.py
+./app/brain/brain.py
+./app/brain/context_manager.py
+./app/brain/__init__.py
+./app/brain/orchestrator.py
+./app/brain/persistent_audit.py
+./app/brain/planner.py
+./app/brain/reporter.py
+./app/brain/safety_gate.py
+./app/core/config.py
+./app/core/database.py
+./app/core/__init__.py
+./app/core/safety.py
+./app/db/database.py
+./app/db/__init__.py
+./app/db/migrations.py
+./app/domain/adapters/__init__.py
+./app/domain/adapters/orchestrator.py
+./app/domain/contracts/department.py
+./app/domain/contracts/__init__.py
+./app/domain/contracts/memory.py
+./app/domain/__init__.py
+./app/domain/repositories/__init__.py
+./app/domain/repositories/in_memory_memory.py
+./app/domain/repositories/memory.py
+./app/__init__.py
+./app/main.py
+./app/models/approval.py
+./app/models/audit.py
+./app/models/__init__.py
+./app/models/organization.py
+./app/models/task.py
+./app/services/agent_client.py
+./app/services/agent_factory.py
+./app/services/agent_task_operation.py
+./app/services/approvals.py
+./app/services/audit.py
+./app/services/context.py
+./app/services/documentation.py
+./app/services/executor.py
+./app/services/http_agent_client.py
+./app/services/__init__.py
+./app/services/llm_client.py
+./app/services/llm_task_operation.py
+./app/services/mock_agent_client.py
+./app/services/openai_compatible_llm_client.py
+./app/services/production_executor.py
+./app/services/project_progress.py
+./app/services/scheduler.py
+./app/services/task_operation.py
+./app/services/tasks.py
+./app/services/tool_calling.py
+./app/services/tool_calling_task_operation.py
+./app/services/worker.py
+./app/tools/audit.py
+./app/tools/base.py
+./app/tools/filesystem.py
+./app/tools/__init__.py
+./app/tools/permissions.py
+./app/tools/registry.py
+
+## Definicje klas i enumów
+./app/core/config.py:19:class ConfigurationError(RuntimeError):
+./app/core/config.py:24:class SystemSettings:
+./app/core/config.py:33:class ServerSettings:
+./app/core/config.py:40:class AgentSettings:
+./app/core/config.py:55:class LLMSettings:
+./app/core/config.py:67:class SafetySettings:
+./app/core/config.py:77:class FinanceSettings:
+./app/core/config.py:85:class DatabaseSettings:
+./app/core/config.py:90:class MemorySettings:
+./app/core/config.py:98:class LoggingSettings:
+./app/core/config.py:105:class Settings:
+./app/core/safety.py:10:class OperationType(str, Enum):
+./app/core/safety.py:20:class SafetyDecision(str, Enum):
+./app/core/safety.py:27:class SafetyResult:
+./app/core/safety.py:45:class SafetyGate:
+./app/core/database.py:9:class Base(DeclarativeBase):
+./app/domain/repositories/in_memory_memory.py:9:class InMemoryMemoryRepository(MemoryRepository):
+./app/domain/repositories/memory.py:9:class MemoryRepository(ABC):
+./app/domain/adapters/orchestrator.py:10:class DomainRegistry:
+./app/domain/contracts/department.py:6:class Department:
+./app/domain/contracts/memory.py:7:class MemoryRecord:
+./app/brain/persistent_audit.py:9:class PersistentAuditLogger:
+./app/brain/planner.py:15:class PlanStep:
+./app/brain/planner.py:21:class Planner:
+./app/brain/safety_gate.py:5:class SafetyResult:
+./app/brain/safety_gate.py:10:class SafetyGate:
+./app/brain/reporter.py:6:class Reporter:
+./app/brain/orchestrator.py:24:class Orchestrator:
+./app/brain/audit_logger.py:7:class AuditEntry:
+./app/brain/audit_logger.py:14:class AuditLogger:
+./app/brain/brain.py:7:class BrainDecision:
+./app/brain/brain.py:15:class BrainTask:
+./app/brain/brain.py:23:class Brain:
+./app/brain/context_manager.py:8:class ProjectState:
+./app/brain/context_manager.py:17:class Task:
+./app/brain/context_manager.py:35:class AgentProfile:
+./app/brain/context_manager.py:45:class Decision:
+./app/brain/context_manager.py:55:class ApprovalRequest:
+./app/brain/context_manager.py:65:class ContextManager:
+./app/models/task.py:17:class TaskStatus(str, PyEnum):
+./app/models/task.py:25:class ApprovalStatus(str, PyEnum):
+./app/models/task.py:32:class TaskTransitionError(ValueError):
+./app/models/task.py:38:class TaskPriority(str, PyEnum):
+./app/models/task.py:45:class ResourceClass(str, PyEnum):
+./app/models/task.py:55:class RiskLevel(str, PyEnum):
+./app/models/task.py:63:class Task(Base):
+./app/models/organization.py:15:class OrganizationUnit(Base):
+./app/models/approval.py:16:class ApprovalRequestStatus(str, PyEnum):
+./app/models/approval.py:23:class ApprovalRequest(Base):
+./app/models/audit.py:15:class AuditEvent(Base):
+./app/api/system.py:27:class SystemStatusResponse(BaseModel):
+./app/api/system.py:40:class SafetyCheckResponse(BaseModel):
+./app/api/system.py:47:class AuditEventResponse(BaseModel):
+./app/api/execution.py:27:class ExecutionResponse(BaseModel):
+./app/api/execution.py:34:class NotConfiguredExecutor:
+./app/api/brain.py:28:class TaskCreateRequest(BaseModel):
+./app/api/brain.py:37:class TaskResponse(BaseModel):
+./app/api/brain.py:52:class PlanResponse(BaseModel):
+./app/api/brain.py:56:class SafetyCheckRequest(BaseModel):
+./app/api/brain.py:61:class SafetyCheckResponse(BaseModel):
+./app/api/tasks.py:25:class TaskResponse(BaseModel):
+./app/api/tasks.py:46:class TaskCreateRequest(BaseModel):
+./app/api/tasks.py:55:class StatusUpdateRequest(BaseModel):
+./app/api/tasks.py:59:class AssignmentRequest(BaseModel):
+./app/tools/base.py:8:class Tool:
+./app/tools/permissions.py:18:class ToolSecurityError(ValueError):
+./app/services/openai_compatible_llm_client.py:9:class OpenAICompatibleLLMClient:
+./app/services/llm_client.py:7:class LLMClient(Protocol):
+./app/services/scheduler.py:5:class TaskScheduler:
+./app/services/http_agent_client.py:9:class HttpAgentClient:
+./app/services/worker.py:8:class TaskWorker:
+./app/services/tasks.py:28:class TaskNotFoundError(LookupError):
+./app/services/tasks.py:32:class TaskRepository:
+./app/services/tool_calling_task_operation.py:8:class ToolCallingLLMTaskOperation:
+./app/services/agent_task_operation.py:5:class AgentTaskOperation:
+./app/services/production_executor.py:8:class ProductionTaskExecutor:
+./app/services/tool_calling.py:18:class ToolCallingError(ValueError):
+./app/services/task_operation.py:8:class TaskOperation(Protocol):
+./app/services/mock_agent_client.py:4:class MockAgentClient:
+./app/services/agent_client.py:4:class AgentClient(Protocol):
+./app/services/audit.py:14:class AuditRepository:
+./app/services/project_progress.py:13:class ProgressConfigError(ValueError):
+./app/services/approvals.py:21:class ApprovalRequestNotFoundError(LookupError):
+./app/services/approvals.py:25:class ApprovalStateConflictError(RuntimeError):
+./app/services/approvals.py:29:class ApprovalRepository:
+./app/services/llm_task_operation.py:7:class LLMTaskOperation:
+./app/services/executor.py:10:class ExecutionResult:
+./app/services/executor.py:21:class TaskExecutor(Protocol):
+
+## Modele Pydantic, SQLAlchemy i dataclass
+./app/core/config.py:23:@dataclass(frozen=True)
+./app/core/config.py:32:@dataclass(frozen=True)
+./app/core/config.py:39:@dataclass(frozen=True)
+./app/core/config.py:54:@dataclass(frozen=True)
+./app/core/config.py:66:@dataclass(frozen=True)
+./app/core/config.py:76:@dataclass(frozen=True)
+./app/core/config.py:84:@dataclass(frozen=True)
+./app/core/config.py:89:@dataclass(frozen=True)
+./app/core/config.py:97:@dataclass(frozen=True)
+./app/core/config.py:104:@dataclass(frozen=True)
+./app/core/safety.py:26:@dataclass(frozen=True)
+./app/core/database.py:6:from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+./app/core/database.py:9:class Base(DeclarativeBase):
+./app/domain/contracts/department.py:5:@dataclass(frozen=True)
+./app/domain/contracts/memory.py:6:@dataclass(frozen=True)
+./app/brain/planner.py:14:@dataclass
+./app/brain/safety_gate.py:4:@dataclass
+./app/brain/orchestrator.py:232:        if is_dataclass(item):
+./app/brain/audit_logger.py:6:@dataclass
+./app/brain/brain.py:6:@dataclass
+./app/brain/brain.py:14:@dataclass
+./app/brain/context_manager.py:7:@dataclass
+./app/brain/context_manager.py:16:@dataclass
+./app/brain/context_manager.py:34:@dataclass
+./app/brain/context_manager.py:44:@dataclass
+./app/brain/context_manager.py:54:@dataclass
+./app/brain/context_manager.py:111:        if is_dataclass(item):
+./app/models/task.py:7:from sqlalchemy.orm import Mapped, mapped_column
+./app/models/task.py:66:    id: Mapped[int] = mapped_column(
+./app/models/task.py:72:    title: Mapped[str] = mapped_column(
+./app/models/task.py:78:    description: Mapped[str | None] = mapped_column(
+./app/models/task.py:83:    status: Mapped[TaskStatus] = mapped_column(
+./app/models/task.py:90:    approval_status: Mapped[ApprovalStatus] = mapped_column(
+./app/models/task.py:97:    priority: Mapped[TaskPriority] = mapped_column(
+./app/models/task.py:104:    resource_class: Mapped[ResourceClass] = mapped_column(
+./app/models/task.py:111:    risk_level: Mapped[RiskLevel] = mapped_column(
+./app/models/task.py:118:    assigned_agent: Mapped[str | None] = mapped_column(
+./app/models/task.py:124:    progress: Mapped[int] = mapped_column(
+./app/models/task.py:130:    stages: Mapped[list[dict]] = mapped_column(
+./app/models/task.py:136:    created_at: Mapped[datetime] = mapped_column(
+./app/models/task.py:143:    updated_at: Mapped[datetime] = mapped_column(
+./app/models/task.py:150:    queued_at: Mapped[datetime | None] = mapped_column(
+./app/models/task.py:156:    started_at: Mapped[datetime | None] = mapped_column(
+./app/models/task.py:161:    completed_at: Mapped[datetime | None] = mapped_column(
+./app/models/organization.py:6:from sqlalchemy.orm import Mapped, mapped_column, relationship
+./app/models/organization.py:25:    id: Mapped[int] = mapped_column(
+./app/models/organization.py:31:    name: Mapped[str] = mapped_column(
+./app/models/organization.py:37:    unit_type: Mapped[str] = mapped_column(
+./app/models/organization.py:43:    description: Mapped[str | None] = mapped_column(
+./app/models/organization.py:48:    parent_id: Mapped[int | None] = mapped_column(
+./app/models/organization.py:54:    manager_agent: Mapped[str | None] = mapped_column(
+./app/models/organization.py:60:    active: Mapped[bool] = mapped_column(
+./app/models/organization.py:67:    created_at: Mapped[datetime] = mapped_column(
+./app/models/organization.py:73:    updated_at: Mapped[datetime] = mapped_column(
+./app/models/organization.py:80:    parent: Mapped[OrganizationUnit | None] = relationship(
+./app/models/organization.py:86:    children: Mapped[list[OrganizationUnit]] = relationship(
+./app/models/approval.py:7:from sqlalchemy.orm import Mapped, mapped_column
+./app/models/approval.py:26:    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+./app/models/approval.py:27:    task_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+./app/models/approval.py:28:    operation_type: Mapped[str] = mapped_column(String(64), nullable=False)
+./app/models/approval.py:29:    description: Mapped[str] = mapped_column(Text, nullable=False)
+./app/models/approval.py:30:    status: Mapped[ApprovalRequestStatus] = mapped_column(
+./app/models/approval.py:36:    created_at: Mapped[datetime] = mapped_column(
+./app/models/approval.py:41:    resolved_at: Mapped[datetime | None] = mapped_column(
+./app/models/approval.py:45:    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+./app/models/audit.py:6:from sqlalchemy.orm import Mapped, mapped_column
+./app/models/audit.py:18:    id: Mapped[int] = mapped_column(
+./app/models/audit.py:23:    created_at: Mapped[datetime] = mapped_column(
+./app/models/audit.py:29:    event_type: Mapped[str] = mapped_column(
+./app/models/audit.py:34:    operation: Mapped[str] = mapped_column(
+./app/models/audit.py:39:    decision: Mapped[str] = mapped_column(
+./app/models/audit.py:44:    allowed: Mapped[bool] = mapped_column(
+./app/models/audit.py:48:    reason: Mapped[str] = mapped_column(
+./app/api/system.py:7:from pydantic import BaseModel
+./app/api/system.py:27:class SystemStatusResponse(BaseModel):
+./app/api/system.py:40:class SafetyCheckResponse(BaseModel):
+./app/api/system.py:47:class AuditEventResponse(BaseModel):
+./app/api/execution.py:12:from pydantic import BaseModel
+./app/api/execution.py:27:class ExecutionResponse(BaseModel):
+./app/api/brain.py:6:from pydantic import BaseModel, ConfigDict, Field
+./app/api/brain.py:28:class TaskCreateRequest(BaseModel):
+./app/api/brain.py:37:class TaskResponse(BaseModel):
+./app/api/brain.py:52:class PlanResponse(BaseModel):
+./app/api/brain.py:56:class SafetyCheckRequest(BaseModel):
+./app/api/brain.py:61:class SafetyCheckResponse(BaseModel):
+./app/api/tasks.py:6:from pydantic import BaseModel, ConfigDict, Field
+./app/api/tasks.py:25:class TaskResponse(BaseModel):
+./app/api/tasks.py:46:class TaskCreateRequest(BaseModel):
+./app/api/tasks.py:55:class StatusUpdateRequest(BaseModel):
+./app/api/tasks.py:59:class AssignmentRequest(BaseModel):
+./app/tools/base.py:7:@dataclass(frozen=True)
+./app/services/executor.py:9:@dataclass(frozen=True)
+
+## Statusy, approval, risk, decision, audit i memory
+./app/main.py:9:from app.models.approval import ApprovalRequest
+./app/main.py:17:from app.api.execution import router as execution_router
+./app/main.py:42:app.include_router(execution_router)
+./app/main.py:53:        "status": "ok",
+./app/main.py:218:                        throw new Error(`Błąd HTTP: ${response.status}`);
+./app/main.py:222:                    const approvals = data.approvals || {};
+./app/main.py:234:                        approvals.total ?? 0;
+./app/main.py:237:                        approvals.pending ?? 0;
+./app/main.py:240:                        approvals.approved ?? 0;
+./app/main.py:243:                        approvals.rejected ?? 0;
+./app/main.py:246:                        `Status systemu: ${data.status || "nieznany"}`;
+./app/db/migrations.py:10:    "risk_level": (
+./app/db/migrations.py:13:    "approval_status": (
+./app/db/migrations.py:63:                SET risk_level = 'LOW'
+./app/db/migrations.py:64:                WHERE risk_level IS NULL
+./app/db/migrations.py:65:                   OR TRIM(risk_level) = ''
+./app/db/migrations.py:83:                WHERE status = 'IN_PROGRESS'
+./app/db/migrations.py:93:                WHERE status = 'COMPLETED'
+./app/db/migrations.py:110:                CREATE INDEX IF NOT EXISTS ix_tasks_risk_level
+./app/db/migrations.py:111:                ON tasks (risk_level)
+./app/db/migrations.py:127:                SET approval_status = 'APPROVED'
+./app/db/migrations.py:128:                WHERE approval_status IS NULL
+./app/db/migrations.py:129:                   OR TRIM(approval_status) = ''
+./app/core/config.py:45:    require_owner_approval: bool
+./app/core/config.py:73:    audit_logging_enabled: bool
+./app/core/config.py:91:    persistent_memory_enabled: bool
+./app/core/config.py:92:    project_memory_enabled: bool
+./app/core/config.py:93:    experience_memory_enabled: bool
+./app/core/config.py:94:    owner_approval_for_permanent_changes: bool
+./app/core/config.py:101:    audit_file: str
+./app/core/config.py:112:    memory: MemorySettings
+./app/core/config.py:139:            memory=MemorySettings(**_require_section(data, "memory")),
+./app/core/safety.py:17:    MEMORY_PERMANENT_CHANGE = "memory_permanent_change"
+./app/core/safety.py:22:    APPROVAL_REQUIRED = "approval_required"
+./app/core/safety.py:28:    decision: SafetyDecision
+./app/core/safety.py:34:        return self.decision == SafetyDecision.ALLOWED
+./app/core/safety.py:62:                decision=SafetyDecision.BLOCKED,
+./app/core/safety.py:69:                decision=SafetyDecision.ALLOWED,
+./app/core/safety.py:75:            if self._settings.agents.require_owner_approval and not owner_approved:
+./app/core/safety.py:77:                    decision=SafetyDecision.APPROVAL_REQUIRED,
+./app/core/safety.py:83:                decision=SafetyDecision.ALLOWED,
+./app/core/safety.py:91:                    decision=SafetyDecision.APPROVAL_REQUIRED,
+./app/core/safety.py:97:                decision=SafetyDecision.ALLOWED,
+./app/core/safety.py:113:                decision=SafetyDecision.BLOCKED,
+./app/core/safety.py:120:                decision=SafetyDecision.APPROVAL_REQUIRED,
+./app/core/safety.py:126:            decision=SafetyDecision.ALLOWED,
+./app/core/database.py:21:    if raw_path == ":memory:" or raw_path.startswith("file:"):
+./app/domain/repositories/in_memory_memory.py:6:from app.domain.repositories.memory import MemoryRepository
+./app/domain/repositories/__init__.py:1:from app.domain.repositories.memory import MemoryRepository
+./app/domain/repositories/__init__.py:2:from app.domain.repositories.in_memory_memory import InMemoryMemoryRepository
+./app/domain/adapters/orchestrator.py:15:        memory_repository: MemoryRepository | None = None,
+./app/domain/adapters/orchestrator.py:18:        self._memory_repository = (
+./app/domain/adapters/orchestrator.py:19:            memory_repository
+./app/domain/adapters/orchestrator.py:20:            if memory_repository is not None
+./app/domain/adapters/orchestrator.py:25:    def memory_repository(self) -> MemoryRepository:
+./app/domain/adapters/orchestrator.py:26:        return self._memory_repository
+./app/domain/adapters/orchestrator.py:43:    def register_memory(self, memory: MemoryRecord) -> MemoryRecord:
+./app/domain/adapters/orchestrator.py:44:        if self.get_memory(memory.id) is not None:
+./app/domain/adapters/orchestrator.py:46:                f"Memory '{memory.id}' is already registered"
+./app/domain/adapters/orchestrator.py:49:        return self._memory_repository.save(memory)
+./app/domain/adapters/orchestrator.py:51:    def get_memory(self, memory_id: str) -> MemoryRecord | None:
+./app/domain/adapters/orchestrator.py:52:        return self._memory_repository.get(memory_id)
+./app/domain/adapters/orchestrator.py:55:        return list(self._memory_repository.list())
+./app/domain/adapters/orchestrator.py:57:    def delete_memory(self, memory_id: str) -> bool:
+./app/domain/adapters/orchestrator.py:58:        return self._memory_repository.delete(memory_id)
+./app/domain/contracts/__init__.py:2:from .memory import MemoryRecord
+./app/domain/contracts/memory.py:10:    memory_type: str = "general"
+./app/domain/contracts/memory.py:21:        if not self.memory_type.strip():
+./app/domain/contracts/memory.py:22:            raise ValueError("MemoryRecord memory_type must not be empty")
+./app/domain/contracts/memory.py:28:            "memory_type": self.memory_type,
+./app/brain/persistent_audit.py:5:from app.brain.audit_logger import AuditLogger
+./app/brain/persistent_audit.py:6:from app.services.audit import AuditRepository
+./app/brain/persistent_audit.py:10:    """Łączy audyt in-memory z trwałym repozytorium audytu."""
+./app/brain/persistent_audit.py:28:        # Zachowujemy dotychczasowy audyt in-memory.
+./app/brain/persistent_audit.py:39:            decision="record",
+./app/brain/__init__.py:3:from app.brain.audit_logger import AuditEntry, AuditLogger
+./app/brain/safety_gate.py:11:    def approve(self, action_type: str, requires_approval: bool = False) -> SafetyResult:
+./app/brain/safety_gate.py:12:        if requires_approval:
+./app/brain/safety_gate.py:15:                reason=f"Action '{action_type}' requires owner approval",
+./app/brain/reporter.py:12:            "status": context.project_state.status,
+./app/brain/reporter.py:15:            "decisions": len(context.decisions),
+./app/brain/reporter.py:16:            "approvals": len(context.approvals),
+./app/brain/orchestrator.py:6:from app.brain.audit_logger import AuditLogger
+./app/brain/orchestrator.py:11:from app.brain.persistent_audit import PersistentAuditLogger
+./app/brain/orchestrator.py:16:from app.services.audit import AuditRepository
+./app/brain/orchestrator.py:30:        audit_logger: AuditLogger | None = None,
+./app/brain/orchestrator.py:32:        audit_repository: AuditRepository | None = None,
+./app/brain/orchestrator.py:46:        local_logger = audit_logger or AuditLogger()
+./app/brain/orchestrator.py:48:        if audit_repository is not None:
+./app/brain/orchestrator.py:49:            self.audit_logger = PersistentAuditLogger(
+./app/brain/orchestrator.py:50:                repository=audit_repository,
+./app/brain/orchestrator.py:54:            self.audit_logger = local_logger
+./app/brain/orchestrator.py:58:        self.audit_logger.log(
+./app/brain/orchestrator.py:66:                "risk_level": task.risk_level,
+./app/brain/orchestrator.py:79:            status=task.status.value,
+./app/brain/orchestrator.py:82:            risk_level=task.risk_level.value,
+./app/brain/orchestrator.py:113:        self.audit_logger.log(
+./app/brain/orchestrator.py:188:        self.audit_logger.log(
+./app/brain/orchestrator.py:198:        requires_approval: bool = False,
+./app/brain/orchestrator.py:202:            requires_approval,
+./app/brain/orchestrator.py:205:        self.audit_logger.log(
+./app/brain/orchestrator.py:210:                "requires_approval": requires_approval,
+./app/brain/orchestrator.py:224:        self.audit_logger.log(
+./app/brain/orchestrator.py:247:    def register_memory(self, memory):
+./app/brain/orchestrator.py:248:        return self.domain_registry.register_memory(memory)
+./app/brain/orchestrator.py:253:    def get_memory(self, memory_id):
+./app/brain/orchestrator.py:254:        return self.domain_registry.get_memory(memory_id)
+./app/brain/brain.py:10:    requires_approval: bool = False
+./app/brain/brain.py:18:    status: str = "PENDING"
+./app/brain/brain.py:30:        self.decisions: List[BrainDecision] = []
+./app/brain/brain.py:36:    def decide(self, title: str, rationale: str, requires_approval: bool = False) -> BrainDecision:
+./app/brain/brain.py:37:        decision = BrainDecision(
+./app/brain/brain.py:40:            requires_approval=requires_approval,
+./app/brain/brain.py:42:        self.decisions.append(decision)
+./app/brain/brain.py:43:        return decision
+./app/brain/brain.py:48:            "decisions_count": len(self.decisions),
+./app/brain/brain.py:49:            "pending_tasks": [t for t in self.tasks if t.status == "PENDING"],
+./app/brain/context_manager.py:12:    status: str = "active"
+./app/brain/context_manager.py:21:    status: str = "pending"
+./app/brain/context_manager.py:24:    risk_level: str = "medium"
+./app/brain/context_manager.py:48:    decision: str
+./app/brain/context_manager.py:61:    status: str = "pending"
+./app/brain/context_manager.py:70:        self.decisions: List[Decision] = []
+./app/brain/context_manager.py:71:        self.approvals: List[ApprovalRequest] = []
+./app/brain/context_manager.py:81:    def add_decision(self, decision: Decision) -> Decision:
+./app/brain/context_manager.py:82:        self.decisions.append(decision)
+./app/brain/context_manager.py:83:        return decision
+./app/brain/context_manager.py:85:    def add_approval(self, approval: ApprovalRequest) -> ApprovalRequest:
+./app/brain/context_manager.py:86:        self.approvals.append(approval)
+./app/brain/context_manager.py:87:        return approval
+./app/brain/context_manager.py:95:    def clear_decisions(self) -> None:
+./app/brain/context_manager.py:96:        self.decisions.clear()
+./app/brain/context_manager.py:98:    def clear_approvals(self) -> None:
+./app/brain/context_manager.py:99:        self.approvals.clear()
+./app/brain/context_manager.py:106:            "decisions": [self._serialize(decision) for decision in self.decisions],
+./app/brain/context_manager.py:107:            "approvals": [self._serialize(approval) for approval in self.approvals],
+./app/models/task.py:33:    """Niedozwolona zmiana statusu zadania."""
+./app/models/task.py:83:    status: Mapped[TaskStatus] = mapped_column(
+./app/models/task.py:90:    approval_status: Mapped[ApprovalStatus] = mapped_column(
+./app/models/task.py:111:    risk_level: Mapped[RiskLevel] = mapped_column(
+./app/models/task.py:166:    def transition_to(self, new_status: TaskStatus) -> None:
+./app/models/task.py:167:        """Zmienia status tylko zgodnie z dozwolonym cyklem życia."""
+./app/models/task.py:188:        if new_status not in allowed_transitions[self.status]:
+./app/models/task.py:190:                f"Niedozwolona zmiana statusu: "
+./app/models/task.py:191:                f"{self.status.value} → {new_status.value}"
+./app/models/task.py:194:        self.status = new_status
+./app/models/task.py:197:        if new_status is TaskStatus.IN_PROGRESS and self.started_at is None:
+./app/models/task.py:200:        if new_status is TaskStatus.COMPLETED:
+./app/models/task.py:211:        Aktualizuje postęp zadania i automatycznie zmienia jego status.
+./app/models/task.py:225:            self.status = TaskStatus.COMPLETED
+./app/models/task.py:232:        elif progress > 0 and self.status == TaskStatus.PENDING:
+./app/models/task.py:233:            self.status = TaskStatus.IN_PROGRESS
+./app/models/task.py:238:        elif progress == 0 and self.status == TaskStatus.IN_PROGRESS:
+./app/models/task.py:239:            self.status = TaskStatus.PENDING
+./app/models/approval.py:24:    __tablename__ = "approval_requests"
+./app/models/approval.py:30:    status: Mapped[ApprovalRequestStatus] = mapped_column(
+./app/models/audit.py:16:    __tablename__ = "audit_events"
+./app/models/audit.py:39:    decision: Mapped[str] = mapped_column(
+./app/api/progress.py:18:    status_labels = {
+./app/api/progress.py:35:                "status": task.status.value,
+./app/api/progress.py:36:                "status_label": status_labels[task.status.value],
+./app/api/progress.py:290:        .status {
+./app/api/progress.py:296:        .status::before {
+./app/api/progress.py:414:        .step-status {
+./app/api/progress.py:526:                statusu budowy organizacji.
+./app/api/progress.py:574:                status: "Ukończony",
+./app/api/progress.py:606:                status: "W trakcie",
+./app/api/progress.py:615:                        "Definicja pól i statusów zadania."
+./app/api/progress.py:630:                        "Zmiana statusu i postępu."
+./app/api/progress.py:643:                status: "W trakcie",
+./app/api/progress.py:669:                status: "Zaplanowany",
+./app/api/progress.py:695:                status: "Zaplanowany",
+./app/api/progress.py:721:                status: "Zaplanowany",
+./app/api/progress.py:747:                status: "Zaplanowany",
+./app/api/progress.py:773:                status: "Zaplanowany",
+./app/api/progress.py:800:        const statusColors = {
+./app/api/progress.py:815:                                statusColors[step[1]] || "var(--muted)"
+./app/api/progress.py:822:                            <span class="step-status">${step[1]}</span>
+./app/api/progress.py:841:                                    <span class="status">${process.status}</span>
+./app/api/progress.py:928:                    throw new Error(`HTTP ${response.status}`);
+./app/api/progress.py:938:                    status: data.task_count
+./app/api/progress.py:951:                            task.status_label,
+./app/api/owner.py:19:        raise HTTPException(status_code=401, detail="Unauthorized")
+./app/api/owner.py:28:        raise HTTPException(status_code=401, detail="Unauthorized")
+./app/api/owner.py:32:@router.get("/pending-approvals", response_model=list[TaskResponse])
+./app/api/owner.py:33:def pending_approvals(
+./app/api/owner.py:37:    return repository.list_recent(approval_status="pending")
+./app/api/owner.py:50:            status_code=404,
+./app/api/owner.py:56:            status_code=404,
+./app/api/owner.py:73:            status_code=404,
+./app/api/owner.py:79:            status_code=404,
+./app/api/system.py:6:from fastapi import APIRouter, Depends, HTTPException, Query, status
+./app/api/system.py:11:from app.services.audit import AuditRepository
+./app/api/system.py:21:def get_audit_repository() -> AuditRepository:
+./app/api/system.py:37:    audit_logging_enabled: bool
+./app/api/system.py:42:    decision: str
+./app/api/system.py:52:    decision: str
+./app/api/system.py:57:def _record_audit_event(
+./app/api/system.py:62:    decision: str,
+./app/api/system.py:66:    if not _settings.safety.audit_logging_enabled:
+./app/api/system.py:73:            decision=decision,
+./app/api/system.py:79:            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+./app/api/system.py:85:    "/system/status",
+./app/api/system.py:88:def get_system_status() -> SystemStatusResponse:
+./app/api/system.py:105:        audit_logging_enabled=_settings.safety.audit_logging_enabled,
+./app/api/system.py:115:    audit_repository: AuditRepository = Depends(get_audit_repository),
+./app/api/system.py:133:        _record_audit_event(
+./app/api/system.py:134:            audit_repository,
+./app/api/system.py:137:            decision="rejected",
+./app/api/system.py:143:            status_code=400,
+./app/api/system.py:152:    _record_audit_event(
+./app/api/system.py:153:        audit_repository,
+./app/api/system.py:156:        decision=result.decision.value,
+./app/api/system.py:163:        decision=result.decision.value,
+./app/api/system.py:170:    "/audit/events",
+./app/api/system.py:173:def list_audit_events(
+./app/api/system.py:175:    audit_repository: AuditRepository = Depends(get_audit_repository),
+./app/api/system.py:180:        events = audit_repository.list_recent(limit=limit)
+./app/api/system.py:183:            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+./app/api/system.py:193:            decision=event.decision,
+./app/api/execution.py:11:from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+./app/api/execution.py:24:router = APIRouter(prefix="/api/tasks", tags=["task-execution"])
+./app/api/execution.py:31:    task_status: TaskStatus
+./app/api/execution.py:86:    status_code=status.HTTP_200_OK,
+./app/api/execution.py:106:            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+./app/api/execution.py:111:        return Response(status_code=status.HTTP_204_NO_CONTENT)
+./app/api/execution.py:122:                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+./app/api/execution.py:127:            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+./app/api/execution.py:144:            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+./app/api/execution.py:149:            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+./app/api/execution.py:157:        task_status=finalized_task.status,
+./app/api/brain.py:5:from fastapi import APIRouter, Depends, HTTPException, Query, status
+./app/api/brain.py:8:from app.api.system import get_audit_repository
+./app/api/brain.py:12:from app.services.audit import AuditRepository
+./app/api/brain.py:20:    audit_repository: Annotated[
+./app/api/brain.py:22:        Depends(get_audit_repository),
+./app/api/brain.py:25:    return Orchestrator(audit_repository=audit_repository)
+./app/api/brain.py:33:    risk_level: RiskLevel = RiskLevel.LOW
+./app/api/brain.py:43:    status: str
+./app/api/brain.py:44:    approval_status: str
+./app/api/brain.py:47:    risk_level: str
+./app/api/brain.py:58:    requires_approval: bool = False
+./app/api/brain.py:78:    status_code=status.HTTP_201_CREATED,
+./app/api/brain.py:91:            risk_level=payload.risk_level,
+./app/api/brain.py:96:            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+./app/api/brain.py:154:        requires_approval=payload.requires_approval,
+./app/api/brain.py:167:        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+./app/api/tasks.py:31:    status: TaskStatus
+./app/api/tasks.py:32:    approval_status: ApprovalStatus
+./app/api/tasks.py:35:    risk_level: RiskLevel
+./app/api/tasks.py:51:    risk_level: RiskLevel = RiskLevel.LOW
+./app/api/tasks.py:56:    status: TaskStatus
+./app/api/tasks.py:82:    status: TaskStatus | None = Query(default=None),
+./app/api/tasks.py:85:    risk_level: RiskLevel | None = Query(default=None),
+./app/api/tasks.py:91:            status=status,
+./app/api/tasks.py:94:            risk_level=risk_level,
+./app/api/tasks.py:98:        raise HTTPException(status_code=422, detail=str(exc)) from exc
+./app/api/tasks.py:101:            status_code=503,
+./app/api/tasks.py:114:        raise HTTPException(status_code=404, detail=str(exc)) from exc
+./app/api/tasks.py:117:            status_code=503,
+./app/api/tasks.py:122:@router.post("", response_model=TaskResponse, status_code=201)
+./app/api/tasks.py:133:            risk_level=payload.risk_level,
+./app/api/tasks.py:137:        raise HTTPException(status_code=422, detail=str(exc)) from exc
+./app/api/tasks.py:140:            status_code=503,
+./app/api/tasks.py:146:    "/{task_id}/status",
+./app/api/tasks.py:149:def update_status(
+./app/api/tasks.py:155:        return repository.transition(task_id, payload.status)
+./app/api/tasks.py:157:        raise HTTPException(status_code=404, detail=str(exc)) from exc
+./app/api/tasks.py:159:        raise HTTPException(status_code=422, detail=str(exc)) from exc
+./app/api/tasks.py:162:            status_code=503,
+./app/api/tasks.py:179:        raise HTTPException(status_code=404, detail=str(exc)) from exc
+./app/api/tasks.py:181:        raise HTTPException(status_code=422, detail=str(exc)) from exc
+./app/api/tasks.py:184:            status_code=503,
+./app/api/dashboard.py:42:        "status": "ok",
+./app/api/dashboard.py:45:        "approvals": {
+./app/api/dashboard.py:52:            "status": "ok",
+./app/api/dashboard.py:66:        "status": "ok",
+./app/api/dashboard.py:69:        "approvals": {
+./app/tools/base.py:12:    risk_level: str = "low"
+./app/tools/base.py:13:    requires_approval: bool = False
+./app/tools/registry.py:18:        risk_level="low",
+./app/tools/registry.py:19:        requires_approval=False,
+./app/tools/registry.py:25:        risk_level="low",
+./app/tools/registry.py:26:        requires_approval=False,
+./app/tools/registry.py:32:        risk_level="high",
+./app/tools/registry.py:33:        requires_approval=True,
+./app/tools/registry.py:53:    if tool.requires_approval and not approved:
+./app/tools/audit.py:11:    os.getenv("AI_COMPANY_TOOL_AUDIT", "data/tool_audit.jsonl")
+./app/tools/audit.py:90:def audit_tool_call(
+./app/tools/audit.py:93:    status: str,
+./app/tools/audit.py:96:    audit_path: Path | None = None,
+./app/tools/audit.py:99:    path = audit_path or DEFAULT_AUDIT_PATH
+./app/tools/audit.py:105:        "status": status,
+./app/services/openai_compatible_llm_client.py:99:                response.raise_for_status()
+./app/services/context.py:55:        if task.get("status") in {"completed", "done"}
+./app/services/context.py:59:        if task.get("status") in {"in_progress", "active"}
+./app/services/context.py:63:        if task.get("status") in {"planned", "pending", "todo"}
+./app/services/context.py:66:    modified_files = _git("status", "--short")
+./app/services/context.py:101:Nie zakładaj wykonania zadań, których status nie jest potwierdzony w kodzie.
+./app/services/documentation.py:18:def _status_value(task: Any) -> str:
+./app/services/documentation.py:19:    status = _value(task, "status", "unknown")
+./app/services/documentation.py:20:    return getattr(status, "value", str(status))
+./app/services/documentation.py:23:def generate_status_document(tasks: list[Any]) -> None:
+./app/services/documentation.py:29:        if _status_value(task).lower() in {"completed", "done"}
+./app/services/documentation.py:35:        if _status_value(task).lower()
+./app/services/documentation.py:51:        "# Aktualny status projektu",
+./app/services/documentation.py:71:            status = _status_value(task)
+./app/services/documentation.py:75:                f"- **{title}** — status: `{status}`, "
+./app/services/http_agent_client.py:60:                response.raise_for_status()
+./app/services/tasks.py:11:from app.models.audit import AuditEvent
+./app/services/tasks.py:22:from app.services.documentation import generate_status_document
+./app/services/tasks.py:37:        generate_status_document(tasks)
+./app/services/tasks.py:61:        risk_level: RiskLevel = RiskLevel.LOW,
+./app/services/tasks.py:91:            status=TaskStatus.PENDING,
+./app/services/tasks.py:92:            approval_status=ApprovalStatus.PENDING,
+./app/services/tasks.py:95:            risk_level=risk_level,
+./app/services/tasks.py:133:        status: TaskStatus | None = None,
+./app/services/tasks.py:134:        approval_status: ApprovalStatus | None = None,
+./app/services/tasks.py:137:        risk_level: RiskLevel | None = None,
+./app/services/tasks.py:155:        if status is not None:
+./app/services/tasks.py:156:            statement = statement.where(Task.status == status)
+./app/services/tasks.py:158:        if approval_status is not None:
+./app/services/tasks.py:160:                    Task.approval_status == approval_status
+./app/services/tasks.py:171:        if risk_level is not None:
+./app/services/tasks.py:172:            statement = statement.where(Task.risk_level == risk_level)
+./app/services/tasks.py:204:                Task.status == TaskStatus.PENDING,
+./app/services/tasks.py:205:                Task.approval_status == ApprovalStatus.APPROVED,
+./app/services/tasks.py:223:    def _set_approval_status(
+./app/services/tasks.py:226:        approval_status: ApprovalStatus,
+./app/services/tasks.py:228:        decision: str,
+./app/services/tasks.py:239:            task.approval_status = approval_status
+./app/services/tasks.py:242:            audit_event = AuditEvent(
+./app/services/tasks.py:243:                event_type="task_approval",
+./app/services/tasks.py:244:                operation=decision,
+./app/services/tasks.py:245:                decision=decision,
+./app/services/tasks.py:246:                allowed=approval_status == ApprovalStatus.APPROVED,
+./app/services/tasks.py:250:            session.add(audit_event)
+./app/services/tasks.py:264:        return self._set_approval_status(
+./app/services/tasks.py:267:            decision="approve",
+./app/services/tasks.py:277:        return self._set_approval_status(
+./app/services/tasks.py:280:            decision="reject",
+./app/services/tasks.py:307:        audit_reason = reason
+./app/services/tasks.py:309:            audit_reason = f"{reason}; worker={normalized_worker}"
+./app/services/tasks.py:325:                    Task.status == TaskStatus.PENDING,
+./app/services/tasks.py:326:                    Task.approval_status == ApprovalStatus.APPROVED,
+./app/services/tasks.py:330:                    status=TaskStatus.IN_PROGRESS,
+./app/services/tasks.py:343:            audit_event = AuditEvent(
+./app/services/tasks.py:344:                event_type="task_execution",
+./app/services/tasks.py:346:                decision="claim",
+./app/services/tasks.py:348:                reason=audit_reason,
+./app/services/tasks.py:350:            session.add(audit_event)
+./app/services/tasks.py:361:    def _finish_execution(
+./app/services/tasks.py:364:        new_status: TaskStatus,
+./app/services/tasks.py:383:            if task.status is not TaskStatus.IN_PROGRESS:
+./app/services/tasks.py:385:                    "Zadanie musi mieć status IN_PROGRESS, "
+./app/services/tasks.py:386:                    f"aby wykonać operację {new_status.value}"
+./app/services/tasks.py:389:            task.transition_to(new_status)
+./app/services/tasks.py:391:            audit_event = AuditEvent(
+./app/services/tasks.py:392:                event_type="task_execution",
+./app/services/tasks.py:393:                operation=new_status.value,
+./app/services/tasks.py:394:                decision=new_status.value,
+./app/services/tasks.py:399:            session.add(audit_event)
+./app/services/tasks.py:415:        return self._finish_execution(
+./app/services/tasks.py:429:        return self._finish_execution(
+./app/services/tasks.py:438:        new_status: TaskStatus,
+./app/services/tasks.py:448:            task.transition_to(new_status)
+./app/services/tasks.py:505:                    Task.approval_status == ApprovalStatus.PENDING
+./app/services/tasks.py:513:                    Task.approval_status == ApprovalStatus.APPROVED
+./app/services/tasks.py:521:                    Task.approval_status == ApprovalStatus.REJECTED
+./app/services/tasks.py:544:            for status in TaskStatus:
+./app/services/tasks.py:545:                counts[status.value] = int(
+./app/services/tasks.py:549:                        .where(Task.status == status)
+./app/services/audit.py:11:from app.models.audit import AuditEvent
+./app/services/audit.py:36:        decision: str,
+./app/services/audit.py:43:            decision=decision,
+./app/services/project_progress.py:21:    required_fields = {"id", "name", "status", "progress"}
+./app/services/project_progress.py:35:    if stage["status"] not in VALID_STATUSES:
+./app/services/project_progress.py:37:            f"Etap {stage['id']} ma niepoprawny status: "
+./app/services/project_progress.py:38:            f"{stage['status']!r}."
+./app/services/approvals.py:13:from app.models.approval import (
+./app/services/approvals.py:18:from app.models.audit import AuditEvent
+./app/services/approvals.py:26:    """Wniosek ma już rozstrzygnięty status."""
+./app/services/approvals.py:70:            status=ApprovalRequestStatus.PENDING,
+./app/services/approvals.py:103:                ApprovalRequest.status
+./app/services/approvals.py:122:        new_status: ApprovalRequestStatus,
+./app/services/approvals.py:139:                    ApprovalRequest.status
+./app/services/approvals.py:143:                    status=new_status,
+./app/services/approvals.py:160:                    event_type="approval_request",
+./app/services/approvals.py:161:                    operation=new_status.value,
+./app/services/approvals.py:162:                    decision=new_status.value,
+./app/services/approvals.py:163:                    allowed=new_status
+./app/services/approvals.py:166:                        f"approval_request_id={request_id}; "
+./app/services/approvals.py:167:                        f"status={new_status.value}; reason={safe_reason}"
+
+## Potencjalne luźne słowniki
+./app/core/config.py:118:def _require_section(data: dict[str, Any], section: str) -> dict[str, Any]:
+./app/core/config.py:129:def _build_settings(data: dict[str, Any]) -> Settings:
+./app/core/database.py:35:    connect_args: dict[str, object] = {}
+./app/domain/repositories/in_memory_memory.py:11:        self._records: dict[str, MemoryRecord] = {}
+./app/domain/adapters/orchestrator.py:17:        self._departments: dict[str, Department] = {}
+./app/domain/contracts/department.py:17:    def to_dict(self) -> dict[str, Any]:
+./app/domain/contracts/memory.py:11:    metadata: dict[str, Any] = field(default_factory=dict)
+./app/domain/contracts/memory.py:24:    def to_dict(self) -> dict[str, Any]:
+./app/brain/persistent_audit.py:24:        payload: dict[str, Any] | None = None,
+./app/brain/persistent_audit.py:46:    def export(self) -> list[dict[str, Any]]:
+./app/brain/reporter.py:7:    def build_report(self, context: ContextManager) -> Dict[str, Any]:
+./app/brain/orchestrator.py:184:    def plan(self) -> List[Dict[str, Any]]:
+./app/brain/orchestrator.py:199:    ) -> Dict[str, Any]:
+./app/brain/orchestrator.py:220:    def report(self) -> Dict[str, Any]:
+./app/brain/audit_logger.py:11:    payload: Dict[str, Any]
+./app/brain/audit_logger.py:18:    def log(self, event_type: str, message: str, payload: Dict[str, Any] | None = None) -> AuditEntry:
+./app/brain/audit_logger.py:28:    def export(self) -> List[Dict[str, Any]]:
+./app/brain/brain.py:20:    meta: Dict[str, Any] = field(default_factory=dict)
+./app/brain/brain.py:45:    def report(self) -> Dict[str, Any]:
+./app/brain/context_manager.py:13:    metadata: Dict[str, Any] = field(default_factory=dict)
+./app/brain/context_manager.py:31:    metadata: Dict[str, Any] = field(default_factory=dict)
+./app/brain/context_manager.py:41:    metadata: Dict[str, Any] = field(default_factory=dict)
+./app/brain/context_manager.py:51:    metadata: Dict[str, Any] = field(default_factory=dict)
+./app/brain/context_manager.py:62:    metadata: Dict[str, Any] = field(default_factory=dict)
+./app/brain/context_manager.py:101:    def snapshot(self) -> Dict[str, Any]:
+./app/models/task.py:169:        allowed_transitions: dict[TaskStatus, set[TaskStatus]] = {
+./app/api/brain.py:53:    steps: list[Any]
+./app/api/brain.py:131:) -> dict[str, Any]:
+./app/api/dashboard.py:15:) -> dict[str, Any]:
+./app/api/dashboard.py:23:def _project_summary() -> dict[str, Any]:
+./app/api/dashboard.py:37:) -> dict[str, Any]:
+./app/api/dashboard.py:60:) -> dict[str, Any]:
+./app/tools/base.py:11:    handler: Callable[..., Any]
+./app/tools/audit.py:94:    arguments: dict[str, Any] | None = None,
+./app/tools/audit.py:102:    event: dict[str, Any] = {
+./app/tools/filesystem.py:144:def write_project_file(path: str, content: str) -> dict[str, object]:
+./app/services/openai_compatible_llm_client.py:72:        payload: dict[str, Any] = {
+./app/services/documentation.py:23:def generate_status_document(tasks: list[Any]) -> None:
+./app/services/tasks.py:494:    def summary(self) -> dict[str, int]:
+./app/services/tasks.py:532:    def progress_summary(self) -> dict[str, int | float | dict[str, int]]:
+./app/services/tool_calling.py:22:def parse_model_response(response: str | Mapping[str, Any]) -> dict[str, Any]:
+./app/services/tool_calling.py:49:def execute_model_tool_call(payload: Mapping[str, Any]) -> Any:
+./app/services/tool_calling.py:73:    initial_response: str | Mapping[str, Any],
+./app/services/tool_calling.py:74:    model: Callable[[str], str | Mapping[str, Any]],
+./app/services/tool_calling.py:95:        response_type = payload["type"]
+./app/services/tool_calling.py:115:            "tool": payload["name"],
+./app/services/mock_agent_client.py:12:        self.calls: list[dict[str, str]] = []
+./app/services/project_progress.py:17:def _validate_stage(stage: Any, index: int) -> dict[str, Any]:
+./app/services/project_progress.py:63:) -> dict[str, Any]:
+./app/services/project_progress.py:102:        "project": data["project"],
+
+## Bezpośrednia modyfikacja statusu
+./app/main.py:22:settings = load_settings()
+./app/main.py:61:@app.get("/", response_class=HTMLResponse)
+./app/main.py:67:        <meta charset="UTF-8">
+./app/main.py:68:        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+./app/main.py:172:            <p id="message" class="subtitle">Ładowanie danych...</p>
+./app/main.py:174:            <section class="card">
+./app/main.py:177:                <div class="progress-container">
+./app/main.py:178:                    <div id="progress-bar" class="progress-bar"></div>
+./app/main.py:182:            <section class="grid">
+./app/main.py:183:                <div class="card">
+./app/main.py:185:                    <div id="total" class="metric">—</div>
+./app/main.py:188:                <div class="card">
+./app/main.py:190:                    <div id="pending" class="metric pending">—</div>
+./app/main.py:193:                <div class="card">
+./app/main.py:195:                    <div id="approved" class="metric approved">—</div>
+./app/main.py:198:                <div class="card">
+./app/main.py:200:                    <div id="rejected" class="metric rejected">—</div>
+./app/main.py:212:                    message.textContent = "Ładowanie danych...";
+./app/main.py:221:                    const data = await response.json();
+./app/main.py:222:                    const approvals = data.approvals || {};
+./app/main.py:224:                    const progress = Number(data.progress) || 0;
+./app/main.py:226:                    document.getElementById("project-name").textContent =
+./app/main.py:229:                    document.getElementById("progress-value").textContent = progress;
+./app/main.py:233:                    document.getElementById("total").textContent =
+./app/main.py:236:                    document.getElementById("pending").textContent =
+./app/main.py:239:                    document.getElementById("approved").textContent =
+./app/main.py:242:                    document.getElementById("rejected").textContent =
+./app/main.py:245:                    message.textContent =
+./app/main.py:249:                    message.textContent =
+./app/db/migrations.py:34:    existing_columns = {
+./app/db/migrations.py:53:                SET resource_class = 'LIGHT'
+./app/db/migrations.py:73:                SET queued_at = created_at
+./app/db/migrations.py:82:                SET started_at = updated_at
+./app/db/migrations.py:83:                WHERE status = 'IN_PROGRESS'
+./app/db/migrations.py:92:                SET completed_at = updated_at
+./app/db/migrations.py:93:                WHERE status = 'COMPLETED'
+./app/db/migrations.py:127:                SET approval_status = 'APPROVED'
+./app/db/database.py:9:DATABASE_DIR.mkdir(parents=True, exist_ok=True)
+./app/db/database.py:15:    connect_args={"check_same_thread": False},
+./app/db/database.py:19:    autocommit=False,
+./app/core/config.py:50:    timeout_seconds: float = 30.0
+./app/core/config.py:51:    max_retries: int = 2
+./app/core/config.py:61:    timeout_seconds: float = 30.0
+./app/core/config.py:62:    max_retries: int = 2
+./app/core/config.py:63:    retry_backoff_seconds: float = 0.1
+./app/core/config.py:114:    llm: LLMSettings = field(default_factory=LLMSettings)
+./app/core/config.py:131:        settings = Settings(
+./app/core/config.py:134:            agents=AgentSettings(**_require_section(data, "agents")),
+./app/core/config.py:259:        settings.system.environment == "development"
+./app/core/config.py:293:            raw_data = yaml.safe_load(file)
+./app/core/config.py:308:    settings = _build_settings(raw_data)
+./app/core/safety.py:49:        self._settings = settings
+./app/core/database.py:29:    database_path.parent.mkdir(parents=True, exist_ok=True)
+./app/core/database.py:42:        connect_args=connect_args,
+./app/core/database.py:53:        expire_on_commit=False,
+./app/brain/orchestrator.py:41:        self.context = context or ContextManager()
+./app/brain/orchestrator.py:79:            status=task.status.value,
+./app/brain/orchestrator.py:81:            resource_class=task.resource_class.value,
+./app/brain/orchestrator.py:83:            assigned_agent=task.assigned_agent,
+./app/brain/orchestrator.py:84:            queued_at=(
+./app/brain/orchestrator.py:89:            started_at=(
+./app/brain/orchestrator.py:94:            completed_at=(
+./app/brain/orchestrator.py:99:            created_at=(
+./app/brain/orchestrator.py:104:            updated_at=(
+./app/brain/orchestrator.py:128:        limit: int = 100,
+./app/brain/orchestrator.py:130:        persistent_tasks = repository.list_recent(limit=limit)
+./app/brain/orchestrator.py:169:        result = executor.execute(task)
+./app/brain/orchestrator.py:200:        result = self.safety_gate.approve(
+./app/brain/orchestrator.py:221:        report = self.reporter.build_report(self.context)
+./app/brain/orchestrator.py:222:        serialized_report = self._serialize_item(report)
+./app/brain/brain.py:19:    priority: int = 0
+./app/brain/brain.py:49:            "pending_tasks": [t for t in self.tasks if t.status == "PENDING"],
+./app/models/task.py:85:        default=TaskStatus.PENDING,
+./app/models/task.py:92:        default=ApprovalStatus.PENDING,
+./app/models/task.py:99:        default=TaskPriority.NORMAL,
+./app/models/task.py:106:        default=ResourceClass.LIGHT,
+./app/models/task.py:113:        default=RiskLevel.LOW,
+./app/models/task.py:126:        default=0,
+./app/models/task.py:132:        default=list,
+./app/models/task.py:138:        default=utc_now,
+./app/models/task.py:145:        default=utc_now,
+./app/models/task.py:194:        self.status = new_status
+./app/models/task.py:198:            self.started_at = now
+./app/models/task.py:201:            self.progress = 100
+./app/models/task.py:202:            self.completed_at = now
+./app/models/task.py:204:        self.updated_at = now
+./app/models/task.py:221:        self.progress = progress
+./app/models/task.py:222:        self.updated_at = now
+./app/models/task.py:224:        if progress == 100:
+./app/models/task.py:225:            self.status = TaskStatus.COMPLETED
+./app/models/task.py:228:                self.started_at = now
+./app/models/task.py:230:            self.completed_at = now
+./app/models/task.py:232:        elif progress > 0 and self.status == TaskStatus.PENDING:
+./app/models/task.py:233:            self.status = TaskStatus.IN_PROGRESS
+./app/models/task.py:236:                self.started_at = now
+./app/models/task.py:238:        elif progress == 0 and self.status == TaskStatus.IN_PROGRESS:
+./app/models/task.py:239:            self.status = TaskStatus.PENDING
+./app/models/organization.py:28:        autoincrement=True,
+./app/models/organization.py:62:        default=True,
+./app/models/organization.py:69:        default=utc_now,
+./app/models/organization.py:75:        default=utc_now,
+./app/models/organization.py:83:        back_populates="children",
+./app/models/organization.py:88:        back_populates="parent",
+./app/models/approval.py:32:        default=ApprovalRequestStatus.PENDING,
+./app/models/approval.py:38:        default=utc_now,
+./app/models/audit.py:21:        autoincrement=True,
+./app/models/audit.py:25:        default=utc_now,
+./app/api/progress.py:18:    status_labels = {
+./app/api/progress.py:28:        tasks = repository.list_recent(limit=100)
+./app/api/progress.py:30:        serialized_tasks = [
+./app/api/progress.py:57:@router.get("/progress", response_class=HTMLResponse)
+./app/api/progress.py:63:    <meta charset="UTF-8">
+./app/api/progress.py:64:    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+./app/api/progress.py:520:    <main class="container">
+./app/api/progress.py:521:        <section class="hero">
+./app/api/progress.py:522:            <div class="eyebrow">AI Company · Centrum dowodzenia</div>
+./app/api/progress.py:524:            <p class="subtitle">
+./app/api/progress.py:530:        <section class="panel">
+./app/api/progress.py:531:            <div class="summary-top">
+./app/api/progress.py:532:                <span class="summary-title">Postęp zadań zapisanych w systemie</span>
+./app/api/progress.py:533:                <span class="summary-percent" id="total-percent">0%</span>
+./app/api/progress.py:536:            <div class="progress-track">
+./app/api/progress.py:537:                <div class="progress-fill" id="total-progress"
+./app/api/progress.py:543:        <section class="panel">
+./app/api/progress.py:544:            <div class="processes" id="processes"></div>
+./app/api/progress.py:547:        <section class="panel">
+./app/api/progress.py:548:            <div class="legend">
+./app/api/progress.py:549:                <span class="legend-item" style="--legend-color: var(--green)">
+./app/api/progress.py:553:                <span class="legend-item" style="--legend-color: var(--blue)">
+./app/api/progress.py:557:                <span class="legend-item" style="--legend-color: var(--yellow)">
+./app/api/progress.py:561:                <span class="legend-item" style="--legend-color: var(--red)">
+./app/api/progress.py:569:        const processes = [
+./app/api/progress.py:797:        const baseProcesses = processes;
+./app/api/progress.py:798:        let apiTotalProgress = null;
+./app/api/progress.py:800:        const statusColors = {
+./app/api/progress.py:811:                const steps = process.steps.map((step, stepIndex) => `
+./app/api/progress.py:812:                    <div class="step"
+./app/api/progress.py:819:                        <div class="step-line">
+./app/api/progress.py:820:                            <span class="step-number">${stepIndex + 1}</span>
+./app/api/progress.py:821:                            <span class="step-name">${step[0]}</span>
+./app/api/progress.py:822:                            <span class="step-status">${step[1]}</span>
+./app/api/progress.py:825:                        <p class="step-description">${step[2]}</p>
+./app/api/progress.py:830:                    <article class="process ${process.open ? "open" : ""}"
+./app/api/progress.py:832:                        <div class="process-header"
+./app/api/progress.py:836:                            <div class="process-name">
+./app/api/progress.py:837:                                <span class="process-icon">${process.icon}</span>
+./app/api/progress.py:841:                                    <span class="status">${process.status}</span>
+./app/api/progress.py:845:                            <div class="process-percent">
+./app/api/progress.py:847:                                <span class="arrow">⌄</span>
+./app/api/progress.py:851:                        <div class="details-wrapper">
+./app/api/progress.py:852:                            <div class="details-hidden">
+./app/api/progress.py:853:                                <div class="details">
+./app/api/progress.py:854:                                    <p class="description">
+./app/api/progress.py:858:                                    <div class="small-progress">
+./app/api/progress.py:859:                                        <div class="small-progress-label">
+./app/api/progress.py:864:                                        <div class="progress-track">
+./app/api/progress.py:865:                                            <div class="progress-fill"
+./app/api/progress.py:875:                                    <div class="steps">${steps}</div>
+./app/api/progress.py:885:                    const process = header.closest(".process");
+./app/api/progress.py:896:                header.addEventListener("keydown", event => {
+./app/api/progress.py:913:            document.getElementById("total-percent").textContent = `${total}%`;
+./app/api/progress.py:931:                const data = await response.json();
+./app/api/progress.py:932:                apiTotalProgress = data.total_progress;
+./app/api/progress.py:934:                const liveTasksProcess = {
+./app/api/progress.py:964:                processes = [...baseProcesses, liveTasksProcess];
+./app/api/owner.py:10:router = APIRouter(prefix="/api/owner", tags=["owner"])
+./app/api/owner.py:14:    authorization: str | None = Header(default=None),
+./app/api/owner.py:37:    return repository.list_recent(approval_status="pending")
+./app/api/system.py:14:router = APIRouter(prefix="/api", tags=["system"])
+./app/api/system.py:16:_settings: Settings = load_settings()
+./app/api/system.py:94:        environment=_settings.system.environment,
+./app/api/system.py:127:        allowed_values = ", ".join(item.value for item in OperationType)
+./app/api/system.py:147:    result = _safety_gate.evaluate(
+./app/api/system.py:174:    limit: int = Query(default=50, ge=1, le=100),
+./app/api/system.py:180:        events = audit_repository.list_recent(limit=limit)
+./app/api/system.py:190:            created_at=event.created_at,
+./app/api/execution.py:24:router = APIRouter(prefix="/api/tasks", tags=["task-execution"])
+./app/api/execution.py:44:    settings = load_settings()
+./app/api/execution.py:46:    llm_client = get_llm_client(settings)
+./app/api/execution.py:56:        client = get_agent_client(settings)
+./app/api/execution.py:94:        default="api-worker",
+./app/api/execution.py:114:        result = executor.execute(task)
+./app/api/execution.py:154:        success=result.success,
+./app/api/execution.py:157:        task_status=finalized_task.status,
+./app/api/brain.py:16:router = APIRouter(prefix="/api/brain", tags=["brain"])
+./app/api/brain.py:32:    resource_class: ResourceClass = ResourceClass.LIGHT
+./app/api/brain.py:34:    assigned_agent: str | None = Field(default=None, max_length=100)
+./app/api/brain.py:38:    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+./app/api/brain.py:68:    limit: int = Query(default=50, ge=1, le=100),
+./app/api/brain.py:71:    tasks = task_repository.list_recent(limit=limit)
+./app/api/brain.py:90:            resource_class=payload.resource_class,
+./app/api/brain.py:92:            assigned_agent=payload.assigned_agent,
+./app/api/brain.py:110:    result = orchestrator.plan()
+./app/api/brain.py:113:        return PlanResponse(steps=[])
+./app/api/brain.py:116:        return PlanResponse(steps=result)
+./app/api/brain.py:119:        return PlanResponse(steps=list(result))
+./app/api/brain.py:122:        return PlanResponse(steps=list(result.steps))
+./app/api/brain.py:124:    return PlanResponse(steps=[result])
+./app/api/brain.py:133:    report = orchestrator.report()
+./app/api/brain.py:152:    result = orchestrator.run_safety_check(
+./app/api/tasks.py:22:router = APIRouter(prefix="/api/tasks", tags=["tasks"])
+./app/api/tasks.py:26:    model_config = ConfigDict(from_attributes=True)
+./app/api/tasks.py:50:    resource_class: ResourceClass = ResourceClass.LIGHT
+./app/api/tasks.py:52:    assigned_agent: str | None = Field(default=None, max_length=100)
+./app/api/tasks.py:60:    assigned_agent: str | None = Field(default=None, max_length=100)
+./app/api/tasks.py:81:    limit: int = Query(default=50, ge=1, le=100),
+./app/api/tasks.py:82:    status: TaskStatus | None = Query(default=None),
+./app/api/tasks.py:83:    priority: TaskPriority | None = Query(default=None),
+./app/api/tasks.py:84:    resource_class: ResourceClass | None = Query(default=None),
+./app/api/tasks.py:85:    risk_level: RiskLevel | None = Query(default=None),
+./app/api/tasks.py:86:    assigned_agent: str | None = Query(default=None),
+./app/api/tasks.py:90:            limit=limit,
+./app/api/tasks.py:91:            status=status,
+./app/api/tasks.py:93:            resource_class=resource_class,
+./app/api/tasks.py:95:            assigned_agent=assigned_agent,
+./app/api/tasks.py:109:    task_id: int = Path(ge=1),
+./app/api/tasks.py:132:            resource_class=payload.resource_class,
+./app/api/tasks.py:134:            assigned_agent=payload.assigned_agent,
+./app/api/tasks.py:152:    task_id: int = Path(ge=1),
+./app/api/tasks.py:174:    task_id: int = Path(ge=1),
+./app/api/dashboard.py:10:router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+./app/api/dashboard.py:25:    progress = load_project_progress()
+./app/api/dashboard.py:39:    tasks = _task_summary(repository)
+./app/api/dashboard.py:62:    project = _project_summary()
+./app/api/dashboard.py:63:    tasks = _task_summary(repository)
+./app/tools/audit.py:51:    sensitive_suffixes = (
+./app/tools/audit.py:100:    path.parent.mkdir(parents=True, exist_ok=True)
+./app/tools/audit.py:114:            json.dumps(event, ensure_ascii=False, default=str) + "\n"
+./app/tools/permissions.py:35:    root = project_root()
+./app/tools/filesystem.py:97:    project_root = permissions.project_root()
+./app/tools/filesystem.py:125:    resolved = _validate_project_file(path, must_exist=True)
+./app/tools/filesystem.py:127:    limit = MAX_READ_SIZE if max_bytes is None else max_bytes
+./app/services/openai_compatible_llm_client.py:19:        max_retries: int = 0,
+./app/services/openai_compatible_llm_client.py:20:        retry_backoff_seconds: float = 0.1,
+./app/services/openai_compatible_llm_client.py:53:        self._timeout_seconds = timeout_seconds
+./app/services/openai_compatible_llm_client.py:54:        self._max_retries = max_retries
+./app/services/openai_compatible_llm_client.py:55:        self._retry_backoff_seconds = retry_backoff_seconds
+./app/services/openai_compatible_llm_client.py:63:        system_prompt = system_prompt.strip()
+./app/services/openai_compatible_llm_client.py:64:        user_prompt = user_prompt.strip()
+./app/services/openai_compatible_llm_client.py:86:        headers = {
+./app/services/openai_compatible_llm_client.py:95:                    headers=headers,
+./app/services/openai_compatible_llm_client.py:97:                    timeout=self._timeout_seconds,
+./app/services/openai_compatible_llm_client.py:127:        choices = payload.get("choices")
+./app/services/openai_compatible_llm_client.py:148:        content = message.get("content")
+./app/services/openai_compatible_llm_client.py:155:        content = content.strip()
+./app/services/context.py:17:        result = subprocess.run(
+./app/services/context.py:20:            capture_output=True,
+./app/services/context.py:21:            text=True,
+./app/services/context.py:49:    data = _progress()
+./app/services/context.py:50:    project = data.get("project_progress", {})
+./app/services/context.py:51:    tasks = data.get("tasks", [])
+./app/services/context.py:66:    modified_files = _git("status", "--short")
+./app/services/context.py:67:    last_commit = _git("log", "-1", "--oneline")
+./app/services/context.py:68:    total_progress = project.get("total_progress", 0)
+./app/services/agent_factory.py:27:                timeout_seconds=settings.agents.timeout_seconds,
+./app/services/agent_factory.py:28:                max_retries=settings.agents.max_retries,
+./app/services/agent_factory.py:60:            timeout_seconds=settings.llm.timeout_seconds,
+./app/services/agent_factory.py:61:            max_retries=settings.llm.max_retries,
+./app/services/agent_factory.py:62:            retry_backoff_seconds=settings.llm.retry_backoff_seconds,
+./app/services/documentation.py:19:    status = _value(task, "status", "unknown")
+./app/services/documentation.py:39:    progress = (
+./app/services/documentation.py:50:    lines = [
+./app/services/documentation.py:71:            status = _status_value(task)
+./app/services/documentation.py:72:            task_progress = _value(task, "progress", 0)
+./app/services/documentation.py:90:    STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
+./app/services/http_agent_client.py:18:        max_retries: int = 0,
+./app/services/http_agent_client.py:19:        retry_backoff_seconds: float = 0.1,
+./app/services/http_agent_client.py:42:        self._timeout_seconds = timeout_seconds
+./app/services/http_agent_client.py:43:        self._max_retries = max_retries
+./app/services/http_agent_client.py:44:        self._retry_backoff_seconds = retry_backoff_seconds
+./app/services/http_agent_client.py:47:        request = {
+./app/services/http_agent_client.py:58:                    timeout=self._timeout_seconds,
+./app/services/http_agent_client.py:82:        result = payload.get("result")
+./app/services/http_agent_client.py:89:        result = result.strip()
+./app/services/worker.py:33:        candidates = self.repository.list_ready(limit=1)
+./app/services/tasks.py:36:        tasks = self.list_recent(limit=100)
+./app/services/tasks.py:60:        resource_class: ResourceClass = ResourceClass.LIGHT,
+./app/services/tasks.py:74:        normalized_agent = (
+./app/services/tasks.py:80:        if normalized_agent == "":
+./app/services/tasks.py:81:            normalized_agent = None
+./app/services/tasks.py:91:            status=TaskStatus.PENDING,
+./app/services/tasks.py:92:            approval_status=ApprovalStatus.PENDING,
+./app/services/tasks.py:94:            resource_class=resource_class,
+./app/services/tasks.py:96:            assigned_agent=normalized_agent,
+./app/services/tasks.py:97:            queued_at=utc_now(),
+./app/services/tasks.py:132:        limit: int = 50,
+./app/services/tasks.py:146:            normalized_agent = assigned_agent.strip()
+./app/services/tasks.py:156:            statement = statement.where(Task.status == status)
+./app/services/tasks.py:159:                statement = statement.where(
+./app/services/tasks.py:160:                    Task.approval_status == approval_status
+./app/services/tasks.py:164:            statement = statement.where(Task.priority == priority)
+./app/services/tasks.py:167:            statement = statement.where(
+./app/services/tasks.py:168:                Task.resource_class == resource_class
+./app/services/tasks.py:172:            statement = statement.where(Task.risk_level == risk_level)
+./app/services/tasks.py:175:            statement = statement.where(
+./app/services/tasks.py:176:                Task.assigned_agent == normalized_agent
+./app/services/tasks.py:179:        statement = statement.order_by(
+./app/services/tasks.py:185:            tasks = list(session.scalars(statement).all())
+./app/services/tasks.py:195:        limit: int = 50,
+./app/services/tasks.py:201:        statement = (
+./app/services/tasks.py:204:                Task.status == TaskStatus.PENDING,
+./app/services/tasks.py:205:                Task.approval_status == ApprovalStatus.APPROVED,
+./app/services/tasks.py:216:            tasks = list(session.scalars(statement).all())
+./app/services/tasks.py:239:            task.approval_status = approval_status
+./app/services/tasks.py:240:            task.updated_at = utc_now()
+./app/services/tasks.py:242:            audit_event = AuditEvent(
+./app/services/tasks.py:246:                allowed=approval_status == ApprovalStatus.APPROVED,
+./app/services/tasks.py:314:            task_exists = session.get(Task, task_id)
+./app/services/tasks.py:321:            result = session.execute(
+./app/services/tasks.py:325:                    Task.status == TaskStatus.PENDING,
+./app/services/tasks.py:326:                    Task.approval_status == ApprovalStatus.APPROVED,
+./app/services/tasks.py:330:                    status=TaskStatus.IN_PROGRESS,
+./app/services/tasks.py:331:                    started_at=now,
+./app/services/tasks.py:332:                    updated_at=now,
+./app/services/tasks.py:343:            audit_event = AuditEvent(
+./app/services/tasks.py:391:            audit_event = AuditEvent(
+./app/services/tasks.py:462:        normalized_agent = (
+./app/services/tasks.py:468:        if normalized_agent == "":
+./app/services/tasks.py:469:            normalized_agent = None
+./app/services/tasks.py:484:            task.assigned_agent = normalized_agent
+./app/services/tasks.py:485:            task.updated_at = utc_now()
+./app/services/tasks.py:505:                    Task.approval_status == ApprovalStatus.PENDING
+./app/services/tasks.py:513:                    Task.approval_status == ApprovalStatus.APPROVED
+./app/services/tasks.py:521:                    Task.approval_status == ApprovalStatus.REJECTED
+./app/services/tasks.py:535:            task_count = session.scalar(
+./app/services/tasks.py:539:            average_progress = session.scalar(
+./app/services/tasks.py:543:            counts = {}
+./app/services/tasks.py:549:                        .where(Task.status == status)
+./app/services/tool_calling_task_operation.py:12:        self._client = client
+./app/services/tool_calling_task_operation.py:15:        agent = (task.assigned_agent or "").strip()
+./app/services/tool_calling_task_operation.py:27:        system_prompt = (
+./app/services/tool_calling_task_operation.py:39:            system_prompt=system_prompt,
+./app/services/tool_calling_task_operation.py:40:            user_prompt=task_description,
+./app/services/tool_calling_task_operation.py:45:                system_prompt=system_prompt,
+./app/services/tool_calling_task_operation.py:46:                user_prompt=(
+./app/services/tool_calling_task_operation.py:55:            result = run_tool_loop(
+./app/services/agent_task_operation.py:9:        self._client = client
+./app/services/agent_task_operation.py:12:        agent = (task.assigned_agent or "").strip()
+./app/services/agent_task_operation.py:18:        prompt = (task.description or "").strip()
+./app/services/agent_task_operation.py:24:        result = self._client.run(
+./app/services/agent_task_operation.py:25:            agent=agent,
+./app/services/agent_task_operation.py:26:            prompt=prompt,
+./app/services/agent_task_operation.py:34:        result = result.strip()
+./app/services/production_executor.py:24:            success=True,
+./app/services/tool_calling.py:56:    arguments = payload.get("arguments", {})
+./app/services/tool_calling.py:76:    max_tool_calls: int = MAX_TOOL_CALLS,
+./app/services/tool_calling.py:91:    tool_calls = 0
+./app/services/tool_calling.py:98:            content = payload.get("content")
+./app/services/tool_calling.py:110:        result = execute_model_tool_call(payload)
+./app/services/tool_calling.py:113:        context = {
+./app/services/tool_calling.py:119:        response = model(json.dumps(context, ensure_ascii=False, default=str))
+./app/services/audit.py:40:        event = AuditEvent(
+./app/services/audit.py:56:    def list_recent(self, *, limit: int = 50) -> list[AuditEvent]:
+./app/services/audit.py:60:        statement = (
+./app/services/audit.py:70:            events = list(session.scalars(statement).all())
+./app/services/project_progress.py:21:    required_fields = {"id", "name", "status", "progress"}
+./app/services/project_progress.py:24:        missing_fields = ", ".join(sorted(missing))
+./app/services/project_progress.py:41:    progress = stage["progress"]
+./app/services/project_progress.py:52:    items = stage.get("items", [])
+./app/services/project_progress.py:67:            data = yaml.safe_load(file)
+./app/services/project_progress.py:83:    stages = data.get("stages")
+./app/services/project_progress.py:87:    validated_stages = [
+./app/services/project_progress.py:89:        for index, stage in enumerate(stages, start=1)
+./app/services/project_progress.py:92:    ids = [stage["id"] for stage in validated_stages]
+./app/services/project_progress.py:96:    total_progress = round(
+./app/services/approvals.py:57:        text = description.strip()
+./app/services/approvals.py:66:        request = ApprovalRequest(
+./app/services/approvals.py:70:            status=ApprovalRequestStatus.PENDING,
+./app/services/approvals.py:83:            request = session.get(ApprovalRequest, request_id)
+./app/services/approvals.py:89:        request = self.get(request_id)
+./app/services/approvals.py:96:    def list_pending(self, *, limit: int = 50) -> list[ApprovalRequest]:
+./app/services/approvals.py:100:        statement = (
+./app/services/approvals.py:114:            requests = list(session.scalars(statement).all())
+./app/services/approvals.py:135:            result = session.execute(
+./app/services/approvals.py:143:                    status=new_status,
+./app/services/approvals.py:144:                    resolved_at=now,
+./app/services/approvals.py:167:                        f"status={new_status.value}; reason={safe_reason}"
+./app/services/approvals.py:173:            request = session.get(ApprovalRequest, request_id)
+./app/services/llm_task_operation.py:11:        self._client = client
+./app/services/llm_task_operation.py:14:        agent = (task.assigned_agent or "").strip()
+./app/services/llm_task_operation.py:20:        user_prompt = (task.description or "").strip()
+./app/services/llm_task_operation.py:26:        system_prompt = (
+./app/services/llm_task_operation.py:32:        result = self._client.complete(
+./app/services/llm_task_operation.py:33:            system_prompt=system_prompt,
+./app/services/llm_task_operation.py:34:            user_prompt=user_prompt,
+./app/services/llm_task_operation.py:42:        result = result.strip()
+
+## Dozwolone modele domenowe
+Task                 FOUND
+Agent                FOUND
+Department           FOUND
+Manager              MISSING
+Tool                 FOUND
+ApprovalRequest      FOUND
+Risk                 MISSING
+Report               MISSING
+Decision             FOUND
+AuditEvent           FOUND
+MemoryRecord         FOUND

@@ -40,3 +40,11 @@ data/*.backup-*
 backups/
 
 app.db
+*.pyc
+data/tool_audit.jsonl
+
+*.before-*
+backups/
+
+*.before-*
+backups/

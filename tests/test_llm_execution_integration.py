@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import os
 from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
 from app.main import app
 
-
+OWNER_HEADERS = {
+    "Authorization": (
+        "Bearer "
+        + os.environ.get("OWNER_API_TOKEN", "test-owner-token")
+    )
+}
 class StubLLMClient:
     def __init__(self) -> None:
         self.calls: list[dict[str, str]] = []
@@ -62,7 +68,8 @@ def test_execute_next_uses_llm_when_enabled(monkeypatch):
     task_id = create_response.json()["id"]
 
     approve_response = api_client.post(
-        f"/api/owner/tasks/{task_id}/approve"
+        f"/api/owner/tasks/{task_id}/approve",
+        headers=OWNER_HEADERS,
     )
 
     assert approve_response.status_code == 200, (

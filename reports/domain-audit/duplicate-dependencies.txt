@@ -1,0 +1,37 @@
+## Definicje duplikatów
+app/core/safety.py:27:class SafetyResult:
+app/brain/safety_gate.py:5:class SafetyResult:
+app/brain/context_manager.py:17:class Task:
+app/brain/context_manager.py:35:class AgentProfile:
+app/brain/context_manager.py:45:class Decision:
+app/brain/context_manager.py:55:class ApprovalRequest:
+app/models/task.py:63:class Task(Base):
+app/models/approval.py:23:class ApprovalRequest(Base):
+
+## Importy context_manager
+app/brain/planner.py:4:from app.brain.context_manager import Task
+app/brain/__init__.py:4:from app.brain.context_manager import (
+app/brain/__init__.py:5:    AgentProfile,
+app/brain/__init__.py:20:    "AgentProfile",
+app/brain/reporter.py:3:from app.brain.context_manager import ContextManager
+app/brain/orchestrator.py:7:from app.brain.context_manager import (
+app/brain/brain.py:7:class BrainDecision:
+app/brain/brain.py:15:class BrainTask:
+app/brain/brain.py:30:        self.decisions: List[BrainDecision] = []
+app/brain/brain.py:31:        self.tasks: List[BrainTask] = []
+app/brain/brain.py:33:    def add_task(self, task: BrainTask) -> None:
+app/brain/brain.py:36:    def decide(self, title: str, rationale: str, requires_approval: bool = False) -> BrainDecision:
+app/brain/brain.py:37:        decision = BrainDecision(
+app/brain/context_manager.py:35:class AgentProfile:
+app/brain/context_manager.py:69:        self.agents: List[AgentProfile] = []
+app/brain/context_manager.py:77:    def add_agent(self, agent: AgentProfile) -> AgentProfile:
+
+## Użycie ContextManager
+app/brain/__init__.py:7:    ContextManager,
+app/brain/__init__.py:22:    "ContextManager",
+app/brain/reporter.py:3:from app.brain.context_manager import ContextManager
+app/brain/reporter.py:7:    def build_report(self, context: ContextManager) -> Dict[str, Any]:
+app/brain/orchestrator.py:8:    ContextManager,
+app/brain/orchestrator.py:27:        context: ContextManager | None = None,
+app/brain/orchestrator.py:41:        self.context = context or ContextManager()
+app/brain/context_manager.py:65:class ContextManager:

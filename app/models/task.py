@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, Enum, Integer, JSON, String, Text
+from sqlalchemy import DateTime, Enum, Integer, JSON, String, Text, event
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -133,6 +133,67 @@ class Task(Base):
         nullable=False,
     )
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        if self.stages is None:
+            self.stages = []
+
+    def validate_stages(self) -> None:
+        """Waliduje strukturę etapów zadania."""
+
+        if not isinstance(self.stages, list):
+            raise ValueError("Etapy zadania muszą być listą.")
+
+        allowed_statuses = {"planned", "in_progress", "completed"}
+
+        for index, stage in enumerate(self.stages):
+            if not isinstance(stage, dict):
+                raise ValueError(
+                    f"Etap nr {index} musi być słownikiem."
+                )
+
+            required_fields = {"id", "name", "status", "progress", "items"}
+            missing_fields = required_fields - stage.keys()
+
+            if missing_fields:
+                raise ValueError(
+                    f"Etap nr {index} nie zawiera pól: "
+                    f"{', '.join(sorted(missing_fields))}."
+                )
+
+            if not isinstance(stage["id"], str) or not stage["id"].strip():
+                raise ValueError(
+                    f"Etap nr {index} ma niepoprawne id."
+                )
+
+            if not isinstance(stage["name"], str) or not stage["name"].strip():
+                raise ValueError(
+                    f"Etap nr {index} ma niepoprawną nazwę."
+                )
+
+            if stage["status"] not in allowed_statuses:
+                raise ValueError(
+                    f"Etap {stage['id']} ma niepoprawny status."
+                )
+
+            progress = stage["progress"]
+
+            if isinstance(progress, bool) or not isinstance(progress, int):
+                raise ValueError(
+                    f"Etap {stage['id']} musi mieć całkowity postęp."
+                )
+
+            if not 0 <= progress <= 100:
+                raise ValueError(
+                    f"Etap {stage['id']} musi mieć postęp od 0 do 100."
+                )
+
+            if not isinstance(stage["items"], list):
+                raise ValueError(
+                    f"Elementy etapu {stage['id']} muszą być listą."
+                )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,
@@ -237,3 +298,10 @@ class Task(Base):
 
         elif progress == 0 and self.status == TaskStatus.IN_PROGRESS:
             self.status = TaskStatus.PENDING
+
+
+@event.listens_for(Task, "before_insert")
+@event.listens_for(Task, "before_update")
+def validate_task_stages_before_save(mapper, connection, target: Task) -> None:
+    """Nie pozwala zapisać zadania z niepoprawnymi etapami."""
+    target.validate_stages()

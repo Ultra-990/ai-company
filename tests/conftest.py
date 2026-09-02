@@ -1,3 +1,6 @@
+import os
+os.environ.setdefault("OWNER_API_TOKEN", "test-owner-token")
+
 from collections.abc import Generator
 from pathlib import Path
 
