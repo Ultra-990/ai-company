@@ -2,11 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.services.approvals import (
-    ApprovalRepository,
-    canonical_arguments_digest,
-)
-
 from .base import Tool
 from .filesystem import (
     list_project_files,
@@ -49,38 +44,21 @@ def get_tool(name: str) -> Tool:
 
 def execute_tool(
     name: str,
-    *,
-    approval_repository: ApprovalRepository | None = None,
-    approval_request_id: int | None = None,
     **arguments: Any,
 ) -> Any:
-    """Wykonuje narzędzie, atomowo zużywając wymaganą zgodę."""
+    """
+    Wykonuje wyłącznie narzędzie niewymagające zatwierdzenia.
+
+    Narzędzia wysokiego ryzyka muszą zostać wykonane przez
+    ApprovedToolExecutionService, wyłącznie z kontraktem zapisanym
+    po stronie serwera.
+    """
     tool = get_tool(name)
 
     if tool.requires_approval:
-        if approval_repository is None:
-            raise PermissionError(
-                f"Narzędzie {name} wymaga repozytorium zatwierdzeń."
-            )
-
-        if (
-            not isinstance(approval_request_id, int)
-            or isinstance(approval_request_id, bool)
-            or approval_request_id <= 0
-        ):
-            raise PermissionError(
-                f"Narzędzie {name} wymaga poprawnego approval_request_id."
-            )
-
-        approval_repository.consume_approved_request(
-            approval_request_id,
-            tool_name=tool.name,
-            arguments_digest=canonical_arguments_digest(arguments),
-        )
-    elif approval_request_id is not None:
-        raise ValueError(
-            "approval_request_id jest dozwolone wyłącznie dla narzędzi "
-            "wymagających zatwierdzenia."
+        raise PermissionError(
+            f"Narzędzie {name} wymaga zatwierdzonego serwerowego "
+            "kontraktu wykonania."
         )
 
     return tool.execute(**arguments)

@@ -171,7 +171,11 @@ def test_unknown_tool_request_is_rejected(repository):
         )
 
 
-def test_extra_argument_cannot_reuse_approved_request(repository, tmp_path, monkeypatch):
+def test_legacy_execute_tool_cannot_execute_approval_required_tool(
+    repository,
+    tmp_path,
+    monkeypatch,
+):
     monkeypatch.setattr(
         "app.tools.filesystem.permissions.project_root",
         lambda: tmp_path,
@@ -183,7 +187,10 @@ def test_extra_argument_cannot_reuse_approved_request(repository, tmp_path, monk
         content="zatwierdzona treść",
     )
 
-    with pytest.raises(ApprovalArgumentsMismatchError):
+    with pytest.raises(
+        PermissionError,
+        match="wymaga zatwierdzonego serwerowego kontraktu wykonania",
+    ):
         execute_tool(
             "write_project_file",
             approval_repository=repository,
@@ -192,6 +199,7 @@ def test_extra_argument_cannot_reuse_approved_request(repository, tmp_path, monk
             content="zatwierdzona treść",
             approved=True,
         )
+
 
     assert not (tmp_path / "approved.txt").exists()
     assert repository.get_required(request.id).status is (

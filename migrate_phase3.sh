@@ -1,3 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+backup_dir=".migration-backup-${timestamp}"
+
+mkdir -p "$backup_dir"
+cp \
+  app/tools/registry.py \
+  app/services/approved_tool_execution.py \
+  app/services/approvals.py \
+  "$backup_dir/"
+
+echo "Utworzono kopię zapasową: $backup_dir"
+
+cat > app/tools/registry.py <<'PYTHON'
+from __future__ import annotations
+
+from typing import Any
+
+from .base import Tool
+from .filesystem import (
+    list_project_files,
+    read_project_file,
+    write_project_file,
+)
+
+
+TOOLS = {
+    "read_project_file": Tool(
+        name="read_project_file",
+        description="Odczytuje tekstowy plik znajdujący się w katalogu projektu.",
+        handler=read_project_file,
+        risk_level="low",
+        requires_approval=False,
+    ),
+    "list_project_files": Tool(
+        name="list_project_files",
+        description="Wyświetla dozwolone pliki projektu.",
+        handler=list_project_files,
+        risk_level="low",
+        requires_approval=False,
+    ),
+    "write_project_file": Tool(
+        name="write_project_file",
+        description="Zapisuje tekst do dozwolonego pliku projektu.",
+        handler=write_project_file,
+        risk_level="high",
+        requires_approval=True,
+    ),
+}
+
+
+def get_tool(name: str) -> Tool:
+    try:
+        return TOOLS[name]
+    except KeyError as exc:
+        raise KeyError(f"Nieznane narzędzie: {name}") from exc
+
+
+def execute_tool(
+    name: str,
+    **arguments: Any,
+) -> Any:
+    """
+    Wykonuje wyłącznie narzędzie niewymagające zatwierdzenia.
+
+    Narzędzia wysokiego ryzyka muszą zostać wykonane przez
+    ApprovedToolExecutionService, wyłącznie z kontraktem zapisanym
+    po stronie serwera.
+    """
+    tool = get_tool(name)
+
+    if tool.requires_approval:
+        raise PermissionError(
+            f"Narzędzie {name} wymaga zatwierdzonego serwerowego "
+            "kontraktu wykonania."
+        )
+
+    return tool.execute(**arguments)
+PYTHON
+
+cat > app/services/approved_tool_execution.py <<'PYTHON'
 from __future__ import annotations
 
 import json
@@ -140,3 +223,60 @@ class ApprovedToolExecutionService:
         self._approval_repository.finish_execution(approval_request_id)
         self._pending_store.delete(approval_request_id)
         return result
+PYTHON
+
+python - <<'PYTHON'
+from pathlib import Path
+
+path = Path("app/services/approvals.py")
+content = path.read_text(encoding="utf-8")
+
+old = '''    def consume_approved_request(
+        self,
+        request_id: int,
+        *,
+        tool_name: str,
+        arguments_digest: str,
+    ) -> ApprovalRequest:
+'''
+
+new = '''    def consume_approved_request(
+        self,
+        request_id: int,
+        *,
+        tool_name: str,
+        arguments_digest: str,
+    ) -> ApprovalRequest:
+        """
+        Przestarzały mechanizm jednofazowego zużycia zgody.
+
+        Nie używać dla nowych wywołań. Zatwierdzone narzędzia muszą być
+        wykonywane przez ApprovedToolExecutionService.
+        """
+'''
+
+if old not in content:
+    raise SystemExit(
+        "Nie znaleziono oczekiwanej definicji consume_approved_request. "
+        "Przywrócono możliwość ręcznej weryfikacji; plik nie został zmieniony."
+    )
+
+path.write_text(content.replace(old, new, 1), encoding="utf-8")
+PYTHON
+
+python -m compileall -q app
+
+echo
+echo "Migracja kodu produkcyjnego zakończona."
+echo
+echo "Pozostałe użycia starego API:"
+grep -RIn \
+  --exclude-dir=.git \
+  --exclude-dir=.venv \
+  --exclude='*.pyc' \
+  'consume_approved_request' \
+  app tests || true
+
+echo
+echo "Uruchom teraz testy:"
+echo "  pytest -q"

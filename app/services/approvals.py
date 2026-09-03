@@ -368,6 +368,12 @@ class ApprovalRepository:
         tool_name: str,
         arguments_digest: str,
     ) -> ApprovalRequest:
+        """
+        Przestarzały mechanizm jednofazowego zużycia zgody.
+
+        Nie używać dla nowych wywołań. Zatwierdzone narzędzia muszą być
+        wykonywane przez ApprovedToolExecutionService.
+        """
         if not isinstance(request_id, int) or isinstance(request_id, bool) or request_id <= 0:
             raise ApprovalExecutionDeniedError("Niepoprawny approval_request_id.")
         if not isinstance(tool_name, str) or not tool_name.strip():
