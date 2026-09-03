@@ -52,6 +52,10 @@ class AuditEventResponse(BaseModel):
     decision: str
     allowed: bool
     reason: str
+    approval_request_id: int | None
+    task_id: int | None
+    tool_name: str | None
+    arguments_digest: str | None
 
 
 def _record_audit_event(
@@ -193,6 +197,10 @@ def list_audit_events(
             decision=event.decision,
             allowed=event.allowed,
             reason=event.reason,
+            approval_request_id=event.approval_request_id,
+            task_id=event.task_id,
+            tool_name=event.tool_name,
+            arguments_digest=event.arguments_digest,
         )
         for event in events
     ]

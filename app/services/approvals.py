@@ -15,6 +15,7 @@ from app.core.database import (
 )
 from app.db.migrations import (
     migrate_approval_request_schema,
+    migrate_audit_event_schema,
     migrate_pending_tool_execution_schema,
 )
 from app.models.approval import (
@@ -131,6 +132,7 @@ class ApprovalRepository:
         if initialize:
             Base.metadata.create_all(self._engine)
             migrate_approval_request_schema(self._engine)
+            migrate_audit_event_schema(self._engine)
             migrate_pending_tool_execution_schema(self._engine)
 
     def create(
@@ -306,9 +308,22 @@ class ApprovalRepository:
                     "Wniosek został już rozstrzygnięty"
                 )
 
+            request = session.get(ApprovalRequest, request_id)
+            assert request is not None
+
+            request = session.get(ApprovalRequest, request_id)
+            if request is None:
+                raise ApprovalRequestNotFoundError(
+                    f"Nie znaleziono wniosku {request_id}"
+                )
+
             session.add(
                 AuditEvent(
                     event_type="approval_request",
+                    approval_request_id=request_id,
+                    task_id=request.task_id,
+                    tool_name=request.tool_name,
+                    arguments_digest=request.arguments_digest,
                     operation=new_status.value,
                     decision=new_status.value,
                     allowed=new_status == ApprovalRequestStatus.APPROVED,
@@ -320,8 +335,6 @@ class ApprovalRepository:
             )
 
             session.commit()
-            request = session.get(ApprovalRequest, request_id)
-            assert request is not None
             session.expunge(request)
             return request
 
@@ -423,9 +436,19 @@ class ApprovalRepository:
                     "Wniosek nie jest zatwierdzony lub nie może zostać użyty."
                 )
 
+            request = session.get(ApprovalRequest, request_id)
+            if request is None:
+                raise ApprovalRequestNotFoundError(
+                    f"Nie znaleziono wniosku {request_id}"
+                )
+
             session.add(
                 AuditEvent(
                     event_type="approval_request",
+                    approval_request_id=request_id,
+                    task_id=request.task_id,
+                    tool_name=request.tool_name,
+                    arguments_digest=request.arguments_digest,
                     operation="executed",
                     decision="executed",
                     allowed=True,
@@ -521,9 +544,19 @@ class ApprovalRepository:
                     "Wniosek nie jest zatwierdzony."
                 )
 
+            request = session.get(ApprovalRequest, request_id)
+            if request is None:
+                raise ApprovalRequestNotFoundError(
+                    f"Nie znaleziono wniosku {request_id}"
+                )
+
             session.add(
                 AuditEvent(
                     event_type="approval_request",
+                    approval_request_id=request_id,
+                    task_id=request.task_id,
+                    tool_name=request.tool_name,
+                    arguments_digest=request.arguments_digest,
                     operation="execution_started",
                     decision="execution_started",
                     allowed=True,
@@ -561,9 +594,19 @@ class ApprovalRepository:
                     "Nie można zakończyć wykonania wniosku."
                 )
 
+            request = session.get(ApprovalRequest, request_id)
+            if request is None:
+                raise ApprovalRequestNotFoundError(
+                    f"Nie znaleziono wniosku {request_id}"
+                )
+
             session.add(
                 AuditEvent(
                     event_type="approval_request",
+                    approval_request_id=request_id,
+                    task_id=request.task_id,
+                    tool_name=request.tool_name,
+                    arguments_digest=request.arguments_digest,
                     operation="executed",
                     decision="executed",
                     allowed=True,
@@ -615,9 +658,19 @@ class ApprovalRepository:
                     "Nie można oznaczyć wykonania jako nieudane."
                 )
 
+            request = session.get(ApprovalRequest, request_id)
+            if request is None:
+                raise ApprovalRequestNotFoundError(
+                    f"Nie znaleziono wniosku {request_id}"
+                )
+
             session.add(
                 AuditEvent(
                     event_type="approval_request",
+                    approval_request_id=request_id,
+                    task_id=request.task_id,
+                    tool_name=request.tool_name,
+                    arguments_digest=request.arguments_digest,
                     operation="execution_failed",
                     decision="execution_failed",
                     allowed=False,
