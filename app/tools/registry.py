@@ -44,15 +44,21 @@ def get_tool(name: str) -> Tool:
 
 def execute_tool(
     name: str,
-    *,
-    approved: bool = False,
     **arguments: Any,
 ) -> Any:
+    """
+    Wykonuje wyłącznie narzędzie niewymagające zatwierdzenia.
+
+    Narzędzia wysokiego ryzyka muszą zostać wykonane przez
+    ApprovedToolExecutionService, wyłącznie z kontraktem zapisanym
+    po stronie serwera.
+    """
     tool = get_tool(name)
 
-    if tool.requires_approval and not approved:
+    if tool.requires_approval:
         raise PermissionError(
-            f"Narzędzie {name} wymaga zatwierdzenia użytkownika."
+            f"Narzędzie {name} wymaga zatwierdzonego serwerowego "
+            "kontraktu wykonania."
         )
 
     return tool.execute(**arguments)

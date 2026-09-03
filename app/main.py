@@ -7,7 +7,13 @@ from app.core.config import load_settings
 from app.core.database import Base, create_database_engine
 from app.models.organization import OrganizationUnit
 from app.models.approval import ApprovalRequest
-from app.db.migrations import migrate_task_queue_schema
+from app.models.pending_tool_execution import PendingToolExecution
+from app.db.migrations import (
+    migrate_approval_request_schema,
+    migrate_pending_tool_execution_schema,
+    migrate_task_queue_schema,
+)
+from app.api.approvals import router as approvals_router
 from app.api.system import router as system_router
 from app.api.tasks import router as tasks_router
 from app.api.progress import router as progress_router
@@ -28,6 +34,8 @@ async def lifespan(app: FastAPI):
     """Tworzy aktualny schemat bazy i stosuje bezpieczne migracje."""
     Base.metadata.create_all(bind=engine)
     migrate_task_queue_schema(engine)
+    migrate_approval_request_schema(engine)
+    migrate_pending_tool_execution_schema(engine)
     yield
 
 
@@ -43,6 +51,7 @@ app.include_router(execution_router)
 app.include_router(tasks_router)
 app.include_router(progress_router)
 app.include_router(owner_router)
+app.include_router(approvals_router)
 app.include_router(dashboard_router)
 app.include_router(brain_router)
 
