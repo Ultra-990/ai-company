@@ -8,6 +8,7 @@ from app.core.database import (
     create_database_engine,
     create_session_factory,
 )
+from app.db.migrations import migrate_audit_event_schema
 from app.models.audit import AuditEvent
 
 
@@ -27,6 +28,7 @@ class AuditRepository:
 
         if initialize:
             Base.metadata.create_all(self._engine)
+            migrate_audit_event_schema(self._engine)
 
     def record(
         self,
@@ -36,6 +38,10 @@ class AuditRepository:
         decision: str,
         allowed: bool,
         reason: str,
+        approval_request_id: int | None = None,
+        task_id: int | None = None,
+        tool_name: str | None = None,
+        arguments_digest: str | None = None,
     ) -> AuditEvent:
         event = AuditEvent(
             event_type=event_type,
@@ -43,6 +49,10 @@ class AuditRepository:
             decision=decision,
             allowed=allowed,
             reason=reason,
+            approval_request_id=approval_request_id,
+            task_id=task_id,
+            tool_name=tool_name,
+            arguments_digest=arguments_digest,
         )
 
         with self._session_factory() as session:

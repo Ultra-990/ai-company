@@ -49,3 +49,22 @@ class AuditEvent(Base):
         Text,
         nullable=False,
     )
+    approval_request_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        index=True,
+    )
+    task_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        index=True,
+    )
+    tool_name: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+        index=True,
+    )
+    arguments_digest: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )

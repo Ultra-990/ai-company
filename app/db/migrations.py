@@ -139,6 +139,14 @@ APPROVAL_REQUEST_COLUMNS = {
 }
 
 
+AUDIT_EVENT_COLUMNS = {
+    "approval_request_id": "INTEGER",
+    "task_id": "INTEGER",
+    "tool_name": "VARCHAR(128)",
+    "arguments_digest": "VARCHAR(64)",
+}
+
+
 def migrate_approval_request_schema(engine: Engine) -> None:
     """
     Dodaje pola kontraktu wykonania narzędzi do approval_requests.
@@ -173,6 +181,61 @@ def migrate_approval_request_schema(engine: Engine) -> None:
                 """
             )
         )
+
+
+
+def migrate_audit_event_schema(engine: Engine) -> None:
+    """
+    Dodaje bezpieczne pola korelacyjne do trwałego dziennika audytowego.
+
+    Migracja jest idempotentna i nie zmienia istniejących wpisów audytu.
+    """
+    inspector = inspect(engine)
+
+    if "audit_events" not in inspector.get_table_names():
+        return
+
+    existing_columns = {
+        column["name"]
+        for column in inspector.get_columns("audit_events")
+    }
+
+    with engine.begin() as connection:
+        for name, definition in AUDIT_EVENT_COLUMNS.items():
+            if name not in existing_columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE audit_events "
+                        f"ADD COLUMN {name} {definition}"
+                    )
+                )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS
+                ix_audit_events_approval_request_id
+                ON audit_events (approval_request_id)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_audit_events_task_id
+                ON audit_events (task_id)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_audit_events_tool_name
+                ON audit_events (tool_name)
+                """
+            )
+        )
+
 
 
 def migrate_pending_tool_execution_schema(engine: Engine) -> None:
