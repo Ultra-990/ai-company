@@ -207,11 +207,23 @@ def migrate_pending_tool_execution_schema(engine: Engine) -> None:
         )
 
 
+TASK_ATTEMPT_VERIFICATION_COLUMNS = {
+    "result_content": "TEXT",
+    "result_checksum": "VARCHAR(64)",
+    "verification_status": (
+        "VARCHAR(20) NOT NULL DEFAULT 'pending'"
+    ),
+    "verification_reason": "TEXT",
+    "verified_at": "DATETIME",
+}
+
+
 def migrate_task_attempt_schema(engine: Engine) -> None:
     """
-    Tworzy trwały rejestr prób wykonania zadań.
+    Tworzy i aktualizuje trwały rejestr prób wykonania zadań.
 
-    Migracja jest idempotentna i bezpieczna dla istniejących baz SQLite.
+    Migracja jest idempotentna i obsługuje zarówno nowe bazy, jak i bazy
+    zawierające tabelę task_attempts utworzoną przed fazą 5.
     """
     with engine.begin() as connection:
         connection.execute(
@@ -225,8 +237,42 @@ def migrate_task_attempt_schema(engine: Engine) -> None:
                     started_at DATETIME NOT NULL,
                     finished_at DATETIME,
                     error_summary TEXT,
+                    result_content TEXT,
+                    result_checksum VARCHAR(64),
+                    verification_status VARCHAR(20)
+                        NOT NULL DEFAULT 'pending',
+                    verification_reason TEXT,
+                    verified_at DATETIME,
                     FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
                 )
+                """
+            )
+        )
+
+        # Inspektor jest tworzony po CREATE TABLE, dzięki czemu obsługujemy
+        # też całkowicie nową bazę danych.
+        existing_columns = {
+            column["name"]
+            for column in inspect(engine).get_columns("task_attempts")
+        }
+
+        for name, definition in TASK_ATTEMPT_VERIFICATION_COLUMNS.items():
+            if name not in existing_columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE task_attempts "
+                        f"ADD COLUMN {name} {definition}"
+                    )
+                )
+
+        # Historyczne rekordy sprzed fazy 5 nie miały tego pola.
+        connection.execute(
+            text(
+                """
+                UPDATE task_attempts
+                SET verification_status = 'pending'
+                WHERE verification_status IS NULL
+                   OR TRIM(verification_status) = ''
                 """
             )
         )
@@ -254,6 +300,33 @@ def migrate_task_attempt_schema(engine: Engine) -> None:
                 """
                 CREATE INDEX IF NOT EXISTS ix_task_attempts_status
                 ON task_attempts (status)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_task_attempts_result_checksum
+                ON task_attempts (result_checksum)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_task_attempts_verification_status
+                ON task_attempts (verification_status)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_task_attempts_verified_at
+                ON task_attempts (verified_at)
                 """
             )
         )

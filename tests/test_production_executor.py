@@ -22,7 +22,8 @@ def test_production_executor_delegates_task_to_operation() -> None:
 
     assert received == [task]
     assert result.success is True
-    assert result.reason == "Operacja zakończona pomyślnie"
+    assert result.reason == "Zadanie wykonane pomyślnie"
+    assert result.result_content == "Operacja zakończona pomyślnie"
 
 
 def test_production_executor_uses_default_reason_for_empty_result() -> None:
@@ -30,10 +31,8 @@ def test_production_executor_uses_default_reason_for_empty_result() -> None:
 
     executor = ProductionTaskExecutor(lambda _: "")
 
-    result = executor.execute(task)
-
-    assert result.success is True
-    assert result.reason == "Zadanie wykonane pomyślnie"
+    with pytest.raises(RuntimeError, match="pusty wynik"):
+        executor.execute(task)
 
 
 def test_production_executor_propagates_operation_exception() -> None:

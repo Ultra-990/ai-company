@@ -12,10 +12,14 @@ class ExecutionResult:
 
     success: bool
     reason: str
+    result_content: str | None = None
 
     def __post_init__(self) -> None:
         if not self.reason.strip():
             raise ValueError("Powód wyniku wykonania nie może być pusty")
+
+        if self.result_content is not None and not self.result_content.strip():
+            raise ValueError("Treść wyniku wykonania nie może być pusta")
 
 
 class TaskExecutor(Protocol):

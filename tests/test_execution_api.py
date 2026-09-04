@@ -16,6 +16,7 @@ class SuccessfulExecutor:
         return ExecutionResult(
             success=True,
             reason=f"Wykonano zadanie {task.id}",
+            result_content="Trwały rezultat testowego wykonania",
         )
 
 

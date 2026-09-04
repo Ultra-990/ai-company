@@ -117,6 +117,42 @@ class TaskAttempt(Base):
         nullable=True,
     )
 
+    # Trwały rezultat wykonania. Pole jest opcjonalne na poziomie schematu,
+    # aby zachować zgodność z historycznymi próbami oraz próbami zablokowanymi.
+    # Repozytorium wymusza jego obecność dla statusu "completed".
+    result_content: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    # SHA-256 treści result_content, zapisywany przy poprawnym ukończeniu.
+    result_checksum: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+    )
+
+    # "pending" dla rozpoczętej/zablokowanej próby, "verified" dla
+    # ukończonego zadania z jawnym i poprawnie zapisanym wynikiem.
+    verification_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="pending",
+        index=True,
+    )
+
+    # Uzasadnienie zaakceptowania wyniku, zwykle zgodne z reason z complete().
+    verification_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+
 
 class Task(Base):
     __tablename__ = "tasks"

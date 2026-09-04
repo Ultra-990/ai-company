@@ -54,6 +54,7 @@ def test_complete_closes_active_task_attempt(
     completed = task_repository.complete(
         created.id,
         reason="Wykonanie poprawnie zakończone",
+        result_content="Trwały rezultat poprawnie zakończonego zadania",
     )
     attempts = _attempts_for_task(task_repository, created.id)
 

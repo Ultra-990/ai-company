@@ -22,4 +22,5 @@ def test_mock_agent_execution_flow() -> None:
     result = executor.execute(task)
 
     assert result.success is True
-    assert result.reason == "Mockowa odpowiedź agenta"
+    assert result.reason == "Zadanie wykonane pomyślnie"
+    assert result.result_content == "Mockowa odpowiedź agenta"

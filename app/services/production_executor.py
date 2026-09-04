@@ -18,9 +18,13 @@ class ProductionTaskExecutor:
         Wyjątki są celowo przepuszczane wyżej, aby istniejący mechanizm
         orkiestratora/API mógł zablokować zadanie i zwrócić odpowiedni błąd.
         """
-        reason = self._operation(task)
+        result_content = self._operation(task).strip()
+
+        if not result_content:
+            raise RuntimeError("Operacja zwróciła pusty wynik")
 
         return ExecutionResult(
             success=True,
-            reason=reason or "Zadanie wykonane pomyślnie",
+            reason="Zadanie wykonane pomyślnie",
+            result_content=result_content,
         )

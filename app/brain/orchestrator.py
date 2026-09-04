@@ -176,6 +176,7 @@ class Orchestrator:
             repository.complete(
                 task.id,
                 reason=result.reason,
+                result_content=result.result_content,
             )
         else:
             repository.block(

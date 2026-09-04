@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from hashlib import sha256
+
 from sqlalchemy import Engine, Select, func, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -377,6 +379,7 @@ class TaskRepository:
         new_status: TaskStatus,
         *,
         reason: str,
+        result_content: str | None = None,
     ) -> Task:
         """Kończy wykonanie zadania i zapisuje zmianę w audycie."""
 
@@ -384,6 +387,16 @@ class TaskRepository:
 
         if not normalized_reason:
             raise ValueError("Powód operacji nie może być pusty")
+
+        normalized_result: str | None = None
+
+        if new_status is TaskStatus.COMPLETED:
+            if result_content is None or not result_content.strip():
+                raise ValueError(
+                    "Wynik wykonania jest wymagany do ukończenia zadania"
+                )
+
+            normalized_result = result_content.strip()
 
         with self._session_factory() as session:
             task = session.get(Task, task_id)
@@ -416,13 +429,26 @@ class TaskRepository:
             # Zadania rozpoczęte przed wdrożeniem TaskAttempt mogą nie mieć
             # rekordu próby. Pozostają możliwe do poprawnego zakończenia.
             if active_attempt is not None:
+                finished_at = utc_now()
+
                 active_attempt.status = new_status.value
-                active_attempt.finished_at = utc_now()
+                active_attempt.finished_at = finished_at
                 active_attempt.error_summary = (
                     normalized_reason
                     if new_status is TaskStatus.BLOCKED
                     else None
                 )
+
+                if new_status is TaskStatus.COMPLETED:
+                    assert normalized_result is not None
+
+                    active_attempt.result_content = normalized_result
+                    active_attempt.result_checksum = sha256(
+                        normalized_result.encode("utf-8")
+                    ).hexdigest()
+                    active_attempt.verification_status = "verified"
+                    active_attempt.verification_reason = normalized_reason
+                    active_attempt.verified_at = finished_at
 
             task.transition_to(new_status)
 
@@ -447,13 +473,20 @@ class TaskRepository:
         task_id: int,
         *,
         reason: str = "Zadanie wykonane",
+        result_content: str | None = None,
     ) -> Task:
-        """Oznacza wykonywane zadanie jako ukończone."""
+        """
+        Oznacza wykonywane zadanie jako ukończone.
 
+        Ukończenie wymaga jawnego, niepustego rezultatu. Rezultat wraz
+        z checksumą SHA-256 i uzasadnieniem akceptacji jest zapisywany
+        w aktywnej próbie wykonania.
+        """
         return self._finish_execution(
             task_id,
             TaskStatus.COMPLETED,
             reason=reason,
+            result_content=result_content,
         )
 
     def block(

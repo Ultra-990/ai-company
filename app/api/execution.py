@@ -133,6 +133,7 @@ def execute_next_task(
             finalized_task = repository.complete(
                 task.id,
                 reason=result.reason,
+                result_content=result.result_content,
             )
         else:
             finalized_task = repository.block(

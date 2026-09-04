@@ -444,6 +444,7 @@ def test_complete_marks_in_progress_task_as_completed(
     completed = task_repository.complete(
         created.id,
         reason="Wykonanie zakończone poprawnie",
+        result_content="Trwały rezultat ukończonego zadania",
     )
     loaded = task_repository.get_required(created.id)
 
@@ -483,7 +484,10 @@ def test_execution_operation_requires_in_progress_task(
 
     with pytest.raises(TaskTransitionError, match="IN_PROGRESS"):
         if operation == "complete":
-            task_repository.complete(created.id)
+            task_repository.complete(
+                created.id,
+                result_content="Wynik przekazany wyłącznie dla testu przejścia statusu",
+            )
         else:
             task_repository.block(
                 created.id,
@@ -520,6 +524,7 @@ def test_complete_and_block_record_execution_audit_events(
     task_repository.complete(
         completed_task.id,
         reason="Zakończono",
+        result_content="Trwały rezultat dla zdarzenia audytowego",
     )
     task_repository.block(
         blocked_task.id,
