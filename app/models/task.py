@@ -3,7 +3,16 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, Enum, Integer, JSON, String, Text, event
+from sqlalchemy import (
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    JSON,
+    String,
+    Text,
+    event,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -58,6 +67,55 @@ class RiskLevel(str, PyEnum):
     HIGH = "high"
     CRITICAL = "critical"
 
+
+
+class TaskAttempt(Base):
+    """Trwały zapis pojedynczej próby wykonania zadania."""
+
+    __tablename__ = "task_attempts"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+
+    task_id: Mapped[int] = mapped_column(
+        ForeignKey("tasks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    worker_id: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        index=True,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="started",
+        index=True,
+    )
+
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        index=True,
+    )
+
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+
+    error_summary: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
 
 
 class Task(Base):

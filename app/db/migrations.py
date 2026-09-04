@@ -205,3 +205,73 @@ def migrate_pending_tool_execution_schema(engine: Engine) -> None:
                 """
             )
         )
+
+
+def migrate_task_attempt_schema(engine: Engine) -> None:
+    """
+    Tworzy trwały rejestr prób wykonania zadań.
+
+    Migracja jest idempotentna i bezpieczna dla istniejących baz SQLite.
+    """
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS task_attempts (
+                    id INTEGER PRIMARY KEY,
+                    task_id INTEGER NOT NULL,
+                    worker_id VARCHAR(100) NOT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT 'started',
+                    started_at DATETIME NOT NULL,
+                    finished_at DATETIME,
+                    error_summary TEXT,
+                    FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
+                )
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_task_attempts_task_id
+                ON task_attempts (task_id)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_task_attempts_worker_id
+                ON task_attempts (worker_id)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_task_attempts_status
+                ON task_attempts (status)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_task_attempts_started_at
+                ON task_attempts (started_at)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_task_attempts_finished_at
+                ON task_attempts (finished_at)
+                """
+            )
+        )

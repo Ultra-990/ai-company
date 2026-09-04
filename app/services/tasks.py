@@ -14,6 +14,7 @@ from app.models.task import (
     ResourceClass,
     RiskLevel,
     Task,
+    TaskAttempt,
     TaskPriority,
     TaskStatus,
     TaskTransitionError,
@@ -22,7 +23,10 @@ from app.models.task import (
 from app.services.documentation import generate_status_document
 
 
-from app.db.migrations import migrate_task_queue_schema
+from app.db.migrations import (
+    migrate_task_attempt_schema,
+    migrate_task_queue_schema,
+)
 
 
 class TaskNotFoundError(LookupError):
@@ -49,6 +53,7 @@ class TaskRepository:
 
         if initialize:
             migrate_task_queue_schema(self._engine)
+            migrate_task_attempt_schema(self._engine)
             Base.metadata.create_all(self._engine)
 
     def create(
@@ -340,6 +345,14 @@ class TaskRepository:
                     "albo zostało już przejęte"
                 )
 
+            attempt = TaskAttempt(
+                task_id=task_id,
+                worker_id=normalized_worker or "unknown",
+                status="started",
+                started_at=now,
+            )
+            session.add(attempt)
+
             audit_event = AuditEvent(
                 event_type="task_execution",
                 operation="claim",
@@ -384,6 +397,31 @@ class TaskRepository:
                 raise TaskTransitionError(
                     "Zadanie musi mieć status IN_PROGRESS, "
                     f"aby wykonać operację {new_status.value}"
+                )
+
+            active_attempt = session.scalar(
+                select(TaskAttempt)
+                .where(
+                    TaskAttempt.task_id == task_id,
+                    TaskAttempt.status == "started",
+                    TaskAttempt.finished_at.is_(None),
+                )
+                .order_by(
+                    TaskAttempt.started_at.desc(),
+                    TaskAttempt.id.desc(),
+                )
+                .limit(1)
+            )
+
+            # Zadania rozpoczęte przed wdrożeniem TaskAttempt mogą nie mieć
+            # rekordu próby. Pozostają możliwe do poprawnego zakończenia.
+            if active_attempt is not None:
+                active_attempt.status = new_status.value
+                active_attempt.finished_at = utc_now()
+                active_attempt.error_summary = (
+                    normalized_reason
+                    if new_status is TaskStatus.BLOCKED
+                    else None
                 )
 
             task.transition_to(new_status)
