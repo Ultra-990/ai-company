@@ -38,6 +38,11 @@ PROTECTED_SUFFIXES = {
 }
 
 
+def _is_sensitive_path_part(part: str) -> bool:
+    """Zwraca True dla wariantów .env oraz jawnie chronionych nazw."""
+    return part == ".env" or part.startswith(".env.") or part in SENSITIVE_NAMES
+
+
 def _validate_project_file(
     relative_path: str,
     *,
@@ -56,12 +61,12 @@ def _validate_project_file(
 
     # Sprawdzenie po normalizacji blokuje np. `.env`, `foo/.env`
     # oraz ścieżki z przejściem przez katalog wrażliwy.
-    if any(part in SENSITIVE_NAMES for part in resolved.parts):
+    if any(_is_sensitive_path_part(part) for part in resolved.parts):
         raise ToolSecurityError(
             "Dostęp do plików wrażliwych jest niedozwolony."
         )
 
-    if resolved.name in SENSITIVE_NAMES:
+    if _is_sensitive_path_part(resolved.name):
         raise ToolSecurityError(
             "Dostęp do plików wrażliwych jest niedozwolony."
         )
@@ -113,6 +118,16 @@ def list_project_files(
 
     base_dir = permissions.safe_project_path(path)
 
+    if any(_is_sensitive_path_part(part) for part in base_dir.parts):
+        raise ToolSecurityError(
+            "Dostęp do plików wrażliwych jest niedozwolony."
+        )
+
+    if permissions.is_ignored(base_dir):
+        raise ToolSecurityError(
+            "Dostęp do ignorowanych katalogów lub plików jest niedozwolony."
+        )
+
     if not base_dir.is_dir():
         raise ToolSecurityError("Wskazana ścieżka nie jest katalogiem.")
 
@@ -132,7 +147,7 @@ def list_project_files(
         if permissions.is_ignored(entry):
             continue
 
-        if any(part in SENSITIVE_NAMES for part in entry.parts):
+        if any(_is_sensitive_path_part(part) for part in entry.parts):
             continue
 
         try:

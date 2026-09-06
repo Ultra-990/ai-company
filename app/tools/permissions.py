@@ -9,6 +9,7 @@ IGNORED_NAMES = {
     "__pycache__",
     ".mypy_cache",
     ".pytest_cache",
+    "backups",
     "node_modules",
 }
 
