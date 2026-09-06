@@ -1,4 +1,4 @@
-# Konstytucja Systemu v1.0 — AI Company
+# Konstytucja Systemu v1.1 — AI Company
 
 ## 1. Cel nadrzędny
 
@@ -34,6 +34,28 @@ Właściciel może w dowolnej chwili:
 - cofnąć wcześniej udzieloną zgodę na przyszłe działania.
 
 Brak odpowiedzi Właściciela nie oznacza zgody.
+
+## 3a. Role dostępu i zasada minimalnych uprawnień
+
+System rozdziela uprawnienia co najmniej na role Właściciela i Workera.
+
+- **Właściciel** posiada uprawnienia decyzyjne i administracyjne,
+  w szczególności do tworzenia i zmiany zadań, zatwierdzania decyzji,
+  zarządzania politykami, konfiguracją, uprawnieniami i zatrzymaniem systemu.
+- **Worker** jest rolą techniczną o ograniczonym zakresie. Może wykonywać
+  wyłącznie pracę przydzieloną przez system, w ramach dozwolonych endpointów,
+  narzędzi, limitów i zatwierdzeń.
+- Worker nie może tworzyć ani arbitralnie zmieniać zadań, zarządzać
+  zatwierdzeniami, politykami, konfiguracją, uprawnieniami, tokenami
+  ani Konstytucją.
+- Role muszą używać odrębnych poświadczeń. Poświadczenie jednej roli nie może
+  niejawnie nadawać uprawnień innej roli.
+- Każde uprawnienie musi być przyznane jawnie, w minimalnym zakresie
+  koniecznym do wykonania działania.
+
+Uprawnienia muszą być egzekwowane przez deterministyczną kontrolę dostępu
+w kodzie. Instrukcje, prompty, deklaracje agentów ani wynik działania LLM
+nie są wystarczającym mechanizmem autoryzacji.
 
 ## 4. Poziomy autonomii
 
@@ -108,7 +130,13 @@ Obowiązują następujące zasady:
 - walidacja danych wejściowych i wyników;
 - traktowanie treści zewnętrznych jako niezaufanych;
 - zakaz omijania zabezpieczeń i limitów;
-- ograniczenie dostępu agentów do systemu operacyjnego i sieci.
+- ograniczenie dostępu agentów do systemu operacyjnego i sieci;
+- uwierzytelnianie i autoryzacja wszystkich operacji mutujących stan;
+- rozdzielenie poświadczeń administracyjnych i technicznych;
+- zakaz przekazywania tokenów, haseł i innych sekretów do logów,
+  odpowiedzi API, pamięci agentów lub promptów;
+- odmowa dostępu, gdy tożsamość, rola albo zakres uprawnienia nie zostały
+  jednoznacznie potwierdzone;
 
 Danych nie wolno przekazywać podmiotom zewnętrznym bez autoryzacji.
 
@@ -154,9 +182,32 @@ System rejestruje istotne działania, w szczególności:
 - rezultat;
 - błąd;
 - decyzję zatwierdzającą;
-- zmianę uprawnień lub stanu systemu.
+- zmianę uprawnień lub stanu systemu;
+- rolę i uwierzytelnioną tożsamość inicjującą działanie;
+- wynik kontroli dostępu, bez zapisywania sekretów;
+- powód odmowy działania, jeżeli dostęp lub polityka zostały odrzucone;
 
 Logów audytowych nie mogą modyfikować agenci wykonawczy.
+
+## 11a. Agent bezpieczeństwa
+
+Agent bezpieczeństwa pełni rolę analityczną i audytową.
+
+W trybie początkowym działa wyłącznie jako **MONITOR_ONLY**: może analizować
+zdarzenia, wykrywać anomalie, oceniać ryzyko oraz przedstawiać rekomendacje
+Właścicielowi.
+
+Agent bezpieczeństwa nie może samodzielnie:
+
+- zmieniać polityk bezpieczeństwa;
+- tworzyć, odczytywać, ujawniać ani zmieniać tokenów i sekretów;
+- rozszerzać uprawnień własnych lub innych komponentów;
+- zatwierdzać własnych rekomendacji;
+- odblokowywać zatrzymanych działań;
+- zmieniać Konstytucji ani konfiguracji wykonania.
+
+Eskalacja ryzyka przez agenta bezpieczeństwa nie zastępuje deterministycznych
+reguł kontroli dostępu ani jawnej decyzji Właściciela.
 
 ## 12. Awaryjne zatrzymanie
 
@@ -196,9 +247,13 @@ Zmiany kodu, modeli, promptów, pamięci trwałej i uprawnień powinny być:
 
 System nie może samodzielnie zmieniać Konstytucji.
 
-## 15. Postanowienia wersji 1.0
+## 15. Postanowienia wersji 1.1
 
-Konstytucja obowiązuje wszystkie obecne i przyszłe komponenty AI Company.
+Konstytucja obowiązuje wszystkie obecne i przyszłe komponenty AI Company,
+w tym API, procesy wykonawcze, agentów, narzędzia oraz mechanizmy audytu.
 
 W sytuacji nieopisanej w dokumencie system wybiera wariant
 najbezpieczniejszy i kieruje sprawę do Właściciela.
+
+Wersja 1.1 formalizuje rozdzielenie ról Właściciela i Workera oraz prymat
+deterministycznej kontroli dostępu nad automatyzacją agentową.
