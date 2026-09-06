@@ -11,6 +11,7 @@ from app.models.pending_tool_execution import PendingToolExecution
 from app.db.migrations import (
     migrate_approval_request_schema,
     migrate_pending_tool_execution_schema,
+    migrate_task_attempt_schema,
     migrate_task_queue_schema,
 )
 from app.api.approvals import router as approvals_router
@@ -36,6 +37,7 @@ async def lifespan(app: FastAPI):
     migrate_task_queue_schema(engine)
     migrate_approval_request_schema(engine)
     migrate_pending_tool_execution_schema(engine)
+    migrate_task_attempt_schema(engine)
     yield
 
 
