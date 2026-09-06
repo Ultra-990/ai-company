@@ -132,8 +132,8 @@ class TaskAttempt(Base):
         index=True,
     )
 
-    # "pending" dla rozpoczętej/zablokowanej próby, "verified" dla
-    # ukończonego zadania z jawnym i poprawnie zapisanym wynikiem.
+    # "pending" przed niezależną kontrolą wyniku, następnie
+    # "verified" albo "rejected" po wykonaniu verify_attempt().
     verification_status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

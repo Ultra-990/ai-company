@@ -446,9 +446,12 @@ class TaskRepository:
                     active_attempt.result_checksum = sha256(
                         normalized_result.encode("utf-8")
                     ).hexdigest()
-                    active_attempt.verification_status = "verified"
-                    active_attempt.verification_reason = normalized_reason
-                    active_attempt.verified_at = finished_at
+                    # Ukończenie wykonania i weryfikacja wyniku są
+                    # rozdzielonymi etapami. Wynik oczekuje na niezależną
+                    # kontrolę przez verify_attempt().
+                    active_attempt.verification_status = "pending"
+                    active_attempt.verification_reason = None
+                    active_attempt.verified_at = None
 
             task.transition_to(new_status)
 
@@ -479,8 +482,8 @@ class TaskRepository:
         Oznacza wykonywane zadanie jako ukończone.
 
         Ukończenie wymaga jawnego, niepustego rezultatu. Rezultat wraz
-        z checksumą SHA-256 i uzasadnieniem akceptacji jest zapisywany
-        w aktywnej próbie wykonania.
+        z sumą SHA-256 jest zapisywany w aktywnej próbie ze statusem
+        weryfikacji ``pending``.
         """
         return self._finish_execution(
             task_id,
@@ -488,6 +491,128 @@ class TaskRepository:
             reason=reason,
             result_content=result_content,
         )
+
+    def verify_attempt(
+        self,
+        task_id: int,
+        *,
+        result_content: str,
+        verifier_id: str,
+        reason: str = "Wynik wykonania został zweryfikowany",
+    ) -> TaskAttempt:
+        """
+        Weryfikuje ostatnią ukończoną próbę zadania.
+
+        Akceptacja wymaga zgodności przekazanej treści z trwale zapisanym
+        rezultatem oraz zgodności ponownie obliczonej sumy SHA-256.
+        Niezgodność odrzuca próbę, ale nie zmienia statusu wykonania zadania.
+        """
+
+        normalized_result = result_content.strip()
+        normalized_verifier = verifier_id.strip()
+        normalized_reason = reason.strip()
+
+        if not normalized_result:
+            raise ValueError("Wynik do weryfikacji nie może być pusty")
+
+        if not normalized_verifier:
+            raise ValueError("Identyfikator weryfikatora nie może być pusty")
+
+        if len(normalized_verifier) > 100:
+            raise ValueError(
+                "Identyfikator weryfikatora nie może przekraczać 100 znaków"
+            )
+
+        if not normalized_reason:
+            raise ValueError("Powód weryfikacji nie może być pusty")
+
+        supplied_checksum = sha256(
+            normalized_result.encode("utf-8")
+        ).hexdigest()
+
+        with self._session_factory() as session:
+            task = session.get(Task, task_id)
+
+            if task is None:
+                raise TaskNotFoundError(
+                    f"Nie znaleziono zadania o identyfikatorze {task_id}"
+                )
+
+            attempt = session.scalar(
+                select(TaskAttempt)
+                .where(
+                    TaskAttempt.task_id == task_id,
+                    TaskAttempt.status == TaskStatus.COMPLETED.value,
+                )
+                .order_by(
+                    TaskAttempt.finished_at.desc(),
+                    TaskAttempt.id.desc(),
+                )
+                .limit(1)
+            )
+
+            if attempt is None:
+                raise TaskTransitionError(
+                    "Zadanie nie ma ukończonej próby do weryfikacji"
+                )
+
+            if attempt.verification_status != "pending":
+                raise TaskTransitionError(
+                    "Próba wykonania została już zweryfikowana"
+                )
+
+            verification_failed_reason: str | None = None
+
+            if not attempt.result_content or not attempt.result_checksum:
+                verification_failed_reason = (
+                    "Brak trwale zapisanego wyniku lub sumy kontrolnej"
+                )
+            else:
+                stored_checksum = sha256(
+                    attempt.result_content.encode("utf-8")
+                ).hexdigest()
+
+                if stored_checksum != attempt.result_checksum:
+                    verification_failed_reason = (
+                        "Zapisana suma SHA-256 nie odpowiada trwałemu wynikowi"
+                    )
+                elif (
+                    attempt.result_content != normalized_result
+                    or attempt.result_checksum != supplied_checksum
+                ):
+                    verification_failed_reason = (
+                        "Przekazany wynik nie odpowiada zapisanemu rezultatowi"
+                    )
+
+            verified_at = utc_now()
+            accepted = verification_failed_reason is None
+            decision = "verified" if accepted else "rejected"
+            verification_reason = (
+                normalized_reason
+                if accepted
+                else f"{normalized_reason}; {verification_failed_reason}"
+            )
+
+            attempt.verification_status = decision
+            attempt.verification_reason = verification_reason
+            attempt.verified_at = verified_at
+
+            audit_event = AuditEvent(
+                event_type="task_verification",
+                operation="verify",
+                decision=decision,
+                allowed=accepted,
+                reason=(
+                    f"{verification_reason}; "
+                    f"verifier_id={normalized_verifier}"
+                ),
+            )
+            session.add(audit_event)
+            session.commit()
+            session.refresh(attempt)
+            session.expunge(attempt)
+
+        return attempt
 
     def block(
         self,

@@ -12,6 +12,7 @@ from app.models.task import (
     ResourceClass,
     RiskLevel,
     Task,
+    TaskAttempt,
     TaskPriority,
     TaskStatus,
     TaskTransitionError,
@@ -41,6 +42,24 @@ class TaskResponse(BaseModel):
     queued_at: datetime | None
     started_at: datetime | None
     completed_at: datetime | None
+
+
+class VerificationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    task_id: int
+    verification_status: str
+    verification_reason: str | None
+    verified_at: datetime | None
+
+
+class VerifyAttemptRequest(BaseModel):
+    result_content: str = Field(min_length=1)
+    verifier_id: str = Field(min_length=1, max_length=100)
+    reason: str = Field(
+        default="Wynik wykonania został zweryfikowany",
+        min_length=1,
+    )
 
 
 class TaskCreateRequest(BaseModel):
@@ -178,6 +197,34 @@ def update_assignment(
     except TaskNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Repozytorium zadań jest niedostępne",
+        ) from exc
+
+
+@router.post(
+    "/{task_id}/verify",
+    response_model=VerificationResponse,
+)
+def verify_task_attempt(
+    payload: VerifyAttemptRequest,
+    repository: RepositoryDependency,
+    task_id: int = Path(ge=1),
+) -> TaskAttempt:
+    """Weryfikuje trwały rezultat ostatniej ukończonej próby zadania."""
+    try:
+        return repository.verify_attempt(
+            task_id,
+            result_content=payload.result_content,
+            verifier_id=payload.verifier_id,
+            reason=payload.reason,
+        )
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (ValueError, TaskTransitionError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except SQLAlchemyError as exc:
         raise HTTPException(

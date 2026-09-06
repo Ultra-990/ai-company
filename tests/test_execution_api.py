@@ -247,3 +247,65 @@ def test_enabled_executor_uses_assigned_agent_and_task_prompt(monkeypatch):
             "prompt": "Opis zadania",
         }
     ]
+
+
+def test_verify_endpoint_verifies_completed_attempt(
+    task_repository,
+    approved_task,
+):
+    from app.services.tasks import TaskRepository
+
+    task_repository.claim(approved_task.id, worker_id="api-worker")
+    task_repository.complete(
+        approved_task.id,
+        reason="Wykonanie zakończone",
+        result_content="Trwały rezultat testowego wykonania",
+    )
+
+    client = TestClient(app)
+    response = client.post(
+        f"/api/tasks/{approved_task.id}/verify",
+        json={
+            "result_content": "Trwały rezultat testowego wykonania",
+            "verifier_id": "api-verifier",
+            "reason": "Wynik sprawdzony przez API",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["task_id"] == approved_task.id
+    assert body["verification_status"] == "verified"
+    assert body["verification_reason"] == "Wynik sprawdzony przez API"
+    assert body["verified_at"] is not None
+
+
+def test_verify_endpoint_rejects_changed_result(
+    task_repository,
+    approved_task,
+):
+    task_repository.claim(approved_task.id, worker_id="api-worker")
+    task_repository.complete(
+        approved_task.id,
+        reason="Wykonanie zakończone",
+        result_content="Oryginalny rezultat",
+    )
+
+    client = TestClient(app)
+    response = client.post(
+        f"/api/tasks/{approved_task.id}/verify",
+        json={
+            "result_content": "Zmieniony rezultat",
+            "verifier_id": "api-verifier",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["verification_status"] == "rejected"
+
+
+def test_verify_endpoint_is_registered():
+    schema = app.openapi()
+
+    assert "/api/tasks/{task_id}/verify" in schema["paths"]
+    assert "post" in schema["paths"]["/api/tasks/{task_id}/verify"]
