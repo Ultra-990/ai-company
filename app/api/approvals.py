@@ -53,6 +53,8 @@ class ApprovalResponse(BaseModel):
 
 
 class ResolutionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     reason: str = Field(
         default="Decyzja właściciela",
         min_length=1,

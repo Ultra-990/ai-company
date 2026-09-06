@@ -54,6 +54,8 @@ class VerificationResponse(BaseModel):
 
 
 class VerifyAttemptRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     result_content: str = Field(min_length=1)
     verifier_id: str = Field(min_length=1, max_length=100)
     reason: str = Field(
@@ -63,6 +65,8 @@ class VerifyAttemptRequest(BaseModel):
 
 
 class TaskCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     title: str = Field(min_length=1, max_length=200)
     description: str | None = None
     priority: TaskPriority = TaskPriority.NORMAL
@@ -72,10 +76,14 @@ class TaskCreateRequest(BaseModel):
 
 
 class StatusUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     status: TaskStatus
 
 
 class AssignmentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     assigned_agent: str | None = Field(default=None, max_length=100)
 
 

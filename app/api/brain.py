@@ -26,6 +26,8 @@ def get_orchestrator(
 
 
 class TaskCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     title: str = Field(..., min_length=1, max_length=200)
     description: str | None = None
     priority: TaskPriority = TaskPriority.NORMAL
@@ -54,6 +56,8 @@ class PlanResponse(BaseModel):
 
 
 class SafetyCheckRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     action_type: str = Field(..., min_length=1, max_length=100)
     requires_approval: bool = False
 
