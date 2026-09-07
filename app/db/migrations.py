@@ -503,3 +503,81 @@ def migrate_plan_schema(engine: Engine) -> None:
                 """
             )
         )
+
+
+def migrate_task_project_plan_schema(engine: Engine) -> None:
+    """
+    Uzupełnia istniejącą tabelę tasks o opcjonalne powiązania domenowe.
+
+    Kolumny pozostają nullable, aby dotychczasowe zadania techniczne mogły
+    działać bez przypisania do projektu lub planu. Migracja obsługuje SQLite
+    oraz PostgreSQL i może być wykonywana wielokrotnie.
+    """
+    with engine.begin() as connection:
+        dialect = connection.dialect.name
+
+        if dialect == "sqlite":
+            columns = {
+                row[1]
+                for row in connection.execute(
+                    text("PRAGMA table_info(tasks)")
+                )
+            }
+
+            if "project_id" not in columns:
+                connection.execute(
+                    text(
+                        """
+                        ALTER TABLE tasks
+                        ADD COLUMN project_id INTEGER
+                        REFERENCES projects(id)
+                        """
+                    )
+                )
+
+            if "plan_id" not in columns:
+                connection.execute(
+                    text(
+                        """
+                        ALTER TABLE tasks
+                        ADD COLUMN plan_id INTEGER
+                        REFERENCES plans(id)
+                        """
+                    )
+                )
+        else:
+            connection.execute(
+                text(
+                    """
+                    ALTER TABLE tasks
+                    ADD COLUMN IF NOT EXISTS project_id INTEGER
+                    REFERENCES projects(id)
+                    """
+                )
+            )
+            connection.execute(
+                text(
+                    """
+                    ALTER TABLE tasks
+                    ADD COLUMN IF NOT EXISTS plan_id INTEGER
+                    REFERENCES plans(id)
+                    """
+                )
+            )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_tasks_project_id
+                ON tasks (project_id)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_tasks_plan_id
+                ON tasks (plan_id)
+                """
+            )
+        )

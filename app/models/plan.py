@@ -110,6 +110,11 @@ class Plan(Base):
         if self.status is None:
             self.status = PlanStatus.DRAFT
 
+    tasks: Mapped[list[object]] = relationship(
+        "Task",
+        back_populates="plan",
+    )
+
     def transition_to(self, new_status: PlanStatus) -> None:
         """Wymusza poprawny cykl życia planu."""
 

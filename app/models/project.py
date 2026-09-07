@@ -117,6 +117,11 @@ class Project(Base):
         if self.status is None:
             self.status = ProjectStatus.DRAFT
 
+    tasks: Mapped[list[object]] = relationship(
+        "Task",
+        back_populates="project",
+    )
+
     def transition_to(self, new_status: ProjectStatus) -> None:
         """Zmienia status projektu wyłącznie zgodnie z jego cyklem życia."""
 

@@ -13,7 +13,7 @@ from sqlalchemy import (
     Text,
     event,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.core.database import Base
 
@@ -77,6 +77,18 @@ class TaskAttempt(Base):
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
+        index=True,
+    )
+
+    project_id: Mapped[int | None] = mapped_column(
+        ForeignKey("projects.id"),
+        nullable=True,
+        index=True,
+    )
+
+    plan_id: Mapped[int | None] = mapped_column(
+        ForeignKey("plans.id"),
+        nullable=True,
         index=True,
     )
 
@@ -225,6 +237,16 @@ class Task(Base):
         JSON,
         default=list,
         nullable=False,
+    )
+
+    project: Mapped[object | None] = relationship(
+        "Project",
+        back_populates="tasks",
+    )
+
+    plan: Mapped[object | None] = relationship(
+        "Plan",
+        back_populates="tasks",
     )
 
     def __init__(self, **kwargs):
