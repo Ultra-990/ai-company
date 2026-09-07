@@ -105,6 +105,12 @@ class Project(Base):
         back_populates="projects",
     )
 
+    plans: Mapped[list[object]] = relationship(
+        "Plan",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 

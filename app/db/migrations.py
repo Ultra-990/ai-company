@@ -427,3 +427,79 @@ def migrate_project_schema(engine: Engine) -> None:
                 """
             )
         )
+
+
+def migrate_plan_schema(engine: Engine) -> None:
+    """
+    Tworzy tabelę planów wykonawczych.
+
+    Migracja jest idempotentna i może być uruchamiana wielokrotnie.
+    """
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS plans (
+                    id INTEGER PRIMARY KEY,
+                    project_id INTEGER NOT NULL,
+                    name VARCHAR(200) NOT NULL,
+                    objective TEXT NOT NULL,
+                    description TEXT,
+                    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    started_at DATETIME,
+                    completed_at DATETIME,
+                    FOREIGN KEY(project_id) REFERENCES projects(id)
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_plans_project_id
+                ON plans (project_id)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_plans_name
+                ON plans (name)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_plans_status
+                ON plans (status)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_plans_created_at
+                ON plans (created_at)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_plans_started_at
+                ON plans (started_at)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_plans_completed_at
+                ON plans (completed_at)
+                """
+            )
+        )
