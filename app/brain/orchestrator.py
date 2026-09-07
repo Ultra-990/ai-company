@@ -170,7 +170,18 @@ class Orchestrator:
         if task is None:
             return None
 
-        result = executor.execute(task)
+        try:
+            result = executor.execute(task)
+        except Exception:
+            reason = (
+                "Wykonanie zadania przerwano z powodu błędu wykonawcy."
+            )
+            repository.block(task.id, reason=reason)
+
+            return ExecutionResult(
+                success=False,
+                reason=reason,
+            )
 
         if result.success:
             repository.complete(

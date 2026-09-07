@@ -92,3 +92,32 @@ def test_orchestrator_returns_none_when_queue_is_empty(tmp_path):
         assert result is None
     finally:
         repository.close()
+
+def test_orchestrator_blocks_task_when_executor_raises(
+    task_repository,
+    approved_task,
+):
+    from app.brain.orchestrator import Orchestrator
+    from app.models.task import TaskStatus
+
+    class ExplodingExecutor:
+        def execute(self, task):
+            raise RuntimeError("sekretny szczegół błędu wykonawcy")
+
+    orchestrator = Orchestrator()
+
+    result = orchestrator.execute_next_task(
+        task_repository,
+        ExplodingExecutor(),
+        worker_id="orchestrator-worker",
+    )
+
+    assert result is not None
+    assert result.success is False
+    assert result.reason == (
+        "Wykonanie zadania przerwano z powodu błędu wykonawcy."
+    )
+
+    refreshed_task = task_repository.get_required(approved_task.id)
+    assert refreshed_task.status is TaskStatus.BLOCKED
+

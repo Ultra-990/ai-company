@@ -115,10 +115,12 @@ def execute_next_task(
     try:
         result = executor.execute(task)
     except Exception as exc:
-        reason = f"Nieobsłużony wyjątek wykonawcy: {exc}"
+        block_reason = (
+            "Wykonanie zadania przerwano z powodu błędu wykonawcy."
+        )
 
         try:
-            repository.block(task.id, reason=reason)
+            repository.block(task.id, reason=block_reason)
         except Exception as block_exc:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -127,7 +129,7 @@ def execute_next_task(
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=reason,
+            detail="Wykonanie zadania nie powiodło się.",
         ) from exc
 
     try:

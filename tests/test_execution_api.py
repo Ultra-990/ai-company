@@ -326,3 +326,36 @@ def test_verify_endpoint_is_registered():
 
     assert "/api/tasks/{task_id}/verify" in schema["paths"]
     assert "post" in schema["paths"]["/api/tasks/{task_id}/verify"]
+
+def test_execute_next_hides_executor_exception(
+    task_repository,
+    approved_task,
+):
+    @dataclass
+    class ExplodingExecutor:
+        def execute(self, task):
+            raise RuntimeError("sekretny szczegół błędu wykonawcy")
+
+    app.dependency_overrides[get_task_executor] = (
+        lambda: ExplodingExecutor()
+    )
+
+    try:
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            "/api/tasks/execute-next",
+            headers=WORKER_HEADERS,
+            params={"worker_id": "api-worker"},
+        )
+
+        assert response.status_code == 500
+        assert response.json()["detail"] == (
+            "Wykonanie zadania nie powiodło się."
+        )
+        assert "sekretny szczegół błędu wykonawcy" not in response.text
+
+        refreshed_task = task_repository.get_required(approved_task.id)
+        assert refreshed_task.status is TaskStatus.BLOCKED
+    finally:
+        app.dependency_overrides.clear()
+
