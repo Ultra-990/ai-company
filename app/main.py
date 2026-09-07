@@ -41,12 +41,49 @@ async def lifespan(app: FastAPI):
     yield
 
 
+
+
+
 app = FastAPI(
     title="AI Company",
     description="Lokalny system zarządzania firmą agentów AI",
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def audit_successful_api_mutations(request, call_next):
+    """
+    Rejestruje tylko zakończone sukcesem mutacje wykonane po RBAC.
+
+    Rola i repozytorium są ustawiane przez require_owner/require_worker.
+    Token ani nagłówek Authorization nie są tu odczytywane lub zapisywane.
+    """
+    response = await call_next(request)
+
+    role = getattr(request.state, "authenticated_role", None)
+    repository = getattr(request.state, "audit_repository", None)
+    is_mutation = request.method in {"POST", "PUT", "PATCH", "DELETE"}
+    is_success = 200 <= response.status_code < 300
+
+    if role and repository and is_mutation and is_success:
+        operation = f"{request.method} {request.url.path}"[:64]
+
+        try:
+            repository.record(
+                event_type="api_mutation",
+                operation=operation,
+                decision="completed",
+                allowed=True,
+                reason=role,
+            )
+        except Exception:
+            # Sam audyt nie może unieważniać poprawnie wykonanej operacji.
+            pass
+
+    return response
+
 
 app.include_router(system_router)
 app.include_router(execution_router)
