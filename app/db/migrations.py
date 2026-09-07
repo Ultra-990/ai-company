@@ -348,3 +348,82 @@ def migrate_task_attempt_schema(engine: Engine) -> None:
                 """
             )
         )
+
+
+def migrate_project_schema(engine: Engine) -> None:
+    """
+    Tworzy tabelę nadrzędnych agregatów Project.
+
+    Migracja jest idempotentna. Tabela jest tworzona również przez
+    Base.metadata.create_all(), lecz jawna migracja zapewnia poprawne
+    działanie dla istniejących środowisk i samodzielnych wywołań migracji.
+    """
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS projects (
+                    id INTEGER PRIMARY KEY,
+                    name VARCHAR(200) NOT NULL,
+                    business_goal TEXT NOT NULL,
+                    description TEXT,
+                    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+                    organization_unit_id INTEGER,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    started_at DATETIME,
+                    completed_at DATETIME,
+                    FOREIGN KEY(organization_unit_id)
+                        REFERENCES organization_units(id)
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_projects_name
+                ON projects (name)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_projects_status
+                ON projects (status)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_projects_organization_unit_id
+                ON projects (organization_unit_id)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_projects_created_at
+                ON projects (created_at)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_projects_started_at
+                ON projects (started_at)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_projects_completed_at
+                ON projects (completed_at)
+                """
+            )
+        )

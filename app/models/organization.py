@@ -87,3 +87,8 @@ class OrganizationUnit(Base):
         "OrganizationUnit",
         back_populates="parent",
     )
+
+    projects: Mapped[list[object]] = relationship(
+        "Project",
+        back_populates="organization_unit",
+    )
