@@ -11,6 +11,7 @@ from app.services.tool_calling_task_operation import (
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 
+from app.api.auth import require_worker
 from app.api.tasks import get_repository
 from app.brain.orchestrator import Orchestrator
 from app.models.task import TaskStatus
@@ -90,6 +91,7 @@ def execute_next_task(
     orchestrator: OrchestratorDependency,
     executor: ExecutorDependency,
     response: Response,
+    _: None = Depends(require_worker),
     worker_id: str = Query(
         default="api-worker",
         min_length=1,

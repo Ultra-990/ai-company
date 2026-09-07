@@ -1,5 +1,14 @@
 import os
+
 os.environ.setdefault("OWNER_API_TOKEN", "test-owner-token")
+os.environ.setdefault("WORKER_API_TOKEN", "test-worker-token")
+
+OWNER_HEADERS = {
+    "Authorization": "Bearer " + os.environ["OWNER_API_TOKEN"]
+}
+WORKER_HEADERS = {
+    "Authorization": "Bearer " + os.environ["WORKER_API_TOKEN"]
+}
 
 from collections.abc import Generator
 from pathlib import Path

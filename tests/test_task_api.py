@@ -1,3 +1,5 @@
+import os
+
 from app.services.tasks import TaskRepository
 from fastapi.testclient import TestClient
 
@@ -6,10 +8,15 @@ from app.main import app
 
 client = TestClient(app)
 
+OWNER_HEADERS = {
+    "Authorization": "Bearer " + os.environ["OWNER_API_TOKEN"]
+}
+
 
 def test_task_queue_full_lifecycle() -> None:
     create_response = client.post(
         "/api/tasks",
+        headers=OWNER_HEADERS,
         json={
             "title": "  Przetwórz raport miesięczny  ",
             "description": "Analiza danych sprzedażowych",
@@ -43,6 +50,7 @@ def test_task_queue_full_lifecycle() -> None:
 
     assignment_response = client.patch(
         f"/api/tasks/{task_id}/assignment",
+        headers=OWNER_HEADERS,
         json={"assigned_agent": " analyst "},
     )
 
@@ -51,6 +59,7 @@ def test_task_queue_full_lifecycle() -> None:
 
     started_response = client.patch(
         f"/api/tasks/{task_id}/status",
+        headers=OWNER_HEADERS,
         json={"status": "in_progress"},
     )
 
@@ -60,6 +69,7 @@ def test_task_queue_full_lifecycle() -> None:
 
     completed_response = client.patch(
         f"/api/tasks/{task_id}/status",
+        headers=OWNER_HEADERS,
         json={"status": "completed"},
     )
 
@@ -73,6 +83,7 @@ def test_task_queue_full_lifecycle() -> None:
 def test_list_tasks_filters_by_resource_class_and_risk_level() -> None:
     matching_response = client.post(
         "/api/tasks",
+        headers=OWNER_HEADERS,
         json={
             "title": "Zadanie wymagające CPU",
             "resource_class": "cpu_heavy",
@@ -83,6 +94,7 @@ def test_list_tasks_filters_by_resource_class_and_risk_level() -> None:
 
     other_response = client.post(
         "/api/tasks",
+        headers=OWNER_HEADERS,
         json={
             "title": "Lekkie zadanie",
             "resource_class": "light",

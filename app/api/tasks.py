@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.api.auth import require_owner
 from app.core.config import load_settings
 from app.models.task import (
     ApprovalStatus,
@@ -150,6 +151,7 @@ def get_task(
 def create_task(
     payload: TaskCreateRequest,
     repository: RepositoryDependency,
+    _: None = Depends(require_owner),
 ) -> Task:
     try:
         return repository.create(
@@ -177,6 +179,7 @@ def update_status(
     payload: StatusUpdateRequest,
     repository: RepositoryDependency,
     task_id: int = Path(ge=1),
+    _: None = Depends(require_owner),
 ) -> Task:
     try:
         return repository.transition(task_id, payload.status)
@@ -199,6 +202,7 @@ def update_assignment(
     payload: AssignmentRequest,
     repository: RepositoryDependency,
     task_id: int = Path(ge=1),
+    _: None = Depends(require_owner),
 ) -> Task:
     try:
         return repository.assign(task_id, payload.assigned_agent)
@@ -221,6 +225,7 @@ def verify_task_attempt(
     payload: VerifyAttemptRequest,
     repository: RepositoryDependency,
     task_id: int = Path(ge=1),
+    _: None = Depends(require_owner),
 ) -> TaskAttempt:
     """Weryfikuje trwały rezultat ostatniej ukończonej próby zadania."""
     try:

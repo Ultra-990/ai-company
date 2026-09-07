@@ -1,31 +1,11 @@
-import os
-import secrets
+from fastapi import APIRouter, Depends, HTTPException
 
-from fastapi import APIRouter, Depends, Header, HTTPException
-
+from app.api.auth import require_owner
 from app.api.tasks import TaskResponse, get_repository
 from app.services.tasks import TaskNotFoundError, TaskRepository
 
 
 router = APIRouter(prefix="/api/owner", tags=["owner"])
-
-
-def require_owner(
-    authorization: str | None = Header(default=None),
-) -> None:
-    expected = os.environ.get("OWNER_API_TOKEN")
-
-    if not expected or not authorization:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
-    scheme, _, token = authorization.partition(" ")
-
-    if (
-        scheme.lower() != "bearer"
-        or not token
-        or not secrets.compare_digest(token, expected)
-    ):
-        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 

@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.owner import require_owner
+from app.api.auth import require_owner
 from app.core.config import load_settings
 from app.models.approval import ApprovalRequestStatus
 from app.services.approved_tool_execution import (

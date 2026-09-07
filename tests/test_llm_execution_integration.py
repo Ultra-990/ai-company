@@ -8,11 +8,13 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 OWNER_HEADERS = {
-    "Authorization": (
-        "Bearer "
-        + os.environ.get("OWNER_API_TOKEN", "test-owner-token")
-    )
+    "Authorization": "Bearer " + os.environ["OWNER_API_TOKEN"]
 }
+WORKER_HEADERS = {
+    "Authorization": "Bearer " + os.environ["WORKER_API_TOKEN"]
+}
+
+
 class StubLLMClient:
     def __init__(self) -> None:
         self.calls: list[dict[str, str]] = []
@@ -53,6 +55,7 @@ def test_execute_next_uses_llm_when_enabled(monkeypatch):
 
     create_response = api_client.post(
         "/api/tasks",
+        headers=OWNER_HEADERS,
         json={
             "title": "Zadanie testowe LLM",
             "description": "Wykonaj zadanie integracyjne",
@@ -79,6 +82,7 @@ def test_execute_next_uses_llm_when_enabled(monkeypatch):
 
     execute_response = api_client.post(
         "/api/tasks/execute-next",
+        headers=WORKER_HEADERS,
         params={"worker_id": "llm-integration-worker"},
     )
 

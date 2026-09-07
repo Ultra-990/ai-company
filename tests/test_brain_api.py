@@ -1,5 +1,13 @@
+import os
+
+
+OWNER_HEADERS = {
+    "Authorization": "Bearer " + os.environ["OWNER_API_TOKEN"]
+}
+
+
 def test_plan_endpoint(client):
-    response = client.post("/api/brain/plan")
+    response = client.post("/api/brain/plan", headers=OWNER_HEADERS)
 
     assert response.status_code == 200
     payload = response.json()
@@ -18,6 +26,7 @@ def test_report_endpoint(client):
 def test_safety_check_endpoint(client):
     response = client.post(
         "/api/brain/safety-check",
+        headers=OWNER_HEADERS,
         json={
             "action_type": "deploy",
             "requires_approval": True,
@@ -34,6 +43,7 @@ def test_safety_check_endpoint(client):
 def test_create_and_list_brain_tasks(client):
     create_response = client.post(
         "/api/brain/tasks",
+        headers=OWNER_HEADERS,
         json={
             "title": "Brain API task",
             "description": "Contract test",
@@ -72,6 +82,7 @@ def test_list_brain_tasks_respects_limit(client):
 def test_create_brain_task_rejects_empty_title(client):
     response = client.post(
         "/api/brain/tasks",
+        headers=OWNER_HEADERS,
         json={"title": ""},
     )
 

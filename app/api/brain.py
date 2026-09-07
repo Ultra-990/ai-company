@@ -5,6 +5,7 @@ from typing import Any, Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.auth import require_owner
 from app.api.system import get_audit_repository
 from app.api.tasks import get_repository
 from app.brain.orchestrator import Orchestrator
@@ -85,6 +86,7 @@ def create_brain_task(
     payload: TaskCreateRequest,
     task_repository: TaskRepository = Depends(get_repository),
     orchestrator: Orchestrator = Depends(get_orchestrator),
+    _: None = Depends(require_owner),
 ) -> TaskResponse:
     try:
         task = task_repository.create(
@@ -109,6 +111,7 @@ def create_brain_task(
 def create_plan(
     task_repository: TaskRepository = Depends(get_repository),
     orchestrator: Orchestrator = Depends(get_orchestrator),
+    _: None = Depends(require_owner),
 ) -> PlanResponse:
     orchestrator.load_tasks(task_repository)
     result = orchestrator.plan()
@@ -152,6 +155,7 @@ def get_report(
 def safety_check(
     payload: SafetyCheckRequest,
     orchestrator: Orchestrator = Depends(get_orchestrator),
+    _: None = Depends(require_owner),
 ) -> SafetyCheckResponse:
     result = orchestrator.run_safety_check(
         action_type=payload.action_type,

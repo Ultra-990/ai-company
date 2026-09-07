@@ -1,3 +1,4 @@
+import os
 import pytest
 from dataclasses import dataclass
 
@@ -7,6 +8,14 @@ from app.api.execution import get_task_executor, get_orchestrator
 from app.main import app
 from app.services.executor import ExecutionResult
 from app.models.task import TaskStatus
+
+
+OWNER_HEADERS = {
+    "Authorization": "Bearer " + os.environ["OWNER_API_TOKEN"]
+}
+WORKER_HEADERS = {
+    "Authorization": "Bearer " + os.environ["WORKER_API_TOKEN"]
+}
 
 
 
@@ -36,7 +45,10 @@ def test_execute_next_returns_204_for_empty_queue():
 
     try:
         client = TestClient(app)
-        response = client.post("/api/tasks/execute-next")
+        response = client.post(
+            "/api/tasks/execute-next",
+            headers=WORKER_HEADERS,
+        )
 
         assert response.status_code == 204
         assert response.content == b""
@@ -56,6 +68,7 @@ def test_execute_next_completes_task(
         client = TestClient(app)
         response = client.post(
             "/api/tasks/execute-next",
+            headers=WORKER_HEADERS,
             params={"worker_id": "api-worker"},
         )
 
@@ -81,6 +94,7 @@ def test_execute_next_blocks_failed_task(
         client = TestClient(app)
         response = client.post(
             "/api/tasks/execute-next",
+            headers=WORKER_HEADERS,
             params={"worker_id": "api-worker"},
         )
 
@@ -110,6 +124,7 @@ def test_execute_next_returns_500_when_executor_is_not_configured(
 
     response = client.post(
         "/api/tasks/execute-next",
+        headers=WORKER_HEADERS,
         params={"worker_id": "api-worker"},
     )
 
@@ -265,6 +280,7 @@ def test_verify_endpoint_verifies_completed_attempt(
     client = TestClient(app)
     response = client.post(
         f"/api/tasks/{approved_task.id}/verify",
+        headers=OWNER_HEADERS,
         json={
             "result_content": "Trwały rezultat testowego wykonania",
             "verifier_id": "api-verifier",
@@ -294,6 +310,7 @@ def test_verify_endpoint_rejects_changed_result(
     client = TestClient(app)
     response = client.post(
         f"/api/tasks/{approved_task.id}/verify",
+        headers=OWNER_HEADERS,
         json={
             "result_content": "Zmieniony rezultat",
             "verifier_id": "api-verifier",
