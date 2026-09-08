@@ -581,3 +581,58 @@ def migrate_task_project_plan_schema(engine: Engine) -> None:
                 """
             )
         )
+
+
+def migrate_artifact_schema(engine: Engine) -> None:
+    """
+    Tworzy trwały rejestr audytowalnych artefaktów workflow.
+
+    Migracja jest idempotentna i bezpieczna dla SQLite oraz PostgreSQL.
+    """
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS artifacts (
+                    id INTEGER PRIMARY KEY,
+                    project_id INTEGER,
+                    plan_id INTEGER,
+                    task_id INTEGER,
+                    task_attempt_id INTEGER,
+                    artifact_type VARCHAR(32) NOT NULL DEFAULT 'other',
+                    name VARCHAR(200) NOT NULL,
+                    description TEXT,
+                    uri VARCHAR(2048),
+                    content TEXT,
+                    checksum VARCHAR(64),
+                    created_by VARCHAR(100),
+                    created_at DATETIME NOT NULL,
+                    FOREIGN KEY(project_id) REFERENCES projects(id),
+                    FOREIGN KEY(plan_id) REFERENCES plans(id),
+                    FOREIGN KEY(task_id) REFERENCES tasks(id),
+                    FOREIGN KEY(task_attempt_id)
+                        REFERENCES task_attempts(id)
+                )
+                """
+            )
+        )
+
+        indexes = {
+            "ix_artifacts_project_id": "project_id",
+            "ix_artifacts_plan_id": "plan_id",
+            "ix_artifacts_task_id": "task_id",
+            "ix_artifacts_task_attempt_id": "task_attempt_id",
+            "ix_artifacts_artifact_type": "artifact_type",
+            "ix_artifacts_name": "name",
+            "ix_artifacts_checksum": "checksum",
+            "ix_artifacts_created_by": "created_by",
+            "ix_artifacts_created_at": "created_at",
+        }
+
+        for index_name, column_name in indexes.items():
+            connection.execute(
+                text(
+                    f"CREATE INDEX IF NOT EXISTS {index_name} "
+                    f"ON artifacts ({column_name})"
+                )
+            )

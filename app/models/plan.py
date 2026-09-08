@@ -160,3 +160,8 @@ class Plan(Base):
 
         if new_status is PlanStatus.COMPLETED:
             self.completed_at = now
+
+    artifacts: Mapped[list[object]] = relationship(
+        "Artifact",
+        back_populates="plan",
+    )

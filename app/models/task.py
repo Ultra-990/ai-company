@@ -69,6 +69,7 @@ class RiskLevel(str, PyEnum):
 
 
 
+
 class TaskAttempt(Base):
     """Trwały zapis pojedynczej próby wykonania zadania."""
 
@@ -153,6 +154,16 @@ class TaskAttempt(Base):
         index=True,
     )
 
+    task: Mapped[object] = relationship(
+        "Task",
+        back_populates="attempts",
+    )
+
+
+    artifacts: Mapped[list[object]] = relationship(
+        "Artifact",
+        back_populates="task_attempt",
+    )
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -416,8 +427,22 @@ class Task(Base):
             self.status = TaskStatus.PENDING
 
 
+    attempts: Mapped[list[object]] = relationship(
+        "TaskAttempt",
+        back_populates="task",
+        cascade="all, delete-orphan",
+    )
+
+    artifacts: Mapped[list[object]] = relationship(
+        "Artifact",
+        back_populates="task",
+    )
+
+
 @event.listens_for(Task, "before_insert")
 @event.listens_for(Task, "before_update")
 def validate_task_stages_before_save(mapper, connection, target: Task) -> None:
     """Nie pozwala zapisać zadania z niepoprawnymi etapami."""
     target.validate_stages()
+
+

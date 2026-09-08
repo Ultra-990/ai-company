@@ -170,3 +170,8 @@ class Project(Base):
 
         if new_status is ProjectStatus.COMPLETED:
             self.completed_at = now
+
+    artifacts: Mapped[list[object]] = relationship(
+        "Artifact",
+        back_populates="project",
+    )
