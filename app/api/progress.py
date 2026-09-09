@@ -979,6 +979,14 @@ def progress_page() -> str:
         // Odświeżenie mapy co 10 sekund bez przeładowania strony.
         window.setInterval(refreshProgressFromApi, 10000);
     </script>
+
+<script data-auto-refresh="ai-company">
+(function () {
+    const REFRESH_MS = 15000;
+    setTimeout(() => window.location.reload(), REFRESH_MS);
+})();
+</script>
+
 </body>
 </html>
 """

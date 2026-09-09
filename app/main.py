@@ -271,16 +271,23 @@ def dashboard() -> str:
                     message.textContent = "Ładowanie danych...";
                     message.classList.remove("error");
 
-                    const response = await fetch("/api/dashboard/summary");
+                    const [summaryResponse, progressResponse] = await Promise.all([
+                        fetch("/api/dashboard/summary"),
+                        fetch("/api/progress")
+                    ]);
 
-                    if (!response.ok) {
-                        throw new Error(`Błąd HTTP: ${response.status}`);
+                    if (!summaryResponse.ok || !progressResponse.ok) {
+                        throw new Error(
+                            `Błąd HTTP: dashboard=${summaryResponse.status}, progress=${progressResponse.status}`
+                        );
                     }
 
-                    const data = await response.json();
+                    const data = await summaryResponse.json();
+                    const progressData = await progressResponse.json();
                     const approvals = data.approvals || {};
 
-                    const progress = Number(data.progress) || 0;
+                    // Faktyczny postęp obliczany z aktualnego stanu zadań w SQLite.
+                    const progress = Number(progressData.total_progress) || 0;
 
                     document.getElementById("project-name").textContent =
                         data.project || "Brak nazwy";
@@ -316,6 +323,9 @@ def dashboard() -> str:
                 .addEventListener("click", loadDashboard);
 
             loadDashboard();
+
+            // Automatyczna aktualizacja danych dashboardu co 15 sekund.
+            setInterval(loadDashboard, 15000);
         </script>
     </body>
     </html>
