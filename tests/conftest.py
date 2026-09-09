@@ -1,7 +1,9 @@
 import os
 
-os.environ.setdefault("OWNER_API_TOKEN", "test-owner-token")
-os.environ.setdefault("WORKER_API_TOKEN", "test-worker-token")
+# Testy zawsze działają na izolowanych, sztucznych tokenach.
+# Nie mogą zależeć od OWNER_API_TOKEN / WORKER_API_TOKEN powłoki lub .env.
+os.environ["OWNER_API_TOKEN"] = "test-owner-token"
+os.environ["WORKER_API_TOKEN"] = "test-worker-token"
 
 OWNER_HEADERS = {
     "Authorization": "Bearer " + os.environ["OWNER_API_TOKEN"]
