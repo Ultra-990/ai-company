@@ -935,9 +935,35 @@ def progress_page() -> str:
             );
         }
 
+        const roadmapStatusLabels = {
+            planned: "Zaplanowany",
+            ready: "Gotowy",
+            in_progress: "W trakcie",
+            blocked: "Zablokowany",
+            completed: "Ukończony",
+            cancelled: "Anulowany"
+        };
+
+        const roadmapStatusColors = {
+            planned: "var(--yellow)",
+            ready: "var(--blue)",
+            in_progress: "var(--blue)",
+            blocked: "var(--red)",
+            completed: "var(--green)",
+            cancelled: "var(--muted)"
+        };
+
+        function roadmapStatusLabel(status) {
+            return roadmapStatusLabels[status] || "Zaplanowany";
+        }
+
+        function roadmapStatusColor(status) {
+            return roadmapStatusColors[status] || "var(--muted)";
+        }
+
         async function refreshProgressFromApi() {
             try {
-                const response = await fetch("/api/progress", {
+                const response = await fetch("/api/project-progress", {
                     cache: "no-store"
                 });
 
@@ -948,42 +974,45 @@ def progress_page() -> str:
                 const data = await response.json();
                 apiTotalProgress = data.total_progress;
 
-                const liveTasksProcess = {
-                    title: `Bieżące zadania systemowe (${data.task_count})`,
-                    icon: "📋",
-                    progress: data.total_progress,
-                    status: data.task_count
-                        ? "W trakcie"
-                        : "Zaplanowany",
-                    color: data.counts.blocked
-                        ? "var(--red)"
-                        : "var(--blue)",
-                    description: data.task_count
-                        ? "Dane pobierane automatycznie z lokalnej bazy SQLite."
-                        : "Brak zapisanych zadań. Utwórz zadanie przez Task API.",
-                    open: true,
-                    steps: data.tasks.length
-                        ? data.tasks.map(task => [
-                            `#${task.id} · ${task.title}`,
-                            task.status_label,
-                            `${task.progress}% · Priorytet: ${task.priority}` +
-                            (task.assigned_agent
-                                ? ` · Agent: ${task.assigned_agent}`
-                                : "")
+                processes = data.phases.map(phase => ({
+                    title: phase.name || phase.title || phase.id,
+                    icon: "🗺️",
+                    progress: phase.progress,
+                    status: roadmapStatusLabel(phase.status),
+                    color: roadmapStatusColor(phase.status),
+                    description: phase.description ||
+                        (
+                            phase.dependencies?.length
+                                ? `Zależności: ${phase.dependencies.join(", ")}`
+                                : "Faza roadmapy projektu."
+                        ),
+                    open: phase.status === "in_progress",
+                    steps: phase.items.length
+                        ? phase.items.map(item => [
+                            item.name || item.title || item.id,
+                            roadmapStatusLabel(item.status),
+                            [
+                                `${item.progress}%`,
+                                item.evidence
+                                    ? `Dowód: ${item.evidence}`
+                                    : null,
+                                item.note
+                                    ? `Notatka: ${item.note}`
+                                    : null
+                            ].filter(Boolean).join(" · ")
                         ])
                         : [[
-                            "Brak zadań",
+                            "Brak punktów roadmapy",
                             "Zaplanowany",
-                            "Nie utworzono jeszcze żadnego zadania."
+                            "Ta faza nie zawiera jeszcze zdefiniowanych punktów."
                         ]]
-                };
+                }));
 
-                processes = [...baseProcesses, liveTasksProcess];
                 renderProcesses();
                 renderTotalProgress();
             } catch (error) {
                 console.error(
-                    "Nie udało się pobrać danych postępu:",
+                    "Nie udało się pobrać danych roadmapy:",
                     error
                 );
             }
@@ -996,13 +1025,6 @@ def progress_page() -> str:
         // Odświeżenie mapy co 10 sekund bez przeładowania strony.
         window.setInterval(refreshProgressFromApi, 10000);
     </script>
-
-<script data-auto-refresh="ai-company">
-(function () {
-    const REFRESH_MS = 15000;
-    setTimeout(() => window.location.reload(), REFRESH_MS);
-})();
-</script>
 
 </body>
 </html>
