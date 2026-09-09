@@ -2,14 +2,34 @@ project: Virtual Company
 
 stages:
   - id: foundation
-    name: Fundament FastAPI
+    name: Fundament FastAPI i infrastruktura
     status: completed
     progress: 100
+    items:
+      - name: Aplikacja FastAPI i routing
+        status: completed
+      - name: SQLite oraz migracje przy starcie aplikacji
+        status: completed
+      - name: Testy automatyczne
+        status: completed
+      - name: Podstawowa dokumentacja techniczna
+        status: completed
 
   - id: task_api
-    name: Task API
-    status: in_progress
-    progress: 65
+    name: Zadania i cykl życia Task API
+    status: completed
+    progress: 100
+    items:
+      - name: Tworzenie, odczyt i aktualizacja zadań
+        status: completed
+      - name: Kontrakty API oraz walidacja danych wejściowych
+        status: completed
+      - name: Statusy, priorytety i przypisanie agenta
+        status: completed
+      - name: Trwała historia prób wykonania zadań
+        status: completed
+      - name: Bezpieczne blokowanie zadań po błędach wykonawcy
+        status: completed
 
   - id: organization
     name: Struktura organizacyjna
@@ -18,7 +38,7 @@ stages:
     items:
       - name: Model OrganizationUnit
         status: completed
-      - name: Relacja parent/children
+      - name: Relacja parent i children
         status: completed
       - name: Tabela organization_units
         status: completed
@@ -26,6 +46,88 @@ stages:
         status: completed
       - name: Dokumentacja
         status: completed
+
+  - id: projects_plans
+    name: Projekty i plany realizacji
+    status: completed
+    progress: 100
+    items:
+      - name: Agregat domenowy Project
+        status: completed
+      - name: Agregat domenowy Plan
+        status: completed
+      - name: Powiązanie zadań z projektami
+        status: completed
+      - name: Powiązanie zadań z planami
+        status: completed
+
+  - id: execution_workflow
+    name: Kolejka i wykonanie zadań
+    status: in_progress
+    progress: 85
+    items:
+      - name: Orkiestrator i atomowe pobieranie następnego zadania
+        status: completed
+      - name: Workflow zatwierdzania wykonania
+        status: completed
+      - name: Trwałe próby wykonania
+        status: completed
+      - name: Weryfikacja wyników wykonania
+        status: completed
+      - name: Artefakty workflow możliwe do audytu
+        status: completed
+      - name: Obsługa odzyskiwania zadań przerwanych w trakcie wykonania
+        status: in_progress
+
+  - id: local_llm
+    name: Lokalna integracja LLM
+    status: in_progress
+    progress: 75
+    items:
+      - name: Klient OpenAI-compatible
+        status: completed
+      - name: Konfiguracja lokalnego Ollama
+        status: completed
+      - name: Model qwen3.8:27b
+        status: completed
+      - name: Wykonawca operacji LLM dla zadań
+        status: completed
+      - name: Pełna walidacja wykonania kolejki end-to-end
+        status: in_progress
+
+  - id: security_audit
+    name: Bezpieczeństwo API i audyt
+    status: completed
+    progress: 100
+    items:
+      - name: RBAC dla właściciela i wykonawcy
+        status: completed
+      - name: Tokeny API i izolacja konfiguracji testowej
+        status: completed
+      - name: Walidacja kontraktów i blokada nadmiarowych pól
+        status: completed
+      - name: Audyt autoryzacji RBAC
+        status: completed
+      - name: Audyt mutacji API
+        status: completed
+      - name: Bezpieczny przepływ zatwierdzonych narzędzi
+        status: completed
+      - name: Utwardzenie dostępu do plików projektu
+        status: completed
+
+  - id: dashboard_progress
+    name: Dashboard i mapa postępu
+    status: in_progress
+    progress: 70
+    items:
+      - name: Endpointy dashboardu
+        status: completed
+      - name: Endpoint rzeczywistego postępu zadań
+        status: completed
+      - name: Automatyczne odświeżanie widoków
+        status: completed
+      - name: Spójne źródło roadmapy i postępu operacyjnego
+        status: in_progress
 
   - id: department_managers
     name: Kierownicy działów
