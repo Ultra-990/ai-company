@@ -1,0 +1,172 @@
+version: 1
+project:
+  id: virtual-company
+  name: Virtual Company
+  progress_method: weighted_checklist
+  source_of_truth: roadmap_items
+
+status_definitions:
+  planned: Punkt nie jest jeszcze dostępny do realizacji.
+  ready: Punkt można rozpocząć; zależności są spełnione.
+  in_progress: Trwa realizacja punktu.
+  blocked: Punkt ma udokumentowaną przeszkodę.
+  completed: Spełnione są kryteria ukończenia i istnieje dowód weryfikacji.
+  cancelled: Punkt został świadomie wycofany.
+
+phases:
+  - id: foundation
+    name: Fundament aplikacji
+    weight: 10
+    items:
+      - id: foundation.fastapi_start
+        name: Aplikacja FastAPI uruchamia się lokalnie
+        status: ready
+        acceptance_criteria:
+          - Serwer uruchamia się bez błędu.
+          - Endpoint zdrowia odpowiada HTTP 200.
+      - id: foundation.configuration
+        name: Konfiguracja aplikacji jest ładowana i walidowana
+        status: ready
+        acceptance_criteria:
+          - Konfiguracja jest testowana automatycznie.
+      - id: foundation.database
+        name: SQLite i inicjalizacja schematu działają
+        status: ready
+        acceptance_criteria:
+          - Baza inicjalizuje się na czystym środowisku.
+      - id: foundation.test_suite
+        name: Pełny zestaw testów przechodzi
+        status: ready
+        acceptance_criteria:
+          - pytest kończy się kodem 0.
+
+  - id: task_management
+    name: Zarządzanie zadaniami
+    weight: 15
+    depends_on: [foundation]
+    items:
+      - id: task_management.create
+        name: Tworzenie zadań przez API
+        status: planned
+      - id: task_management.lifecycle
+        name: Walidowany cykl życia zadania
+        status: planned
+      - id: task_management.approvals
+        name: Akceptacja i odrzucanie zadań
+        status: planned
+      - id: task_management.cleanup_policy
+        name: Polityka archiwizacji danych testowych
+        status: planned
+        acceptance_criteria:
+          - Istnieje zatwierdzona reguła archiwizacji.
+          - Operacja nie usuwa danych bez backupu.
+
+  - id: organization_security
+    name: Organizacja, uprawnienia i audyt
+    weight: 15
+    depends_on: [foundation]
+    items:
+      - id: organization_security.organization_units
+        name: Jednostki organizacyjne i relacje hierarchiczne
+        status: planned
+      - id: organization_security.rbac
+        name: RBAC dla operacji mutujących
+        status: planned
+      - id: organization_security.audit
+        name: Audyt istotnych mutacji
+        status: planned
+      - id: organization_security.authorization_tests
+        name: Testy autoryzacji przechodzą
+        status: planned
+
+  - id: llm_execution
+    name: Wykonanie zadań przez lokalny LLM
+    weight: 20
+    depends_on: [task_management, organization_security]
+    items:
+      - id: llm_execution.client
+        name: Klient OpenAI-compatible dla Ollama działa
+        status: planned
+      - id: llm_execution.model_health
+        name: Lokalny model Qwen odpowiada
+        status: planned
+      - id: llm_execution.worker_claim
+        name: Worker bezpiecznie pobiera zatwierdzone zadanie
+        status: planned
+      - id: llm_execution.persist_result
+        name: Wynik LLM jest trwale zapisany przy zadaniu
+        status: planned
+      - id: llm_execution.complete_status
+        name: Udane wykonanie kończy zadanie statusem completed
+        status: planned
+      - id: llm_execution.error_handling
+        name: Błąd wykonawcy blokuje zadanie z przyczyną i śladem audytowym
+        status: planned
+      - id: llm_execution.integration_test
+        name: Test integracyjny pełnego wykonania
+        status: planned
+
+  - id: scheduling
+    name: Planowanie i kolejka
+    weight: 15
+    depends_on: [llm_execution]
+    items:
+      - id: scheduling.next_task_rule
+        name: Reguła wyboru następnego zadania
+        status: planned
+      - id: scheduling.dependencies
+        name: Zależności między zadaniami
+        status: planned
+      - id: scheduling.locking
+        name: Blokada równoległego pobrania zadania
+        status: planned
+      - id: scheduling.retry
+        name: Retry i trwałe blokowanie po błędzie
+        status: planned
+
+  - id: roadmap_automation
+    name: Roadmapa, postęp i następny ruch
+    weight: 15
+    depends_on: [scheduling]
+    items:
+      - id: roadmap_automation.schema
+        name: Struktura faz, punktów, zależności i kryteriów
+        status: completed
+        evidence:
+          - docs/roadmap.yaml
+      - id: roadmap_automation.persistence
+        name: Stan punktów roadmapy zapisany w bazie
+        status: planned
+      - id: roadmap_automation.task_mapping
+        name: Zadania przypisane do punktów roadmapy
+        status: planned
+      - id: roadmap_automation.calculation
+        name: Backend oblicza postęp z punktów roadmapy
+        status: planned
+      - id: roadmap_automation.api
+        name: Endpoint GET /api/project-progress
+        status: planned
+      - id: roadmap_automation.ui
+        name: Dashboard i widok postępu korzystają z jednego API
+        status: planned
+      - id: roadmap_automation.next_move
+        name: Widok wskazuje następny dostępny ruch oraz blokady
+        status: planned
+
+  - id: production_readiness
+    name: Stabilizacja produkcyjna
+    weight: 10
+    depends_on: [roadmap_automation]
+    items:
+      - id: production_readiness.ci
+        name: Automatyczne uruchamianie testów
+        status: planned
+      - id: production_readiness.observability
+        name: Logi i diagnostyka wykonawcy
+        status: planned
+      - id: production_readiness.backups
+        name: Backup i instrukcja odzyskiwania bazy
+        status: planned
+      - id: production_readiness.documentation
+        name: Aktualna dokumentacja uruchomienia i architektury
+        status: planned
