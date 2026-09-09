@@ -12,8 +12,8 @@ def test_load_project_progress_from_repository() -> None:
     data = load_project_progress()
 
     assert data["project"] == "Virtual Company"
-    assert data["total_progress"] == 53
-    assert len(data["stages"]) == 5
+    assert data["total_progress"] == 73
+    assert len(data["stages"]) == 10
 
 
 def test_organization_stage_is_completed() -> None:

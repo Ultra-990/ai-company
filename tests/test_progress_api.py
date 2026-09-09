@@ -17,7 +17,7 @@ def test_progress_api_includes_project_progress() -> None:
     project_progress = data["project_progress"]
 
     assert project_progress["project"] == "Virtual Company"
-    assert project_progress["total_progress"] == 53
+    assert project_progress["total_progress"] == 73
 
     organization = next(
         stage
