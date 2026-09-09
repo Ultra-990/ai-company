@@ -42,7 +42,10 @@ class RoadmapItemState(Base):
     )
 
     status: Mapped[RoadmapItemStatus] = mapped_column(
-        Enum(RoadmapItemStatus),
+        Enum(
+            RoadmapItemStatus,
+            values_callable=lambda enum: [member.value for member in enum],
+        ),
         nullable=False,
         default=RoadmapItemStatus.PLANNED,
         index=True,

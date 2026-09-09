@@ -1,13 +1,30 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import HTMLResponse
 
 from app.core.config import load_settings
 from app.services.project_progress import load_project_progress
+from app.services.roadmap_progress import ProjectProgressService
 from app.services.tasks import TaskRepository
 
 
 router = APIRouter()
 
+
+
+def get_project_progress_service() -> ProjectProgressService:
+    """Tworzy usługę odczytu postępu opartego na roadmapie."""
+    return ProjectProgressService(load_settings().database.url)
+
+
+@router.get("/api/project-progress")
+def get_project_progress(
+    service: ProjectProgressService = Depends(get_project_progress_service),
+) -> dict:
+    """Zwraca ważony postęp roadmapy i trwałe stany jej punktów."""
+    try:
+        return service.get_progress()
+    finally:
+        service.close()
 
 
 @router.get("/api/progress")
