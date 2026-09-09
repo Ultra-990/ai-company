@@ -636,3 +636,43 @@ def migrate_artifact_schema(engine: Engine) -> None:
                     f"ON artifacts ({column_name})"
                 )
             )
+
+
+def migrate_roadmap_item_state_schema(engine: Engine) -> None:
+    """
+    Tworzy trwały magazyn stanów punktów roadmapy.
+
+    Struktura roadmapy, w tym identyfikatory, nazwy, zależności i wagi,
+    pozostaje w docs/roadmap.yaml. Tabela przechowuje wyłącznie stan
+    operacyjny punktu oraz jego dowody i notatki.
+    """
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS roadmap_item_states (
+                    item_id VARCHAR(200) PRIMARY KEY,
+                    status VARCHAR(20) NOT NULL DEFAULT 'planned',
+                    evidence TEXT,
+                    note TEXT,
+                    updated_at DATETIME NOT NULL
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_roadmap_item_states_status
+                ON roadmap_item_states (status)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_roadmap_item_states_updated_at
+                ON roadmap_item_states (updated_at)
+                """
+            )
+        )

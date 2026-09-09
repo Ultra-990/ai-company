@@ -10,6 +10,7 @@ from app.models.approval import ApprovalRequest
 from app.models.pending_tool_execution import PendingToolExecution
 from app.models.project import Project
 from app.models.plan import Plan
+from app.models.roadmap import RoadmapItemState
 from app.models.artifact import Artifact
 from app.db.migrations import (
     migrate_artifact_schema,
@@ -17,6 +18,7 @@ from app.db.migrations import (
     migrate_pending_tool_execution_schema,
     migrate_project_schema,
     migrate_plan_schema,
+    migrate_roadmap_item_state_schema,
     migrate_task_project_plan_schema,
     migrate_task_attempt_schema,
     migrate_task_queue_schema,
@@ -47,6 +49,7 @@ async def lifespan(app: FastAPI):
     migrate_task_attempt_schema(engine)
     migrate_project_schema(engine)
     migrate_plan_schema(engine)
+    migrate_roadmap_item_state_schema(engine)
     migrate_task_project_plan_schema(engine)
     migrate_artifact_schema(engine)
     yield
