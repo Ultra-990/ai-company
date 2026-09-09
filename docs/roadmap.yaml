@@ -3,7 +3,7 @@ project:
   id: virtual-company
   name: Virtual Company
   progress_method: weighted_checklist
-  source_of_truth: roadmap_items
+  source_of_truth: transition_in_progress
 
 status_definitions:
   planned: Punkt nie jest jeszcze dostępny do realizacji.
