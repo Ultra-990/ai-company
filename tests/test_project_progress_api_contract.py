@@ -52,3 +52,11 @@ def test_project_progress_api_returns_dashboard_contract() -> None:
                 item["evidence"], (str, list)
             )
             assert item.get("note") is None or isinstance(item["note"], str)
+            assert item.get("status_source") in {
+                "roadmap",
+                "manual",
+                "tasks",
+            }
+
+            task_summary = item.get("task_summary")
+            assert task_summary is None or isinstance(task_summary, dict)

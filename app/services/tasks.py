@@ -766,6 +766,35 @@ class TaskRepository:
         self._refresh_documentation()
         return task
 
+    def get_roadmap_item_stats(self) -> list[dict[str, object]]:
+        """
+        Zwraca statystyki zadań pogrupowane według roadmap_item_id i statusu.
+
+        Nieprzypisane zadania są celowo pomijane, ponieważ nie wpływają na
+        strategiczny postęp żadnego punktu roadmapy.
+        """
+        with self._session_factory() as session:
+            rows = session.execute(
+                select(
+                    Task.roadmap_item_id,
+                    Task.status,
+                    func.count(Task.id).label("count"),
+                    func.avg(Task.progress).label("average_progress"),
+                )
+                .where(Task.roadmap_item_id.is_not(None))
+                .group_by(Task.roadmap_item_id, Task.status)
+            ).all()
+
+        return [
+            {
+                "roadmap_item_id": row.roadmap_item_id,
+                "status": row.status.value,
+                "count": int(row.count),
+                "average_progress": float(row.average_progress or 0),
+            }
+            for row in rows
+        ]
+
     def summary(self) -> dict[str, int]:
         """Zwraca pełne statystyki zadań bez limitu listowania."""
         with self._session_factory() as session:

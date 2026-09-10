@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from sqlalchemy import Engine, select
+from sqlalchemy import Engine, inspect, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import (
@@ -12,6 +12,7 @@ from app.core.database import (
     create_session_factory,
 )
 from app.models.roadmap import RoadmapItemState, RoadmapItemStatus
+from app.services.tasks import TaskRepository
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -203,10 +204,114 @@ class ProjectProgressService:
         self._session_factory: sessionmaker[Session] = (
             create_session_factory(self._engine)
         )
+        self._database_url = database_url
         self._roadmap_path = roadmap_path
 
     def close(self) -> None:
         self._engine.dispose()
+
+    def _get_task_stats_by_roadmap_item(
+        self,
+    ) -> dict[str, list[dict[str, object]]]:
+        """
+        Pobiera statystyki zadań i grupuje je po roadmap_item_id.
+
+        Sprawdzenie obecności tabeli zachowuje zgodność ze starszymi bazami
+        danych, które zawierają jedynie roadmap_item_states.
+        """
+        if not inspect(self._engine).has_table("tasks"):
+            return {}
+
+        repository = TaskRepository(
+            self._database_url,
+            initialize=False,
+        )
+
+        try:
+            grouped: dict[str, list[dict[str, object]]] = {}
+
+            for stat in repository.get_roadmap_item_stats():
+                item_id = stat["roadmap_item_id"]
+
+                if isinstance(item_id, str):
+                    grouped.setdefault(item_id, []).append(stat)
+
+            return grouped
+        finally:
+            repository.close()
+
+    def _calculate_auto_status(
+        self,
+        stats: list[dict[str, object]],
+    ) -> dict[str, object]:
+        """
+        Wylicza stan punktu roadmapy na podstawie przypisanych zadań.
+
+        Priorytet statusów:
+        blocked > completed wszystkie > in_progress > ready > cancelled.
+        """
+        counts = {status: 0 for status in ROADMAP_STATUSES}
+        total_tasks = 0
+        weighted_progress = 0.0
+
+        for stat in stats:
+            status = stat["status"]
+            count = stat["count"]
+            average_progress = stat["average_progress"]
+
+            if (
+                not isinstance(status, str)
+                or not isinstance(count, int)
+                or not isinstance(average_progress, (int, float))
+            ):
+                continue
+
+            counts[status] = counts.get(status, 0) + count
+            total_tasks += count
+            weighted_progress += float(average_progress) * count
+
+        if total_tasks == 0:
+            raise ValueError(
+                "Nie można wyliczyć stanu bez przypisanych zadań."
+            )
+
+        completed_tasks = counts["completed"]
+        average_progress = round(weighted_progress / total_tasks)
+
+        if counts["blocked"] > 0:
+            status = "blocked"
+        elif completed_tasks == total_tasks:
+            status = "completed"
+        elif counts["in_progress"] > 0:
+            status = "in_progress"
+        elif counts["pending"] > 0:
+            status = "ready"
+        elif counts["cancelled"] == total_tasks:
+            status = "cancelled"
+        else:
+            status = "ready"
+
+        task_summary = {
+            task_status: count
+            for task_status, count in counts.items()
+            if count > 0
+        }
+
+        return {
+            "status": status,
+            "progress": average_progress,
+            "status_source": "tasks",
+            "task_summary": {
+                "total": total_tasks,
+                "completed": completed_tasks,
+                "by_status": task_summary,
+            },
+            "evidence": (
+                "Automatycznie na podstawie zadań: "
+                f"{completed_tasks}/{total_tasks} ukończonych, "
+                f"średni postęp {average_progress}%."
+            ),
+        }
 
     def has_item(self, item_id: str) -> bool:
         """Sprawdza, czy identyfikator istnieje w aktualnej roadmapie YAML."""
@@ -253,6 +358,8 @@ class ProjectProgressService:
                 for state in session.scalars(select(RoadmapItemState)).all()
             }
 
+        task_stats_by_item = self._get_task_stats_by_roadmap_item()
+
         phases: list[dict[str, Any]] = []
         weighted_progress = 0.0
         total_weight = 0.0
@@ -261,28 +368,47 @@ class ProjectProgressService:
             phase_items: list[dict[str, Any]] = []
 
             for configured_item in configured_phase["items"]:
-                state = states.get(configured_item["id"])
+                item_id = configured_item["id"]
+                state = states.get(item_id)
+                task_stats = task_stats_by_item.get(item_id, [])
 
-                status = (
-                    state.status.value
-                    if state is not None
-                    else configured_item["status"]
-                )
-
-                phase_items.append(
-                    {
-                        "id": configured_item["id"],
+                if state is not None:
+                    item_data: dict[str, Any] = {
+                        "id": item_id,
+                        "name": configured_item["name"],
+                        "status": state.status.value,
+                        "progress": STATUS_PROGRESS[state.status.value],
+                        "status_source": "manual",
+                        "task_summary": None,
+                        "evidence": state.evidence,
+                        "note": state.note,
+                    }
+                elif task_stats:
+                    auto_state = self._calculate_auto_status(task_stats)
+                    item_data = {
+                        "id": item_id,
+                        "name": configured_item["name"],
+                        "status": auto_state["status"],
+                        "progress": auto_state["progress"],
+                        "status_source": auto_state["status_source"],
+                        "task_summary": auto_state["task_summary"],
+                        "evidence": auto_state["evidence"],
+                        "note": None,
+                    }
+                else:
+                    status = configured_item["status"]
+                    item_data = {
+                        "id": item_id,
                         "name": configured_item["name"],
                         "status": status,
                         "progress": STATUS_PROGRESS[status],
-                        "evidence": (
-                            state.evidence
-                            if state is not None
-                            else configured_item.get("evidence")
-                        ),
-                        "note": state.note if state is not None else None,
+                        "status_source": "roadmap",
+                        "task_summary": None,
+                        "evidence": configured_item.get("evidence"),
+                        "note": None,
                     }
-                )
+
+                phase_items.append(item_data)
 
             phase_progress = round(
                 sum(item["progress"] for item in phase_items)
