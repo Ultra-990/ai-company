@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse
 
 from app.core.config import load_settings
 from app.models.roadmap import RoadmapItemStatus
+from app.services.next_move import NextMoveService
 from app.services.project_progress import load_project_progress
 from app.services.roadmap_progress import ProjectProgressService
 from app.services.tasks import TaskRepository
@@ -33,11 +34,10 @@ def update_roadmap_item_state(
     service: ProjectProgressService = Depends(get_project_progress_service),
 ) -> dict:
     """Tworzy lub częściowo aktualizuje stan punktu roadmapy w SQLite."""
-    provided_fields = getattr(
-        payload,
-        "model_fields_set",
-        payload.__fields_set__,
-    )
+    if hasattr(payload, "model_fields_set"):
+        provided_fields = payload.model_fields_set
+    else:
+        provided_fields = payload.__fields_set__
 
     if not provided_fields:
         raise HTTPException(
@@ -79,6 +79,23 @@ def get_project_progress(
         return service.get_progress()
     finally:
         service.close()
+
+
+@router.get("/api/next-move")
+def get_next_move() -> dict:
+    """Zwraca rekomendowane zatwierdzone zadanie dostępne na roadmapie."""
+    database_url = load_settings().database.url
+    repository = TaskRepository(database_url)
+    progress_service = ProjectProgressService(database_url)
+
+    try:
+        return NextMoveService(
+            repository,
+            progress_service,
+        ).get_next_move()
+    finally:
+        progress_service.close()
+        repository.close()
 
 
 @router.get("/api/progress")
