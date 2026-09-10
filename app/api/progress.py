@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from fastapi.responses import HTMLResponse
 
 from app.core.config import load_settings
+from app.models.roadmap import RoadmapItemStatus
 from app.services.project_progress import load_project_progress
 from app.services.roadmap_progress import ProjectProgressService
 from app.services.tasks import TaskRepository
@@ -14,6 +16,58 @@ router = APIRouter()
 def get_project_progress_service() -> ProjectProgressService:
     """Tworzy usługę odczytu postępu opartego na roadmapie."""
     return ProjectProgressService(load_settings().database.url)
+
+
+class RoadmapItemStateUpdate(BaseModel):
+    """Częściowa aktualizacja trwałego stanu punktu roadmapy."""
+
+    status: RoadmapItemStatus | None = None
+    evidence: str | None = Field(default=None, max_length=4000)
+    note: str | None = Field(default=None, max_length=4000)
+
+
+@router.patch("/api/roadmap-items/{item_id}")
+def update_roadmap_item_state(
+    item_id: str,
+    payload: RoadmapItemStateUpdate,
+    service: ProjectProgressService = Depends(get_project_progress_service),
+) -> dict:
+    """Tworzy lub częściowo aktualizuje stan punktu roadmapy w SQLite."""
+    provided_fields = getattr(
+        payload,
+        "model_fields_set",
+        payload.__fields_set__,
+    )
+
+    if not provided_fields:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Podaj co najmniej jedno pole: status, evidence lub note."
+            ),
+        )
+
+    if "status" in provided_fields and payload.status is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Pole status nie może mieć wartości null.",
+        )
+
+    if not service.has_item(item_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Nie znaleziono punktu roadmapy: {item_id}.",
+        )
+
+    if hasattr(payload, "model_dump"):
+        changes = payload.model_dump(exclude_unset=True)
+    else:
+        changes = payload.dict(exclude_unset=True)
+
+    try:
+        return service.update_item_state(item_id, changes)
+    finally:
+        service.close()
 
 
 @router.get("/api/project-progress")

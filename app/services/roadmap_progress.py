@@ -11,7 +11,7 @@ from app.core.database import (
     create_database_engine,
     create_session_factory,
 )
-from app.models.roadmap import RoadmapItemState
+from app.models.roadmap import RoadmapItemState, RoadmapItemStatus
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -207,6 +207,42 @@ class ProjectProgressService:
 
     def close(self) -> None:
         self._engine.dispose()
+
+    def has_item(self, item_id: str) -> bool:
+        """Sprawdza, czy identyfikator istnieje w aktualnej roadmapie YAML."""
+        roadmap = _validate_roadmap(self._roadmap_path)
+
+        return any(
+            configured_item["id"] == item_id
+            for configured_phase in roadmap["phases"]
+            for configured_item in configured_phase["items"]
+        )
+
+    def update_item_state(
+        self,
+        item_id: str,
+        changes: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Tworzy albo częściowo aktualizuje trwały override punktu roadmapy."""
+        with self._session_factory() as session:
+            state = session.get(RoadmapItemState, item_id)
+
+            if state is None:
+                state = RoadmapItemState(item_id=item_id)
+                session.add(state)
+
+            for field, value in changes.items():
+                setattr(state, field, value)
+
+            session.commit()
+            session.refresh(state)
+
+            return {
+                "item_id": state.item_id,
+                "status": state.status.value,
+                "evidence": state.evidence,
+                "note": state.note,
+            }
 
     def get_progress(self) -> dict[str, Any]:
         roadmap = _validate_roadmap(self._roadmap_path)
