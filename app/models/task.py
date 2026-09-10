@@ -238,6 +238,15 @@ class Task(Base):
         index=True,
     )
 
+    # Opcjonalne powiązanie ze strategicznym punktem z docs/roadmap.yaml.
+    # Brak klucza obcego: definicja roadmapy jest utrzymywana w YAML,
+    # a rekord w roadmap_item_states może nie istnieć.
+    roadmap_item_id: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+        index=True,
+    )
+
     progress: Mapped[int] = mapped_column(
         Integer,
         default=0,

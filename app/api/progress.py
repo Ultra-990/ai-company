@@ -107,6 +107,7 @@ def get_progress() -> dict:
                 "status_label": status_labels[task.status.value],
                 "priority": task.priority.value,
                 "assigned_agent": task.assigned_agent,
+                "roadmap_item_id": task.roadmap_item_id,
                 "progress": task.progress,
                 "updated_at": task.updated_at.isoformat(),
             }

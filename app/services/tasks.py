@@ -28,6 +28,7 @@ from app.services.documentation import generate_status_document
 from app.db.migrations import (
     migrate_task_attempt_schema,
     migrate_task_queue_schema,
+    migrate_task_roadmap_item_schema,
 )
 
 
@@ -55,6 +56,7 @@ class TaskRepository:
 
         if initialize:
             migrate_task_queue_schema(self._engine)
+            migrate_task_roadmap_item_schema(self._engine)
             migrate_task_attempt_schema(self._engine)
             Base.metadata.create_all(self._engine)
 
@@ -67,6 +69,7 @@ class TaskRepository:
         resource_class: ResourceClass = ResourceClass.LIGHT,
         risk_level: RiskLevel = RiskLevel.LOW,
         assigned_agent: str | None = None,
+        roadmap_item_id: str | None = None,
     ) -> Task:
         normalized_title = title.strip()
 
@@ -92,6 +95,24 @@ class TaskRepository:
                 "Nazwa przypisanego agenta nie może przekraczać 100 znaków"
             )
 
+        normalized_roadmap_item_id = (
+            roadmap_item_id.strip()
+            if roadmap_item_id is not None
+            else None
+        )
+
+        if normalized_roadmap_item_id == "":
+            normalized_roadmap_item_id = None
+
+        if (
+            normalized_roadmap_item_id is not None
+            and len(normalized_roadmap_item_id) > 200
+        ):
+            raise ValueError(
+                "Identyfikator punktu roadmapy nie może przekraczać "
+                "200 znaków"
+            )
+
         task = Task(
             title=normalized_title,
             description=description,
@@ -101,6 +122,7 @@ class TaskRepository:
             resource_class=resource_class,
             risk_level=risk_level,
             assigned_agent=normalized_agent,
+            roadmap_item_id=normalized_roadmap_item_id,
             queued_at=utc_now(),
         )
 
@@ -143,6 +165,7 @@ class TaskRepository:
         resource_class: ResourceClass | None = None,
         risk_level: RiskLevel | None = None,
         assigned_agent: str | None = None,
+        roadmap_item_id: str | None = None,
     ) -> list[Task]:
         if not 1 <= limit <= 100:
             raise ValueError("limit musi mieścić się w zakresie 1–100")
@@ -155,6 +178,16 @@ class TaskRepository:
             if not normalized_agent:
                 raise ValueError(
                     "Filtr przypisanego agenta nie może być pusty"
+                )
+
+        normalized_roadmap_item_id: str | None = None
+
+        if roadmap_item_id is not None:
+            normalized_roadmap_item_id = roadmap_item_id.strip()
+
+            if not normalized_roadmap_item_id:
+                raise ValueError(
+                    "Filtr punktu roadmapy nie może być pusty"
                 )
 
         statement: Select[tuple[Task]] = select(Task)
@@ -181,6 +214,11 @@ class TaskRepository:
         if normalized_agent is not None:
             statement = statement.where(
                 Task.assigned_agent == normalized_agent
+            )
+
+        if normalized_roadmap_item_id is not None:
+            statement = statement.where(
+                Task.roadmap_item_id == normalized_roadmap_item_id
             )
 
         statement = statement.order_by(
@@ -685,6 +723,47 @@ class TaskRepository:
 
         self._refresh_documentation()
 
+        return task
+
+    def assign_roadmap_item(
+        self,
+        task_id: int,
+        roadmap_item_id: str | None,
+    ) -> Task:
+        """Przypisuje zadanie do punktu roadmapy lub usuwa przypisanie."""
+        normalized_roadmap_item_id = (
+            roadmap_item_id.strip()
+            if roadmap_item_id is not None
+            else None
+        )
+
+        if normalized_roadmap_item_id == "":
+            normalized_roadmap_item_id = None
+
+        if (
+            normalized_roadmap_item_id is not None
+            and len(normalized_roadmap_item_id) > 200
+        ):
+            raise ValueError(
+                "Identyfikator punktu roadmapy nie może przekraczać "
+                "200 znaków"
+            )
+
+        with self._session_factory() as session:
+            task = session.get(Task, task_id)
+
+            if task is None:
+                raise TaskNotFoundError(
+                    f"Nie znaleziono zadania o identyfikatorze {task_id}"
+                )
+
+            task.roadmap_item_id = normalized_roadmap_item_id
+            task.updated_at = utc_now()
+            session.commit()
+            session.refresh(task)
+            session.expunge(task)
+
+        self._refresh_documentation()
         return task
 
     def summary(self) -> dict[str, int]:

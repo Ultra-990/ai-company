@@ -132,6 +132,48 @@ def migrate_task_queue_schema(engine: Engine) -> None:
         )
 
 
+TASK_ROADMAP_ITEM_COLUMNS = {
+    "roadmap_item_id": "VARCHAR(200)",
+}
+
+
+def migrate_task_roadmap_item_schema(engine: Engine) -> None:
+    """
+    Dodaje opcjonalne przypisanie zadania do punktu roadmapy.
+
+    Migracja jest idempotentna. Nie tworzy klucza obcego, ponieważ
+    źródłem prawdy punktów roadmapy jest docs/roadmap.yaml.
+    """
+    inspector = inspect(engine)
+
+    if "tasks" not in inspector.get_table_names():
+        return
+
+    existing_columns = {
+        column["name"]
+        for column in inspector.get_columns("tasks")
+    }
+
+    with engine.begin() as connection:
+        for name, definition in TASK_ROADMAP_ITEM_COLUMNS.items():
+            if name not in existing_columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE tasks "
+                        f"ADD COLUMN {name} {definition}"
+                    )
+                )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_tasks_roadmap_item_id
+                ON tasks (roadmap_item_id)
+                """
+            )
+        )
+
+
 APPROVAL_REQUEST_COLUMNS = {
     "tool_name": "VARCHAR(128)",
     "arguments_digest": "VARCHAR(64)",

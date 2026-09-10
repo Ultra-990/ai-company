@@ -18,6 +18,7 @@ from app.models.task import (
     TaskStatus,
     TaskTransitionError,
 )
+from app.services.roadmap_progress import ProjectProgressService
 from app.services.tasks import TaskNotFoundError, TaskRepository
 
 
@@ -36,6 +37,7 @@ class TaskResponse(BaseModel):
     resource_class: ResourceClass
     risk_level: RiskLevel
     assigned_agent: str | None
+    roadmap_item_id: str | None
     progress: int
     stages: list[dict]
     created_at: datetime
@@ -74,6 +76,7 @@ class TaskCreateRequest(BaseModel):
     resource_class: ResourceClass = ResourceClass.LIGHT
     risk_level: RiskLevel = RiskLevel.LOW
     assigned_agent: str | None = Field(default=None, max_length=100)
+    roadmap_item_id: str | None = Field(default=None, max_length=200)
 
 
 class StatusUpdateRequest(BaseModel):
@@ -86,6 +89,37 @@ class AssignmentRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     assigned_agent: str | None = Field(default=None, max_length=100)
+
+
+class RoadmapItemAssignmentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    roadmap_item_id: str | None = Field(default=None, max_length=200)
+
+
+def validate_roadmap_item_id(roadmap_item_id: str | None) -> str | None:
+    """Waliduje identyfikator względem aktualnej definicji roadmapy YAML."""
+    if roadmap_item_id is None:
+        return None
+
+    normalized_item_id = roadmap_item_id.strip()
+
+    if not normalized_item_id:
+        raise ValueError(
+            "Identyfikator punktu roadmapy nie może być pusty"
+        )
+
+    service = ProjectProgressService(load_settings().database.url)
+
+    try:
+        if not service.has_item(normalized_item_id):
+            raise ValueError(
+                f"Nie znaleziono punktu roadmapy: {normalized_item_id}"
+            )
+    finally:
+        service.close()
+
+    return normalized_item_id
 
 
 def get_repository() -> Generator[TaskRepository, None, None]:
@@ -112,6 +146,7 @@ def list_tasks(
     resource_class: ResourceClass | None = Query(default=None),
     risk_level: RiskLevel | None = Query(default=None),
     assigned_agent: str | None = Query(default=None),
+    roadmap_item_id: str | None = Query(default=None),
 ) -> list[Task]:
     try:
         return repository.list_recent(
@@ -121,6 +156,7 @@ def list_tasks(
             resource_class=resource_class,
             risk_level=risk_level,
             assigned_agent=assigned_agent,
+            roadmap_item_id=roadmap_item_id,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -154,6 +190,10 @@ def create_task(
     _: None = Depends(require_owner),
 ) -> Task:
     try:
+        roadmap_item_id = validate_roadmap_item_id(
+            payload.roadmap_item_id
+        )
+
         return repository.create(
             title=payload.title,
             description=payload.description,
@@ -161,6 +201,7 @@ def create_task(
             resource_class=payload.resource_class,
             risk_level=payload.risk_level,
             assigned_agent=payload.assigned_agent,
+            roadmap_item_id=roadmap_item_id,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -206,6 +247,37 @@ def update_assignment(
 ) -> Task:
     try:
         return repository.assign(task_id, payload.assigned_agent)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Repozytorium zadań jest niedostępne",
+        ) from exc
+
+
+@router.patch(
+    "/{task_id}/roadmap-item",
+    response_model=TaskResponse,
+)
+def update_roadmap_item_assignment(
+    payload: RoadmapItemAssignmentRequest,
+    repository: RepositoryDependency,
+    task_id: int = Path(ge=1),
+    _: None = Depends(require_owner),
+) -> Task:
+    """Przypisuje zadanie do punktu roadmapy albo usuwa przypisanie."""
+    try:
+        roadmap_item_id = validate_roadmap_item_id(
+            payload.roadmap_item_id
+        )
+
+        return repository.assign_roadmap_item(
+            task_id,
+            roadmap_item_id,
+        )
     except TaskNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:

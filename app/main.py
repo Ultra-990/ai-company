@@ -22,6 +22,7 @@ from app.db.migrations import (
     migrate_task_project_plan_schema,
     migrate_task_attempt_schema,
     migrate_task_queue_schema,
+    migrate_task_roadmap_item_schema,
 )
 from app.api.approvals import router as approvals_router
 from app.api.system import router as system_router
@@ -44,6 +45,7 @@ async def lifespan(app: FastAPI):
     """Tworzy aktualny schemat bazy i stosuje bezpieczne migracje."""
     Base.metadata.create_all(bind=engine)
     migrate_task_queue_schema(engine)
+    migrate_task_roadmap_item_schema(engine)
     migrate_approval_request_schema(engine)
     migrate_pending_tool_execution_schema(engine)
     migrate_task_attempt_schema(engine)
