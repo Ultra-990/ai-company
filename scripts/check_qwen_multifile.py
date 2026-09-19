@@ -19,6 +19,8 @@ from app.services.execution_profiles import multifile_configuration
 from app.services.multifile_pilot import MultifilePilotRunner
 from app.services.multifile_preview import MultifilePreviewRunner, certified_configuration
 from app.services.package_runner import ISOLATION_KEYS
+from scripts.compare_local_models import check_idle
+from scripts import upwork_web_case
 
 ROOT = Path('/home/marcin/ai-company-workspaces/qwen-training')
 BRIEF = '''Build a Polish project quote calculator. Function
@@ -80,15 +82,41 @@ def verify_response(report, path, status, total):
             raise ValueError('Missing input validation error')
 
 
+def validate_candidate(files, acceptance, probes, report, save):
+    """Shared immutable-acceptance pipeline for generation and bounded revisions."""
+    if 'tests/test_independent_acceptance.py' in files:
+        raise ValueError('Reserved acceptance path')
+    checked_files = files | {'tests/test_independent_acceptance.py': acceptance}
+    report['stage'] = 'tests'
+    report['test_run'] = MultifilePilotRunner().run(checked_files, multifile_configuration(), 'aic-package-' + uuid4().hex)
+    save()
+    result = checked_report(report['test_run'], 'python-web-multifile-test.v1')
+    if not all(result.get(k) is True for k in ('tests_ok', 'http_ok', 'source_not_exposed')):
+        raise ValueError('Tests or source exposure check failed')
+    report['stage'] = 'http'
+    for path,status,total in probes:
+        run = MultifilePreviewRunner(path).run(files, certified_configuration() | {'request_path':path}, 'aic-package-' + uuid4().hex)
+        probe = {'path':path, 'expected_status':status, 'expected_total':total, 'run':run, 'passed':False}
+        report['probes'].append(probe)
+        save()
+        result = checked_report(run, 'python-web-multifile-preview.v1')
+        verify_response(result, path, status, total)
+        probe['passed'] = True
+        save()
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run', action='store_true')
+    parser.add_argument('--scenario', choices=('quote', 'studio'), default='quote')
     args = parser.parse_args(argv)
+    brief, acceptance, probes = (upwork_web_case.BRIEF, upwork_web_case.ACCEPTANCE, upwork_web_case.PROBES) if args.scenario == 'studio' else (BRIEF, ACCEPTANCE, PROBES)
     if not args.run:
-        print(json.dumps({'model_invoked': False, 'brief': BRIEF,
-                          'independent_tests_sha256': sha256(ACCEPTANCE.encode()).hexdigest(),
-                          'http_checks': len(PROBES)}))
+        print(json.dumps({'model_invoked': False, 'brief': brief, 'scenario':args.scenario,
+                          'independent_tests_sha256': sha256(acceptance.encode()).hexdigest(),
+                          'http_checks': len(probes)}))
         return 0
+    resources = check_idle()
     for parent in [*ROOT.parents, ROOT]:
         if parent.is_symlink():
             raise ValueError('Symlink in pilot path')
@@ -98,10 +126,11 @@ def main(argv=None):
     output = Path(tempfile.mkdtemp(prefix='multifile-generation-', dir=ROOT))
     config = configuration() | {'format': SOURCE_SCHEMA}
     report = {'schema': 'qwen-multifile-pilot.v1', 'status': 'incomplete',
-              'brief': BRIEF, 'instruction': INSTRUCTION, 'schema_contract': SOURCE_SCHEMA,
+              'brief': brief, 'scenario':args.scenario, 'resources_before':resources,
+              'instruction': INSTRUCTION, 'schema_contract': SOURCE_SCHEMA,
               'model': config['model'], 'digest': config['digest'],
               'sampling': generation_options(config), 'attempts': 1,
-              'independent_tests': ACCEPTANCE, 'probes': [], 'training_started': False,
+              'independent_tests': acceptance, 'probes': [], 'training_started': False,
               'accepted': False, 'deployed': False,
               'limitations': 'Single public synthetic case; no training export, no general quality claim. Browser interaction not checked by this script.'}
     def save():
@@ -113,33 +142,16 @@ def main(argv=None):
     try:
         ensure_idle()
         report['generation'] = OllamaProvider(config).complete([
-            {'role': 'system', 'content': INSTRUCTION}, {'role': 'user', 'content': BRIEF}])
+            {'role': 'system', 'content': INSTRUCTION}, {'role': 'user', 'content': brief}])
         save()
         stage = 'parse'
         files = parse_sources(report['generation']['content'])
-        if 'tests/test_independent_acceptance.py' in files:
-            raise ValueError('Reserved acceptance path')
         report['source_checksums'] = {k: sha256(v.encode()).hexdigest() for k,v in files.items()}
-        checked_files = files | {'tests/test_independent_acceptance.py': ACCEPTANCE}
         stage = 'tests'
-        report['test_run'] = MultifilePilotRunner().run(checked_files, multifile_configuration(), 'aic-package-' + uuid4().hex)
-        save()
-        result = checked_report(report['test_run'], 'python-web-multifile-test.v1')
-        if not all(result.get(k) is True for k in ('tests_ok', 'http_ok', 'source_not_exposed')):
-            raise ValueError('Tests or source exposure check failed')
-        stage = 'http'
-        for path,status,total in PROBES:
-            run = MultifilePreviewRunner(path).run(files, certified_configuration() | {'request_path':path}, 'aic-package-' + uuid4().hex)
-            probe = {'path':path, 'expected_status':status, 'expected_total':total, 'run':run, 'passed':False}
-            report['probes'].append(probe)
-            save()
-            result = checked_report(run, 'python-web-multifile-preview.v1')
-            verify_response(result, path, status, total)
-            probe['passed'] = True
-            save()
+        validate_candidate(files, acceptance, probes, report, save)
         report['status'] = 'passed'
     except Exception as exc:
-        report.update(status='failed', error_stage=stage, error_type=type(exc).__name__, error=str(exc)[:500])
+        report.update(status='failed', error_stage=report.get('stage',stage), error_type=type(exc).__name__, error=str(exc)[:500])
     finally:
         report['elapsed_seconds'] = round(time.monotonic()-start, 3)
         save()

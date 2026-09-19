@@ -1,0 +1,154 @@
+"""Opt-in real synthetic delivery audit; never changes the production database."""
+import asyncio
+import base64
+from hashlib import sha256
+import io
+import json
+import os
+from pathlib import Path
+import tempfile
+from zipfile import ZipFile
+
+import pytest
+
+from app.services.multifile_generation import parse_sources
+from scripts import check_qwen_multifile as generator, upwork_web_case as case
+from tests.browser_multifile_probe import check
+from tests.conftest import OWNER_HEADERS
+from tests.test_multifile_execution import package
+
+
+def test_studio_dry_run_is_an_evaluation_not_training_or_execution(monkeypatch, capsys):
+    monkeypatch.setattr(generator, 'check_idle', lambda: pytest.fail('No processes in dry-run'))
+    assert generator.main(['--scenario', 'studio']) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result['scenario'] == 'studio' and not result['model_invoked']
+    assert result['http_checks'] == 8
+    assert result['independent_tests_sha256'] == sha256(case.ACCEPTANCE.encode()).hexdigest()
+    assert 'class ClientAcceptance' not in result['brief']
+
+
+def verified_files(report):
+    if (report.get('schema') != 'qwen-multifile-pilot.v1' or report.get('scenario') != 'studio'
+            or report.get('status') != 'passed' or report.get('brief') != case.BRIEF
+            or report.get('independent_tests') != case.ACCEPTANCE):
+        raise ValueError('This frozen studio brief needs passing backend evidence')
+    files = parse_sources(report['generation']['content'])
+    if {k:sha256(v.encode()).hexdigest() for k,v in files.items()} != report['source_checksums']:
+        raise ValueError('Source checksum mismatch')
+    return files
+
+
+@pytest.mark.parametrize('changes', [{'scenario':'quote'}, {'status':'failed'}, {'brief':'changed'},
+                                    {'independent_tests':'weakened'}])
+def test_browser_gate_rejects_wrong_evidence(changes):
+    report = {'schema':'qwen-multifile-pilot.v1', 'scenario':'studio', 'status':'passed',
+              'brief':case.BRIEF, 'independent_tests':case.ACCEPTANCE}
+    with pytest.raises(ValueError, match='frozen studio'):
+        verified_files(report | changes)
+
+
+@pytest.mark.skipif(not os.environ.get('AIC_STUDIO_WEB_REPORT'), reason='Explicit retained synthetic Qwen output only')
+def test_retained_studio_website(client, task_repository):
+    path = Path(os.environ['AIC_STUDIO_WEB_REPORT']).resolve()
+    assert path.is_relative_to(Path('/home/marcin/ai-company-workspaces/qwen-training'))
+    raw = path.read_bytes()
+    report = json.loads(raw)
+    files = verified_files(report)
+    from scripts.compare_local_models import check_idle
+    check_idle()
+    out = Path(tempfile.mkdtemp(prefix='studio-browser-', dir=path.parent))
+    observations = {'schema':'studio-browser-audit.v1', 'source_report_sha256':sha256(raw).hexdigest(),
+                    'source_checksums':report['source_checksums'], 'checks':[], 'screenshots':[],
+                    'accepted':False, 'deployed':False, 'visual_review':'pending', 'status':'incomplete'}
+    def save():
+        (out/'report.json').write_text(json.dumps(observations, ensure_ascii=False, indent=2))
+    save()
+    body = package(client, task_repository, files)
+
+    async def audit(evaluate, context, call, session):
+        async def js(expression): return await evaluate(expression, context)
+        async def require(name, expression):
+            value = await js(expression)
+            observations['checks'].append({'id':name, 'passed':value is True})
+            save()
+            assert value is True, name
+        async def shot(name):
+            result = await call('Page.captureScreenshot', {'format':'png'}, session)
+            content = base64.b64decode(result['data'])
+            (out/(name+'.png')).write_bytes(content)
+            observations['screenshots'].append({'name':name+'.png', 'sha256':sha256(content).hexdigest()})
+            save()
+        async def viewport(width, height):
+            await call('Emulation.setDeviceMetricsOverride', {'width':width, 'height':height,
+                'deviceScaleFactor':1, 'mobile':False}, session)
+            await asyncio.sleep(.15)
+
+        await viewport(1440, 1000)
+        await require('semantic-layout', "document.querySelectorAll('h1').length===1 && !!document.querySelector('main#main') && !!document.querySelector('footer')")
+        await require('labelled-fields-and-live-result', "['service','pages','rush'].every(id=>document.getElementById(id)?.labels?.length>0) && document.querySelector('#result')?.getAttribute('aria-live')==='polite'")
+        await require('skip-link', "!!document.querySelector('a[href=\"#main\"]') && document.querySelector('#main')?.getAttribute('tabindex')==='-1'")
+        await require('desktop-no-overflow', "document.documentElement.scrollWidth<=innerWidth+1")
+        await require('light-theme', "document.documentElement.dataset.theme==='light'")
+        light = await js("getComputedStyle(document.body).backgroundColor+'|'+getComputedStyle(document.documentElement).backgroundColor")
+        await shot('desktop-light')
+        await js("document.querySelector('#theme-toggle').click()")
+        await asyncio.sleep(.15)
+        await require('dark-theme', "document.documentElement.dataset.theme==='dark'")
+        dark = await js("getComputedStyle(document.body).backgroundColor+'|'+getComputedStyle(document.documentElement).backgroundColor")
+        observations['checks'].append({'id':'theme-changes-background', 'passed':light!=dark})
+        save()
+        assert light != dark, 'Theme attributes alone do not change the rendered page'
+        await shot('desktop-dark')
+        await js("document.querySelector('#theme-toggle').click()")
+        await require('theme-round-trip', "document.documentElement.dataset.theme==='light'")
+
+        await viewport(390, 844)
+        await require('mobile-no-overflow', "document.documentElement.scrollWidth<=innerWidth+1")
+        await require('mobile-menu-initially-closed', "document.querySelector('#menu-toggle')?.getAttribute('aria-expanded')==='false' && !document.querySelector('#site-nav')?.checkVisibility()")
+        await js("document.querySelector('#menu-toggle').focus();document.querySelector('#menu-toggle').click()")
+        await require('mobile-menu-opens', "document.querySelector('#menu-toggle').getAttribute('aria-expanded')==='true' && document.querySelector('#site-nav').checkVisibility()")
+        await shot('mobile-menu')
+        await call('Input.dispatchKeyEvent', {'type':'keyDown','key':'Escape','code':'Escape','windowsVirtualKeyCode':27}, session)
+        await call('Input.dispatchKeyEvent', {'type':'keyUp','key':'Escape','code':'Escape','windowsVirtualKeyCode':27}, session)
+        await require('escape-closes-and-restores-focus', "document.querySelector('#menu-toggle').getAttribute('aria-expanded')==='false' && !document.querySelector('#site-nav').checkVisibility() && document.activeElement.id==='menu-toggle'")
+        await js("document.querySelector('#menu-toggle').click();document.querySelector('#site-nav a[href=\"#quote\"]').click()")
+        await asyncio.sleep(.3)
+        await require('quote-anchor-target', "Math.abs(document.querySelector('#quote').getBoundingClientRect().top)<innerHeight")
+        await shot('mobile-quote')
+        await js("document.querySelector('#faq-delivery summary').scrollIntoView();document.querySelector('#faq-delivery summary').click()")
+        await require('faq-opens', "document.querySelector('#faq-delivery').open===true && document.querySelector('#faq-delivery').textContent.trim().length>60")
+        await js("document.querySelector('#faq-delivery summary').click()")
+        await require('faq-closes', "document.querySelector('#faq-delivery').open===false")
+        await call('Emulation.setEmulatedMedia', {'features':[{'name':'prefers-reduced-motion','value':'reduce'}]}, session)
+        if context[0] != session:
+            await call('Emulation.setEmulatedMedia', {'features':[{'name':'prefers-reduced-motion','value':'reduce'}]}, context[0])
+        await require('reduced-motion', "matchMedia('(prefers-reduced-motion: reduce)').matches && [...document.querySelectorAll('*')].every(e=>getComputedStyle(e).animationDuration.split(',').every(d=>parseFloat(d)<=0.01))")
+
+    try:
+        asyncio.run(check(client, body, OWNER_HEADERS, cases=case.BROWSER_CASES, expected_color=None, audit=audit))
+        observations['checks'].append({'id':'four-quote-interactions', 'passed':True})
+        run_response = client.post('/api/package-runs', headers=OWNER_HEADERS, json=body)
+        assert run_response.status_code == 200, run_response.text
+        run = run_response.json()
+        assert run['state'] == 'passed'
+        candidate = client.get(f"/api/package-runs/{run['id']}/candidate.zip", headers=OWNER_HEADERS)
+        assert candidate.status_code == 200
+        with ZipFile(io.BytesIO(candidate.content)) as archive:
+            for name, content in files.items():
+                assert archive.read('sources/'+name).decode() == content
+            assert json.loads(archive.read('delivery.json'))['accepted'] is False
+        (out/'studio-candidate.zip').write_bytes(candidate.content)
+        observations['candidate'] = {'name':'studio-candidate.zip', 'sha256':sha256(candidate.content).hexdigest(),
+                                     'package_checksum':body['package_checksum'], 'owner_accepted':False}
+        readiness = client.get(f"/api/package-runs/{run['id']}/delivery-readiness", headers=OWNER_HEADERS).json()
+        assert readiness['ready'] is False
+        observations['checks'].append({'id':'candidate-sources-match-and-release-remains-gated', 'passed':True})
+        observations['status'] = 'passed'
+        assert task_repository.get_required(body['task_id']).progress == 0
+    except Exception as exc:
+        observations.update(status='failed', error_type=type(exc).__name__)
+        raise
+    finally:
+        save()
+        print('Studio browser report:', out/'report.json')

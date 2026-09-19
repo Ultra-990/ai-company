@@ -15,6 +15,14 @@ window.addEventListener('message',e=>{
     pending.set(id,{resolve,reject,timer});parent.postMessage({kind:'application-request',id,path},'*');
   });
   const parsed=new DOMParser().parseFromString(d.html,'text/html');
+  // Preserve visual/semantic root state before running the application's scripts.
+  // Never copy event handlers, navigation attributes or a CSP supplied by a package.
+  for(const [source,target] of [[parsed.documentElement,document.documentElement],[parsed.body,document.body]]){
+    for(const name of ['lang','dir','class','id','data-theme']){
+      const value=source.getAttribute(name);
+      if(value!==null&&value.length<=512)target.setAttribute(name,value);
+    }
+  }
   const asset=value=>{
     if(typeof value!=='string'||value.startsWith('//'))return '';
     const path=value.replace(/^\.?\//,'');

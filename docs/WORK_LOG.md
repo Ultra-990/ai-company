@@ -1,5 +1,53 @@
 # Dziennik budowy AI Company
 
+## 2026-09-19 — syntetyczne zlecenie webowe: Qwen, poprawki, browser, ZIP
+
+- Po przypomnieniu priorytetu Upwork rozwinięto istniejący profil wieloplikowy,
+  nie tworzono równoległej fabryki. Właściciel nadal sam komunikuje się na
+  Upwork. Nie pobierano ogłoszeń ani nie przedstawiano fikcyjnego briefu jako
+  rzeczywistego klienta. Nowy własny case FORMA jest wyłącznie ewaluacyjny.
+- Ustalono przed generacją brief, niezależne testy cen, osiem prób HTTP oraz
+  interakcje desktop/mobile. Qwen wygenerował 9 plików w 28.115s/3738 tokenów;
+  cały pierwszy przebieg 36.585s. Logika zaliczona, health timeout: model
+  pominął /health. Zachowano niezaliczony raport; bez obniżania kryteriów.
+- Dodano ograniczone narzędzie rewizji tego pilota: hash rodzica/źródeł,
+  przypięty model, jawne dozwolone pliki, limit dwóch poprawek w łańcuchu,
+  niezmienne testy/moduł cen/README, wszystkie nowe wersje oddzielnie.
+  Feedback przygotował główny agent; nie deklarujemy autonomicznego ogólnego
+  frontend repair w produkcyjnym panelu. Kod poprawki nadal generował Qwen.
+- Poprawka 1 (23.54s z testami) naprawiła backend; nie poprawiła app.js,
+  choć wskazano jego problemy, i zmieniła również CSS. Osiem HTTP zaliczone.
+  Rzeczywisty browser odrzucił kwotę 9437.50 zamiast wymaganego 9437.5.
+  Poprawka 2 ograniczona wyłącznie do app.js: 5.511s/389 tokenów inferencji,
+  9.552s łącznie z powtórzeniem testów. Oryginał i obie wersje zachowane.
+- Przegląd kodu ujawnił błąd naszej ramki: gubione atrybuty root/body,
+  w tym początkowy data-theme. Naprawiono tylko jawny allowlist atrybutów
+  semantycznych/wyglądu, bez kopiowania root event handlers/style i bez
+  zmiany CSP/tokenów/uprawnień sandboxa. Dodano trzy testy JS.
+- Browser drugiej wersji: pierwszy audit 1 passed/3.80s; pełny z ZIP
+  1 passed/4.41s. Osiemnaście zapisanych kontroli, cztery screenshoty,
+  testowy ZIP przez realne API, porównanie wszystkich źródeł, bramka
+  wydania nadal zamknięta. Testowa baza i sztuczny token, realne kontenery
+  i Chrome bez GPU; wygenerowany Python nigdy nie był importowany na hoście.
+- Obejrzano cztery zrzuty tych samych źródeł. Czytelny prototyp, nie poziom
+  premium: szablonowy art direction, zbędne desktop Menu, dominująca notka
+  uruchomienia, polski tekst do redakcji. Funkcjonalne passed nie oznacza
+  gotowości biznesowej, dostępności WCAG ani oceny Awwwards.
+- Testy: początkowo 2 porażki nowych fixture (test_logic w podkatalogu,
+  niezgodnym z kontraktem generowania); poprawiono fixture, nie walidator.
+  Następnie 30 passed/1 skipped. Szeroki przebieg w sandboxie utknął;
+  zidentyfikowano i zakończono wyłącznie własny pytest PID780774 (143).
+  Ponowienie z timeout poza sandboxem: 58 passed/5 skipped, a końcowo
+  59 passed/5 skipped w 2.57s. Osobno 3 testy frame i 4 broker JS passed,
+  składnia JS i git diff --check OK. Skipy to jawne rzeczywiste pilotaże.
+- Zasoby sprawdzane przed inferencją/przeglądarką; żadnych obcych kontenerów
+  nie zatrzymywano. Koniec: Docker pusty, Ollama models=[], GPU867MiB/0%.
+  Bez restartów usług/hosta, zmian Vast.ai/Windows, treningu, zmian modeli,
+  prawdziwych zadań, odbioru właściciela ani publikacji klientowi.
+- Dokumentacja i hashe wszystkich dowodów: UPWORK_WEB_PILOT.md. Wynik to
+  kandydat lokalny; kolejnym etapem jest poprawa jakości projektowania oraz
+  rozszerzanie testów o kolejne autorskie briefy, a nie nauka na tym teście.
+
 ## 2026-09-19 — porównanie lokalnych modeli i podział specjalizacji
 
 - Po akceptacji podziału ról sprawdzono rzeczywisty lokalny inwentarz:

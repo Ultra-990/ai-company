@@ -1,5 +1,11 @@
 # Fabryka aplikacji — pierwszy działający profil
 
+Aktualizacja 19.09.2026: [syntetyczne zlecenie strony usługowej](UPWORK_WEB_PILOT.md)
+sprawdza Qwen → ograniczone poprawki → niezależne testy HTTP/przeglądarki →
+ZIP kandydata. To test istniejącego procesu, nie automatyczne przyjmowanie
+zleceń ani potwierdzenie jakości premium. Podgląd zachowuje teraz motyw,
+język i dozwolone atrybuty układu dokumentu aplikacji.
+
 Weryfikacja zakresu: [wymagania konkretnej wersji i dowody](REQUIREMENT_CHECKS.md).
 Osobny rejestr obserwacji właściciela; zaliczone testy nie potwierdzają automatycznie
 wszystkich kryteriów klienta.

@@ -31,6 +31,7 @@ Kontrola lokalnego modelu i decyzje o strojeniu: [Jakość Qwena](organization-o
 Plan osobnego adaptera, danych i testów: [Dostrojenie Qwena](organization-os/QWEN_TRAINING.md).
 Rzeczywiste tekstowe wykonanie Qwen na lokalnym GPU: [Lokalna inferencja](organization-os/LOCAL_INFERENCE.md).
 Generowanie źródeł, testy w kontenerze i wydania: [Fabryka aplikacji](organization-os/APPLICATION_FACTORY.md).
+Próba strony usługowej z Qwenem, poprawkami i ZIP: [Upwork web pilot](organization-os/UPWORK_WEB_PILOT.md).
 Kontrola źródeł i raporty związane z wersją: [Kontrola paczek](organization-os/PACKAGE_CHECKS.md).
 Oglądanie statycznych stron bez ZIP: [Podgląd paczek](organization-os/PREVIEW.md).
 Przygotowana partycja i katalogi poza danymi Dockera: [Przestrzeń robocza](organization-os/STORAGE.md).

@@ -14,7 +14,7 @@ from uuid import uuid4
 import websockets
 
 
-async def check(client, body, headers, *, cases=None, expected_color='rgb(0, 0, 255)'):
+async def check(client, body, headers, *, cases=None, expected_color='rgb(0, 0, 255)', audit=None):
     cases = cases if cases is not None else [dict(inputs={}, result='2576', path='/api/total')]
     allowed_paths = {case['path'] for case in cases if case['path'] is not None}
     opened = client.post('/api/package-runs/preview', headers=headers, json=body | {'request_id':str(uuid4()),'path':'/'})
@@ -22,6 +22,7 @@ async def check(client, body, headers, *, cases=None, expected_color='rgb(0, 0, 
     data = opened.json()
     init = json.dumps({'kind':'application-init', 'html':data['response']['body'], 'files':data['assets']}).replace('<','\\u003c')
     parent = ('''<!doctype html><title>Synthetic browser pilot</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden}iframe{display:block;border:0;width:100%;height:100%}</style>
 <iframe id="app" src="/os/application-frame" sandbox="allow-scripts allow-forms"></iframe>
 <script>
 const frame=document.querySelector('#app');
@@ -126,12 +127,16 @@ window.addEventListener('message',async e=>{
                     for case in cases:
                         for selector,value in case['inputs'].items():
                             await evaluate(f'document.querySelector({json.dumps(selector)}).value={json.dumps(value)}',context)
+                        for selector,value in case.get('checks', {}).items():
+                            await evaluate(f'document.querySelector({json.dumps(selector)}).checked={json.dumps(value)}',context)
                         await evaluate("document.querySelector('#calculate').click()",context)
                         for _ in range(100):
                             await asyncio.sleep(.1)
                             if await evaluate("document.querySelector('#result').textContent",context)==case['result']:break
                         else:raise AssertionError('Browser did not display expected result: '+case['result'])
                     assert calls==[200 for case in cases if case['path'] is not None],calls
+                    if audit is not None:
+                        await audit(evaluate, context, call, session)
                     # Let Chrome flush and close its own renderer/profile processes
                     # before TemporaryDirectory removes the private profile.
                     await ws.send(json.dumps({'id':counter+1,'method':'Browser.close'}))
