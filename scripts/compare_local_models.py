@@ -10,12 +10,19 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from app.services.local_ollama import OllamaProvider, ensure_idle, generation_options
+from app.services.local_ollama import OllamaProvider, ensure_idle, generation_options, thinking_mode
 from app.services.container_runner import ContainerRunner, configuration as runner_configuration
 from scripts import evaluate_qwen_repairs as repairs, evaluate_qwen_roles as roles
 from scripts.qwen_evaluation_catalog import load_suite, load_role_suite, CHECKSUM, ROLE_CHECKSUM
 
-MODELS = ('qwen3.8:27b', 'gemma4:31b')
+MODELS = ('qwen3.8:27b', 'gemma4:31b', 'gpt-oss:20b')
+
+
+class PreflightFailure(ValueError):
+    """Fixed, public-safe diagnostics without exposing external process details."""
+    def __init__(self, code):
+        self.code = code
+        super().__init__(code)
 
 
 def local_json(port, path):
@@ -28,22 +35,40 @@ def local_json(port, path):
 
 
 def check_idle():
-    ensure_idle()
-    queue = local_json(8188, '/queue')
-    if queue.get('queue_running') != [] or queue.get('queue_pending') != []:
-        raise ValueError('ComfyUI is busy')
+    try:
+        ensure_idle()
+    except ValueError as exc:
+        raise PreflightFailure('ollama_not_confirmed_idle') from exc
+    # Refused connection means this configured local service is not listening.
+    # Permission errors, timeouts and malformed replies MUST still block work.
+    try:
+        queue = local_json(8188, '/queue')
+    except ConnectionRefusedError:
+        queue = None
+    else:
+        if not isinstance(queue, dict):
+            raise PreflightFailure('comfyui_busy_or_unknown')
+    if queue is not None and (queue.get('queue_running') != [] or queue.get('queue_pending') != []):
+        raise PreflightFailure('comfyui_busy_or_unknown')
+    containers = subprocess.check_output(['docker', 'ps', '--format', '{{.ID}}'], text=True, timeout=5)
+    if containers.strip():
+        raise PreflightFailure('active_containers')
     gpu = subprocess.check_output(['nvidia-smi', '--query-gpu=memory.free', '--format=csv,noheader,nounits'], text=True, timeout=5)
     if len(gpu.splitlines()) != 1 or int(gpu.strip()) < 24576:
-        raise ValueError('At least 24 GiB free GPU memory required. No model unloaded automatically.')
+        raise PreflightFailure('gpu_memory_unavailable')
+    return {'comfyui': 'not_listening' if queue is None else 'idle',
+            'docker': 'empty', 'gpu_free_mib': int(gpu.strip())}
 
 
 def model_config(model, inventory):
     if model not in MODELS: raise ValueError('Model outside approved local comparison')
-    item = next(m for m in inventory['models'] if m['name'] == model)
+    item = next((m for m in inventory['models'] if m['name'] == model), None)
+    if item is None: raise ValueError('Requested local model is not installed')
     digest = item['digest']
     if len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest): raise ValueError('Invalid digest')
-    return {'model':model, 'digest':digest, 'num_ctx':8192, 'num_predict':1200,
+    return {'model':model, 'digest':digest, 'num_ctx':8192, 'num_predict':2400,
             'num_thread':6, 'timeout_seconds':120,
+            'think':'low' if model == 'gpt-oss:20b' else False,
             'sampling_profile':'gemma4-default.v1' if model.startswith('gemma4:') else 'bounded-default.v1'}
 
 
@@ -56,7 +81,7 @@ def main():
     if not args.run:
         print(json.dumps({'model':args.model, 'repair_cases':len(repair_suite['cases']),
                           'role_cases':len(role_suite['cases']), 'inference':False})); return 0
-    check_idle()
+    resources = check_idle()
     config = model_config(args.model, local_json(11434, '/api/tags'))
     runner_config = runner_configuration()
     parent = Path('/home/marcin/ai-company-workspaces/model-comparisons')
@@ -64,8 +89,9 @@ def main():
     parent.mkdir(exist_ok=True)
     if parent.stat().st_dev != Path('/home/marcin').stat().st_dev: raise ValueError('Linux /home required')
     out = Path(tempfile.mkdtemp(prefix=args.model.split(':')[0]+'-', dir=parent))
-    report = {'schema':'local-model-comparison.v1', 'model':config['model'], 'digest':config['digest'],
-        'sampling':generation_options(config), 'num_ctx':8192, 'think':False, 'keep_alive':0,
+    report = {'schema':'local-model-comparison.v2', 'model':config['model'], 'digest':config['digest'],
+        'sampling':generation_options(config), 'num_ctx':8192, 'think':thinking_mode(config), 'keep_alive':0,
+        'role_num_predict':1200, 'resources_before':resources,
         'repair_suite_checksum':CHECKSUM, 'role_suite_checksum':ROLE_CHECKSUM,
         'repairs':[], 'roles':[], 'attempts_per_case':1, 'training_started':False,
         'production_routing_changed':False, 'limits':'Public synthetic suites; not full application delivery or adversarial audit.'}
@@ -85,13 +111,14 @@ def main():
             if entry['status'] == 'infrastructure_error': return 2
         for case in role_suite['cases']:
             check_idle()
-            entry = roles.evaluate_case(role_suite, case, OllamaProvider(config | {'format':roles.SCHEMA, 'num_predict':600}))
+            entry = roles.evaluate_case(role_suite, case, OllamaProvider(config | {'format':roles.SCHEMA, 'num_predict':1200}))
             report['roles'].append(entry); save()
             print(json.dumps({'suite':'roles', 'case':case['id'], 'status':entry['status']}), flush=True)
             if entry['status'] == 'infrastructure_error': return 2
         return 0
     except Exception as exc:
         report['error_type'] = type(exc).__name__; report['error'] = 'Preflight/resources/adapter failed; no automatic retry.'
+        if isinstance(exc, PreflightFailure): report['resource_error'] = exc.code
         return 2
     finally:
         save(); print(json.dumps({'repairs':report['repair_summary'], 'roles':report['role_summary']}), flush=True)

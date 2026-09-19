@@ -61,3 +61,47 @@ def test_changed_digest_is_refused_before_generation(monkeypatch):
     monkeypatch.setattr('http.client.HTTPConnection',Connection)
     with pytest.raises(ValueError,match='model_changed'):adapter.transport({'config':CONFIG,'messages':[]})
     assert calls==['/api/tags']
+
+
+@pytest.mark.parametrize('level', ['low', 'medium', 'high'])
+def test_gpt_oss_uses_explicit_thinking_levels(level):
+    assert adapter.thinking_mode({'model':'gpt-oss:20b', 'think':level}) == level
+
+
+@pytest.mark.parametrize('config', [
+    {'model':'gpt-oss:20b', 'think':False},
+    {'model':'gpt-oss:20b', 'think':True},
+    {'model':'gpt-oss:20b', 'think':'max'},
+    {'model':'qwen3.8:27b', 'think':'low'},
+])
+def test_invalid_thinking_rejected_before_network(monkeypatch,config):
+    monkeypatch.setattr('http.client.HTTPConnection',lambda *a,**k:pytest.fail('Unexpected network'))
+    with pytest.raises(ValueError,match='invalid_generation_profile'):
+        adapter.transport({'config':CONFIG|config, 'messages':[]})
+
+
+def test_default_qwen_thinking_unchanged():
+    assert adapter.thinking_mode(CONFIG) is False
+
+
+def test_gpt_oss_transport_sends_low_and_returns_only_final_content(monkeypatch):
+    calls = []
+    config = CONFIG | {'model':'gpt-oss:20b', 'think':'low'}
+    chunks = iter([
+        {'message':{'thinking':'Private intermediate trace'}, 'done':False},
+        {'message':{'content':'Final answer'}, 'done':True, 'done_reason':'stop'},
+    ])
+    class Connection:
+        status = 200
+        def __init__(self, host, port, timeout):
+            assert (host,port) == ('127.0.0.1',11434)
+        def request(self, method, path, **kwargs): calls.append((path,kwargs))
+        def getresponse(self): return self
+        def read(self, limit):
+            return json.dumps({'models':[{'name':config['model'], 'digest':config['digest']}]}).encode()
+        def readline(self, limit): return json.dumps(next(chunks)).encode()+b'\n'
+        def close(self): pass
+    monkeypatch.setattr('http.client.HTTPConnection', Connection)
+    result = adapter.transport({'config':config, 'messages':[]})
+    assert json.loads(calls[1][1]['body'])['think'] == 'low'
+    assert result['content'] == 'Final answer' and 'thinking' not in result

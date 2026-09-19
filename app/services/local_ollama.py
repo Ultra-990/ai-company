@@ -28,6 +28,18 @@ def generation_options(config):
             **SAMPLING_PROFILES[profile]}
 
 
+def thinking_mode(config):
+    """Explicit model-specific setting; no arbitrary prompt-controlled options."""
+    if config.get('model') == 'gpt-oss:20b':
+        value = config.get('think', 'low')
+        if value not in ('low', 'medium', 'high'):
+            raise ValueError('invalid_generation_profile')
+        return value
+    if config.get('think', False) is not False:
+        raise ValueError('invalid_generation_profile')
+    return False
+
+
 def output_format(config):
     value=config.get('format')
     if value is None or value=='json':return value
@@ -114,6 +126,7 @@ def transport(payload):
     config, messages = payload['config'], payload['messages']
     options=generation_options(config)
     schema=output_format(config)
+    think=thinking_mode(config)
     # No environment proxy, DNS, redirects, API key or arbitrary destination.
     start = time.monotonic()
     connection = http.client.HTTPConnection('127.0.0.1', 11434, timeout=config['timeout_seconds'])
@@ -128,7 +141,7 @@ def transport(payload):
         if not model or model.get('digest') != config['digest']:
             raise ValueError('model_changed')
         request = {'model':config['model'], 'messages':messages, 'stream':True,
-                   'think':False, 'keep_alive':0,
+                   'think':think, 'keep_alive':0,
                    'options':options}
         if schema is not None:request['format']=schema
         connection.request('POST','/api/chat',body=json.dumps(request).encode(),headers={'Content-Type':'application/json'})

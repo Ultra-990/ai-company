@@ -1,5 +1,48 @@
 # Dziennik budowy AI Company
 
+## 2026-09-19 — porównanie lokalnych modeli i podział specjalizacji
+
+- Po akceptacji podziału ról sprawdzono rzeczywisty lokalny inwentarz:
+  Qwen3.8:27b, gpt-oss:20b oraz jego lokalny alias. Gemma nie jest dostępna;
+  nie wznowiono pobierania, nie instalowano innych modeli. Aktualną zgodę
+  właściciela na zasoby stosowano zgodnie z AGENTS.md, bez zmian Vast.ai.
+- OpenAI Docs i dokumentacja Ollama posłużyły do jawnego `think=low` dla
+  lokalnego gpt-oss; boolean nie jest właściwym profilem tej rodziny.
+  Adapter zachowuje domyślne think=false Qwena, ignoruje pole rozumowania
+  w zapisywanej odpowiedzi i odrzuca nieprawidłowy profil przed siecią.
+  Nie używano płatnych usług/API ani modelu GPT-6 do lokalnej inferencji.
+- Porównanie v2: wspólne kontekst8192, 6 wątków, timeout120s, maks.2400
+  tokenów naprawy/1200 decyzji. Digest sprawdzany przed wywołaniem. Format
+  JSON nie zastępuje testów. Profile i różnice opisano w MODEL_COMPARISON.md.
+- Preflight sandbox początkowo blokował odczyt GPU/Dockera/loopback;
+  powtórzono po eskalacji. Docker pusty, Ollama pusta, RTX5090 867 MiB.
+  ComfyUI nie nasłuchiwało. Zezwolono wyłącznie na ConnectionRefusedError
+  tej usługi; timeout/uprawnienia/nieznany stan nadal blokują testy.
+- gpt-oss: cztery naprawy, 3/4; dwanaście decyzji, 9/12; 60.822s.
+  Qwen pierwszy przebieg: 4/4 naprawy, 6/6 podjętych decyzji, przerwanie
+  przez ValueError preflight przed dalszymi przypadkami (53.178s).
+  Nie udajemy znajomości dokładnej przyczyny: oryginalny raport jej nie podał.
+  Dodano bezpieczne stałe kody preflight zamiast logowania obcych danych.
+- Po ponownym odczycie zasobów wykonano jedną nową pełną serię Qwena:
+  4/4 naprawy, 11/12 decyzji, 65.699s. Zachowano pierwszy raport i wszystkie
+  nieudane odpowiedzi; nie uśredniano wyłącznie najlepszych prób.
+- Główny agent przejrzał kod/uzasadnienia pełnych serii. Zidentyfikowano
+  błędne łączenie rozłącznych przedziałów u gpt-oss, błędy decyzji odbioru
+  obu modeli, niewłaściwą eskalację cyklu u gpt-oss i dwa angielskie
+  uzasadnienia. Ograniczenia i hashe raportów zapisano w MODEL_COMPARISON.md.
+- Kod modeli uruchamiano wyłącznie w istniejącym ograniczonym Docker runnerze,
+  bez sieci, z testami niezależnymi od modelu. Kontenery własne zakończone;
+  końcowy Docker pusty, Ollama models=[], GPU867MiB/3%. Żadnych restartów
+  hosta/usług, ingerencji w obce procesy, Windows ani danych klientów.
+- Testy adaptera/porównania/napraw/ról/quality/inference/history:
+  82 passed / 2.86s; końcowo po dodatkowych testach JSON null/nieznanej
+  kolejki oraz pamięci GPU: 88 passed / 2.90s. Mniejsze serie: 45, 67 i 28 passed.
+  Tryb dry-run obu modeli nie wykonuje inferencji; git diff --check OK.
+- Nie zmieniono produkcyjnego routingu/konfiguracji, wag ani statusów zadań.
+  Dane treningowe nadal 14 train, 0 validation, 0 test; bez treningu.
+  Qwen pozostaje wykonawcą pod kontrolą. Nie przyznano żadnemu modelowi
+  autonomicznego odbioru ani nie ogłoszono gotowości premium web/media.
+
 ## 2026-09-19 — specjalizacja modeli przed stroną pokazową
 
 - Właściciel zmienił priorytet: najpierw dostrojenie i ocena modeli dla
