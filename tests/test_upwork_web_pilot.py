@@ -71,7 +71,7 @@ def test_retained_studio_website(client, task_repository):
         from scripts.studio_gallery import STATIC
         observations['media_report_sha256'] = sha256(Path(media_path).read_bytes()).hexdigest()
         observations['overlay_checksums'] = {name:sha256((STATIC/name).read_bytes()).hexdigest()
-            for name in ('studio-gallery.css','studio-gallery.js')}
+            for name in ('studio-gallery.css','studio-gallery.js','studio-scene.css','studio-scene.js')}
     def save():
         (out/'report.json').write_text(json.dumps(observations, ensure_ascii=False, indent=2))
     save()
@@ -82,6 +82,8 @@ def test_retained_studio_website(client, task_repository):
         async def require(name, expression):
             value = await js(expression)
             observations['checks'].append({'id':name, 'passed':value is True})
+            if value is not True:
+                observations['failed_layout'] = await js("({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,overflow:[...document.querySelectorAll('body *')].filter(e=>e.checkVisibility()).map(e=>({tag:e.tagName,cls:e.className,left:e.getBoundingClientRect().left,right:e.getBoundingClientRect().right})).filter(r=>r.left<0||r.right>innerWidth+1).slice(0,20)})")
             save()
             assert value is True, name
         async def eventually(name, expression):
@@ -121,8 +123,27 @@ def test_retained_studio_website(client, task_repository):
         await require('theme-round-trip', "document.documentElement.dataset.theme==='light'")
 
         if media_path:
-            await js("document.querySelector('#visuals').scrollIntoView()")
-            await asyncio.sleep(.3)
+            await js("document.querySelector('.scene-journey').scrollIntoView({behavior:'instant'})")
+            await eventually('spatial-scene-ready', "document.querySelector('#visuals').classList.contains('scene-ready') && Number(document.querySelector('#visuals').dataset.scenePosition)<.01")
+            before = await js("document.querySelector('[data-art=\"1\"]').getBoundingClientRect().width")
+            await shot('scene-start')
+            await call('Input.dispatchMouseEvent', {'type':'mouseMoved','x':720,'y':450}, session)
+            await call('Input.dispatchMouseEvent', {'type':'mouseWheel','x':720,'y':450,'deltaX':0,'deltaY':900}, session)
+            await eventually('scene-wheel-moves-through-depth', "Number(document.querySelector('#visuals').dataset.scenePosition)>.3 && !document.querySelector('#art-viewer').open")
+            after = await js("document.querySelector('[data-art=\"1\"]').getBoundingClientRect().width")
+            observations['scene_wheel'] = {'before_width':before, 'after_width':after}
+            assert after > before*1.1, 'Next image must visibly approach the viewer'
+            await shot('scene-between-chapters')
+            await call('Input.dispatchMouseEvent', {'type':'mouseWheel','x':720,'y':450,'deltaX':0,'deltaY':-900}, session)
+            await eventually('scene-wheel-reverses', "Number(document.querySelector('#visuals').dataset.scenePosition)<.02")
+            await js("document.querySelector('[data-scene-chapter=\"2\"]').click()")
+            await eventually('scene-last-chapter', "Number(document.querySelector('#visuals').dataset.scenePosition)>1.98")
+            await shot('scene-final-chapter')
+            await js("document.querySelector('.scene-hud a').click()")
+            await eventually('scene-skip-reaches-services', "Math.abs(document.querySelector('#services').getBoundingClientRect().top)<innerHeight/2")
+            await js("document.querySelector('[data-scene-chapter=\"1\"]').click()")
+            await eventually('scene-chapter-navigation', "Math.abs(Number(document.querySelector('#visuals').dataset.scenePosition)-1)<.02 && document.querySelector('[data-scene-chapter=\"1\"]').getAttribute('aria-current')==='true'")
+            await require('scene-no-horizontal-overflow', "document.documentElement.scrollWidth<=innerWidth+1")
             await require('gallery-images-loaded', "[...document.querySelectorAll('[data-art] img')].length===3 && [...document.querySelectorAll('[data-art] img')].every(i=>i.complete&&i.naturalWidth===768)")
             await shot('gallery-desktop')
             await js("document.querySelector('[data-open-art=\"1\"]').click()")
@@ -167,6 +188,8 @@ def test_retained_studio_website(client, task_repository):
             await require('gallery-escape-restores-focus', "!document.querySelector('#art-viewer').open && document.activeElement.dataset.openArt==='1'")
 
         await viewport(390, 844)
+        if media_path:
+            await require('scene-mobile-editorial-fallback', "!document.querySelector('#visuals').classList.contains('scene-ready') && getComputedStyle(document.querySelector('.scene-stage')).position!=='sticky'")
         await require('mobile-no-overflow', "document.documentElement.scrollWidth<=innerWidth+1")
         await require('mobile-controls-not-clipped', "[...document.querySelectorAll('button,input,select,summary')].filter(e=>e.checkVisibility()).every(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.left>=-1&&r.right<=innerWidth+1})")
         await require('mobile-menu-initially-closed', "document.querySelector('#menu-toggle')?.getAttribute('aria-expanded')==='false' && !document.querySelector('#site-nav')?.checkVisibility()")
@@ -191,6 +214,9 @@ def test_retained_studio_website(client, task_repository):
             await call('Emulation.setEmulatedMedia', {'features':[{'name':'prefers-reduced-motion','value':'reduce'}]}, context[0])
         await require('reduced-motion', "matchMedia('(prefers-reduced-motion: reduce)').matches && [...document.querySelectorAll('*')].every(e=>getComputedStyle(e).animationDuration.split(',').every(d=>parseFloat(d)<=0.01))")
         if media_path:
+            await viewport(1440,1000)
+            await require('scene-desktop-reduced-motion-fallback', "!document.querySelector('#visuals').classList.contains('scene-ready')")
+            await viewport(390,844)
             await js("document.querySelector('[data-open-art=\"0\"]').click()")
             await eventually('gallery-reduced-motion-no-flight', "document.querySelector('#art-viewer').dataset.phase==='open' && !document.querySelector('.art-flight') && document.querySelector('#art-viewer').getAnimations({subtree:true}).every(a=>a.playState!=='running')")
             await require('gallery-mobile-controls-visible', "[...document.querySelectorAll('#art-viewer button')].every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1})")

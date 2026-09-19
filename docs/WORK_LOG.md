@@ -1,5 +1,34 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — FORMA: główna scena zdjęć sterowana przewijaniem
+
+- Właściciel doprecyzował, że oczekuje interakcji całej strony, nie jedynie
+  płynniej otwieranych okien. Rozwinięto istniejącą nakładkę: hero prowadzi
+  do sceny, naturalne przewijanie przesuwa trzy zdjęcia w perspektywie CSS,
+  zmienia skalę projekcji, pierwszy plan, nasycenie i rozdział.
+- Dodano nawigację studiów, wskaźnik przebiegu, „Pomiń scenę”, obsługę fokusu.
+  Bez przejęcia wheel na stronie, krzywych płaszczyzn tekstu, nowych zależności
+  i nieustannej pętli renderu. Modal pozostał opcją detali. Mobile, niski ekran,
+  reduced motion i brak JS mają czytelny układ zwykły. To płaszczyzny PNG,
+  nie przestrzenne modele obiektów; nie deklarujemy „najnowszej technologii”.
+- Pierwszy Chrome audit studio-browser-x23lxwzc wykrył poziomy overflow od
+  przekształconych elementów. Naprawiono clipping warstwy perspektywy; test
+  nie został osłabiony. Przy sprzątaniu tego nieudanego testu wystąpił też
+  wyścig usuwania prywatnego profilu Chrome (Directory not empty); nie
+  usuwano danych użytkownika. Kolejny audit q5wvo7iw zaliczony (7.93s).
+- Przegląd zrzutów ujawnił prześwitywanie obrazów podczas przejścia; usunięto
+  przezroczystość obu pierwszoplanowych kart, zachowując głębię i nasycenie.
+  Dodano rzeczywisty test kółka wstecz oraz pominięcia sceny.
+- Końcowy audit studio-browser-hnfxdrs9: 1 passed/9.93s; hash i szczegóły
+  w STUDIO_MEDIA_PILOT.md. Test wiąże wszystkie cztery CSS/JS nakładki,
+  bazowe źródła i media hashami. Regresja 74 passed/1 skipped/1.46s,
+  Node geometria i składnia JS, diff --check zaliczone.
+- Uruchomiono nowy podgląd lokalny na 120 minut. Obrazy wykorzystano ponownie,
+  bez inferencji, treningu, pobierania ani nowych wag. Testowy Python tylko
+  w restricted Docker z kontrolą dostępności zasobów; przeglądarka bez GPU.
+  Bez danych produkcyjnych, publikacji strony, Upwork, zmian Windows/Vast.ai.
+  Nadal demo/nakładka podglądu, nie kompletne wydanie aplikacja+media w ZIP.
+
 ## 2026-09-20 — FORMA: animacja zdjęć zamiast zwykłego otwierania okien
 
 - Na uwagę właściciela przebudowano istniejącą nakładkę galerii: powiększanie

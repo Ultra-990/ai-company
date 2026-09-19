@@ -24,6 +24,38 @@ po generacji. Nie uruchamiano ani nie zatrzymywano cudzej instancji 8188.
 
 ## Interakcje
 
+### Scena sterowana przewijaniem (20.09.2026)
+
+Po uwadze właściciela, że samo animowanie dialogu nie daje oczekiwanego
+efektu, główną interakcją jest teraz **przewijanie sceny na stronie**.
+Link „Wejdź w scenę” z hero prowadzi do sekcji. Na ekranach powyżej 800px
+szerokości i od 620px wysokości jest ona sticky, z trzema prostymi płaszczyznami
+zdjęć w perspektywie CSS. Naturalny scroll zmienia przesunięcie i głębokość:
+następny obraz rośnie i wysuwa się na pierwszy plan, poprzedni się oddala.
+Bez pochylania tekstu, przejmowania kółka, WebGL i pętli renderującej w spoczynku.
+
+420svh to długość sekcji, nie dodatkowa pusta strona: w trakcie jej przewijania
+scena pozostaje w kadrze. Przyciski 01–03 pozwalają ominąć przewijanie do
+wybranego studium, „Pomiń scenę” przechodzi do usług. Fokus klawiatury na zdjęciu
+ustawia je na pierwszym planie. Kółko działa w obie strony. Modal z zoomem
+pozostaje opcjonalnym widokiem detali, nie głównym sposobem oglądania.
+
+Telefon, niski ekran i reduced motion dostają zwykły układ redakcyjny bez
+długiej sticky sekcji. Brak JS również zostawia widoczne obrazy i podpisy.
+Scena jest progresywną nakładką `studio-scene.css/js`; bazowa aplikacja i jej
+obliczenia pozostają nietknięte. To perspektywa płaskich PNG, nie modele 3D
+ani animacja wnętrza fotografii. Rozdzielczość mediów nadal 768×512.
+
+Końcowy rzeczywisty audit Chrome: `studio-design-o1sem2gt/studio-browser-hnfxdrs9/report.json`,
+SHA-256 `3366cba6ab73d0badd01e5774f4f29ce332b2aa4106511253b126263208a2f21`,
+**1 passed/9.93s**. Faktyczne zdarzenia kółka potwierdzają zmianę rozmiaru
+obrazu, odwrócenie ruchu, nawigację rozdziałów i pominięcie sceny. Sprawdzono
+też wcześniejsze interakcje, kalkulator, układy mobilne i reduced motion.
+Przejrzano zrzuty początku, przejścia i wybranego studium. Regresja:
+74 passed/1 skipped; Node sprawdza geometrię. Nie jest to pomiar FPS ani
+deklaracja jakości konkursowej. Nowy podgląd trzeba uruchomić ponownie
+poniższym poleceniem, ponieważ serwer przechowuje zasoby z chwili startu.
+
 - Grafika w hero i trzy spójne studia: chrom, architektura, materiały.
 - Subtelne skalowanie kart podczas zwykłego przewijania, bez blokady scrolla.
 - Kliknięcie otwiera natywny dialog; kółko **nad obrazem w otwartym dialogu**

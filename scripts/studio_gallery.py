@@ -43,14 +43,20 @@ def load_assets(path):
 def enhance(html,files,assets):
     def image(asset):return f'<img src="{asset["src"]}" alt="{escape(asset["alt"],quote=True)}" width="768" height="512" decoding="async">'
     cards=''.join(f'<article class="visual-card" data-art="{i}"><button type="button" data-open-art="{i}" aria-haspopup="dialog"><div class="visual-image">{image(a)}</div><h3>{escape(a["title"])}</h3><p>0{i+1} / OTWÓRZ STUDIUM ↗</p></button></article>' for i,a in enumerate(assets))
-    gallery='<section id="visuals" aria-labelledby="visuals-title"><p class="visual-kicker">QWEN × COMFYUI / STUDIA WIZUALNE</p><div class="visual-intro"><h2 id="visuals-title">Forma.<br>Materiał. Ruch.</h2><p>Trzy koncepcje wygenerowane lokalnie przez AI. Kliknij obraz, aby wejść do galerii i przybliżać detale. To eksperymenty, nie realizacje klientów.</p></div><div class="visual-grid">'+cards+'</div></section>'
+    chapters=''.join(f'<button type="button" data-scene-chapter="{i}" aria-label="Przejdź do studium: {escape(a["title"],quote=True)}"><span>0{i+1}</span> {escape(a["title"])}</button>' for i,a in enumerate(assets))
+    gallery=('<section id="visuals" aria-labelledby="visuals-title"><p class="visual-kicker">QWEN × COMFYUI / STUDIA WIZUALNE</p>'
+        '<div class="visual-intro"><h2 id="visuals-title">Nie oglądaj.<br>Wejdź w obraz.</h2><p>Przewijaj, aby przejść przez formę, przestrzeń i materiał. Obrazy zbliżają się i ustępują miejsca kolejnym. Własne eksperymenty AI — nie realizacje klientów.</p></div>'
+        '<div class="scene-journey"><div class="scene-stage"><div class="scene-hud"><span>FORMA / VISUAL LAB</span><span data-scene-counter>01 — 03</span><a href="#services">Pomiń scenę ↗</a></div>'
+        '<div class="scene-word" aria-hidden="true">FORMA</div><div class="visual-grid">'+cards+'</div>'
+        '<div class="scene-footer"><p>PRZEWIJAJ, BY ZMIENIĆ PERSPEKTYWĘ ↓</p><nav aria-label="Studia wizualne">'+chapters+'</nav><div class="scene-track" aria-hidden="true"><i></i></div></div>'
+        '</div></div></section>')
     dialog='''<dialog id="art-viewer" aria-labelledby="art-title" aria-describedby="art-help"><div class="art-toolbar"><h2 id="art-title">Studium</h2><span id="art-counter" aria-live="polite"></span><button type="button" data-close aria-label="Zamknij galerię">Zamknij ×</button></div><div class="art-stage"><img alt=""></div><div class="art-controls"><button type="button" data-prev aria-label="Poprzedni obraz">←</button><button type="button" data-zoom-out aria-label="Oddal">−</button><output id="zoom-level" aria-live="polite">100%</output><button type="button" data-zoom-in aria-label="Przybliż">+</button><button type="button" data-reset>Reset</button><button type="button" data-next aria-label="Następny obraz">→</button></div><p class="art-instructions" id="art-help">Kółko nad obrazem: przybliż / oddal · strzałki: zmień obraz · Esc: zamknij. Na telefonie użyj przycisków.</p></dialog>'''
     old='<div class="art" aria-hidden="true"><i></i><i></i><i></i></div>'
     if old not in html or '<section id="services">' not in html:raise ValueError('Studio HTML contract changed')
-    html=html.replace(old,'<button class="hero-visual" type="button" data-open-art="0" aria-haspopup="dialog">'+image(assets[0])+'<span>POZNAJ MATERIAŁ ↗</span></button>',1)
+    html=html.replace(old,'<a class="hero-visual" href="#visuals">'+image(assets[0])+'<span>WEJDŹ W SCENĘ ↓</span></a>',1)
     html=re.sub(r'<p class="filewarn" role="note">.*?</p>', '<p class="filewarn" role="note">Podgląd demonstracyjny · Kalkulator działa w izolacji · Grafiki wygenerowano lokalnie w ComfyUI.</p>',html,count=1,flags=re.DOTALL)
     html=html.replace('<section id="services">',gallery+'<section id="services">',1)
     html=html.replace('<a href="#services">Usługi</a>','<a href="#visuals">Galeria</a><a href="#services">Usługi</a>',1)
-    html=html.replace('</head>','<link rel="stylesheet" href="studio-gallery.css"></head>',1)
-    html=html.replace('</body>',dialog+'<script src="studio-gallery.js"></script></body>',1)
-    return html, files | {name:(STATIC/name).read_text() for name in ('studio-gallery.css','studio-gallery.js')}
+    html=html.replace('</head>','<link rel="stylesheet" href="studio-gallery.css"><link rel="stylesheet" href="studio-scene.css"></head>',1)
+    html=html.replace('</body>',dialog+'<script src="studio-gallery.js"></script><script src="studio-scene.js"></script></body>',1)
+    return html, files | {name:(STATIC/name).read_text() for name in ('studio-gallery.css','studio-gallery.js','studio-scene.css','studio-scene.js')}
