@@ -1,5 +1,48 @@
 # Dziennik budowy AI Company
 
+## 2026-09-19 — specjalizacja modeli przed stroną pokazową
+
+- Właściciel zmienił priorytet: najpierw dostrojenie i ocena modeli dla
+  stron wysokiej jakości, potem demonstracja. Nie deklarujemy maksymalnej
+  możliwej jakości ani zakończenia treningu. Plan i źródła zapisano w
+  WEB_MODEL_SPECIALIZATION.md: frontend, art direction, interakcje,
+  dostępność, funkcjonalność i wizualny odbiór, nie tylko testy Pythona.
+- Sprawdzono aktualną instrukcję Unsloth Qwen3.8, kartę checkpointu oraz
+  TRL 0.24. Architektura qwen3_5 w lokalnym config jest zgodna z opisem
+  Qwen3.8; nie należy przenosić ostrzeżeń dotyczących innej rodziny bez
+  sprawdzenia właściwej instrukcji. Odczytano strony referencyjne jako
+  inspirację; nie kopiowano ich zasobów. Szczegółowa strona ocen Awwwards
+  niedostępna przez narzędzie (timeout), bez udawania audytu wizualnego.
+- Dodano CPU/offline check_sft_tokenization.py: dokładna granica prefiksu,
+  niezmieniona odpowiedź, EOS, odrzucenie tokenów sterujących, brak cichego
+  truncation. Maskowanie jawne, bo szablon nie ma bloków generation dla
+  assistant_only_loss. To preflight, nie integracja z właściwym trenerem.
+- Rzeczywisty tokenizer: istniejące 12 przykładów, 345–1850 tokenów,
+  wszystkie mieszczą się w 2048. Nowe dwie specyfikacje: 1703/1408 tokenów,
+  1376/1094 tokeny odpowiedzi, kontrola przy limicie 4096 zaliczona.
+  Wagi nie były ładowane ani zmieniane przez kontrolę tokenizacji.
+- Zasoby przed inferencją: Docker pusty, RTX5090 867 MiB/3%, Ollama models=[].
+  Dodano generator sześciu autorskich briefów planning, nie kodu.
+  Pierwsze wywołanie zablokowała sieć sandbox (przed inferencją); po
+  eskalacji lokalny Qwen zakończył sześć propozycji w 112.188 s.
+  Raporty i surowe odpowiedzi zachowane w web-design-drafts-d7m70f1h.
+- Wszystkie formaty przeszły, lecz przegląd wszystkich treści wykazał m.in.
+  nieaktywną kulę Właściciela, zamianę Brain w księżyc, pominięte przybliżanie,
+  angielski zamiast polskiego, niedokończony opis mimo done_reason=stop oraz
+  pozorny sukces wysyłki. Poprawny JSON nie jest dowodem gotowości.
+- Przygotowano dwie nowe autorskie odpowiedzi do istniejących briefów;
+  odebrano tylko planning po przeglądzie. Hash rzeczywistej notatki odbioru
+  przypisano w rekordach; pozostałych czterech propozycji nie zatwierdzono.
+  Zbiór wzrósł z 12 do 14 train, validation/test nadal 0. Bramka 200/25/50
+  pozostała bez zmian; --require-ready zwróciło oczekiwane 2. Brak eksportu,
+  treningu, zmiany modeli produkcyjnych i publicznej publikacji surowych danych.
+- Testy narzędzi danych/treningu: 95 passed / 1.92 s. git diff --check
+  poprawny. Końcowe odczyty po eskalacji: Ollama models=[], Docker pusty.
+  Kontrole nie zatrzymywały żadnych usług; wywołania odczytu w sandboxie
+  były blokowane i nie stanowiły dowodu zatrzymania serwera Ollama.
+- Poprzedni checkpoint 7d916b0cda2bc89caed481d7703f27ee8c253742 został
+  wysłany na gałąź roboczą origin i potwierdzony odczytem ls-remote.
+
 ## 2026-09-19 — przygotowanie publicznego checkpointu GitHub i ponowne użycie OSS
 
 - Właściciel polecił nadzorować wyniki lokalnych modeli, zapisywać projekt

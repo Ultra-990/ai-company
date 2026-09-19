@@ -1,5 +1,12 @@
 # Dostrojenie Qwena dla AI Company
 
+## Priorytet właściciela: specjalizacja przed stroną pokazową
+
+Aktualny zakres i źródła: [WEB_MODEL_SPECIALIZATION.md](WEB_MODEL_SPECIALIZATION.md).
+Plan obejmuje też jakość wizualną, frontend, animacje i ocenę przeglądarkową.
+Dodano offline audyt tokenizacji i nadzorowane propozycje danych projektowych.
+Nie oznacza to zakończenia treningu ani wdrożenia ulepszonego modelu.
+
 ## Aktualizacja 19.09.2026
 
 Właściciel ponownie polecił trening i usprawnianie modeli po domknięciu

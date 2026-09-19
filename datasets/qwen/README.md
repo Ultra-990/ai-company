@@ -1,5 +1,21 @@
 # Zbiór do dostrojenia Qwena — wersja 1
 
+## Aktualizacja: projektowanie stron, 19.09.2026
+
+`web-design-batch-001.jsonl` dodaje **dwie** specyfikacje planning po korekcie
+asystenta prowadzącego. Qwen zaproponował sześć odpowiedzi; przegląd wykrył
+sprzeczności z briefami, język angielski i pozorny sukces formularza.
+Nie odebrano surowych propozycji. [Raport](reviews/web-design-batch-001.md).
+To odbiór tekstowych specyfikacji, nie wykonanych stron ani estetyki.
+Łącznie trzy zatwierdzone partie: **14/200 train, 0/25 validation, 0/50 test**.
+Poniższe sekcje o 12 przykładach opisują wcześniejsze dwie partie.
+
+`scripts/draft_web_design_training.py --generate` proponuje maksymalnie sześć
+przykładów train/pending lokalnie. Nigdy sam ich nie zatwierdza.
+`scripts/check_sft_tokenization.py` w środowisku treningowym sprawdza offline
+długość, niezmienność odpowiedzi, EOS i maskę prefiksu. Nie trenuje ani nie
+udowadnia poprawności danych; nie trzeba ładować wag do tej kontroli.
+
 ## Stan po pierwszej kuracji danych
 
 `specialization-batch-001.jsonl`: dziewięć odebranych przykładów **train**,
