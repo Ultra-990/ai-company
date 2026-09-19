@@ -1,5 +1,46 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — FORMA: sprężysta przestrzeń, drzewo narzędzi i responsywne menu
+
+- Właściciel poprosił o rozbudowę poza kalkulator: ruch 3D/sprężyny, skalowanie
+  wszystkich interakcji, rozwijane menu, powrót kliknięciem tła i stałe działanie
+  przewijania/zoomu. Zmieniono nakładkę demonstracji, nie produkcyjne zlecenia.
+- Dodano helisę, orbitę, falę i spokojny tor; X/Y/Z, orientację płaszczyzn,
+  rzut krzywej, sprężyny z tłumieniem, głębię, pauzę i reset. Brak nowego
+  silnika WebGL, pakietów, generacji, treningu i modeli; grafiki ComfyUI użyte
+  ponownie. Kod głównego agenta, bez przypisywania go Qwenowi.
+- Drzewo narzędzi i modalne menu Studio: grupy rozwijane, rzeczywiste przejścia,
+  fokus, Escape, dotyk, tło-zamknięcie. Kreator briefu (5 typów, 8 modułów)
+  produkuje jawny plan/kryteria, nie udaje AI ani wykonania wybranych usług.
+  Zaznaczenie do ręcznego kopiowania, bez storage, publikacji czy danych klienta.
+- Native scroll na stronie zawsze pozostaje dostępny; zoom w podglądzie
+  zdjęcia również nad pustym obszarem. Ctrl+wheel i pinch nie są blokowane.
+  Tło sceny/przycisk Wróć odtwarzają historię wyborów (max16), bez globalnego
+  cofania po kliknięciu formularza. Menu/podgląd zamykają się po kliknięciu tła.
+- Pierwszy audit 1i57v9k2 wykrył wyjście peryferyjnej karty poza szerokość;
+  ograniczono amplitudę, bez usunięcia kontroli. txnplkpu: 1 passed/17.94s.
+  Audity up7x4vmt i relyj8s3 wykryły wyścig opóźnionego close i ponownego
+  otwarcia menu; stan open/closing/closed i kontrolowany Escape naprawiły fokus.
+  lyp6wmcz: 1 passed/20.45s. Audit iqc6v26o wykrył zbyt długie dochodzenie
+  sprężyny przy wolniejszych klatkach; dodano twardy limit 1.8s od wejścia.
+  Przy sprzątaniu tego błędu wystąpił wyścig profilu Chrome (Directory not empty),
+  bez ingerencji w profil użytkownika. pzxb24g1: 1 passed/23.46s, z powrotem tłem.
+- Regresja 74 passed/1 skipped/1.46s; dodatkowo 24 passed/1 skipped/0.49s po
+  zmianie opisu podglądu. Node: geometria, sprężyny (także duży krok czasu),
+  tory, walidacja briefu i brak fałszywego wykonania. Składnia JS i diff OK.
+- Kontrole responsywności obejmują 320–2560px, menu otwarte, formularze,
+  tekst 200%, emulowany dotyk i zmianę viewportu. Nie testowano fizycznego
+  iPhone/Safari ani FPS. Przy małym/niskim ekranie i reduced motion wszystkie
+  narzędzia zostają w układzie statycznym. Obejrzano zrzuty helisy i 320px.
+- Python demonstracji nadal tylko restricted Docker; osobny Chrome bez GPU,
+  preflight istniejącego helpera. Bez zmian DB, usług Vast.ai, Windows i wag.
+  Osobna nakładka podglądu nie jest jeszcze paczką bazowa aplikacja+media w ZIP.
+- Końcowy audit y443q1s6: 1 passed/21.95s, hash w STUDIO_MEDIA_PILOT.md.
+  Uwzględnia zoom całego podglądu, systemowy pinch, cofanie tłem, funkcje menu
+  na sześciu rozmiarach, touch/Escape, konfigurację ruchu i brief. Obejrzano
+  końcowe menu 320px. Właściciel pozytywnie ocenił działanie; zachowano wersję
+  bez dokładania następnych efektów. Nie oznaczono projektu jako wydanego.
+
 ## 2026-09-20 — FORMA: główna scena zdjęć sterowana przewijaniem
 
 - Właściciel doprecyzował, że oczekuje interakcji całej strony, nie jedynie

@@ -82,7 +82,7 @@ def main(argv=None):
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>FORMA — podgląd Qwen</title>
 <style>html,body{margin:0;height:100%;font:14px system-ui;background:#171717;color:#fff}
 body{display:flex;flex-direction:column}aside{padding:10px 16px}iframe{border:0;width:100%;flex:1;min-height:0}</style>
-<aside>FORMA · rzeczywisty prototyp Qwen · kalkulator działa w izolacji · nie jest to zatwierdzone wydanie</aside>
+<aside>FORMA · interaktywne studio: przestrzeń, narzędzia i projekt · lokalny prototyp, nie zatwierdzone wydanie</aside>
 <iframe title="Strona FORMA" src="/frame" sandbox="allow-scripts allow-forms"></iframe>
 <script>const frame=document.querySelector('iframe');
 window.addEventListener('message',async e=>{

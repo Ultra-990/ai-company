@@ -24,6 +24,54 @@ po generacji. Nie uruchamiano ani nie zatrzymywano cudzej instancji 8188.
 
 ## Interakcje
 
+### Studio funkcji, sprężyste tory i skalowanie (20.09.2026)
+
+Nagłówek **Studio ＋** otwiera rozwijane menu z grupami funkcji. Jest również
+stałe drzewo na stronie w sekcji Studio: przestrzeń/ruch, projekt/moduły,
+materiały/dostępność. Wszystkie pozycje prowadzą do istniejących narzędzi.
+Menu ma modalny fokus, Escape, zamknięcie po kliknięciu w zewnętrzne tło,
+przywracanie fokusu i nawigację do wybranego narzędzia. Wąski ekran dostaje
+menu dopasowane do viewportu z wewnętrznym przewijaniem dłuższej treści.
+
+Sterowanie sceną oferuje cztery tory: **helisa, orbita, fala, galeria**.
+Helisa/orbita/fala zmieniają X/Y/Z i orientację płaszczyzn obrazów; obraz na
+pierwszym planie przy pełnym wyborze jest zwrócony prosto do użytkownika.
+Pojawia się rzut przestrzennej krzywej na tło. Ruch kursora delikatnie zmienia
+punkt obserwacji; nie przesuwa systemowego kursora. To nadal płaszczyzny
+zdjęć w CSS 3D, a nie rekonstrukcja przedmiotów ani generowanie wideo.
+
+Regulacja sprężystości 0–100%, głębi 40–140%, pauza i reset są rzeczywiste.
+Sprężyny z tłumieniem integrują ruch w małych podkrokach. Po ustaniu wejścia
+zatrzymują się; limit 1.8s kończy dojście również przy niskim FPS. Ukrycie
+karty wstrzymuje pętlę. Pauza nie blokuje przewijania dokumentu. Animacja
+nie przechwytuje kółka na stronie. Kółko w otwartym widoku zdjęcia przybliża
+i oddala (100–240%); Ctrl+kółko i systemowy pinch pozostają dla przeglądarki.
+Kliknięcie pustego tła sceny cofa poprzedni wybór studium (historia do 16);
+równoważny przycisk „Wróć” działa klawiaturą. Przy braku historii wraca do
+poprzedniego studium. Puste tło podglądu zdjęcia zamyka podgląd. Kliknięcia
+narzędzi nie są globalnym poleceniem cofania.
+
+**Kreator briefu:** pięć typów projektu, cel do 600 znaków, osiem opcjonalnych
+modułów, jawne kryteria odbioru i etapy. Działa według lokalnych reguł,
+nie wywołuje modelu. Przycisk zaznacza wynik do ręcznego skopiowania — nie
+twierdzi, że zapisał schowek. Brak przechowywania po refresh i wysyłania danych.
+Wybór AI, mediów, kont czy płatności jest zakresem planu, nie wdrożeniem tych
+usług ani przyjęciem zamówienia. Kalkulator pozostał pobocznym testem backendu.
+
+Układ i narzędzia dopasowują się do ekranu. Przy <=800px lub wysokości <620px
+oraz reduced motion scena przechodzi w układ redakcyjny; drzewo, konfiguracja,
+brief, menu i powiększanie zdjęć nadal są dostępne. Testowane viewporty:
+320×568, 390×844, 768×1024, 1024×768, 1440×900 i 2560×1440, również otwarte
+menu oraz tekst 200%. CDP sprawdza rzeczywiste zdarzenia dotyku, kółka i Escape.
+To emulacja Chrome, nie certyfikacja Safari/iPhone ani pomiar wydajności GPU.
+
+Końcowy audit: `studio-design-o1sem2gt/studio-browser-y443q1s6/report.json`,
+SHA-256 `e68618bd3ba2efc978e1cbc9f3e783c15994beaa33874453b8960cc7f8401192`,
+**1 passed/21.95s**. Obejmuje tło/powrót, otwarte menu na sześciu viewportach,
+dotyk, Escape/fokus, brief, wszystkie tory, pauzę, suwaki, zoom i dozwolone
+`pinch-zoom`. Obejrzano końcowy zrzut rozwiniętego menu przy 320px.
+Właściciel pozytywnie ocenił działanie; nie zmienia to stanu wydania backendu.
+
 ### Scena sterowana przewijaniem (20.09.2026)
 
 Po uwadze właściciela, że samo animowanie dialogu nie daje oczekiwanego

@@ -1,0 +1,48 @@
+<dialog id="studio-menu" aria-labelledby="studio-menu-title">
+ <div class="studio-menu-heading"><h2 id="studio-menu-title">Studio / możliwości</h2><button type="button" id="studio-menu-close" aria-label="Zamknij menu studia">Zamknij ×</button></div>
+ <p>Wybierz, co chcesz odkryć lub zbudować.</p>
+ <nav class="studio-menu-tree" aria-label="Funkcje studia">
+  <details open><summary>01 / Scena i ruch</summary><button type="button" data-studio-jump="visuals">Wejdź w przestrzeń ↗</button><button type="button" data-studio-jump="motion-controls">Helisa, orbita i fala</button><button type="button" data-studio-jump="motion-controls">Sprężystość, głębia i pauza</button></details>
+  <details><summary>02 / Twój projekt</summary><button type="button" data-studio-jump="brief-builder">Wybierz typ i moduły</button><button type="button" data-studio-jump="brief-result">Brief i kryteria odbioru</button></details>
+  <details><summary>03 / Materiały i dostępność</summary><button type="button" data-studio-jump="visuals">Studia obrazów ComfyUI</button><button type="button" data-studio-jump="studio-access">Obsługa i dostępność</button><button type="button" data-studio-jump="quote">Demonstracyjna wycena</button></details>
+ </nav><p>Eksperymentalne studio lokalne. Wybór funkcji nie składa zamówienia.</p>
+</dialog>
+<section id="studio" aria-labelledby="studio-title">
+ <p class="visual-kicker">FORMA / INTERACTIVE STUDIO</p>
+ <h2 id="studio-title">Twoja przestrzeń.<br>Twoje zasady.</h2>
+ <p>Eksperymentuj z ruchem, wybierz kierunek projektu i zbuduj brief. Wszystko poniżej działa lokalnie w tej stronie — bez wysyłania danych i bez udawania uruchomionych agentów AI.</p>
+ <div class="studio-workbench">
+  <nav class="studio-tree" aria-label="Drzewo funkcji studia">
+   <details open><summary>01 / Przestrzeń i ruch</summary><a href="#motion-controls">Tor przestrzenny</a><a href="#motion-controls">Sprężystość i głębia</a><a href="#visuals">Wejdź w scenę ↗</a></details>
+   <details><summary>02 / Projekt i funkcje</summary><a href="#brief-builder">Typ rozwiązania</a><a href="#brief-builder">Moduły produktu</a><a href="#brief-result">Brief do przekazania</a></details>
+   <details><summary>03 / Materiały i dostępność</summary><a href="#visuals">Trzy studia ComfyUI</a><a href="#studio-access">Motyw i ograniczenie ruchu</a><a href="#quote">Demonstracyjna wycena strony</a></details>
+  </nav>
+  <div class="studio-workspace">
+   <article id="motion-controls" class="studio-surface">
+    <p class="visual-kicker">LIVE SCENE CONTROL</p><h3>Choreografia przestrzeni</h3>
+    <div class="studio-fields">
+     <label>Tor obiektów<select id="motion-path"><option value="helix">Helisa — przestrzenna sprężyna</option><option value="orbit">Orbita — ruch po elipsie</option><option value="wave">Fala — przenikanie kierunków</option><option value="flow">Galeria — spokojna perspektywa</option></select></label>
+     <label>Sprężystość <output id="elasticity-value">55%</output><input id="motion-elasticity" type="range" min="0" max="100" value="55"></label>
+     <label>Głębia <output id="depth-value">100%</output><input id="motion-depth" type="range" min="40" max="140" value="100"></label>
+    </div>
+    <div class="studio-actions"><button type="button" id="motion-pause" aria-pressed="false">Zatrzymaj ruch</button><button type="button" id="motion-reset">Reset sceny</button><a href="#visuals">Zobacz efekt ↗</a></div>
+    <p id="motion-status" role="status">Helisa · ruch sprężysty · obrazy 2D w przestrzeni CSS 3D.</p>
+   </article>
+   <article id="brief-builder" class="studio-surface">
+    <p class="visual-kicker">PROJECT COMPOSER</p><h3>Rozwiń swój pomysł</h3>
+    <label>Typ projektu<select id="brief-type"><option value="website">Interaktywna strona</option><option value="application">Aplikacja internetowa</option><option value="platform">Platforma / społeczność</option><option value="automation">Automatyzacja AI</option><option value="media">Studio generowania mediów</option></select></label>
+    <label>Cel projektu<textarea id="brief-goal" maxlength="600" rows="3" placeholder="Co ma osiągnąć użytkownik? Nie wpisuj haseł ani danych poufnych."></textarea></label>
+    <fieldset><legend>Moduły do zaplanowania</legend><div class="studio-modules">
+     <label><input type="checkbox" value="scene" checked> Scena interaktywna</label><label><input type="checkbox" value="cms"> Edycja treści / CMS</label>
+     <label><input type="checkbox" value="accounts"> Konta i uprawnienia</label><label><input type="checkbox" value="search"> Wyszukiwanie</label>
+     <label><input type="checkbox" value="ai"> Asystent AI</label><label><input type="checkbox" value="media"> Generowanie mediów</label>
+     <label><input type="checkbox" value="payments"> Płatności</label><label><input type="checkbox" value="analytics"> Analityka i zgody</label>
+    </div></fieldset>
+    <p id="brief-count" role="status"></p><button type="button" id="brief-build">Utwórz brief i kryteria odbioru</button>
+    <label id="brief-result">Twój brief<textarea id="brief-output" readonly rows="10" placeholder="Wybierz moduły i utwórz brief. To plan, nie gotowa aplikacja."></textarea></label>
+    <button type="button" id="brief-select">Zaznacz brief do skopiowania</button><p id="brief-status" role="status"></p>
+   </article>
+   <article id="studio-access" class="studio-surface"><h3>Kontrola należy do Ciebie</h3><p>Przewijanie pozostaje naturalne. Ruch możesz wstrzymać. Na małym ekranie lub przy systemowej opcji „ogranicz ruch” wyświetlamy statyczny układ. Motyw zmienisz przyciskiem w nagłówku.</p><p>Brief powstaje z jawnych reguł, nie z odpowiedzi modelu. Zaznaczenie „AI”, „płatności” czy „media” opisuje zakres przyszłego projektu — nie uruchamia tych usług. Dane znikają po odświeżeniu; skopiuj brief, jeżeli chcesz go zachować.</p></article>
+  </div>
+ </div>
+</section>
