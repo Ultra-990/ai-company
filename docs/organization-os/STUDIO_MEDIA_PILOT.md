@@ -33,6 +33,35 @@ po generacji. Nie uruchamiano ani nie zatrzymywano cudzej instancji 8188.
 - Jasny/ciemny motyw, mobilny układ i reduced motion. Brak zewnętrznych
   bibliotek, fontów, trackerów i sieci w ramce z wygenerowanym kodem.
 
+### Animowane przejścia (20.09.2026)
+
+Kliknięty obraz powiększa się z pozycji karty do widoku obejmującego ekran
+(720 ms), a zamknięcie odwraca przejście (520 ms). Natywny dialog pozostaje
+dla izolacji fokusu, lecz nie ma ramki zwykłego okna. Tło oraz sterowanie
+pojawiają się stopniowo. Zmiana obrazu to animacja przesunięcia i skali,
+nie natychmiastowa podmiana; zmiana resetuje zoom. Zamknięcie po przełączeniu
+wraca do karty aktualnego obrazu, a fokus do pierwotnego przycisku.
+
+Implementacja używa Web Animations API, jednolitej skali i animowanego kadru,
+bez rozciągania proporcji zdjęcia. Dla karty poza ekranem używa zanikania,
+bez wymuszonego przewijania strony. Kółko poza otwartą galerią nadal normalnie
+przewija stronę. Przy `prefers-reduced-motion` animacje są pomijane. Nie dodano
+ciężkiego silnika 3D ani nowych zależności. Resize kończy bieżącą animację;
+zamknięcie podczas otwierania jest kolejkowane, a tymczasowy obraz usuwany.
+
+Test rzeczywistej przeglądarki: `studio-design-o1sem2gt/studio-browser-qffj4d4d/report.json`
+(w tym samym lokalnym katalogu dowodów co poniżej), SHA-256
+`7970b8e36014679248a1ccb8ec58306c8d6ca03a1eefbe017d1eb1642c7c0c40`:
+**1 passed, 7.93s**. Sprawdza działające animacje otwarcia/przełączania/powrotu,
+zoom kółkiem, Escape/fokus, mobile 390px, reduced motion, szybkie zamknięcie,
+motywy i kalkulator. Obejrzano zrzuty fazy przejściowej i telefonu.
+Regresja: **74 passed, 1 skipped**, dodatkowo testy geometrii Node i składnia JS.
+Nie jest to test FPS ani próba na fizycznym iPhonie.
+
+Po zmianie nakładki trzeba uruchomić nowy podgląd poleceniem poniżej:
+serwer zachowuje wersję zasobów z chwili startu. Sam refresh starego serwera
+nie wczytuje nowego kodu. Media nie wymagają ponownego generowania.
+
 To zoom wyświetlania PNG, nie generowanie nowych szczegółów ani super-resolution.
 768×512 jest rozdzielczością prototypu, nie docelową grafiką dla ekranów 4K.
 

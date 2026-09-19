@@ -84,6 +84,11 @@ def test_retained_studio_website(client, task_repository):
             observations['checks'].append({'id':name, 'passed':value is True})
             save()
             assert value is True, name
+        async def eventually(name, expression):
+            for _ in range(25):
+                if await js(expression): break
+                await asyncio.sleep(.1)
+            await require(name, expression)
         async def shot(name):
             result = await call('Page.captureScreenshot', {'format':'png'}, session)
             content = base64.b64decode(result['data'])
@@ -122,6 +127,10 @@ def test_retained_studio_website(client, task_repository):
             await shot('gallery-desktop')
             await js("document.querySelector('[data-open-art=\"1\"]').click()")
             await require('gallery-dialog-opens', "document.querySelector('#art-viewer').open && document.querySelector('#art-counter').textContent==='2 / 3'")
+            await require('gallery-flies-from-card', "document.querySelector('#art-viewer').dataset.phase==='opening' && document.querySelector('.art-flight')?.getAnimations().some(a=>a.playState==='running')")
+            await asyncio.sleep(.12)
+            await shot('gallery-opening-motion')
+            await eventually('gallery-open-motion-cleans-up', "document.querySelector('#art-viewer').dataset.phase==='open' && !document.querySelector('.art-flight')")
             await js("document.querySelector('[data-zoom-in]').click()")
             await require('gallery-zoom-buttons', "document.querySelector('#zoom-level').textContent==='120%'")
             point = await js("(()=>{const r=document.querySelector('.art-stage').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()")
@@ -135,10 +144,22 @@ def test_retained_studio_website(client, task_repository):
             await shot('gallery-wheel')
             await require('gallery-wheel-zoom', "document.querySelector('#zoom-level').textContent==='130%'")
             await js("document.querySelector('[data-next]').click()")
+            await require('gallery-switch-animated', "document.querySelector('#art-viewer').dataset.phase==='switching' && document.querySelector('.art-stage img').getAnimations().some(a=>a.playState==='running')")
+            await eventually('gallery-switch-complete', "document.querySelector('#art-viewer').dataset.phase==='open'")
             await require('gallery-next-resets-zoom', "document.querySelector('#art-counter').textContent==='3 / 3' && document.querySelector('#zoom-level').textContent==='100%'")
             await shot('gallery-viewer')
+            await js("window.galleryCloseTrace=[];document.querySelector('#art-viewer').addEventListener('cancel',()=>window.galleryCloseTrace.push('cancel'));document.querySelector('#art-viewer').addEventListener('close',()=>window.galleryCloseTrace.push('close'))")
+            observations['return_target'] = await js("document.querySelector('[data-art=\"2\"] .visual-image').getBoundingClientRect().toJSON()")
             await call('Input.dispatchKeyEvent', {'type':'keyDown','key':'Escape','code':'Escape','windowsVirtualKeyCode':27}, session)
             await call('Input.dispatchKeyEvent', {'type':'keyUp','key':'Escape','code':'Escape','windowsVirtualKeyCode':27}, session)
+            # Native Escape/cancel is dispatched asynchronously by Chromium.
+            for _ in range(10):
+                value = await js("({phase:document.querySelector('#art-viewer').dataset.phase,flight:!!document.querySelector('.art-flight'),trace:window.galleryCloseTrace,animations:document.querySelector('.art-stage img').getAnimations().map(a=>a.playState)})")
+                observations.setdefault('return_motion', []).append(value)
+                save()
+                if value['flight']: break
+                await asyncio.sleep(.05)
+            await require('gallery-return-animated', "document.querySelector('#art-viewer').dataset.phase==='closing' && !!document.querySelector('.art-flight')")
             for _ in range(10):
                 if await js("!document.querySelector('#art-viewer').open && document.activeElement.dataset.openArt==='1'"): break
                 await asyncio.sleep(.1)
@@ -169,6 +190,17 @@ def test_retained_studio_website(client, task_repository):
         if context[0] != session:
             await call('Emulation.setEmulatedMedia', {'features':[{'name':'prefers-reduced-motion','value':'reduce'}]}, context[0])
         await require('reduced-motion', "matchMedia('(prefers-reduced-motion: reduce)').matches && [...document.querySelectorAll('*')].every(e=>getComputedStyle(e).animationDuration.split(',').every(d=>parseFloat(d)<=0.01))")
+        if media_path:
+            await js("document.querySelector('[data-open-art=\"0\"]').click()")
+            await eventually('gallery-reduced-motion-no-flight', "document.querySelector('#art-viewer').dataset.phase==='open' && !document.querySelector('.art-flight') && document.querySelector('#art-viewer').getAnimations({subtree:true}).every(a=>a.playState!=='running')")
+            await require('gallery-mobile-controls-visible', "[...document.querySelectorAll('#art-viewer button')].every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1})")
+            await shot('gallery-mobile-reduced-motion')
+            await js("document.querySelector('[data-close]').click()")
+            await eventually('gallery-reduced-motion-close', "!document.querySelector('#art-viewer').open && !document.body.classList.contains('art-open')")
+            for target in {session,context[0]}:
+                await call('Emulation.setEmulatedMedia', {'features':[{'name':'prefers-reduced-motion','value':'no-preference'}]}, target)
+            await js("document.querySelector('[data-open-art=\"1\"]').click();document.querySelector('[data-close]').click()")
+            await eventually('gallery-close-during-animation', "!document.querySelector('#art-viewer').open && !document.querySelector('.art-flight') && !document.body.classList.contains('art-open')")
 
         # This extra requirement belongs to the CSS design brief, not the older
         # functional baseline. Screenshots above survive a rejected design.

@@ -1,5 +1,34 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — FORMA: animacja zdjęć zamiast zwykłego otwierania okien
+
+- Na uwagę właściciela przebudowano istniejącą nakładkę galerii: powiększanie
+  zdjęcia od karty, animowane kadrowanie bez deformacji, powrót, przełączanie
+  kierunkowe i łagodne ujawnienie sterowania. Dialog pełnoekranowy bez ramki;
+  pozostają fokus, Escape, zoom kółkiem/przyciskami, motywy i mobilny układ.
+- Maszyna stanów chroni przed nakładającymi się przejściami; szybkie zamknięcie,
+  resize i reduced motion nie pozostawiają klonów ani blokady przewijania.
+  Parallax/skalowanie kart działa przez rAF na scrollu, bez przejęcia scrolla.
+  Kod głównego agenta, bez przypisywania go Qwenowi; istniejące PNG ComfyUI
+  użyte ponownie. Bez inferencji, treningu, pobierania i modyfikacji Windows.
+- Trzy niezaliczone audity zachowano: studio-browser-07a1g91t, -i32vs2gw,
+  -y7c0vi58. Pierwsza hipoteza opóźnionego cancel nie wystarczyła. Trace
+  wykazał natychmiastowe native close po Escape mimo preventDefault w cancel.
+  Dodano obsługę Escape przed native close watcher, bez osłabienia kryterium
+  faktycznie działającej animacji powrotu.
+- Końcowy Chrome audit studio-browser-qffj4d4d: 1 passed/7.93s; hash i zakres
+  w STUDIO_MEDIA_PILOT.md. Testuje rzeczywiste kółko/klawisze, animacje,
+  fokus, mobile/reduced motion, szybką rezygnację, kalkulator i źródła ZIP.
+  Prywatny Chrome bez GPU, syntetyczny backend wyłącznie restricted Docker;
+  preflight dostępności zasobów w istniejącym helperze. Bez danych produkcji.
+- Regresja: 74 passed, 1 skipped/1.45s; test_studio_motion.cjs sprawdza skalę,
+  crop i niepoprawne prostokąty; node --check i git diff --check zaliczone.
+  Obejrzano zrzuty otwierania i mobilnego widoku. Brak pomiaru FPS/fizycznego iOS.
+- Uruchomiono nowy lokalny podgląd 120 minut (stary zachowuje stare zasoby).
+  Dokumentacja wyjaśnia restart podglądu i reduced motion. Nadal osobna nakładka,
+  nie gotowe wydanie klienta: archiwum bazowe nie zawiera jeszcze mediów.
+  Nie publikowano strony ani nie zmieniano statusu rzeczywistych zleceń.
+
 ## 2026-09-19 — obrazy ComfyUI na stronie FORMA i dostęp do wag Windows
 
 - Na polecenie właściciela sprawdzono współpracę lokalnego Qwena z ComfyUI,
