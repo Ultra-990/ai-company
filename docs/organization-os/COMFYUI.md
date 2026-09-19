@@ -240,3 +240,30 @@ Docelowy adapter (jeszcze NIE zaimplementowany):
 - https://docs.comfy.org/tutorials/flux/flux-2-klein
 - https://github.com/krea-ai/krea-2
 - https://huggingface.co/MiniMaxAI/MiniMax-H3
+# Dostęp do modeli po odłączeniu dysku — 19.09.2026
+
+Brak modeli w selektorze nie musi oznaczać braku pobranych wag. Jeśli
+`/media/marcin/Windows` nie jest zamontowany, skonfigurowany extra-model-paths
+nie ma czego odczytać. Launcher pokazuje teraz ostrzeżenie przed ponownym
+pobieraniem. Sam nie montuje dysku, nie pobiera wag i nie zmienia Windows.
+
+Na polecenie właściciela przygotowano opcjonalną jednostkę
+`media-marcin-Windows.mount`. Publiczny wzór:
+`config/media-marcin-Windows.mount.example`; należy zastąpić placeholder
+zweryfikowanym UUID konkretnej partycji, nigdy kopiować identyfikatora
+innego komputera. Lokalna konfiguracja znajduje się poza repozytorium.
+
+- `ro,nosuid,nodev,noexec`: wyłącznie odczyt, bez wykonywania kodu stamtąd.
+- `ConditionPathExists` i `WantedBy` (nie `RequiredBy`): brak opcjonalnego
+  dysku nie jest wymogiem uruchomienia systemu; ograniczony timeout 15s.
+- Brak zmian `/etc/fstab`, bootloadera, Dockera, partycji i sterowników.
+- Instalacja przez administratora do `/etc/systemd/system/`, następnie
+  `systemctl daemon-reload` i `systemctl enable media-marcin-Windows.mount`.
+- Jednostkę zweryfikowano `systemd-analyze verify`. Na tym komputerze po
+  komendach właściciela potwierdzono `enabled`, `active` i istniejący mount
+  `ro`. Nie restartowano hosta, więc nie jest to test rozruchu po restarcie.
+
+Obecne ręczne podłączenie może mieć mniej opcji niż przygotowana jednostka;
+nie odmontowywać używanych modeli w trakcie pracy tylko w celu ich wyrównania.
+Jeśli NTFS odmówi podłączenia z powodu hibernacji/uszkodzenia, nie używać
+`force`, `remove_hiberfile` ani automatycznej naprawy — osobno ustalić przyczynę.

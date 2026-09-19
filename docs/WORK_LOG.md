@@ -1,5 +1,47 @@
 # Dziennik budowy AI Company
 
+## 2026-09-19 — obrazy ComfyUI na stronie FORMA i dostęp do wag Windows
+
+- Na polecenie właściciela sprawdzono współpracę lokalnego Qwena z ComfyUI,
+  bez chmury. Preflight: Docker pusty, Ollama bez modeli, GPU RTX5090
+  912 MiB zajęte/3%, Comfy8188 nie działa. Qwen utworzył trzy ustrukturyzowane
+  prompty; przejrzano je przed renderem. Własny graph/native nodes,
+  brak wykonywania poleceń/grafów dostarczonych przez model.
+- Pierwszy render zatrzymany: dysk Windows niewpięty do filesystemu,
+  mimo widoczności nvme0n1p4. Nie pobrano niczego. Próba sudo -n odmówiona
+  z powodu hasła; właściciel wykonał polecenia montowania. Potwierdzono ro.
+  Stary niekompletny raport studio-media-gh_2xp2l zachowany. Skrypt teraz
+  zapisuje jawny blocked/shared_weights_not_mounted zamiast niepełnego wyniku.
+- Na dodatkowe żądanie stałego montowania przygotowano jednostkę systemd
+  po zweryfikowanym UUID, ro/nosuid/nodev/noexec, timeout15s i opcjonalny
+  WantedBy. Nie zmieniano fstab (zawiera zastany wpis placeholder Dockera),
+  bootloadera ani usług wynajmu. Administrator zainstalował jednostkę;
+  odczyt systemctl potwierdził enabled/active, mount ro. Nie restartowano.
+  Publiczny wzór nie zawiera rzeczywistego UUID; lokalny plik poza repo.
+  Launcher ComfyUI ostrzega teraz przy braku dysku zamiast sugerować download.
+- Własny ComfyUI8189 użył istniejących wag Z-Image Turbo/Qwen4B/VAE
+  z Windows tylko do odczytu, wyniki wyłącznie Linux. 3 PNG 768×512, 8 kroków:
+  53.268s/48.651s/48.747s. Proces zakończony po generacji. Obejrzano wszystkie
+  trzy obrazy (chromowana rzeźba, betonowy pawilon, szkło/limonka/metal).
+- Dodano zaufaną nakładkę galerii do osobnego podglądu: hero, trzy obrazy,
+  scroll-scale, modal, kółko 100–240%, +/−/Reset, strzałki, Escape i fokus,
+  motywy/mobile/reduced-motion. Grafiki przez checksum + sprawdzone PNG,
+  data URI w istniejącej opaque ramce. Bez rozluźniania CSP lub uprawnień.
+  Kod integracji głównego agenta, prompty Qwen, bitmapy ComfyUI.
+- Pierwsze testy launchera: 3 failed przez import modułu przy uruchomieniu
+  jako pakiet; naprawiono import i izolowano powiadomienia w testach.
+  Potem 44 passed/1 skipped. Audity browser wykazały problemy sterowania
+  testu (kursor kółka, asynchroniczny close/fokus, zbyt krótki smooth scroll).
+  Zachowano wszystkie raporty; bez osłabiania asercji dodano ruch kursora
+  oraz ograniczone oczekiwanie na stan. Końcowo 1 passed/5.42s z prawdziwym
+  kółkiem CDP, Escape, PNG, mobile i kalkulatorem. Regresja95 passed/1 skipped
+  w2.91s, osobno9 passed/.21s po dodaniu kontroli obcych kolejek co5s.
+- Udostępniono właścicielowi dwugodzinny lokalny podgląd z obrazami. Nie
+  zmieniono produkcyjnego pulpitu/danych. ZIP kandydata nadal bazowy bez
+  nakładki mediów, jawnie opisany w raporcie. To pilot integracji, nie
+  autonomiczna dostawa premium. Szczegóły/prompty/ścieżki/hashes/ograniczenia:
+  docs/organization-os/STUDIO_MEDIA_PILOT.md.
+
 ## 2026-09-19 — projektant CSS, kontrola wyniku i podgląd FORMA
 
 - Wydzielono ograniczone zadanie projektowe lokalnego Qwena. Tylko CSS,

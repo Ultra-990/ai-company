@@ -1,0 +1,15 @@
+# Host-specific optional unit. Install only after verifying this NTFS UUID.
+# Does not modify /etc/fstab, the Windows filesystem, Docker or bootloader.
+[Unit]
+Description=Read-only Windows model library for AI Company
+ConditionPathExists=/dev/disk/by-uuid/REPLACE_WITH_VERIFIED_UUID
+
+[Mount]
+What=/dev/disk/by-uuid/REPLACE_WITH_VERIFIED_UUID
+Where=/media/marcin/Windows
+Type=ntfs
+Options=ro,nosuid,nodev,noexec
+TimeoutSec=15
+
+[Install]
+WantedBy=multi-user.target

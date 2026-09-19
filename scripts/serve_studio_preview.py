@@ -62,6 +62,7 @@ def run_request(files, path):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('report', type=Path)
+    parser.add_argument('--media-report', type=Path, help='Optional verified local ComfyUI assets')
     parser.add_argument('--minutes', type=int, default=120, choices=range(1, 121))
     args = parser.parse_args(argv)
     report, digest = read_report(args.report)
@@ -71,8 +72,12 @@ def main(argv=None):
     frame = application_frame()
     opening = run_request(files, '/')
     token = secrets.token_urlsafe(32)  # Preview-only CSRF, never an owner credential.
-    init = json.dumps({'kind': 'application-init', 'html': opening['response']['body'],
-                       'files': {k: v for k, v in files.items() if k.endswith(('.css', '.js'))}}).replace('<', '\\u003c')
+    html = opening['response']['body']
+    frame_files = {k: v for k, v in files.items() if k.endswith(('.css', '.js'))}
+    if args.media_report:
+        from scripts.studio_gallery import load_assets, enhance
+        html, frame_files = enhance(html, frame_files, load_assets(args.media_report))
+    init = json.dumps({'kind': 'application-init', 'html': html, 'files': frame_files}).replace('<', '\\u003c')
     parent = ('''<!doctype html><html lang="pl"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>FORMA — podgląd Qwen</title>
 <style>html,body{margin:0;height:100%;font:14px system-ui;background:#171717;color:#fff}
@@ -87,7 +92,7 @@ window.addEventListener('message',async e=>{
  let reply;try{const r=await fetch('/probe',{method:'POST',headers:{'Content-Type':'application/json','X-Preview-CSRF':TOKEN},body:JSON.stringify({path:e.data.path})});reply=await r.json();}
  catch{reply={error:'Podgląd zakończył się lub jest niedostępny.'};}
  frame.contentWindow.postMessage({kind:'application-reply',id:e.data.id,...reply},'*');
-});</script></html>''').replace('INIT', init).replace('TOKEN', json.dumps(token)).encode()
+});</script></html>''').replace('TOKEN', json.dumps(token)).replace('INIT', init).encode()
 
     class Handler(BaseHTTPRequestHandler):
         def send(self, content, status=200, headers=None):

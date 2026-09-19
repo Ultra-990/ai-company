@@ -4,6 +4,8 @@ Nowy panel operacyjny firmy.
 
 Aktualny priorytet: [zlecenia Upwork → analiza zakresu Qwen → realizacja](UPWORK.md).
 
+Próba wizualna: [Qwen → ComfyUI → galeria na stronie FORMA](STUDIO_MEDIA_PILOT.md).
+
 Zapis i nadzór: [GitHub oraz kontrola pracy modeli](GITHUB_WORKFLOW.md).
 Gotowe komponenty: [ocena projektów open source](OPEN_SOURCE_REUSE.md).
 Najnowszy etap wykonawczy: [generowanie, testowanie i wydanie aplikacji

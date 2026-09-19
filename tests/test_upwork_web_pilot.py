@@ -55,12 +55,23 @@ def test_retained_studio_website(client, task_repository):
     raw = path.read_bytes()
     report = json.loads(raw)
     files = verified_files(report)
+    media_path = os.environ.get('AIC_STUDIO_MEDIA_REPORT')
+    frame_transform = None
+    if media_path:
+        from scripts.studio_gallery import load_assets, enhance
+        assets = load_assets(media_path)
+        frame_transform = lambda html, source_files: enhance(html, source_files, assets)
     from scripts.compare_local_models import check_idle
     check_idle()
     out = Path(tempfile.mkdtemp(prefix='studio-browser-', dir=path.parent))
     observations = {'schema':'studio-browser-audit.v1', 'source_report_sha256':sha256(raw).hexdigest(),
                     'source_checksums':report['source_checksums'], 'checks':[], 'screenshots':[],
                     'accepted':False, 'deployed':False, 'visual_review':'pending', 'status':'incomplete'}
+    if media_path:
+        from scripts.studio_gallery import STATIC
+        observations['media_report_sha256'] = sha256(Path(media_path).read_bytes()).hexdigest()
+        observations['overlay_checksums'] = {name:sha256((STATIC/name).read_bytes()).hexdigest()
+            for name in ('studio-gallery.css','studio-gallery.js')}
     def save():
         (out/'report.json').write_text(json.dumps(observations, ensure_ascii=False, indent=2))
     save()
@@ -104,6 +115,36 @@ def test_retained_studio_website(client, task_repository):
         await js("document.querySelector('#theme-toggle').click()")
         await require('theme-round-trip', "document.documentElement.dataset.theme==='light'")
 
+        if media_path:
+            await js("document.querySelector('#visuals').scrollIntoView()")
+            await asyncio.sleep(.3)
+            await require('gallery-images-loaded', "[...document.querySelectorAll('[data-art] img')].length===3 && [...document.querySelectorAll('[data-art] img')].every(i=>i.complete&&i.naturalWidth===768)")
+            await shot('gallery-desktop')
+            await js("document.querySelector('[data-open-art=\"1\"]').click()")
+            await require('gallery-dialog-opens', "document.querySelector('#art-viewer').open && document.querySelector('#art-counter').textContent==='2 / 3'")
+            await js("document.querySelector('[data-zoom-in]').click()")
+            await require('gallery-zoom-buttons', "document.querySelector('#zoom-level').textContent==='120%'")
+            point = await js("(()=>{const r=document.querySelector('.art-stage').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()")
+            await call('Input.dispatchMouseEvent', {'type':'mouseMoved', **point}, session)
+            await asyncio.sleep(.15)
+            await call('Input.dispatchMouseEvent', {'type':'mouseWheel', **point, 'deltaX':0,'deltaY':-100}, session)
+            for _ in range(10):
+                if await js("document.querySelector('#zoom-level').textContent==='130%'"): break
+                await asyncio.sleep(.1)
+            observations['wheel_observation'] = {'point':point,'zoom':await js("document.querySelector('#zoom-level').textContent")}
+            await shot('gallery-wheel')
+            await require('gallery-wheel-zoom', "document.querySelector('#zoom-level').textContent==='130%'")
+            await js("document.querySelector('[data-next]').click()")
+            await require('gallery-next-resets-zoom', "document.querySelector('#art-counter').textContent==='3 / 3' && document.querySelector('#zoom-level').textContent==='100%'")
+            await shot('gallery-viewer')
+            await call('Input.dispatchKeyEvent', {'type':'keyDown','key':'Escape','code':'Escape','windowsVirtualKeyCode':27}, session)
+            await call('Input.dispatchKeyEvent', {'type':'keyUp','key':'Escape','code':'Escape','windowsVirtualKeyCode':27}, session)
+            for _ in range(10):
+                if await js("!document.querySelector('#art-viewer').open && document.activeElement.dataset.openArt==='1'"): break
+                await asyncio.sleep(.1)
+            observations['close_observation'] = await js("({open:document.querySelector('#art-viewer').open,focus:document.activeElement.outerHTML.slice(0,250)})")
+            await require('gallery-escape-restores-focus', "!document.querySelector('#art-viewer').open && document.activeElement.dataset.openArt==='1'")
+
         await viewport(390, 844)
         await require('mobile-no-overflow', "document.documentElement.scrollWidth<=innerWidth+1")
         await require('mobile-controls-not-clipped', "[...document.querySelectorAll('button,input,select,summary')].filter(e=>e.checkVisibility()).every(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.left>=-1&&r.right<=innerWidth+1})")
@@ -115,7 +156,9 @@ def test_retained_studio_website(client, task_repository):
         await call('Input.dispatchKeyEvent', {'type':'keyUp','key':'Escape','code':'Escape','windowsVirtualKeyCode':27}, session)
         await require('escape-closes-and-restores-focus', "document.querySelector('#menu-toggle').getAttribute('aria-expanded')==='false' && !document.querySelector('#site-nav').checkVisibility() && document.activeElement.id==='menu-toggle'")
         await js("document.querySelector('#menu-toggle').click();document.querySelector('#site-nav a[href=\"#quote\"]').click()")
-        await asyncio.sleep(.3)
+        for _ in range(20):
+            if await js("Math.abs(document.querySelector('#quote').getBoundingClientRect().top)<innerHeight"): break
+            await asyncio.sleep(.1)
         await require('quote-anchor-target', "Math.abs(document.querySelector('#quote').getBoundingClientRect().top)<innerHeight")
         await shot('mobile-quote')
         await js("document.querySelector('#faq-delivery summary').scrollIntoView();document.querySelector('#faq-delivery summary').click()")
@@ -134,7 +177,7 @@ def test_retained_studio_website(client, task_repository):
             await require('design-desktop-menu-hidden', "!document.querySelector('#menu-toggle').checkVisibility() && document.querySelector('#site-nav').checkVisibility()")
 
     try:
-        asyncio.run(check(client, body, OWNER_HEADERS, cases=case.BROWSER_CASES, expected_color=None, audit=audit))
+        asyncio.run(check(client, body, OWNER_HEADERS, cases=case.BROWSER_CASES, expected_color=None, audit=audit, frame_transform=frame_transform))
         observations['checks'].append({'id':'four-quote-interactions', 'passed':True})
         run_response = client.post('/api/package-runs', headers=OWNER_HEADERS, json=body)
         assert run_response.status_code == 200, run_response.text
@@ -149,6 +192,10 @@ def test_retained_studio_website(client, task_repository):
         (out/'studio-candidate.zip').write_bytes(candidate.content)
         observations['candidate'] = {'name':'studio-candidate.zip', 'sha256':sha256(candidate.content).hexdigest(),
                                      'package_checksum':body['package_checksum'], 'owner_accepted':False}
+        if media_path:
+            observations['media_report_sha256'] = sha256(Path(media_path).read_bytes()).hexdigest()
+            observations['candidate']['includes_media_overlay'] = False
+            observations['preview_overlay'] = 'Trusted gallery plus separate ComfyUI manifest; ZIP contains base app only'
         readiness = client.get(f"/api/package-runs/{run['id']}/delivery-readiness", headers=OWNER_HEADERS).json()
         assert readiness['ready'] is False
         observations['checks'].append({'id':'candidate-sources-match-and-release-remains-gated', 'passed':True})

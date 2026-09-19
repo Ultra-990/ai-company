@@ -7,6 +7,11 @@ import json
 import yaml
 
 
+@pytest.fixture(autouse=True)
+def no_real_mount_checks_or_notifications(monkeypatch):
+    monkeypatch.setattr(desktop, 'check_shared_mount', lambda: True)
+
+
 def test_comfyui_is_loopback_and_has_no_paid_or_custom_nodes():
     cmd = command()
     assert cmd[cmd.index('--listen') + 1] == '127.0.0.1'
@@ -103,3 +108,15 @@ def test_missing_windows_does_not_mount_it(monkeypatch, tmp_path):
     monkeypatch.setattr(launcher.subprocess, 'run', run)
     assert launcher.check_shared_mount() is False
     run.assert_not_called()
+
+
+def test_launcher_warns_about_missing_shared_weights_without_downloading(monkeypatch):
+    monkeypatch.setattr(desktop,'check_shared_mount',lambda:False)
+    monkeypatch.setattr(desktop,'ready',lambda:True)
+    notify=MagicMock();browser=MagicMock()
+    monkeypatch.setattr(desktop.subprocess,'run',notify)
+    monkeypatch.setattr(desktop,'open_browser',browser)
+    desktop.main()
+    assert notify.call_args.args[0][0]=='notify-send'
+    assert 'Nie pobieraj wag ponownie' in notify.call_args.args[0][-1]
+    browser.assert_called_once()

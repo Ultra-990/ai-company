@@ -7,6 +7,11 @@ import subprocess
 import time
 from urllib.request import build_opener, ProxyHandler
 
+try:
+    from scripts.start_comfyui import check_shared_mount
+except ModuleNotFoundError:
+    from start_comfyui import check_shared_mount
+
 ROOT = Path('/home/marcin/ai-company-workspaces/comfyui')
 URL = 'http://127.0.0.1:8188'
 START = Path(__file__).with_name('start_comfyui.py')
@@ -26,6 +31,11 @@ def open_browser():
 
 
 def main():
+    if not check_shared_mount():
+        subprocess.run(['notify-send', '--urgency=normal', 'ComfyUI — modele Windows niedostępne',
+                        'Dysk modeli nie jest zamontowany. Nie pobieraj wag ponownie. '
+                        'Przywróć dostęp tylko do odczytu do /media/marcin/Windows. '
+                        'Lokalne modele nadal mogą działać.'], check=False, timeout=10)
     if ready():
         open_browser()
         return
