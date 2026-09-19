@@ -133,8 +133,9 @@ class TaskAttempt(Base):
         index=True,
     )
 
-    # "pending" przed niezależną kontrolą wyniku, następnie
-    # "verified" albo "rejected" po wykonaniu verify_attempt().
+    # "pending" przed kontrolą; "verified" po kontroli integralności
+    # historyczną ścieżką verify_attempt(), "accepted" po merytorycznym
+    # odbiorze właściciela lub "rejected" po odrzuceniu.
     verification_status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
@@ -453,5 +454,4 @@ class Task(Base):
 def validate_task_stages_before_save(mapper, connection, target: Task) -> None:
     """Nie pozwala zapisać zadania z niepoprawnymi etapami."""
     target.validate_stages()
-
 

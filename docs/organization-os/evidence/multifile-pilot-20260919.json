@@ -1,0 +1,25 @@
+{
+  "schema": "organization-os.manual-pilot-evidence.v1",
+  "date": "2026-09-19",
+  "kind": "summary_of_observed_tool_outputs_not_raw_logs",
+  "profile": "python-web-multifile-v1",
+  "image": "sha256:bef522938ef068e9fe7c1f078b1eb929cf32bbb2047b8e67723996c1e050e6e9",
+  "harness_checksum": "b0bd8fdceaf91e74766c9f669cb99157fdf43df7b5aa235492230aee70b689a1",
+  "script": "scripts/check_multifile_isolation.py",
+  "command_template": ".venv/bin/python scripts/check_multifile_isolation.py --run --rental-ended --scenario SCENARIO",
+  "resources": {"cpus": 1, "memory_bytes": 536870912, "pids": 64, "network": "none", "gpu": false},
+  "scenarios": [
+    {"scenario": "success", "container": "aic-package-02258c7bbadf497aab7b296f56447ea5", "container_exit": 0, "pilot_exit": 0, "tests_ok": true, "http_ok": true, "source_not_exposed": true, "all_isolation_checks": true, "cleanup_confirmed": true},
+    {"scenario": "no-tests", "container": "aic-package-b08f470da2c14fa88ee612b400e34da4", "container_exit": 1, "pilot_exit": 0, "tests_ok": false, "http_ok": false, "source_not_exposed": false, "all_isolation_checks": true, "cleanup_confirmed": true},
+    {"scenario": "failed-test", "container": "aic-package-76725c4cf9e34d37a93e7d8f09767af8", "container_exit": 1, "pilot_exit": 0, "tests_ok": false, "http_ok": false, "source_not_exposed": false, "all_isolation_checks": true, "cleanup_confirmed": true},
+    {"scenario": "source-leak", "container": "aic-package-bd54f1f9449141b1b7acc1dc6a5f7e78", "container_exit": 1, "pilot_exit": 0, "tests_ok": true, "http_ok": true, "source_not_exposed": false, "all_isolation_checks": true, "cleanup_confirmed": true},
+    {"scenario": "timeout", "container": "aic-package-b8f8d8db2da94453a15694b33c5eaa29", "container_exit": 1, "pilot_exit": 0, "tests_ok": false, "http_ok": false, "source_not_exposed": false, "all_isolation_checks": true, "cleanup_confirmed": true}
+  ],
+  "post_check": "docker ps --all --filter label=ai-company.package-runner returned no containers",
+  "limitations": [
+    "Synthetic fixture only; no customer package was tested or accepted.",
+    "No authorization to expose this profile in production APIs follows automatically.",
+    "Not a full hostile-code security audit; containers share the host kernel.",
+    "Changed image, harness or isolation policy requires renewed verification."
+  ]
+}

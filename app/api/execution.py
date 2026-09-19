@@ -30,6 +30,7 @@ class ExecutionResponse(BaseModel):
     reason: str
     task_id: int
     task_status: TaskStatus
+    awaiting_review: bool = False
 
 
 class NotConfiguredExecutor:
@@ -105,7 +106,7 @@ def execute_next_task(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
 
@@ -134,7 +135,7 @@ def execute_next_task(
 
     try:
         if result.success:
-            finalized_task = repository.complete(
+            finalized_task = repository.submit_result(
                 task.id,
                 reason=result.reason,
                 result_content=result.result_content,
@@ -146,7 +147,7 @@ def execute_next_task(
             )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
     except Exception as exc:
@@ -160,4 +161,5 @@ def execute_next_task(
         reason=result.reason,
         task_id=finalized_task.id,
         task_status=finalized_task.status,
+        awaiting_review=result.success,
     )

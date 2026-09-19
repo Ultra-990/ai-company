@@ -8,7 +8,7 @@ from app.models.task import Task
 
 @dataclass(frozen=True)
 class ExecutionResult:
-    """Wynik wykonania zadania przez wykonawcę."""
+    """Wynik operacji wykonawcy; success nie oznacza odbioru zadania."""
 
     success: bool
     reason: str

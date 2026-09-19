@@ -41,7 +41,7 @@ def update_roadmap_item_state(
 
     if not provided_fields:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
                 "Podaj co najmniej jedno pole: status, evidence lub note."
             ),
@@ -49,7 +49,7 @@ def update_roadmap_item_state(
 
     if "status" in provided_fields and payload.status is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Pole status nie może mieć wartości null.",
         )
 
@@ -603,9 +603,12 @@ def progress_page() -> str:
             }
         }
     </style>
+    <script src="/static/organization-os/theme.js?v=4"></script>
+    <link rel="stylesheet" href="/static/organization-os/theme.css?v=2">
 </head>
 
-<body>
+<body class="legacy-page">
+    <nav class="app-navigation" aria-label="Nawigacja aplikacji"><a href="/os" data-back>← Wstecz</a><a href="/os" data-home>Pulpit</a></nav>
     <main class="container">
         <section class="hero">
             <div class="eyebrow">AI Company · Centrum dowodzenia</div>
@@ -1098,7 +1101,183 @@ def progress_page() -> str:
         window.setInterval(refreshProgressFromApi, 10000);
     </script>
 
+
+<section id="next-move-panel" class="next-move-panel" aria-live="polite">
+  <div class="next-move-header">
+    <div>
+      <h2>⚡ Następny ruch</h2>
+      <p id="next-move-status">Analizowanie gotowych zadań…</p>
+ </div>
+    <button id="next-move-refresh" type="button">Odśwież</button>
+  </div>
+  <div id="next-move-content"></div>
+</section>
+
+<style>
+  .next-move-panel {
+    margin: 20px auto;
+    max-width: 1180px;
+    padding: 20px;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    background: #111827;
+    color: #e5e7eb;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  }
+  .next-move-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 14px;
+  }
+  .next-move-header h2 { margin: 0 0 4px; font-size: 1.2rem; }
+  .next-move-header p { margin: 0; color: #94a3b8; }
+  .next-move-panel button {
+    padding: 8px 12px;
+    border: 1px solid #475569;
+    border-radius: 7px;
+    background: #1e293b;
+    color: #e5e7eb;
+    cursor: pointer;
+  }
+  .next-move-card {
+    padding: 16px;
+    border-left: 4px solid #22c55e;
+    border-radius: 8px;
+    background: #172033;
+  }
+  .next-move-card h3 { margin: 0 0 10px; }
+  .next-move-card p { margin: 6px 0; }
+  .next-move-label { color: #94a3b8; }
+  .next-move-empty {
+    padding: 14px;
+    border-left: 4px solid #f59e0b;
+    background: #2a2111;
+    border-radius: 8px;
+  }
+  .next-move-problems {
+    margin: 14px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .next-move-problems li {
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 7px;
+    background: #1e293b;
+    color: #cbd5e1;
+  }
+  .next-move-error {
+    padding: 14px;
+    border-left: 4px solid #ef4444;
+    border-radius: 8px;
+    background: #2b1619;
+  }
+</style>
+
+<script>
+(() => {
+  const panel = document.getElementById("next-move-panel");
+  const content = document.getElementById("next-move-content");
+  const status = document.getElementById("next-move-status");
+  const refresh = document.getElementById("next-move-refresh");
+
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[char]));
+
+  const label = (value) => escapeHtml(value || "—");
+
+  function taskName(task) {
+    return task.title || task.name || task.description || `Zadanie #${task.id ?? "?"}`;
+  }
+
+  function renderProblems(data) {
+    const blocked = Array.isArray(data.blocked) ? data.blocked : [];
+    const unassigned = Array.isArray(data.unassigned) ? data.unassigned : [];
+    const invalid = Array.isArray(data.invalid_roadmap_items) ? data.invalid_roadmap_items : [];
+
+    const items = [];
+
+    for (const task of blocked) {
+      items.push(
+        `<li><strong>Zablokowane:</strong> ${escapeHtml(taskName(task))}` +
+        `${task.reason ? `<br><span class="next-move-label">${escapeHtml(task.reason)}</span>` : ""}</li>`
+      );
+    }
+
+    for (const task of unassigned) {
+      items.push(
+        `<li><strong>Nieprzypisane do roadmapy:</strong> ${escapeHtml(taskName(task))}</li>`
+      );
+    }
+
+    for (const task of invalid) {
+      items.push(
+        `<li><strong>Nieprawidłowy punkt roadmapy:</strong> ${escapeHtml(taskName(task))}</li>`
+      );
+    }
+
+    return items.length
+      ? `<ul class="next-move-problems">${items.join("")}</ul>`
+      : "";
+  }
+
+  async function loadNextMove() {
+    status.textContent = "Analizowanie gotowych zadań…";
+    content.innerHTML = "";
+
+    try {
+      const response = await fetch("/api/next-move", {
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error(`Serwer zwrócił HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const task = data.next_move;
+
+      if (task) {
+        content.innerHTML = `
+          <article class="next-move-card">
+            <h3>${escapeHtml(taskName(task))}</h3>
+            <p><span class="next-move-label">Priorytet:</span> ${label(task.priority)}</p>
+            <p><span class="next-move-label">Punkt roadmapy:</span> ${label(task.roadmap_item_title || task.roadmap_item_id)}</p>
+            ${task.phase ? `<p><span class="next-move-label">Faza:</span> ${escapeHtml(task.phase)}</p>` : ""}
+            ${task.reason ? `<p><span class="next-move-label">Dlaczego teraz:</span> ${escapeHtml(task.reason)}</p>` : ""}
+          </article>
+          ${renderProblems(data)}
+        `;
+        status.textContent = "Rekomendacja została wyliczona na podstawie aktualnego stanu zadań i roadmapy.";
+      } else {
+        content.innerHTML = `
+          <div class="next-move-empty">
+            <strong>BRAK RUCHU</strong><br>
+            Brak zadania gotowego do rozpoczęcia. Sprawdź blokady, zależności faz oraz przypisania do roadmapy.
+          </div>
+          ${renderProblems(data)}
+        `;
+        status.textContent = "Nie znaleziono zadania spełniającego warunki rozpoczęcia.";
+      }
+    } catch (error) {
+      content.innerHTML = `
+        <div class="next-move-error">
+          Nie udało się pobrać rekomendacji: ${escapeHtml(error.message)}
+        </div>
+      `;
+      status.textContent = "Wystąpił problem z pobraniem danych.";
+    }
+  }
+
+  refresh.addEventListener("click", loadNextMove);
+  loadNextMove();
+})();
+</script>
+
 </body>
 </html>
 """
-

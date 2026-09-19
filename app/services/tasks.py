@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import json
 
-from sqlalchemy import Engine, Select, func, select, update
+from sqlalchemy import Engine, Select, func, select, text, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.database import (
@@ -11,6 +12,8 @@ from app.core.database import (
     create_session_factory,
 )
 from app.models.audit import AuditEvent
+from app.models.delegation import TaskDelegation
+from app.models.artifact import Artifact, ArtifactType
 from app.models.task import (
     ApprovalStatus,
     ResourceClass,
@@ -249,6 +252,8 @@ class TaskRepository:
                 Task.status == TaskStatus.PENDING,
                 Task.approval_status == ApprovalStatus.APPROVED,
                 Task.queued_at.is_not(None),
+                # Team assignments have no approved runtime/resource lease yet.
+                Task.id.not_in(select(TaskDelegation.task_id)),
             )
             .order_by(
                 Task.queued_at.asc(),
@@ -363,6 +368,11 @@ class TaskRepository:
                     f"Nie znaleziono zadania o identyfikatorze {task_id}"
                 )
 
+            if session.get(TaskDelegation, task_id) is not None:
+                raise TaskTransitionError(
+                    "Delegacja zespołowa nie ma zatwierdzonego środowiska wykonania."
+                )
+
             result = session.execute(
                 update(Task)
                 .where(
@@ -370,6 +380,7 @@ class TaskRepository:
                     Task.status == TaskStatus.PENDING,
                     Task.approval_status == ApprovalStatus.APPROVED,
                     Task.queued_at.is_not(None),
+                    Task.id.not_in(select(TaskDelegation.task_id)),
                 )
                 .values(
                     status=TaskStatus.IN_PROGRESS,
@@ -437,6 +448,7 @@ class TaskRepository:
             normalized_result = result_content.strip()
 
         with self._session_factory() as session:
+            session.execute(text("BEGIN IMMEDIATE"))
             task = session.get(Task, task_id)
 
             if task is None:
@@ -450,6 +462,7 @@ class TaskRepository:
                     f"aby wykonać operację {new_status.value}"
                 )
 
+            self._require_no_pending_review(session, task_id)
             active_attempt = session.scalar(
                 select(TaskAttempt)
                 .where(
@@ -506,6 +519,121 @@ class TaskRepository:
             session.refresh(task)
             session.expunge(task)
 
+        self._refresh_documentation()
+        return task
+
+    @staticmethod
+    def _require_no_pending_review(session: Session, task_id: int) -> None:
+        if session.scalar(select(TaskAttempt.id).where(
+            TaskAttempt.task_id == task_id,
+            TaskAttempt.status == "awaiting_review",
+        ).limit(1)) is not None:
+            raise TaskTransitionError(
+                "Wynik oczekuje na odbiór; użyj decyzji odbioru wyniku"
+            )
+
+    def submit_result(
+        self, task_id: int, *, result_content: str | None, reason: str,
+    ) -> Task:
+        """Zapisuje wynik wykonawcy do odbioru, nie kończąc zadania."""
+        result = (result_content or "").strip()
+        if not result or not reason.strip():
+            raise ValueError("Wynik i powód przekazania do odbioru są wymagane")
+        with self._session_factory() as session:
+            # SQLite: serializuje przejście stanu przed odczytem, także dla
+            # równoczesnej próby zakończenia lub ponownego przesłania wyniku.
+            session.execute(text("BEGIN IMMEDIATE"))
+            task = session.get(Task, task_id)
+            if task is None:
+                raise TaskNotFoundError(f"Nie znaleziono zadania {task_id}")
+            self._require_no_pending_review(session, task_id)
+            attempt = session.scalar(select(TaskAttempt).where(
+                TaskAttempt.task_id == task_id,
+                TaskAttempt.status == "started",
+                TaskAttempt.finished_at.is_(None),
+            ).order_by(TaskAttempt.id.desc()).limit(1))
+            if task.status is not TaskStatus.IN_PROGRESS or attempt is None:
+                raise TaskTransitionError("Brak aktywnej próby wykonania zadania")
+            attempt.result_content = result
+            attempt.result_checksum = sha256(result.encode("utf-8")).hexdigest()
+            attempt.status = "awaiting_review"
+            attempt.finished_at = utc_now()
+            task.progress = min(task.progress, 99)
+            task.updated_at = utc_now()
+            session.add(AuditEvent(
+                event_type="task_execution", operation="submit_result",
+                decision="awaiting_review", allowed=True,
+                reason=f"task_id={task_id}; attempt_id={attempt.id}; {reason.strip()}",
+            ))
+            session.commit()
+            session.refresh(task)
+            session.expunge(task)
+        self._refresh_documentation()
+        return task
+
+    def pending_review(self, task_id: int) -> TaskAttempt:
+        with self._session_factory() as session:
+            if session.get(Task, task_id) is None:
+                raise TaskNotFoundError(f"Nie znaleziono zadania {task_id}")
+            attempt = session.scalar(select(TaskAttempt).where(
+                TaskAttempt.task_id == task_id,
+                TaskAttempt.status == "awaiting_review",
+            ).order_by(TaskAttempt.id.desc()).limit(1))
+            if attempt is None:
+                raise TaskTransitionError("Brak wyniku oczekującego na odbiór")
+            session.expunge(attempt)
+            return attempt
+
+    def review_result(
+        self, task_id: int, *, attempt_id: int, result_checksum: str,
+        accepted: bool, reason: str, evidence: list[str],
+    ) -> Task:
+        """Odbiór właściciela konkretnej wersji wyniku wraz z dowodami.
+
+        Integralność sprawdzana jest automatycznie; ocenę merytoryczną
+        deklaruje uwierzytelniony właściciel, nie sam wykonawca.
+        """
+        from app.services.result_review import apply_review
+        with self._session_factory() as session:
+            session.execute(text("BEGIN IMMEDIATE"))
+            try:
+                task=apply_review(session,task_id,attempt_id=attempt_id,result_checksum=result_checksum,
+                                  accepted=accepted,reason=reason,evidence=evidence)
+            except LookupError as exc:
+                raise TaskNotFoundError(str(exc)) from exc
+            session.commit()
+            session.refresh(task)
+            session.expunge(task)
+        self._refresh_documentation()
+        return task
+
+    def retry_reviewed_task(self, task_id: int) -> Task:
+        """Ponownie kolejkuje odrzucony wynik; zachowuje próbę i raport odbioru."""
+        with self._session_factory() as session:
+            session.execute(text("BEGIN IMMEDIATE"))
+            task = session.get(Task, task_id)
+            if task is None:
+                raise TaskNotFoundError(f"Nie znaleziono zadania {task_id}")
+            attempt = session.scalar(select(TaskAttempt).where(
+                TaskAttempt.task_id == task_id,
+            ).order_by(TaskAttempt.id.desc()).limit(1))
+            if (task.status is not TaskStatus.BLOCKED or attempt is None
+                    or attempt.verification_status != "rejected"
+                    or task.approval_status is not ApprovalStatus.APPROVED):
+                raise TaskTransitionError("Ponowienie wymaga zatwierdzonego zadania z odrzuconym wynikiem")
+            task.status = TaskStatus.PENDING
+            task.queued_at = utc_now()
+            task.updated_at = utc_now()
+            task.started_at = None
+            task.completed_at = None
+            session.add(AuditEvent(
+                event_type="task_acceptance", operation="retry_reviewed_task",
+                decision="queued", allowed=True,
+                reason=f"task_id={task_id}; rejected_attempt_id={attempt.id}; reviewer_role=owner",
+            ))
+            session.commit()
+            session.refresh(task)
+            session.expunge(task)
         self._refresh_documentation()
         return task
 
@@ -672,6 +800,7 @@ class TaskRepository:
         new_status: TaskStatus,
     ) -> Task:
         with self._session_factory() as session:
+            session.execute(text("BEGIN IMMEDIATE"))
             task = session.get(Task, task_id)
 
             if task is None:
@@ -679,6 +808,7 @@ class TaskRepository:
                     f"Nie znaleziono zadania o identyfikatorze {task_id}"
                 )
 
+            self._require_no_pending_review(session, task_id)
             task.transition_to(new_status)
             session.commit()
             session.refresh(task)

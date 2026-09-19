@@ -20,6 +20,30 @@ data/*.db
 data/*.sqlite
 data/*.sqlite3
 
+# Dane operacyjne i kopie w podkatalogach nie są kodem źródłowym.
+/data/
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+*.swp
+*.swo
+*.backup*
+*.bak
+/ŚCIEŻKA_DO_BAZY
+
+# Lokalne, aktywne profile wykonania. Publikujemy osobne szablony .example.
+/config/local_inference.json
+/config/package_runner.json
+/config/acceptance_execution.json
+/config/comfyui-model-paths.yaml
+
+# Wagi/adaptery i prywatne raporty pozostają w workspace Linuksa.
+*.safetensors
+*.gguf
+*.ckpt
+/docs/ui-archives/**/*.tar.gz
+
 # Logi
 logs/*
 !logs/.gitkeep

@@ -1,0 +1,8 @@
+#owner-session-state{font:12px/1.4 system-ui,sans-serif;color:var(--ui-muted)}
+#owner-session-dialog{box-sizing:border-box;width:min(520px,94vw);max-height:90vh;overflow:auto;border:1px solid var(--ui-line);border-radius:16px;background:var(--ui-panel);color:var(--ui-text);padding:24px;font:16px/1.5 system-ui,sans-serif}
+#owner-session-dialog::backdrop{background:#0009}
+#owner-session-dialog form{display:flex;flex-wrap:wrap;gap:12px}
+#owner-session-dialog label{width:100%}
+#owner-session-dialog input{box-sizing:border-box;width:100%;min-height:44px;padding:12px;background:var(--ui-bg);color:var(--ui-text);border:1px solid var(--ui-line);border-radius:8px;font:inherit}
+#owner-session-dialog button{min-height:44px;padding:10px 18px;border:1px solid var(--ui-line);border-radius:8px;background:var(--ui-bg);color:var(--ui-text);font:inherit;cursor:pointer}
+#owner-session-dialog :focus-visible{outline:3px solid var(--ui-accent);outline-offset:3px}

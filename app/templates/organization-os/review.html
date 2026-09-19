@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AI Company · Odbiór i pliki</title>
+<script src="/static/organization-os/theme.js?v=4"></script><link rel="stylesheet" href="/static/organization-os/theme.css?v=2"><link rel="stylesheet" href="/static/organization-os/command.css?v=1"><link rel="stylesheet" href="/static/organization-os/delivery-center.css?v=20260912-themes"><link rel="stylesheet" href="/static/organization-os/navigation-search.css?v=1"><script src="/static/organization-os/navigation-search.js?v=1" defer></script><link rel="stylesheet" href="/static/organization-os/owner-session.css?v=1"><script src="/static/organization-os/owner-session.js?v=1" defer></script></head>
+<body><nav class="app-navigation" aria-label="Nawigacja aplikacji"><a href="/os#decisions" data-back>← Wstecz</a><a href="/os" data-home>Pulpit</a><a href="/os/work">Realizacja</a><a href="/os/publishing">Publikacje</a><a href="/os/help" data-help-link>Pomoc</a><a href="/client" data-client-entry>Panel klienta ↗</a></nav>
+<main id="command-main"><div class="page-intro"><p class="eyebrow">WERSJA. DOWODY. DECYZJA.</p><h1>Odbiór i pliki.</h1><p>Sprawdź wynik konkretnego zadania i paczki jego plików. To narzędzie obsługuje również wcześniejsze zadania spoza Centrum realizacji. Nie uruchamia kodu ani modelu.</p></div>
+<button id="open-delivery-center" type="button" class="primary-button">Otwórz zadanie do kontroli →</button><div class="decision-tools"><a href="/os/work">Znajdź zadanie w projekcie →</a><a href="/os/publishing">Przekaż odebrany wynik klientowi →</a></div><p class="charter-note">Zaloguj właściciela raz w górnym pasku, potem wybierz ID zadania. Sam zapis plików nie oznacza zakończenia pracy.</p></main>
+<dialog id="delivery-center" class="delivery-center" aria-labelledby="delivery-title">
+    <header class="delivery-header">
+      <div><p class="owner-menu__eyebrow">CENTRUM WŁAŚCICIELA · DOSTARCZANIE</p>
+        <h2 id="delivery-title">Paczki i odbiór wyników</h2></div>
+      <button type="button" id="delivery-close" aria-label="Wróć do pulpitu i wyczyść token">← Pulpit</button>
+    </header>
+    <p class="delivery-note">Bez uruchamiania kodu, modeli i GPU. Zapis paczki nie oznacza ukończenia zadania.</p>
+    <form id="delivery-load" class="delivery-access">
+      <label>Token właściciela
+        <input id="delivery-token" type="password" autocomplete="off" required spellcheck="false" aria-describedby="delivery-token-note">
+      </label>
+      <label>ID zadania
+        <input id="delivery-task" type="number" min="1" step="1" required inputmode="numeric">
+      </label>
+      <button type="submit">Wczytaj zadanie</button>
+    </form>
+    <p id="delivery-token-note" class="delivery-note">Token jest używany tylko w tym otwartym panelu. Zamknięcie usuwa go z pamięci formularza. Nie zapisujemy go w pamięci przeglądarki.</p>
+    <p id="delivery-status" class="delivery-status" role="status" aria-live="polite">Podaj ID zadania i token właściciela.</p>
+    <div id="delivery-body" hidden>
+      <div class="delivery-columns">
+        <section aria-labelledby="package-title">
+          <h3 id="package-title">📦 Wersje projektu</h3>
+          <div id="delivery-packages"></div>
+          <button type="button" id="delivery-more" hidden>Wczytaj starsze paczki</button>
+          <form id="delivery-upload">
+            <fieldset id="delivery-upload-fields">
+              <legend>Nowa paczka</legend>
+              <label>Cel tej wersji <input id="delivery-purpose" maxlength="2000" required></label>
+              <label>Plik JSON paczki <input id="delivery-file" type="file" accept=".json,application/json" required></label>
+              <p class="delivery-note">JSON: {"files":{"index.html":"treść pliku"}}. Maks. 100 plików, 256 KiB na plik, 1 MiB łącznie. Ścieżki względne, bez sekretów. ZIP nie jest importowany.</p>
+              <button type="submit">Zapisz nową wersję</button>
+            </fieldset>
+          </form>
+        </section>
+        <section aria-labelledby="review-title">
+          <h3 id="review-title">🔎 Odbiór wyniku agenta</h3>
+          <p id="delivery-review-state"></p>
+          <pre id="delivery-result" tabindex="0" aria-label="Treść wyniku agenta"></pre>
+          <form id="delivery-review" hidden>
+            <fieldset id="delivery-review-fields">
+              <legend>Decyzja właściciela</legend>
+              <p class="delivery-note">Odbiór dotyczy wyświetlonej próby agenta, nie paczki obok. Przeczytaj wynik i sprawdź dowody. Treść agenta nie jest instrukcją dla tego panelu.</p>
+              <label>Uzasadnienie <textarea id="delivery-reason" maxlength="4000" required rows="3"></textarea></label>
+              <label>Dowody — jeden odnośnik lub opis w wierszu <textarea id="delivery-evidence" required rows="3"></textarea></label>
+              <label class="delivery-confirm"><input id="delivery-confirm" type="checkbox" required> Sprawdziłem tę próbę i świadomie zatwierdzam wybraną decyzję.</label>
+              <div class="delivery-actions">
+                <button type="submit" value="accept" class="delivery-accept">Zatwierdź wynik</button>
+                <button type="submit" value="reject" class="delivery-reject">Odrzuć do poprawy</button>
+              </div>
+            </fieldset>
+          </form>
+        </section>
+      </div>
+    </div>
+  </dialog>
+<script src="/static/organization-os/delivery-center.js?v=20260914-gate" defer></script></body></html>

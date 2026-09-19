@@ -1,0 +1,4 @@
+#result img { display: block; max-width: 100%; height: auto; border-radius: 16px; }
+#report { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 30rem; overflow: auto; }
+#jobs .artifact { margin-block: 1rem; }
+#jobs button { margin: .3rem .5rem .3rem 0; }

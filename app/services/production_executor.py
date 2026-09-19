@@ -25,6 +25,6 @@ class ProductionTaskExecutor:
 
         return ExecutionResult(
             success=True,
-            reason="Zadanie wykonane pomyślnie",
+            reason="Wykonawca zwrócił wynik do odbioru",
             result_content=result_content,
         )

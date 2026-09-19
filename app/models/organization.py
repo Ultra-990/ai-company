@@ -64,6 +64,57 @@ class OrganizationUnit(Base):
         index=True,
     )
 
+    # Pola rozszerzające istniejącą hierarchię o potrzeby Organization OS.
+    # Pozostają kompatybilne z dotychczasowymi jednostkami organizacyjnymi.
+    os_key: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="planned",
+        index=True,
+    )
+
+    weight: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+    )
+
+    sort_order: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        index=True,
+    )
+
+    icon: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+
+    color: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+    )
+
+    owner_agent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("agents.id"),
+        nullable=True,
+        index=True,
+    )
+
+    brain_agent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("agents.id"),
+        nullable=True,
+        index=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,

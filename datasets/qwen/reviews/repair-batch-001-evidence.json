@@ -1,0 +1,168 @@
+{
+  "schema": "independent-repair-review.v1",
+  "raw_report": "/home/marcin/ai-company-workspaces/qwen-training/repair-drafts-gzqzpcrx/report.json",
+  "raw_report_sha256": "0ef9bc7394f673e026a93927555b9ef60f5561e5cc98f125a1fd668e2a8626c5",
+  "model": "qwen3.8:27b",
+  "digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+  "recipe": "synthetic-repair.v2",
+  "elapsed_seconds": 14.763,
+  "limitations": "Unit repair exercises, not full application/customer acceptance or security proof.",
+  "cases": [
+    {
+      "id": "pagination-boundary",
+      "fixture": {
+        "id": "pagination-boundary",
+        "brief": "paginate(items, page, size): items jest listą, page i size są dodatnimi int (bool niedozwolony); inaczej ValueError. Numeracja stron od 1. Zwróć nową listę odpowiedniego wycinka, poza końcem []. Nie zmieniaj items.",
+        "broken": "def paginate(items, page, size):\n    return items[page * size:(page + 1) * size]\n",
+        "tests": "import unittest\nfrom solution import paginate\nclass Checks(unittest.TestCase):\n    def test_first_last_and_empty(self):\n        self.assertEqual(paginate([1,2,3,4,5],1,2),[1,2])\n        self.assertEqual(paginate([1,2,3,4,5],3,2),[5])\n        self.assertEqual(paginate([1],4,2),[])\n        self.assertEqual(paginate([],1,2),[])\n    def test_invalid(self):\n        for page,size in [(0,2),(-1,2),(1,0),(1,-1),(True,2),(1,False),(1.0,2),(1,'2')]:\n            with self.subTest(page=page,size=size), self.assertRaises(ValueError):\n                paginate([1,2],page,size)\n    def test_copy(self):\n        items=[1,2,3]\n        result=paginate(items,1,9)\n        self.assertIsNot(result,items)\n        result.append(4)\n        self.assertEqual(items,[1,2,3])\n    def test_invalid_items(self):\n        for items in [None,'abc',(1,2),{},42]:\n            with self.subTest(items=items),self.assertRaises(ValueError): paginate(items,1,2)\n    def test_partition_property(self):\n        for n in range(24):\n            for size in range(1,8):\n                items=list(range(n))\n                pages=[paginate(items,p,size) for p in range(1,n//size+3)]\n                self.assertEqual([v for page in pages for v in page],items)\n                self.assertTrue(all(len(page)<=size for page in pages))\n"
+      },
+      "source": "def paginate(items, page, size):\n    if not isinstance(items, list):\n        raise ValueError(\"items must be a list\")\n    if isinstance(page, bool) or isinstance(size, bool):\n        raise ValueError(\"page and size must be positive integers\")\n    if not isinstance(page, int) or not isinstance(size, int):\n        raise ValueError(\"page and size must be positive integers\")\n    if page < 1 or size < 1:\n        raise ValueError(\"page and size must be positive integers\")\n    start = (page - 1) * size\n    end = start + size\n    return items[start:end]",
+      "source_sha256": "aa2392d0980664039d62032ab8e883741d963a3f551c897ababd5eb588f5723d",
+      "test_sha256": "8d89b222280473336c7f232e4cbb38d4e300cde56bca43fa4ae574f8240f4cc2",
+      "broken_sha256": "db8ef4bcd005a87ab999e08bfc386941cce05e541fcbacca97c2f06db8442cad",
+      "health_stub_sha256": "c7acd45b9d515beabadcca40bf612d9fcc4857447b9a27a6640ea753ce6a7404",
+      "before": {
+        "container_name": "aic-package-d6a73f1d6a8446e7a60d8364d912e1b0",
+        "profile": {
+          "profile": "python-web-v1",
+          "image": "sha256:bef522938ef068e9fe7c1f078b1eb929cf32bbb2047b8e67723996c1e050e6e9",
+          "harness_checksum": "30772e4c4faed5f4f3c1f281bec33af68c30d8915e9cd10f1f61703f83cc1f50",
+          "timeout_seconds": 45,
+          "memory_bytes": 536870912,
+          "cpus": 1,
+          "pids": 64,
+          "network": "none"
+        },
+        "cleanup_confirmed": true,
+        "exit_code": 1,
+        "cli_exit_code": 1,
+        "log": "{\"schema\": \"python-web-test.v1\", \"isolation\": {\"non_root\": true, \"capabilities_dropped\": true, \"no_new_privileges\": true, \"seccomp\": true, \"no_docker_socket\": true, \"no_host_home\": true, \"no_gpu_device\": true, \"network_only_loopback\": true, \"readonly_root\": true, \"readonly_source\": true}, \"tests_ok\": false, \"http_ok\": true, \"source_not_exposed\": true, \"tests_log\": \"test_copy (test_app.Checks) ... ok\\ntest_first_last_and_empty (test_app.Checks) ... FAIL\\ntest_invalid (test_app.Checks) ... test_invalid_items (test_app.Checks) ... test_partition_property (test_app.Checks) ... FAIL\\n\\n======================================================================\\nERROR: test_invalid (test_app.Checks) (page=1.0, size=2)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 12, in test_invalid\\n    paginate([1,2],page,size)\\n  File \\\"/workspace/solution.py\\\", line 2, in paginate\\n    return items[page * size:(page + 1) * size]\\nTypeError: slice indices must be integers or None or have an __index__ method\\n\\n======================================================================\\nERROR: test_invalid (test_app.Checks) (page=1, size='2')\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 12, in test_invalid\\n    paginate([1,2],page,size)\\n  File \\\"/workspace/solution.py\\\", line 2, in paginate\\n    return items[page * size:(page + 1) * size]\\nTypeError: slice indices must be integers or None or have an __index__ method\\n\\n======================================================================\\nERROR: test_invalid_items (test_app.Checks) (items=None)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 21, in test_invalid_items\\n    with self.subTest(items=items),self.assertRaises(ValueError): paginate(items,1,2)\\n  File \\\"/workspace/solution.py\\\", line 2, in paginate\\n    return items[page * size:(page + 1) * size]\\nTypeError: 'NoneType' object is not subscriptable\\n\\n======================================================================\\nERROR: test_invalid_items (test_app.Checks) (items={})\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 21, in test_invalid_items\\n    with self.subTest(items=items),self.assertRaises(ValueError): paginate(items,1,2)\\n  File \\\"/workspace/solution.py\\\", line 2, in paginate\\n    return items[page * size:(page + 1) * size]\\nTypeError: unhashable type: 'slice'\\n\\n======================================================================\\nERROR: test_invalid_items (test_app.Checks) (items=42)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 21, in test_invalid_items\\n    with self.subTest(items=items),self.assertRaises(ValueError): paginate(items,1,2)\\n  File \\\"/workspace/solution.py\\\", line 2, in paginate\\n    return items[page * size:(page + 1) * size]\\nTypeError: 'int' object is not subscriptable\\n\\n======================================================================\\nFAIL: test_first_last_and_empty (test_app.Checks)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 5, in test_first_last_and_empty\\n    self.assertEqual(paginate([1,2,3,4,5],1,2),[1,2])\\nAssertionError: Lists differ: [3, 4] != [1, 2]\\n\\nFirst differing element 0:\\n3\\n1\\n\\n- [3, 4]\\n+ [1, 2]\\n\\n======================================================================\\nFAIL: test_invalid (test_app.Checks) (page=0, size=2)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 11, in test_invalid\\n    with self.subTest(page=page,size=size), self.assertRaises(ValueError):\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_invalid (test_app.Checks) (page=-1, size=2)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 11, in test_invalid\\n    with self.subTest(page=page,size=size), self.assertRaises(ValueError):\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_invalid (test_app.Checks) (page=1, size=0)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 11, in test_invalid\\n    with self.subTest(page=page,size=size), self.assertRaises(ValueError):\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_invalid (test_app.Checks) (page=1, size=-1)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 11, in test_invalid\\n    with self.subTest(page=page,size=size), self.assertRaises(ValueError):\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_invalid (test_app.Checks) (page=True, size=2)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 11, in test_invalid\\n    with self.subTest(page=page,size=size), self.assertRaises(ValueError):\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_invalid (test_app.Checks) (page=1, size=False)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 11, in test_invalid\\n    with self.subTest(page=page,size=size), self.assertRaises(ValueError):\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_invalid_items (test_app.Checks) (items='abc')\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 21, in test_invalid_items\\n    with self.subTest(items=items),self.assertRaises(ValueError): paginate(items,1,2)\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_invalid_items (test_app.Checks) (items=(1, 2))\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 21, in test_invalid_items\\n    with self.subTest(items=items),self.assertRaises(ValueError): paginate(items,1,2)\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_partition_property (test_app.Checks)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 27, in test_partition_property\\n    self.assertEqual([v for page in pages for v in page],items)\\nAssertionError: Lists differ: [] != [0]\\n\\nSecond list contains 1 additional elements.\\nFirst extra element 0:\\n0\\n\\n- []\\n+ [0]\\n?  +\\n\\n\\n----------------------------------------------------------------------\\nRan 5 tests in 0.001s\\n\\nFAILED (failures=10, errors=5)\\n\", \"errors\": []}\n",
+        "reason": null,
+        "oom_killed": false
+      },
+      "after": {
+        "container_name": "aic-package-2e860fbf4a8448d0975028ffffb0c61e",
+        "profile": {
+          "profile": "python-web-v1",
+          "image": "sha256:bef522938ef068e9fe7c1f078b1eb929cf32bbb2047b8e67723996c1e050e6e9",
+          "harness_checksum": "30772e4c4faed5f4f3c1f281bec33af68c30d8915e9cd10f1f61703f83cc1f50",
+          "timeout_seconds": 45,
+          "memory_bytes": 536870912,
+          "cpus": 1,
+          "pids": 64,
+          "network": "none"
+        },
+        "cleanup_confirmed": true,
+        "exit_code": 0,
+        "cli_exit_code": 0,
+        "log": "{\"schema\": \"python-web-test.v1\", \"isolation\": {\"non_root\": true, \"capabilities_dropped\": true, \"no_new_privileges\": true, \"seccomp\": true, \"no_docker_socket\": true, \"no_host_home\": true, \"no_gpu_device\": true, \"network_only_loopback\": true, \"readonly_root\": true, \"readonly_source\": true}, \"tests_ok\": true, \"http_ok\": true, \"source_not_exposed\": true, \"tests_log\": \"test_copy (test_app.Checks) ... ok\\ntest_first_last_and_empty (test_app.Checks) ... ok\\ntest_invalid (test_app.Checks) ... ok\\ntest_invalid_items (test_app.Checks) ... ok\\ntest_partition_property (test_app.Checks) ... ok\\n\\n----------------------------------------------------------------------\\nRan 5 tests in 0.001s\\n\\nOK\\n\", \"errors\": []}\n",
+        "reason": null,
+        "oom_killed": false
+      }
+    },
+    {
+      "id": "duration-carry",
+      "fixture": {
+        "id": "duration-carry",
+        "brief": "format_duration(seconds): nieujemny int sekund (bool niedozwolony); inne wejścia -> ValueError. Zwróć H:MM:SS, godziny bez limitu 24 i bez zer wiodących, minuty i sekundy zawsze dwucyfrowe.",
+        "broken": "def format_duration(seconds):\n    return f'{seconds // 3600}:{seconds // 60:02d}:{seconds % 60:02d}'\n",
+        "tests": "import unittest\nfrom solution import format_duration\nclass Checks(unittest.TestCase):\n    def test_boundaries(self):\n        for value,expected in [(0,'0:00:00'),(59,'0:00:59'),(60,'0:01:00'),(3599,'0:59:59'),(3600,'1:00:00'),(3661,'1:01:01'),(90061,'25:01:01')]:\n            with self.subTest(value=value): self.assertEqual(format_duration(value),expected)\n    def test_invalid(self):\n        for value in [-1,True,False,1.5,'60',None]:\n            with self.subTest(value=value),self.assertRaises(ValueError): format_duration(value)\n    def test_roundtrip(self):\n        for value in range(0,200000,137):\n            result=format_duration(value)\n            h,m,s=result.split(':')\n            self.assertEqual(str(int(h)),h)\n            self.assertEqual(len(m),2)\n            self.assertEqual(len(s),2)\n            self.assertTrue(0<=int(m)<60 and 0<=int(s)<60)\n            self.assertEqual(int(h)*3600+int(m)*60+int(s),value)\n"
+      },
+      "source": "def format_duration(seconds):\n    if isinstance(seconds, bool) or not isinstance(seconds, int):\n        raise ValueError('seconds must be a non-negative integer')\n    if seconds < 0:\n        raise ValueError('seconds must be non-negative')\n    hours = seconds // 3600\n    minutes = (seconds % 3600) // 60\n    secs = seconds % 60\n    return f'{hours}:{minutes:02d}:{secs:02d}'",
+      "source_sha256": "347ac52786d32c161510fb7eec29597935aca714d4b45a4aca240de6c0d62c10",
+      "test_sha256": "2141b19b9103a51e9d419215ae7481757e9149dae1e53129bef4354cb45b0c44",
+      "broken_sha256": "1a11e433fea417697013b7fa09b10cd804e1ff3505272c58f4be113f3b11eb23",
+      "health_stub_sha256": "c7acd45b9d515beabadcca40bf612d9fcc4857447b9a27a6640ea753ce6a7404",
+      "before": {
+        "container_name": "aic-package-9d67b2bd0e8341ce8036ba3a4422c2cf",
+        "profile": {
+          "profile": "python-web-v1",
+          "image": "sha256:bef522938ef068e9fe7c1f078b1eb929cf32bbb2047b8e67723996c1e050e6e9",
+          "harness_checksum": "30772e4c4faed5f4f3c1f281bec33af68c30d8915e9cd10f1f61703f83cc1f50",
+          "timeout_seconds": 45,
+          "memory_bytes": 536870912,
+          "cpus": 1,
+          "pids": 64,
+          "network": "none"
+        },
+        "cleanup_confirmed": true,
+        "exit_code": 1,
+        "cli_exit_code": 1,
+        "log": "{\"schema\": \"python-web-test.v1\", \"isolation\": {\"non_root\": true, \"capabilities_dropped\": true, \"no_new_privileges\": true, \"seccomp\": true, \"no_docker_socket\": true, \"no_host_home\": true, \"no_gpu_device\": true, \"network_only_loopback\": true, \"readonly_root\": true, \"readonly_source\": true}, \"tests_ok\": false, \"http_ok\": true, \"source_not_exposed\": true, \"tests_log\": \"test_boundaries (test_app.Checks) ... test_invalid (test_app.Checks) ... test_roundtrip (test_app.Checks) ... FAIL\\n\\n======================================================================\\nERROR: test_invalid (test_app.Checks) (value='60')\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 9, in test_invalid\\n    with self.subTest(value=value),self.assertRaises(ValueError): format_duration(value)\\n  File \\\"/workspace/solution.py\\\", line 2, in format_duration\\n    return f'{seconds // 3600}:{seconds // 60:02d}:{seconds % 60:02d}'\\nTypeError: unsupported operand type(s) for //: 'str' and 'int'\\n\\n======================================================================\\nERROR: test_invalid (test_app.Checks) (value=None)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 9, in test_invalid\\n    with self.subTest(value=value),self.assertRaises(ValueError): format_duration(value)\\n  File \\\"/workspace/solution.py\\\", line 2, in format_duration\\n    return f'{seconds // 3600}:{seconds // 60:02d}:{seconds % 60:02d}'\\nTypeError: unsupported operand type(s) for //: 'NoneType' and 'int'\\n\\n======================================================================\\nFAIL: test_boundaries (test_app.Checks) (value=3600)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 6, in test_boundaries\\n    with self.subTest(value=value): self.assertEqual(format_duration(value),expected)\\nAssertionError: '1:60:00' != '1:00:00'\\n- 1:60:00\\n?   ^\\n+ 1:00:00\\n?   ^\\n\\n\\n======================================================================\\nFAIL: test_boundaries (test_app.Checks) (value=3661)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 6, in test_boundaries\\n    with self.subTest(value=value): self.assertEqual(format_duration(value),expected)\\nAssertionError: '1:61:01' != '1:01:01'\\n- 1:61:01\\n?   ^\\n+ 1:01:01\\n?   ^\\n\\n\\n======================================================================\\nFAIL: test_boundaries (test_app.Checks) (value=90061)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 6, in test_boundaries\\n    with self.subTest(value=value): self.assertEqual(format_duration(value),expected)\\nAssertionError: '25:1501:01' != '25:01:01'\\n- 25:1501:01\\n?    --\\n+ 25:01:01\\n\\n\\n======================================================================\\nFAIL: test_invalid (test_app.Checks) (value=-1)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 9, in test_invalid\\n    with self.subTest(value=value),self.assertRaises(ValueError): format_duration(value)\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_invalid (test_app.Checks) (value=True)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 9, in test_invalid\\n    with self.subTest(value=value),self.assertRaises(ValueError): format_duration(value)\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_invalid (test_app.Checks) (value=False)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 9, in test_invalid\\n    with self.subTest(value=value),self.assertRaises(ValueError): format_duration(value)\\nAssertionError: ValueError not raised\\n\\n======================================================================\\nFAIL: test_roundtrip (test_app.Checks)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 17, in test_roundtrip\\n    self.assertTrue(0<=int(m)<60 and 0<=int(s)<60)\\nAssertionError: False is not true\\n\\n----------------------------------------------------------------------\\nRan 3 tests in 0.001s\\n\\nFAILED (failures=7, errors=2)\\n\", \"errors\": []}\n",
+        "reason": null,
+        "oom_killed": false
+      },
+      "after": {
+        "container_name": "aic-package-afadcd9d020a45128912dcdf3d4c4287",
+        "profile": {
+          "profile": "python-web-v1",
+          "image": "sha256:bef522938ef068e9fe7c1f078b1eb929cf32bbb2047b8e67723996c1e050e6e9",
+          "harness_checksum": "30772e4c4faed5f4f3c1f281bec33af68c30d8915e9cd10f1f61703f83cc1f50",
+          "timeout_seconds": 45,
+          "memory_bytes": 536870912,
+          "cpus": 1,
+          "pids": 64,
+          "network": "none"
+        },
+        "cleanup_confirmed": true,
+        "exit_code": 0,
+        "cli_exit_code": 0,
+        "log": "{\"schema\": \"python-web-test.v1\", \"isolation\": {\"non_root\": true, \"capabilities_dropped\": true, \"no_new_privileges\": true, \"seccomp\": true, \"no_docker_socket\": true, \"no_host_home\": true, \"no_gpu_device\": true, \"network_only_loopback\": true, \"readonly_root\": true, \"readonly_source\": true}, \"tests_ok\": true, \"http_ok\": true, \"source_not_exposed\": true, \"tests_log\": \"test_boundaries (test_app.Checks) ... ok\\ntest_invalid (test_app.Checks) ... ok\\ntest_roundtrip (test_app.Checks) ... ok\\n\\n----------------------------------------------------------------------\\nRan 3 tests in 0.003s\\n\\nOK\\n\", \"errors\": []}\n",
+        "reason": null,
+        "oom_killed": false
+      }
+    },
+    {
+      "id": "stable-deduplication",
+      "fixture": {
+        "id": "stable-deduplication",
+        "brief": "unique_labels(labels): lista napisów -> nowa lista pierwszych wystąpień, kolejność zachowana, porównanie case-sensitive, bez trim/normalizacji. Element inny niż str -> ValueError. Lista wejściowa nie jest zmieniana.",
+        "broken": "def unique_labels(labels):\n    return sorted(set(labels))\n",
+        "tests": "import unittest\nfrom solution import unique_labels\nclass Checks(unittest.TestCase):\n    def test_order(self):\n        self.assertEqual(unique_labels(['z','a','z','b','a']),['z','a','b'])\n    def test_exact_unicode(self):\n        self.assertEqual(unique_labels(['A','a','',' ','é','e\\u0301','é','😀','😀']),['A','a','',' ','é','e\\u0301','😀'])\n    def test_empty_copy(self):\n        labels=[]\n        result=unique_labels(labels)\n        self.assertEqual(result,[])\n        self.assertIsNot(result,labels)\n    def test_invalid(self):\n        for value in [1,None,True,[],{}]:\n            with self.subTest(value=value),self.assertRaises(ValueError): unique_labels(['a',value])\n    def test_stability(self):\n        for n in range(1,40):\n            labels=[str((i*7)%13) for i in range(n)]\n            before=list(labels)\n            result=unique_labels(labels)\n            self.assertEqual(labels,before)\n            self.assertEqual(len(result),len(set(labels)))\n            self.assertEqual(result,sorted(set(labels),key=labels.index))\n"
+      },
+      "source": "def unique_labels(labels):\n    result = []\n    seen = set()\n    for item in labels:\n        if not isinstance(item, str):\n            raise ValueError(\"all elements must be strings\")\n        if item not in seen:\n            seen.add(item)\n            result.append(item)\n    return result",
+      "source_sha256": "453372651d45ddf24ee0dfcc8d9dc28ab4c628fa3cf18dba246288bb115ddfab",
+      "test_sha256": "8960ff4f8b37426edfa5ab28d80c095c15ffa731a1e934c36042561b6af5ee28",
+      "broken_sha256": "7dfcfbeb07df76aa03aee2e831d49aee6898bf1e1b2f17166d4c2ddb9c4a99f7",
+      "health_stub_sha256": "c7acd45b9d515beabadcca40bf612d9fcc4857447b9a27a6640ea753ce6a7404",
+      "before": {
+        "container_name": "aic-package-63fd8aa97cf6457c945068070391cfdf",
+        "profile": {
+          "profile": "python-web-v1",
+          "image": "sha256:bef522938ef068e9fe7c1f078b1eb929cf32bbb2047b8e67723996c1e050e6e9",
+          "harness_checksum": "30772e4c4faed5f4f3c1f281bec33af68c30d8915e9cd10f1f61703f83cc1f50",
+          "timeout_seconds": 45,
+          "memory_bytes": 536870912,
+          "cpus": 1,
+          "pids": 64,
+          "network": "none"
+        },
+        "cleanup_confirmed": true,
+        "exit_code": 1,
+        "cli_exit_code": 1,
+        "log": "{\"schema\": \"python-web-test.v1\", \"isolation\": {\"non_root\": true, \"capabilities_dropped\": true, \"no_new_privileges\": true, \"seccomp\": true, \"no_docker_socket\": true, \"no_host_home\": true, \"no_gpu_device\": true, \"network_only_loopback\": true, \"readonly_root\": true, \"readonly_source\": true}, \"tests_ok\": false, \"http_ok\": true, \"source_not_exposed\": true, \"tests_log\": \"test_empty_copy (test_app.Checks) ... ok\\ntest_exact_unicode (test_app.Checks) ... FAIL\\ntest_invalid (test_app.Checks) ... test_order (test_app.Checks) ... FAIL\\ntest_stability (test_app.Checks) ... FAIL\\n\\n======================================================================\\nERROR: test_invalid (test_app.Checks) (value=1)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 15, in test_invalid\\n    with self.subTest(value=value),self.assertRaises(ValueError): unique_labels(['a',value])\\n  File \\\"/workspace/solution.py\\\", line 2, in unique_labels\\n    return sorted(set(labels))\\nTypeError: '<' not supported between instances of 'str' and 'int'\\n\\n======================================================================\\nERROR: test_invalid (test_app.Checks) (value=None)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 15, in test_invalid\\n    with self.subTest(value=value),self.assertRaises(ValueError): unique_labels(['a',value])\\n  File \\\"/workspace/solution.py\\\", line 2, in unique_labels\\n    return sorted(set(labels))\\nTypeError: '<' not supported between instances of 'str' and 'NoneType'\\n\\n======================================================================\\nERROR: test_invalid (test_app.Checks) (value=True)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 15, in test_invalid\\n    with self.subTest(value=value),self.assertRaises(ValueError): unique_labels(['a',value])\\n  File \\\"/workspace/solution.py\\\", line 2, in unique_labels\\n    return sorted(set(labels))\\nTypeError: '<' not supported between instances of 'str' and 'bool'\\n\\n======================================================================\\nERROR: test_invalid (test_app.Checks) (value=[])\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 15, in test_invalid\\n    with self.subTest(value=value),self.assertRaises(ValueError): unique_labels(['a',value])\\n  File \\\"/workspace/solution.py\\\", line 2, in unique_labels\\n    return sorted(set(labels))\\nTypeError: unhashable type: 'list'\\n\\n======================================================================\\nERROR: test_invalid (test_app.Checks) (value={})\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 15, in test_invalid\\n    with self.subTest(value=value),self.assertRaises(ValueError): unique_labels(['a',value])\\n  File \\\"/workspace/solution.py\\\", line 2, in unique_labels\\n    return sorted(set(labels))\\nTypeError: unhashable type: 'dict'\\n\\n======================================================================\\nFAIL: test_exact_unicode (test_app.Checks)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 7, in test_exact_unicode\\n    self.assertEqual(unique_labels(['A','a','',' ','\\u00e9','e\\\\u0301','\\u00e9','\\ud83d\\ude00','\\ud83d\\ude00']),['A','a','',' ','\\u00e9','e\\\\u0301','\\ud83d\\ude00'])\\nAssertionError: Lists differ: ['', ' ', 'A', 'a', 'e\\u0301', '\\u00e9', '\\ud83d\\ude00'] != ['A', 'a', '', ' ', '\\u00e9', 'e\\u0301', '\\ud83d\\ude00']\\n\\nFirst differing element 0:\\n''\\n'A'\\n\\n- ['', ' ', 'A', 'a', 'e\\u0301', '\\u00e9', '\\ud83d\\ude00']\\n+ ['A', 'a', '', ' ', '\\u00e9', 'e\\u0301', '\\ud83d\\ude00']\\n\\n======================================================================\\nFAIL: test_order (test_app.Checks)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 5, in test_order\\n    self.assertEqual(unique_labels(['z','a','z','b','a']),['z','a','b'])\\nAssertionError: Lists differ: ['a', 'b', 'z'] != ['z', 'a', 'b']\\n\\nFirst differing element 0:\\n'a'\\n'z'\\n\\n- ['a', 'b', 'z']\\n+ ['z', 'a', 'b']\\n\\n======================================================================\\nFAIL: test_stability (test_app.Checks)\\n----------------------------------------------------------------------\\nTraceback (most recent call last):\\n  File \\\"/workspace/test_app.py\\\", line 23, in test_stability\\n    self.assertEqual(result,sorted(set(labels),key=labels.index))\\nAssertionError: Lists differ: ['0', '1', '7'] != ['0', '7', '1']\\n\\nFirst differing element 1:\\n'1'\\n'7'\\n\\n- ['0', '1', '7']\\n+ ['0', '7', '1']\\n\\n----------------------------------------------------------------------\\nRan 5 tests in 0.001s\\n\\nFAILED (failures=3, errors=5)\\n\", \"errors\": []}\n",
+        "reason": null,
+        "oom_killed": false
+      },
+      "after": {
+        "container_name": "aic-package-31f340e09db0443b9c9ae987a53cba6f",
+        "profile": {
+          "profile": "python-web-v1",
+          "image": "sha256:bef522938ef068e9fe7c1f078b1eb929cf32bbb2047b8e67723996c1e050e6e9",
+          "harness_checksum": "30772e4c4faed5f4f3c1f281bec33af68c30d8915e9cd10f1f61703f83cc1f50",
+          "timeout_seconds": 45,
+          "memory_bytes": 536870912,
+          "cpus": 1,
+          "pids": 64,
+          "network": "none"
+        },
+        "cleanup_confirmed": true,
+        "exit_code": 0,
+        "cli_exit_code": 0,
+        "log": "{\"schema\": \"python-web-test.v1\", \"isolation\": {\"non_root\": true, \"capabilities_dropped\": true, \"no_new_privileges\": true, \"seccomp\": true, \"no_docker_socket\": true, \"no_host_home\": true, \"no_gpu_device\": true, \"network_only_loopback\": true, \"readonly_root\": true, \"readonly_source\": true}, \"tests_ok\": true, \"http_ok\": true, \"source_not_exposed\": true, \"tests_log\": \"test_empty_copy (test_app.Checks) ... ok\\ntest_exact_unicode (test_app.Checks) ... ok\\ntest_invalid (test_app.Checks) ... ok\\ntest_order (test_app.Checks) ... ok\\ntest_stability (test_app.Checks) ... ok\\n\\n----------------------------------------------------------------------\\nRan 5 tests in 0.000s\\n\\nOK\\n\", \"errors\": []}\n",
+        "reason": null,
+        "oom_killed": false
+      }
+    }
+  ]
+}

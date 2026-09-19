@@ -1,0 +1,14 @@
+[
+  {"code":"01","title":"Strategia i zarządzanie","weight":10},
+  {"code":"02","title":"Platforma technologiczna","weight":15},
+  {"code":"03","title":"AI i automatyzacja","weight":10},
+  {"code":"04","title":"Produkty i platformy webowe","weight":10},
+  {"code":"05","title":"UX, strony i marka cyfrowa","weight":7},
+  {"code":"06","title":"Systemy operacyjne i R&D","weight":5},
+  {"code":"07","title":"Usługi dla klientów","weight":12},
+  {"code":"08","title":"Jakość i bezpieczeństwo","weight":8},
+  {"code":"09","title":"Operacje i infrastruktura","weight":7},
+  {"code":"10","title":"Biznes, sprzedaż i marketing","weight":7},
+  {"code":"11","title":"Finanse, prawo i zgodność","weight":4},
+  {"code":"12","title":"Wiedza, ludzie i społeczność","weight":5}
+]

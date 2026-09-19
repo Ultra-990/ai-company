@@ -85,6 +85,12 @@ def _require_role(
         )
 
     if not authorization:
+        if authorization is None and required_role == 'owner' and request.cookies.get('ai_company_owner'):
+            from app.services.owner_sessions import validate
+            validate(request)
+            request.state.authenticated_role = required_role
+            request.state.audit_repository = repository
+            return
         _record_authorization_event(
             repository,
             required_role=required_role,

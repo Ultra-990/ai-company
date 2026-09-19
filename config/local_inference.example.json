@@ -1,0 +1,9 @@
+{
+  "enabled": false,
+  "model": "qwen3.8:27b",
+  "digest": "REPLACE_WITH_VERIFIED_LOCAL_MODEL_SHA256",
+  "timeout_seconds": 180,
+  "num_ctx": 16384,
+  "num_predict": 4096,
+  "num_thread": 8
+}

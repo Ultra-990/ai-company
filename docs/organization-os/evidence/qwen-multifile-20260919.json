@@ -1,0 +1,33 @@
+{
+  "schema": "qwen-multifile-evidence.v1",
+  "date": "2026-09-19",
+  "model": "qwen3.8:27b",
+  "digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+  "report": "/home/marcin/ai-company-workspaces/qwen-training/multifile-generation-ermobazb/report.json",
+  "case": "Synthetic stateless project quote calculator",
+  "source_files": 7,
+  "generation_attempts": 1,
+  "elapsed_seconds": 18.636,
+  "container_tests": {"passed": 11, "model_methods": 9, "independent_methods": 2, "independent_subcases": 15},
+  "http_probes": {"passed": 7, "checks": ["html", "8*322", "decimal inputs", "zero", "negative", "nan", "missing"]},
+  "browser": {
+    "passed": true,
+    "test": "tests/test_qwen_multifile_browser.py::test_retained_qwen_app_browser",
+    "checks": ["8*322=2576", "2.5*20=50", "0*20=0", "negative input error", "empty input error", "opaque iframe denies parent.document"],
+    "rerun_seconds": 3.28,
+    "first_run": "All application assertions reached; temporary Chrome profile cleanup raised Directory not empty. Fixed orderly Browser.close, rerun passed."
+  },
+  "host_model_code_execution": false,
+  "production_database_modified": false,
+  "owner_accepted": false,
+  "published": false,
+  "training_started": false,
+  "limitations": [
+    "One public synthetic case, not a general benchmark or private training holdout.",
+    "Direct bounded provider pilot; API binding tested separately with a fake provider and temporary database.",
+    "Generated source unchanged during browser checks. Independent assertions were added only to the isolated test copy.",
+    "Simple float multiplication demo, not an accounting/currency application.",
+    "No database, authentication, pip, external services, video or music generation.",
+    "Container controls reduce risk; not a proof against deliberately malicious guest code."
+  ]
+}

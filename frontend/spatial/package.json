@@ -1,0 +1,7 @@
+{
+  "name": "ai-company-spatial-vendor",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "node vendor.mjs"},
+  "dependencies": {"three": "0.186.0"}
+}

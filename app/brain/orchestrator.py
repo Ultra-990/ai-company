@@ -184,7 +184,7 @@ class Orchestrator:
             )
 
         if result.success:
-            repository.complete(
+            repository.submit_result(
                 task.id,
                 reason=result.reason,
                 result_content=result.result_content,

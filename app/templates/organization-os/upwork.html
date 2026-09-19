@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zlecenia Upwork · AI Company</title>
+<script src="/static/organization-os/theme.js?v=4"></script>
+<link rel="stylesheet" href="/static/organization-os/work.css?v=2">
+<link rel="stylesheet" href="/static/organization-os/theme.css?v=2">
+<link rel="stylesheet" href="/static/organization-os/navigation-search.css?v=1">
+<link rel="stylesheet" href="/static/organization-os/owner-session.css?v=1">
+<script src="/static/organization-os/upwork-starters.js?v=1" defer></script>
+<script src="/static/organization-os/upwork.js?v=2" defer></script>
+<script src="/static/organization-os/api-contract-probe.js?v=1" defer></script>
+<script src="/static/organization-os/navigation-search.js?v=1" defer></script>
+<script src="/static/organization-os/owner-session.js?v=1" defer></script></head>
+<body><nav class="app-navigation" aria-label="Nawigacja aplikacji"><a href="/os" data-back>← Wstecz</a><a href="/os" data-home>Pulpit</a><a href="/os/work">Centrum realizacji</a><a href="/os/build">Budowa i testy</a><a href="/os/help#upwork">Pomoc</a></nav>
+<main><p class="eyebrow">PRIORYTET · PIERWSZE ZLECENIA</p><h1>Od ogłoszenia do aplikacji.</h1>
+<p class="lead">Upwork → zakres z Qwenem → wykonanie → testy i poprawki → wydanie.</p>
+<aside class="notice">To lokalny rejestr pracy, nie połączenie z kontem Upwork. Wklej opis ręcznie, bez sekretów i danych dostępowych. System nie wysyła ofert, nie przyjmuje kontraktów i nie pobiera opłat. Każdą obietnicę wobec klienta zatwierdzasz sam.</aside>
+<form id="access" class="access"><p>Zaloguj właściciela przyciskiem w górnym pasku, następnie wczytaj projekty.</p><button type="submit">Wczytaj zlecenia</button></form>
+<p id="message" role="status" aria-live="polite"></p>
+<div id="workspace" hidden>
+<section class="panel" aria-labelledby="starter-title"><h2 id="starter-title">Na początek: małe zadanie, jasny wynik</h2><p>Wybierz przykład, aby uzupełnić opis i kryteria poniżej. To ćwiczenia w zakresie obecnego profilu, nie prawdziwe ogłoszenia ani obietnica gotowej aplikacji. Możesz też wpisać własny prosty zakres.</p><div id="upwork-starters" class="actions"></div><p class="muted">Wybór nie zapisuje projektu i nie uruchamia modelu. Najpierw sprawdź opis, potem świadomie zapisz. Podczas wynajmu Vast.ai przygotowuj zakres; nie uruchamiaj analizy Qwen ani testów wykonawczych.</p><p>Opis i kryteria → zapis → analiza i odbiór zakresu → pliki → testy i poprawki → odbiór wyniku → wydanie.</p></section>
+<details class="panel"><summary>Narzędzia dodatkowe: diagnostyka próbki API</summary><p>Integracje i naprawy istniejących projektów odkładamy na później. Ta diagnostyka bada tylko wklejoną próbkę; nie potwierdza działania integracji u klienta.</p><div id="contract-probe"></div></details>
+<div class="columns"><section class="panel"><h2>1. Opisz zlecenie</h2>
+<p class="muted" id="profile"></p>
+<form id="upwork-intake">
+<label>Tytuł<input name="title" required minlength="3" maxlength="160" autocomplete="off"></label>
+<label>Adres ogłoszenia — opcjonalny<input name="source_url" type="url" maxlength="500" placeholder="https://www.upwork.com/jobs/…"><small>Adres zapisujemy jako źródło; nie otwieramy go automatycznie.</small></label>
+<label>Opis wymagań<textarea name="job_text" required minlength="30" maxlength="3000" rows="7" placeholder="Co klient chce otrzymać? Jak ma działać rezultat?"></textarea></label>
+<label>Kryteria odbioru — jedno w wierszu<textarea name="criteria" required maxlength="1927" rows="4" placeholder="Np. 8 godzin × stawka 322 daje wynik 2576."></textarea></label>
+<label>Uwagi, wyłączenia i pytania — opcjonalne<textarea name="notes" maxlength="500" rows="3"></textarea></label>
+<p class="muted">Do 8 kryteriów, po 240 znaków; łącznie do 4800 bajtów opisu z kryteriami. Długie zlecenie podziel na wyraźny, mniejszy zakres. Nic nie zostanie obcięte.</p>
+<div class="actions"><button type="submit">Zapisz zlecenie</button><button id="new-intake" type="button">Nowy formularz</button></div></form></section>
+<section class="panel"><div class="heading"><h2>Zapisane zlecenia</h2><button id="refresh" type="button">Odśwież</button></div><p class="muted">Te same projekty są dostępne w Centrum realizacji. Powrót tutaj nie uruchamia modelu ponownie.</p><div id="orders"></div><button id="more" type="button" hidden>Starsze zlecenia</button></section></div>
+<section class="panel" id="detail" hidden aria-labelledby="project-title"><p class="eyebrow">2. ANALIZA I DALSZA REALIZACJA</p><h2 id="project-title"></h2>
+<p id="binding"></p><details><summary>Zapisany zakres i kryteria</summary><pre id="saved-brief"></pre></details>
+<div id="stages" class="tasks"></div>
+<p>Przycisk poniżej przydziela kierownika i wykonawców, przygotowuje instrukcję analityka oraz uruchamia lokalny Qwen. Jeszcze nie buduje aplikacji.</p>
+<div class="actions"><button id="analyse" type="button">Analizuj zakres lokalnym Qwenem</button><button id="read-state" type="button">Odczytaj aktualny stan</button><a id="continue" href="/os/work">Odbierz zakres i przejdź do wykonawcy →</a></div>
+<p id="analysis-state" role="status"></p><pre id="analysis-result"></pre>
+<aside class="notice">Ocena SUPPORTED / CLARIFY / UNSUPPORTED jest opinią modelu. Nie jest zgodą na kontrakt ani dowodem wykonania. Przed odbiorem zakresu rozwiąż pytania i wymagania poza profilem. Następnie wykonawca generuje pliki, a Budowa i testy sprawdza je w izolacji i obsługuje automatyczne poprawki. Gotowe wydanie przekazujesz klientowi sam.</aside>
+</section></div><noscript>Ten formularz wymaga JavaScript. Włącz go, aby połączyć się z lokalnym API.</noscript></main></body></html>

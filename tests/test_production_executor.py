@@ -22,7 +22,7 @@ def test_production_executor_delegates_task_to_operation() -> None:
 
     assert received == [task]
     assert result.success is True
-    assert result.reason == "Zadanie wykonane pomyślnie"
+    assert result.reason == "Wykonawca zwrócił wynik do odbioru"
     assert result.result_content == "Operacja zakończona pomyślnie"
 
 

@@ -1,0 +1,39 @@
+{
+  "schema": "manual-model-review.v1",
+  "date": "2026-09-19",
+  "model_alias": "qwen3.8:27b",
+  "digest": "22130167c4c20e20c7b71454612966ca8e8171e9b3cc8ab6ce8aa6cbfec79643",
+  "quality_report": "/home/marcin/ai-company-workspaces/model-quality-rua3tr_6/report.json",
+  "quality_cases": {"questions": true, "calculation": true, "scope_injection": true},
+  "quality_limit": "Three synthetic structured-output cases, not proof of coding or security-review ability.",
+  "review_draft": "/tmp/qwen-runner-draft-7pwurhsj/draft.json",
+  "review_first_attempt": "truncated_output; no completed review, output not applied",
+  "review_retry": {"format": "bounded JSON schema", "num_predict": 1536, "elapsed_seconds": 6.212, "eval_count": 298},
+  "review_assessments": [
+    {
+      "claim": "Frame rejects bodies, so the owner's POST RPC makes all API requests fail.",
+      "decision": "rejected",
+      "reason": "Different JavaScript realms: frame fetch sends a GET intent via postMessage; parent performs the authenticated POST. Real browser test reached /api/total and displayed 2576."
+    },
+    {
+      "claim": "targetOrigin '*' exposes init data to any window.",
+      "decision": "rejected",
+      "reason": "Message is addressed to the exact frame.contentWindow, not broadcast. Opaque origin requires wildcard targeting. Parent verifies source and null origin before handling requests. No credentials enter frame."
+    },
+    {
+      "claim": "Stripping a leading slash resolves assets against sandbox origin and bypasses paths.",
+      "decision": "rejected",
+      "reason": "Resolver only looks up an own string property in public assets; it makes no fetch. Unsafe schemes, dot segments, doubled slashes and nonmatching paths return no source."
+    },
+    {
+      "claim": "Parent fails to validate application-reply id and permits state injection.",
+      "decision": "rejected",
+      "reason": "Parent sends replies, not receives them. It accepts application-request only with a safe integer id; frame accepts replies only from parent for existing pending IDs."
+    }
+  ],
+  "applied_model_fixes": [],
+  "training_performed": false,
+  "production_model_configuration_changed": false,
+  "routing_decision": "Advisory drafts only; no autonomous security acceptance. All suggestions require independent evidence and regression tests.",
+  "note": "Manual assessment by the primary coding agent, not an independent third-party security audit. Raw review file is temporary; this record preserves the four claims and adjudication. No private client data used."
+}

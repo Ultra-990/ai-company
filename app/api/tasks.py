@@ -67,6 +67,28 @@ class VerifyAttemptRequest(BaseModel):
     )
 
 
+class PendingReviewResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    task_id: int
+    worker_id: str
+    status: str
+    result_content: str
+    result_checksum: str
+    finished_at: datetime
+
+
+class ResultReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_id: int = Field(ge=1)
+    result_checksum: str = Field(pattern=r"^[0-9a-f]{64}$")
+    accepted: bool = Field(strict=True)
+    reason: str = Field(min_length=1, max_length=4000)
+    evidence: list[Annotated[str, Field(min_length=1, max_length=4000)]] = Field(min_length=1, max_length=50)
+
+
 class TaskCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -316,3 +338,56 @@ def verify_task_attempt(
             status_code=503,
             detail="Repozytorium zadań jest niedostępne",
         ) from exc
+
+
+@router.get("/{task_id}/review", response_model=PendingReviewResponse)
+def get_pending_result_review(
+    repository: RepositoryDependency,
+    task_id: int = Path(ge=1),
+    _: None = Depends(require_owner),
+) -> TaskAttempt:
+    """Udostępnia właścicielowi konkretną wersję wyniku do odbioru."""
+    try:
+        return repository.pending_review(task_id)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except TaskTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="Odczyt wyniku jest niedostępny") from exc
+
+
+@router.post("/{task_id}/review", response_model=TaskResponse)
+def review_task_result(
+    payload: ResultReviewRequest,
+    repository: RepositoryDependency,
+    task_id: int = Path(ge=1),
+    _: None = Depends(require_owner),
+) -> Task:
+    """Odbiór merytoryczny właściciela; samo sprawdzenie sumy to za mało."""
+    try:
+        return repository.review_result(task_id, **payload.model_dump())
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except TaskTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="Odbiór wyniku jest niedostępny") from exc
+
+
+@router.post("/{task_id}/review/retry", response_model=TaskResponse)
+def retry_reviewed_task(
+    repository: RepositoryDependency,
+    task_id: int = Path(ge=1),
+    _: None = Depends(require_owner),
+) -> Task:
+    try:
+        return repository.retry_reviewed_task(task_id)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except TaskTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="Ponowienie pracy jest niedostępne") from exc

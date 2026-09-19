@@ -1,0 +1,41 @@
+/* One palette contract, shared by every application page and dialog. */
+:root[data-palette][data-theme=light]{color-scheme:light;--ui-bg:#ffffff;--ui-panel:#f7f7f8;--ui-surface:#ededf0;--ui-text:#17171b;--ui-muted:#54545e;--ui-line:#c7c7cf;--ui-accent:#33333e;--ui-wash:#44444412;--ui-shadow:#00000020;--ui-good:#146c43;--ui-warning:#815600;--ui-danger:#af2436}
+:root[data-palette][data-theme=dark]{color-scheme:dark;--ui-bg:#000000;--ui-panel:#121214;--ui-surface:#202024;--ui-text:#f5f5f7;--ui-muted:#b4b4bf;--ui-line:#414149;--ui-accent:#e1e1e8;--ui-wash:#ffffff09;--ui-shadow:#00000099;--ui-good:#86dfb5;--ui-warning:#f4c76e;--ui-danger:#ff9dad}
+:root[data-palette=green][data-theme=light]{--ui-bg:#edf3ee;--ui-panel:#f8fcf8;--ui-surface:#deebe2;--ui-text:#172e27;--ui-muted:#4c6659;--ui-line:#adc4b6;--ui-accent:#196044;--ui-wash:#23734d12}
+:root[data-palette=green][data-theme=dark]{--ui-bg:#08120e;--ui-panel:#11231b;--ui-surface:#1c3529;--ui-text:#eaf6ee;--ui-muted:#a8c2b1;--ui-line:#3a5847;--ui-accent:#b0edca;--ui-wash:#54bd7d12}
+:root[data-palette=blue][data-theme=light]{--ui-bg:#edf4fa;--ui-panel:#f8fcff;--ui-surface:#dcebf5;--ui-text:#12364e;--ui-muted:#4b687c;--ui-line:#adc7d9;--ui-accent:#096b91;--ui-wash:#1579aa12}
+:root[data-palette=blue][data-theme=dark]{--ui-bg:#071222;--ui-panel:#10263e;--ui-surface:#1b3a53;--ui-text:#e7f6ff;--ui-muted:#a8bdce;--ui-line:#35536d;--ui-accent:#72e2f7;--ui-wash:#51caff12}
+:root[data-palette][data-theme]{--bg:var(--ui-bg);--background:var(--ui-bg);--background-light:var(--ui-surface);--panel:var(--ui-panel);--panel-hover:var(--ui-surface);--card:var(--ui-panel);--surface:var(--ui-surface);--strong:var(--ui-surface);--input:var(--ui-bg);--button:var(--ui-bg);--text:var(--ui-text);--fg:var(--ui-text);--ink:var(--ui-text);--muted:var(--ui-muted);--dim:var(--ui-muted);--border:var(--ui-line);--edge:var(--ui-line);--line:var(--ui-line);--accent:var(--ui-accent);--cyan:var(--ui-accent);--wash:var(--ui-wash);--glow:var(--ui-wash);--shadow:0 18px 45px var(--ui-shadow);--success:var(--ui-good);--green:var(--ui-good);--warning:var(--ui-warning);--yellow:var(--ui-warning);--danger:var(--ui-danger);--red:var(--ui-danger)}
+:root[data-palette] body{background:var(--ui-bg);color:var(--ui-text)}
+:root[data-palette] .spatial-window{box-shadow:0 30px 70px -24px var(--ui-shadow),inset 0 1px #ffffff18}
+.orb-moon-track{position:absolute;inset:-25%;width:150%;height:150%;overflow:visible;pointer-events:none;z-index:1}
+.planet-ring{fill:none;stroke:var(--ui-accent);stroke-width:.6;opacity:.55}
+.orb-moon{fill:var(--ui-accent);stroke:var(--ui-bg);stroke-width:.6;opacity:0;transition:opacity .18s}
+.is-orbiting .orb-moon{opacity:1}
+.ai-orb::after{display:none!important}
+.ai-orb .orb-label,.ai-orb .orb-core,.orb-hit strong,.orb-hit small{position:relative;z-index:2;pointer-events:none}
+.orb-hit strong,.orb-hit small{background:#15151bcc;color:#fff;border-radius:12px;padding:4px 8px;text-shadow:none}
+@media(prefers-reduced-motion:reduce){.orb-moon{transition:none}}
+.owner-menu .panel-close,.brain-menu .panel-close,.notification-drawer .panel-close{width:auto;font-size:14px;padding:10px;float:none;position:static;display:block;margin:0 0 16px auto}
+.delivery-header #delivery-close,.delivery-header #publishing-close{font-size:14px;white-space:nowrap;width:auto;padding:10px}
+.app-navigation{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px clamp(12px,4vw,60px);background:var(--ui-panel);border-bottom:1px solid var(--ui-line);color:var(--ui-text);font:14px/1.4 system-ui,sans-serif}
+.app-navigation a,.app-navigation button,.app-navigation select{display:inline-flex;align-items:center;min-height:44px;padding:10px 14px;border:1px solid var(--ui-line);border-radius:8px;color:var(--ui-text);background:var(--ui-bg);text-decoration:none;font:inherit;cursor:pointer;width:auto;margin:0;letter-spacing:normal}
+.app-navigation a:hover,.app-navigation button:hover{border-color:var(--ui-accent);background:var(--ui-surface)}
+.appearance-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto}.appearance-controls label{display:flex;align-items:center;gap:8px;margin:0;font:inherit}.app-navigation :focus-visible{outline:3px solid var(--ui-accent);outline-offset:3px}
+.app-navigation.has-view-switch{position:sticky;top:0;z-index:50}
+.app-navigation [hidden]{display:none!important}
+.view-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--ui-line);border-radius:14px;background:var(--ui-surface)}
+.app-navigation .view-switch a{border:0;background:transparent;min-width:82px;justify-content:center}
+.app-navigation .view-switch a[aria-current]{background:var(--ui-text);color:var(--ui-bg);box-shadow:0 2px 8px var(--ui-shadow)}
+.dialog-navigation{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 18px}.dialog-navigation button,.dialog-navigation a{font:14px/1.4 system-ui,sans-serif;border:1px solid var(--ui-line);border-radius:8px;background:var(--ui-panel);color:var(--ui-text);padding:12px;text-decoration:none;cursor:pointer}
+:root[data-palette] .legacy-page .card,:root[data-palette] .legacy-page .roadmap-card,:root[data-palette] .legacy-page .task-card{background:var(--ui-panel);border-color:var(--ui-line);color:var(--ui-text)}
+:root[data-palette] .legacy-page .subtitle{color:var(--ui-muted)}
+:root[data-palette] .legacy-page .next-move-panel{background:var(--ui-panel);border-color:var(--ui-line);color:var(--ui-text)}
+:root[data-palette] .legacy-page .next-move-header p{color:var(--ui-muted)}
+:root[data-palette] .legacy-page button{background:var(--ui-surface);color:var(--ui-text);border:1px solid var(--ui-line)}
+:root[data-palette] .legacy-page .process,:root[data-palette] .legacy-page .next-move-card{background:var(--ui-panel);color:var(--ui-text)}
+:root[data-palette] .legacy-page .step{background:var(--ui-surface);border-color:var(--ui-line)}
+:root[data-palette] .legacy-page .next-move-label{color:var(--ui-muted)}
+:root[data-palette] .legacy-page .pending{color:var(--ui-warning)}:root[data-palette] .legacy-page .approved{color:var(--ui-good)}:root[data-palette] .legacy-page .rejected{color:var(--ui-danger)}
+:root[data-palette] .legacy-page .progress-container{background:var(--ui-surface)}:root[data-palette] .legacy-page .progress-bar{background:var(--ui-accent)}
+@media(max-width:600px){.app-navigation{gap:8px}.appearance-controls{width:100%;margin-left:0;gap:8px;justify-content:space-between}.app-navigation a,.app-navigation button,.app-navigation select{padding:10px;font-size:13px}}

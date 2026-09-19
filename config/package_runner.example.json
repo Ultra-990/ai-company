@@ -1,0 +1,4 @@
+{
+  "enabled": false,
+  "image": "sha256:REPLACE_WITH_VERIFIED_LOCAL_RUNNER_IMAGE"
+}

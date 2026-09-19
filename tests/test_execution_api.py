@@ -56,7 +56,7 @@ def test_execute_next_returns_204_for_empty_queue():
         app.dependency_overrides.clear()
 
 
-def test_execute_next_completes_task(
+def test_execute_next_submits_task_for_review(
     task_repository,
     approved_task,
 ):
@@ -77,7 +77,8 @@ def test_execute_next_completes_task(
         body = response.json()
         assert body["success"] is True
         assert body["task_id"] == approved_task.id
-        assert body["task_status"] == "completed"
+        assert body["task_status"] == "in_progress"
+        assert body["awaiting_review"] is True
     finally:
         app.dependency_overrides.clear()
 
@@ -358,4 +359,3 @@ def test_execute_next_hides_executor_exception(
         assert refreshed_task.status is TaskStatus.BLOCKED
     finally:
         app.dependency_overrides.clear()
-

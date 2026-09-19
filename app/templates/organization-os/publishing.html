@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AI Company · Publikacje dla klienta</title>
+<script src="/static/organization-os/theme.js?v=4"></script><link rel="stylesheet" href="/static/organization-os/theme.css?v=2"><link rel="stylesheet" href="/static/organization-os/command.css?v=1"><link rel="stylesheet" href="/static/organization-os/delivery-center.css?v=20260912-themes"><link rel="stylesheet" href="/static/organization-os/navigation-search.css?v=1"><script src="/static/organization-os/navigation-search.js?v=1" defer></script><link rel="stylesheet" href="/static/organization-os/owner-session.css?v=1"><script src="/static/organization-os/owner-session.js?v=1" defer></script></head>
+<body><nav class="app-navigation" aria-label="Nawigacja aplikacji"><a href="/os#delivery" data-back>← Wstecz</a><a href="/os" data-home>Pulpit</a><a href="/os/work">Realizacja</a><a href="/os/clients">Historia klientów</a><a href="/os/help" data-help-link>Pomoc</a><a href="/client" data-client-entry>Panel klienta ↗</a></nav>
+<main id="command-main"><div class="page-intro"><p class="eyebrow">KONTROLOWANE PRZEKAZANIE</p><h1>Przestrzeń klienta.</h1><p>Najpierw odbierz wynik projektu. Następnie wybierz informacje, etapy i materiały, które ma otrzymać klient. Utworzenie dostępu nie pobiera opłaty ani nie otwiera serwera na Internet.</p></div>
+<button type="button" id="open-client-publishing" class="primary-button">Otwórz publikacje i dostępy →</button>
+<div class="decision-tools"><a href="/os/work">Znajdź ID projektu →</a><a href="/os/clients">Historia i odpowiedzi klienta →</a><a href="/os/client-preview">Podgląd klienta →</a></div>
+<p class="charter-note">Zaloguj właściciela w górnym pasku — sesja udostępnia formularz bez ponownego wpisywania tokena. Zamknięcie usuwa kody z formularza, ale nie cofa istniejących dostępów.</p></main>
+<dialog id="owner-menu" aria-label="Menu pomocnicze"></dialog>
+<dialog id="client-publishing" class="delivery-center" aria-labelledby="publishing-title">
+    <header class="delivery-header"><div><p class="owner-menu__eyebrow">KONTROLOWANE UDOSTĘPNIANIE</p><h2 id="publishing-title">Przestrzeń klienta</h2></div>
+      <button id="publishing-close" type="button" aria-label="Wróć do pulpitu i wyczyść kody">← Pulpit</button></header>
+    <p class="delivery-note">Klient otrzyma wyłącznie wpisane tutaj informacje. Nie udostępniamy automatycznie zadań, kodu, kosztów ani wewnętrznych opisów. Panel pozostaje lokalny — to nie konfiguruje dostępu przez Internet.</p>
+    <form id="publishing-form">
+      <div class="delivery-columns">
+        <section>
+          <label>Token właściciela <input id="publishing-token" type="password" autocomplete="off" required></label>
+          <label>ID projektu <input id="publishing-project" type="number" min="1" step="1" required></label>
+          <label>Nazwa widoczna dla klienta <input id="publishing-name" maxlength="200" required></label>
+          <label>Opis dla klienta <textarea id="publishing-summary" maxlength="4000" rows="4" required></textarea></label>
+          <h3>Workflow klienta</h3><div id="publishing-milestones"></div><button id="publishing-add-stage" type="button">Dodaj etap</button>
+          <p class="delivery-note">Do 30 etapów. Publikuj zakres, rzeczywisty rezultat i warunki odbioru. Aktualizacja zastępuje cały widok; wcześniejsza wersja pozostaje w historii.</p>
+        </section>
+        <section>
+          <label>Następny krok <textarea id="publishing-next" maxlength="1000" rows="3" required></textarea></label>
+          <label>Opublikowany postęp (%) <input id="publishing-progress" type="number" min="0" max="100" step="1" value="0" required></label>
+          <label>Status <select id="publishing-state"><option value="planned">Zaplanowany</option><option value="in_progress">W realizacji</option><option value="review">Do uzgodnienia / odbioru</option><option value="completed">Ukończony</option><option value="blocked">Zablokowany</option></select></label>
+          <label>Ważność nowego kodu (dni) <input id="publishing-days" type="number" min="1" max="30" step="1" value="7" required></label>
+        </section>
+      </div>
+      <label class="delivery-confirm"><input id="publishing-confirm" type="checkbox" required> Sprawdziłem treść i chcę udostępnić ją posiadaczowi kodu.</label>
+      <button id="publishing-create" type="submit">Utwórz dostęp do projektu</button>
+    </form>
+    <p id="publishing-message" class="delivery-status" role="status" aria-live="polite">Kod klienta ma ograniczony zakres i termin ważności.</p>
+    <section id="publishing-result" hidden>
+      <label>Kod klienta — widoczny tylko teraz <input id="publishing-client-code" readonly autocomplete="off"></label>
+      <p class="delivery-note">Klient wpisuje ten kod w <a href="/client" target="_blank" rel="noopener noreferrer">panelu klienta</a>. Nie umieszczaj kodu w adresie URL. Zamknięcie okna usuwa go z pamięci formularza, ale nie cofa dostępu.</p>
+    </section>
+    <fieldset><legend>Zarządzanie istniejącymi udostępnieniami</legend>
+      <label>ID udostępnienia <input id="publishing-share-id" type="number" min="1" step="1"></label>
+      <div class="delivery-actions"><button type="button" id="publishing-list">Pokaż dostępy projektu</button><button type="button" id="publishing-load">Wczytaj publikację do edycji</button><button type="button" id="publishing-update">Opublikuj zmiany formularza</button><button type="button" id="publishing-revoke" class="delivery-reject">Cofnij wskazany dostęp</button><a href="/os/clients">Historia projektów i aktywność klientów →</a></div>
+      <div id="publishing-shares"></div>
+    </fieldset>
+  </dialog>
+<script src="/static/organization-os/client-publishing.js?v=20260913-session" defer></script></body></html>

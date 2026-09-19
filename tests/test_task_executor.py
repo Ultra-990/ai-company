@@ -37,7 +37,7 @@ def prepare_task(repository):
     return task
 
 
-def test_orchestrator_executes_and_completes_task(tmp_path):
+def test_orchestrator_executes_and_submits_task_for_review(tmp_path):
     repository = make_repository(tmp_path)
     try:
         task = prepare_task(repository)
@@ -52,8 +52,9 @@ def test_orchestrator_executes_and_completes_task(tmp_path):
         loaded = repository.get_required(task.id)
         assert result is not None
         assert result.success is True
-        assert loaded.status is TaskStatus.COMPLETED
-        assert loaded.progress == 100
+        assert loaded.status is TaskStatus.IN_PROGRESS
+        assert loaded.progress < 100
+        assert repository.pending_review(task.id).result_content == "Trwały rezultat testowego wykonania"
     finally:
         repository.close()
 
@@ -120,4 +121,3 @@ def test_orchestrator_blocks_task_when_executor_raises(
 
     refreshed_task = task_repository.get_required(approved_task.id)
     assert refreshed_task.status is TaskStatus.BLOCKED
-
