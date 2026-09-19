@@ -58,6 +58,8 @@ def enhance(html,files,assets):
     html=html.replace('<section id="services">',gallery+(STATIC/'studio-tools.html').read_text()+'<section id="services">',1)
     html=html.replace('<a href="#services">Usługi</a>','<a href="#visuals">Scena</a><a href="#studio">Studio / funkcje</a><a href="#services">Usługi</a>',1)
     html=html.replace('<button id="theme-toggle">','<button type="button" id="studio-menu-toggle" aria-haspopup="dialog" aria-controls="studio-menu" aria-expanded="false">Studio ＋</button><button id="theme-toggle">',1)
+    strip='<div id="view-return" hidden><button type="button">← Poprzedni widok</button><span>Kliknij puste tło, aby wrócić. Wpisane dane pozostają.</span></div>'
+    html=html.replace('<main ',strip+'<main ',1) if '<main ' in html else html.replace('<body>','<body>'+strip,1)
     html=html.replace('</head>',''.join(f'<link rel="stylesheet" href="{name}.css">' for name in ('studio-gallery','studio-scene','studio-tools'))+'</head>',1)
-    html=html.replace('</body>',dialog+''.join(f'<script src="{name}.js"></script>' for name in ('studio-gallery','studio-scene','studio-tools'))+'</body>',1)
-    return html, files | {name:(STATIC/name).read_text() for name in ('studio-gallery.css','studio-gallery.js','studio-scene.css','studio-scene.js','studio-tools.css','studio-tools.js')}
+    html=html.replace('</body>',dialog+''.join(f'<script src="{name}.js"></script>' for name in ('studio-navigation','studio-gallery','studio-scene','studio-tools'))+'</body>',1)
+    return html, files | {name:(STATIC/name).read_text() for name in ('studio-gallery.css','studio-gallery.js','studio-scene.css','studio-scene.js','studio-tools.css','studio-tools.js','studio-navigation.js')}

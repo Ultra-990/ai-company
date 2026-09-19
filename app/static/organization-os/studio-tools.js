@@ -26,13 +26,16 @@
  function closeMenu(){if(menuPhase!=='open')return;menuPhase='closing';menu.dataset.phase=menuPhase;menu.close();}
  trigger.addEventListener('click',()=>{if(menuPhase!=='closed')return;jump=null;menuPhase='open';menu.dataset.phase=menuPhase;menu.showModal();trigger.setAttribute('aria-expanded','true');menu.querySelector('#studio-menu-close').focus();});
  menu.querySelector('#studio-menu-close').addEventListener('click',closeMenu);
- menu.addEventListener('click',event=>{if(event.target!==menu)return;const r=menu.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)closeMenu();});
+ menu.addEventListener('click',event=>{
+  if(event.target.closest('button,a,input,select,textarea,label,summary')||getSelection()?.toString())return;
+  if(['DIALOG','DIV','NAV','DETAILS'].includes(event.target.tagName)){event.stopPropagation();closeMenu();}
+ });
  menu.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeMenu();}});
  menu.addEventListener('cancel',event=>{event.preventDefault();closeMenu();});
  menu.querySelectorAll('[data-studio-jump]').forEach(button=>button.addEventListener('click',()=>{if(menuPhase!=='open')return;jump=document.getElementById(button.dataset.studioJump);closeMenu();}));
  menu.addEventListener('close',()=>{
   trigger.setAttribute('aria-expanded','false');
-  if(jump){jump.setAttribute('tabindex','-1');jump.focus({preventScroll:true});jump.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});jump=null;}
+  if(jump){window.StudioNavigation.go(jump,trigger);jump=null;}
   else trigger.focus({preventScroll:true});
   menuPhase='closed';menu.dataset.phase=menuPhase;
  });

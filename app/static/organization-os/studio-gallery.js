@@ -85,8 +85,8 @@
  document.querySelectorAll('[data-open-art]').forEach(b=>b.addEventListener('click',()=>open(Number(b.dataset.openArt),b)));
  dialog.querySelector('[data-close]').addEventListener('click',close);
  dialog.addEventListener('click',event=>{
-  if(event.target.closest('button,a,input,select,textarea'))return;
-  if(event.target===dialog){close();return;}
+  if(event.target.closest('button,a,input,select,textarea')||getSelection()?.toString())return;
+  if(event.target===dialog||['art-toolbar','art-controls','art-instructions'].some(c=>event.target.classList.contains(c))){event.stopPropagation();close();return;}
   if(phase==='open'&&zoom===1&&stage.contains(event.target)){
    const r=contentBox();
    if(event.clientX<r.left||event.clientX>r.left+r.width||event.clientY<r.top||event.clientY>r.top+r.height)close();

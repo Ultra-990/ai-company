@@ -1,5 +1,43 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — FORMA: brakujący powrót między sekcjami
+
+- Właściciel nie widział powrotu po kliknięciu pustego miejsca. Poprzednio
+  obsługiwano tylko modal i rozdziały sceny. Dodano lokalną historię przejść
+  linkami/menu (max24), odtworzenie scroll/fokusu i widoczny pasek powrotu.
+  Formularze/ustawienia zostają, bez historii parenta, storage czy reloadu.
+- Tło menu również wewnątrz pustych odstępów zamyka menu; puste obszary
+  toolbar/controls galerii zamykają podgląd. Kontrolki i zaznaczenie chronione.
+  Globalna nawigacja odrzuca gest przeciągnięcia/przewinięcia. Scena zachowuje
+  własną historię, respektuje wysokość paska; przywrócenie fokusu nie dopisuje
+  fałszywego rozdziału do historii. Nie zmieniono modelu ani istniejących PNG.
+- Regresja Python: 74 passed, 1 skipped/1.47s; Node testy geometrii,
+  sprężyn, briefu i kwalifikacji pustego tła; składnia 4 JS i diff OK.
+- Pierwszy Chrome audit cu5yvayg: brak inicjalizacji ramki testowej, 11.28s,
+  bez wykonanych kontroli UI. Ponowienie bez zmiany kodu pttqocv4: 1 passed
+  /21.44s. Obejrzano screenshot mobile-contextual-return.png. Hash i zakres
+  dowodów w STUDIO_MEDIA_PILOT.md; nie deklarujemy testu fizycznego iPhone.
+- Właściciel doprecyzował kółko również dla filmów/animacji. Native scroll
+  i istniejący zoom/scena zachowane i sprawdzone. Dodano kryteria przyszłego
+  wideo, bez twierdzenia, że odtwarzacz już istnieje albo został przetestowany.
+- Kolejne doprecyzowanie: model musi rozróżniać funkcję elementu od efektu.
+  Wspólny UI_INTERACTION_CONTRACT v1 dołączono do generatora wieloplikowego
+  i planera web-design: menu/nawigacja/media/scroll/zoom/wideo/powrót/dekoracje,
+  wyzwalacz/stan/alternatywa/kryterium. Test podłączenia promptów, bez inferencji
+  ani treningu i bez zmiany zamrożonego briefu FORMA. To wskazówki wymagające
+  niezależnego odbioru, nie gwarancja braku błędów modelu.
+- Uwzględniono perspektywę nowego użytkownika: cel, orientacja, spodziewany
+  rezultat, informacja zwrotna i wyjście bez ślepych zaułków. Nie deklarujemy
+  ludzkiego myślenia modelu; sprawdzamy konkretne zachowania interfejsu.
+- Test integracji promptów wykrył za długą instrukcję: 6 failed/19 passed
+  (odmowa 409 przez limit kontekstu). Skrócono wspólną instrukcję, nie podniesiono
+  limitu ani nie wyłączono bramki. Ponowienie poza sandboxem: 25 passed/1.29s,
+  z atrapą modelu, bez inferencji. Pierwszy proces testu w sandboxie zawiesił
+  się po 13 kontrolach; zakończono wyłącznie własny PID 919350 po identyfikacji.
+- Kod demonstracji uruchomiony tylko w restricted Docker i izolowanej ramce;
+  osobny headless Chrome, bez GPU/modeli, zmian DB, Windows czy Vast.ai.
+  Nakładka nadal osobna od bazowego ZIP; to poprawka podglądu, nie wydanie klienta.
+
 ## 2026-09-20 — FORMA: sprężysta przestrzeń, drzewo narzędzi i responsywne menu
 
 - Właściciel poprosił o rozbudowę poza kalkulator: ruch 3D/sprężyny, skalowanie

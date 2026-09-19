@@ -3,6 +3,13 @@ const assert=require('node:assert/strict');
 const {flightFrame}=require('../app/static/organization-os/studio-gallery.js');
 const {sceneFrame,springStep,trailPath}=require('../app/static/organization-os/studio-scene.js');
 const {buildBrief}=require('../app/static/organization-os/studio-tools.js');
+const {blankTarget}=require('../app/static/organization-os/studio-navigation.js');
+test('empty-background navigation excludes controls, text and form containers',()=>{
+ assert.equal(blankTarget(null),false);
+ for(const tagName of ['BODY','MAIN','SECTION','ARTICLE','DIV'])assert.equal(blankTarget({tagName,closest:()=>null}),true);
+ for(const tagName of ['INPUT','BUTTON','A','P','IMG','TEXTAREA'])assert.equal(blankTarget({tagName,closest:()=>null}),false);
+ assert.equal(blankTarget({tagName:'DIV',closest:()=>({tagName:'FORM'})}),false);
+});
 test('spring overshoots, converges, and is stable at low frame rates',()=>{
  for(const dt of [1/120,1/60,1/20,1]){
   let s={value:0,velocity:0},peak=0;

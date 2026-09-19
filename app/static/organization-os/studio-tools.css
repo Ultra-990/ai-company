@@ -1,4 +1,9 @@
 #studio>p:not(.visual-kicker){max-width:54rem;color:var(--mut)}
+#view-return[hidden]{display:none}#view-return{position:sticky;top:0;z-index:500;display:flex;align-items:center;gap:16px;padding:8px clamp(12px,3vw,48px);background:var(--bg);border-bottom:1px solid var(--line);box-sizing:border-box;color:var(--mut);font-size:.75rem}
+#view-return button{flex-shrink:0;min-height:44px;border-radius:0;font-size:.8rem}body:has(dialog[open]) #view-return{visibility:hidden}
+.nav-can-back #studio :is(article,label[id]),.nav-can-back main>section{scroll-margin-top:calc(var(--return-height,0px) + 16px)}
+.nav-can-back .scene-ready .scene-stage{top:var(--return-height,0px);height:calc(100svh - var(--return-height,0px))}
+@media(max-width:480px){#view-return{gap:8px}#view-return span{font-size:.65rem;line-height:1.35}}
 #studio{overflow-wrap:anywhere}.studio-surface fieldset,.studio-fields>*{min-inline-size:0}.studio-surface :is(input,select,textarea){min-width:0;max-width:100%}
 #studio h2{font-size:clamp(2.4rem,5vw,5rem);letter-spacing:-.06em;line-height:1.05}
 .studio-workbench{display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,3fr);gap:32px;margin-top:40px;align-items:start}

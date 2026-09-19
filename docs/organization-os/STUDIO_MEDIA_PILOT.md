@@ -24,6 +24,51 @@ po generacji. Nie uruchamiano ani nie zatrzymywano cudzej instancji 8188.
 
 ## Interakcje
 
+### Powrót pustym tłem między widokami (20.09.2026)
+
+Przejścia przez menu Studio i linki do sekcji zapisują poprzednie miejsce
+oraz fokus w pamięci strony (maksymalnie 24 pozycje). Kliknięcie pustego tła
+przywraca ten widok, bez przeładowania, usuwania briefu czy zmiany ustawień.
+Po przejściu pojawia się pasek **← Poprzedni widok** z podpowiedzią.
+Pasek uwzględnia rozmiar tekstu i nie zasłania sticky sceny.
+
+Priorytet powrotu: otwarty podgląd/menu → zamknięcie; scena → poprzednie
+studium; pozostałe sekcje → poprzednie miejsce na stronie. Kliknięcia
+formularzy, przycisków, linków, tekstu, zaznaczanie i przeciąganie nie są
+globalnym poleceniem cofania. Bez historii tło nie robi nic. Nie wywołujemy
+historii nadrzędnej przeglądarki i nie opuszczamy izolowanej ramki.
+Puste odstępy wewnątrz menu i wokół kontrolek galerii również zamykają widok.
+
+Audit `studio-design-o1sem2gt/studio-browser-pttqocv4/report.json`, SHA-256
+`ccf2a630f8b6bc0ebeb332d751837abcc1e741f551821fcb30864540127fedef`:
+**1 passed/21.44s**. Rzeczywiste kliknięcie pustego brzegu przy 390×844
+wraca do nagłówka, zachowując wpisany tekst. Przycisk powrotu ma taki sam
+wynik; interakcja z polem nie cofa. Nadal przechodzą kontrole kółka,
+zoomu, menu, sceny, sześciu viewportów i tekstu 200%.
+
+**Wymaganie dla przyszłego wideo:** dodanie filmu nie może blokować native
+scroll dokumentu, gestów telefonu ani kontrolek odtwarzacza. Osobna scena
+filmowa może powiązać postęp odtwarzania z pozycją przewinięcia, z dostępnymi
+kontrolkami i alternatywą reduced motion. Nie przechwytujemy globalnie kółka
+do przewijania czasu filmu. Obecny pilot zawiera PNG/animacje CSS, nie wideo;
+integracja i testy odtwarzacza pozostają do wykonania.
+
+### Kontrakt zachowania dla modeli
+
+`app/services/ui_interaction_contract.py` jest wspólną instrukcją dołączoną do
+promptu generatora aplikacji wieloplikowych i planera web-design. Model ma
+zacząć od drogi nowego użytkownika: cel, orientacja, oczekiwana akcja, informacja
+zwrotna i bezpieczny powrót. Nie zakłada znajomości ukrytych gestów. Ma następnie
+rozróżniać menu, nawigację, kartę mediów, scenę scroll, zoom, odtwarzacz,
+powrót i dekorację. Dla elementu podaje cel, wyzwalacz, stan wynikowy,
+cofnięcie, alternatywę klawiatura/dotyk i kryterium testu. Dekoracje nie
+przechwytują wejścia; film nie dostaje globalnego przejęcia kółka.
+
+To instrukcja kolejnych generacji, nie aktualizacja wag ani dowód skuteczności
+modelu. Nie zmieniono zamrożonego briefu ewaluacyjnego FORMA ani starych raportów.
+Test sprawdza podłączenie instrukcji do obu promptów; zgodność wygenerowanego UI
+nadal wymaga niezależnych testów przeglądarkowych i przeglądu wyniku.
+
 ### Studio funkcji, sprężyste tory i skalowanie (20.09.2026)
 
 Nagłówek **Studio ＋** otwiera rozwijane menu z grupami funkcji. Jest również

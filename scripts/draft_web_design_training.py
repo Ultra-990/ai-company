@@ -12,6 +12,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.services.local_ollama import OllamaProvider, configuration, ensure_idle
+from app.services.ui_interaction_contract import UI_INTERACTION_CONTRACT
 from scripts.prepare_training_data import unique_object, validate_record
 
 INSTRUCTION = '''Jesteś projektantem interfejsów. Przygotuj oryginalną, konkretną
@@ -23,7 +24,7 @@ Nie deklaruj wykonanych testów, wdrożenia, posiadania licencji ani wygrania na
 Nie kopiuj cudzej strony, logo, grafik lub kodu. Zewnętrzne media wymagają praw.
 Uwzględnij dotyk, klawiaturę, mały ekran i prefers-reduced-motion. Jeżeli efekt
 3D nie zadziała, treść i podstawowe funkcje muszą pozostać dostępne.
-To materiał treningowy pending; nie oceniaj sam swojej odpowiedzi jako approved.'''
+To materiał treningowy pending; nie oceniaj sam swojej odpowiedzi jako approved.''' + '\n' + UI_INTERACTION_CONTRACT
 FIELDS = ('art_direction', 'layout', 'interactions', 'accessibility', 'performance',
           'acceptance', 'risks')
 SCHEMA = {'type': 'object', 'additionalProperties': False, 'required': list(FIELDS),

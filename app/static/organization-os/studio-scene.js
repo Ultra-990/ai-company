@@ -38,7 +38,8 @@
  const back=journey.querySelector('[data-scene-back]'),history=[];
  const keys=['x','y','z','rx','ry','rz'];let enabled=false,frame=0,current=-1,last=0,targetProgress=0,settleDeadline=0;
  let settings={path:'helix',elasticity:55,depth:1,paused:false},poses=[],pointer={x:0,y:0},camera={x:{value:0,velocity:0},y:{value:0,velocity:0}};
- function measure(){const r=journey.getBoundingClientRect();targetProgress=clamp(-r.top/Math.max(1,journey.offsetHeight-stage.offsetHeight),0,1)*2;}
+ function stickyTop(){return parseFloat(getComputedStyle(stage).top)||0;}
+ function measure(){const r=journey.getBoundingClientRect();targetProgress=clamp((stickyTop()-r.top)/Math.max(1,journey.offsetHeight-stage.offsetHeight),0,1)*2;}
  function render(now,instant=false){
   frame=0;if(!enabled||document.hidden)return;
   // Low-FPS devices must not keep a spring running indefinitely.
@@ -63,7 +64,7 @@
   }
   trail.setAttribute('d',trailPath(targetProgress,width,stage.clientHeight,settings.path));
   section.dataset.scenePosition=targetProgress.toFixed(4);section.dataset.sceneMoving=String(moving);
-  back.disabled=history.length===0&&targetProgress<.01;
+  back.disabled=history.length===0&&targetProgress<.01&&!window.StudioNavigation?.canBack;
   stage.style.setProperty('--scene-progress',String(targetProgress/2));
   if(selected!==current){current=selected;counter.textContent=`0${selected+1} — 03`;word.textContent=['FORMA','PRZESTRZEŃ','MATERIAŁ'][selected];chapters.forEach((button,index)=>button.setAttribute('aria-current',String(index===selected)));}
   if(moving&&!settings.paused)frame=requestAnimationFrame(render);
@@ -78,13 +79,13 @@
  function go(index,behavior='smooth',remember=true){
   if(!enabled)return;
   if(remember&&Math.abs(index-targetProgress)>.01){history.push(targetProgress);if(history.length>16)history.shift();}
-  scrollTo({top:scrollY+journey.getBoundingClientRect().top+index/2*(journey.offsetHeight-stage.offsetHeight),behavior});
+  scrollTo({top:scrollY+journey.getBoundingClientRect().top-stickyTop()+index/2*(journey.offsetHeight-stage.offsetHeight),behavior});
  }
- function undo(){if(!enabled)return;go(history.length?history.pop():Math.max(0,Math.ceil(targetProgress)-1),'smooth',false);}
+ function undo(){if(!enabled)return false;if(!history.length&&targetProgress<.01)return window.StudioNavigation?.back()||false;go(history.length?history.pop():Math.max(0,Math.ceil(targetProgress)-1),'smooth',false);return true;}
  back.addEventListener('click',undo);
- stage.addEventListener('click',event=>{if(event.target.closest('button,a,input,select,textarea,summary'))return;undo();});
+ stage.addEventListener('click',event=>{if(event.target.closest('button,a,input,select,textarea,summary')||getSelection()?.toString())return;if(undo())event.stopPropagation();});
  chapters.forEach(button=>button.addEventListener('click',()=>go(Number(button.dataset.sceneChapter))));
- cards.forEach((card,index)=>card.addEventListener('focusin',()=>{if(enabled&&current!==index){go(index,'instant');measure();render(performance.now(),true);}}));
+ cards.forEach((card,index)=>card.addEventListener('focusin',()=>{if(enabled&&current!==index&&!window.StudioNavigation?.restoring){go(index,'instant');measure();render(performance.now(),true);}}));
  stage.addEventListener('pointermove',event=>{if(event.pointerType!=='mouse'||!enabled)return;const r=stage.getBoundingClientRect();pointer={x:clamp((event.clientX-r.left)/r.width-.5,-.5,.5)*8,y:clamp((event.clientY-r.top)/r.height-.5,-.5,.5)*6};schedule();});
  stage.addEventListener('pointerleave',()=>{pointer={x:0,y:0};schedule();});
  document.addEventListener('studio:motion',event=>{

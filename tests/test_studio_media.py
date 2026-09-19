@@ -58,6 +58,8 @@ def test_verified_pngs_become_data_urls_and_escaped_markup(tmp_path,monkeypatch)
     assert '<script>alert(1)</script>' not in html and '&lt;script&gt;' in html
     assert html.count('data-art=')==3 and 'id="art-viewer"' in html
     assert files['app.js']=='original' and 'studio-gallery.js' in files
+    assert 'studio-navigation.js' in files and 'id="view-return"' in html
+    assert html.index('src="studio-navigation.js"') < html.index('src="studio-tools.js"')
 
 
 @pytest.mark.parametrize('change',['status','hash','escape','size','stopped'])

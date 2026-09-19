@@ -71,7 +71,7 @@ def test_retained_studio_website(client, task_repository):
         from scripts.studio_gallery import STATIC
         observations['media_report_sha256'] = sha256(Path(media_path).read_bytes()).hexdigest()
         observations['overlay_checksums'] = {name:sha256((STATIC/name).read_bytes()).hexdigest()
-            for name in ('studio-gallery.css','studio-gallery.js','studio-scene.css','studio-scene.js','studio-tools.css','studio-tools.js','studio-tools.html')}
+            for name in ('studio-gallery.css','studio-gallery.js','studio-scene.css','studio-scene.js','studio-tools.css','studio-tools.js','studio-tools.html','studio-navigation.js')}
     def save():
         (out/'report.json').write_text(json.dumps(observations, ensure_ascii=False, indent=2))
     save()
@@ -254,6 +254,19 @@ def test_retained_studio_website(client, task_repository):
             await js("document.querySelector('#studio-menu-toggle').click();document.querySelector('[data-studio-jump=brief-builder]').click()")
             await eventually('studio-menu-opens-working-tool', "!document.querySelector('#studio-menu').open && document.activeElement.id==='brief-builder' && Math.abs(document.querySelector('#brief-builder').getBoundingClientRect().top)<innerHeight/2")
             await call('Emulation.setTouchEmulationEnabled', {'enabled':False}, session)
+            await eventually('navigation-return-strip-visible', "document.querySelector('#view-return').checkVisibility() && document.querySelector('#brief-builder').getBoundingClientRect().top>=0")
+            await js("document.querySelector('#brief-goal').click();document.querySelector('#brief-goal').value='Zachowaj ten projekt'")
+            await require('input-does-not-navigate-back', "window.StudioNavigation.canBack && document.querySelector('#view-return').checkVisibility()")
+            await shot('mobile-contextual-return')
+            await require('real-click-target-is-empty-background', "['BODY','MAIN','SECTION','DIV','ARTICLE'].includes(document.elementFromPoint(2,500).tagName)")
+            await call('Input.dispatchMouseEvent', {'type':'mousePressed','x':2,'y':500,'button':'left','clickCount':1}, session)
+            await call('Input.dispatchMouseEvent', {'type':'mouseReleased','x':2,'y':500,'button':'left','clickCount':1}, session)
+            await eventually('empty-background-restores-previous-screen', "scrollY<5 && document.activeElement.id==='studio-menu-toggle'")
+            await require('back-preserves-brief', "document.querySelector('#brief-goal').value==='Zachowaj ten projekt'")
+            await js("document.querySelector('#studio-menu-toggle').click();document.querySelector('[data-studio-jump=brief-builder]').click()")
+            await eventually('return-button-ready', "document.querySelector('#studio-menu').dataset.phase==='closed' && document.querySelector('#view-return').checkVisibility() && scrollY>100")
+            await js("document.querySelector('#view-return button').click()")
+            await eventually('explicit-return-restores-previous-screen', "scrollY<5 && document.activeElement.id==='studio-menu-toggle'")
         await require('mobile-no-overflow', "document.documentElement.scrollWidth<=innerWidth+1")
         await require('mobile-controls-not-clipped', "[...document.querySelectorAll('button,input,select,summary')].filter(e=>e.checkVisibility()).every(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.left>=-1&&r.right<=innerWidth+1})")
         await require('mobile-menu-initially-closed', "document.querySelector('#menu-toggle')?.getAttribute('aria-expanded')==='false' && !document.querySelector('#site-nav')?.checkVisibility()")
