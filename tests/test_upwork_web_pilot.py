@@ -89,6 +89,7 @@ def test_retained_studio_website(client, task_repository):
         await require('labelled-fields-and-live-result', "['service','pages','rush'].every(id=>document.getElementById(id)?.labels?.length>0) && document.querySelector('#result')?.getAttribute('aria-live')==='polite'")
         await require('skip-link', "!!document.querySelector('a[href=\"#main\"]') && document.querySelector('#main')?.getAttribute('tabindex')==='-1'")
         await require('desktop-no-overflow', "document.documentElement.scrollWidth<=innerWidth+1")
+        await require('desktop-controls-not-clipped', "[...document.querySelectorAll('button,input,select,summary')].filter(e=>e.checkVisibility()).every(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.left>=-1&&r.right<=innerWidth+1})")
         await require('light-theme', "document.documentElement.dataset.theme==='light'")
         light = await js("getComputedStyle(document.body).backgroundColor+'|'+getComputedStyle(document.documentElement).backgroundColor")
         await shot('desktop-light')
@@ -105,6 +106,7 @@ def test_retained_studio_website(client, task_repository):
 
         await viewport(390, 844)
         await require('mobile-no-overflow', "document.documentElement.scrollWidth<=innerWidth+1")
+        await require('mobile-controls-not-clipped', "[...document.querySelectorAll('button,input,select,summary')].filter(e=>e.checkVisibility()).every(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.left>=-1&&r.right<=innerWidth+1})")
         await require('mobile-menu-initially-closed', "document.querySelector('#menu-toggle')?.getAttribute('aria-expanded')==='false' && !document.querySelector('#site-nav')?.checkVisibility()")
         await js("document.querySelector('#menu-toggle').focus();document.querySelector('#menu-toggle').click()")
         await require('mobile-menu-opens', "document.querySelector('#menu-toggle').getAttribute('aria-expanded')==='true' && document.querySelector('#site-nav').checkVisibility()")
@@ -124,6 +126,12 @@ def test_retained_studio_website(client, task_repository):
         if context[0] != session:
             await call('Emulation.setEmulatedMedia', {'features':[{'name':'prefers-reduced-motion','value':'reduce'}]}, context[0])
         await require('reduced-motion', "matchMedia('(prefers-reduced-motion: reduce)').matches && [...document.querySelectorAll('*')].every(e=>getComputedStyle(e).animationDuration.split(',').every(d=>parseFloat(d)<=0.01))")
+
+        # This extra requirement belongs to the CSS design brief, not the older
+        # functional baseline. Screenshots above survive a rejected design.
+        if report.get('stage_kind') == 'css-design':
+            await viewport(1440, 1000)
+            await require('design-desktop-menu-hidden', "!document.querySelector('#menu-toggle').checkVisibility() && document.querySelector('#site-nav').checkVisibility()")
 
     try:
         asyncio.run(check(client, body, OWNER_HEADERS, cases=case.BROWSER_CASES, expected_color=None, audit=audit))

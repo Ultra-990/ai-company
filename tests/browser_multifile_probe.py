@@ -134,6 +134,7 @@ window.addEventListener('message',async e=>{
                             await asyncio.sleep(.1)
                             if await evaluate("document.querySelector('#result').textContent",context)==case['result']:break
                         else:raise AssertionError('Browser did not display expected result: '+case['result'])
+                        assert await evaluate("document.querySelector('#result').checkVisibility()",context) is True, 'Result is hidden by layout'
                     assert calls==[200 for case in cases if case['path'] is not None],calls
                     if audit is not None:
                         await audit(evaluate, context, call, session)

@@ -1,5 +1,37 @@
 # Dziennik budowy AI Company
 
+## 2026-09-19 — projektant CSS, kontrola wyniku i podgląd FORMA
+
+- Wydzielono ograniczone zadanie projektowe lokalnego Qwena. Tylko CSS,
+  niezmienne funkcje/testy, potwierdzona bazowa wersja i browser, jeden
+  wariant bez resetu wcześniejszego limitu napraw. Testy wejścia/kontraktu:
+  początkowo 47 passed/0.90s; z walidacją podglądu 62 passed/1.17s.
+- Kontrola zasobów przed generacją: Docker pusty, ComfyUI nie nasłuchuje,
+  31223 MiB wolnej pamięci GPU. Bez zmian Vast.ai, sterowników, Windows
+  czy innych procesów. Qwen zmienił wyłącznie style.css; całość z ponownymi
+  testami logiki i 8 HTTP trwała 17.703s. Nie trenowano modelu.
+- Browser funkcjonalny 1 passed/4.42s: poprawne kalkulacje, mobile/menu,
+  motywy, FAQ, kontrole braku obcięcia kontrolek, widoczność wyniku, ZIP
+  zgodny ze źródłami i zamknięta bramka wydania. Główny agent obejrzał
+  4 screenshoty. Prototyp nadal szablonowy, bez odbioru jakości premium.
+- Wymaganie z briefu CSS (ukrycie zbędnego Menu na desktopie) pominięte
+  przez model; po dodaniu osobnej kontroli projektowej realny browser:
+  1 failed/3.83s, design-desktop-menu-hidden. Zachowano porażkę i poprzedni
+  raport funkcjonalny; nie obniżano kryteriów i nie generowano bez końca.
+- Na prośbę właściciela o pokazanie efektu dodano ograniczony lokalny
+  podgląd syntetycznej witryny FORMA. To nie pulpit firmy. Bez produkcyjnej
+  bazy/tokenów, localhost, limit 120 minut/60 wycen, opaque iframe i CSP,
+  Host/Origin/CSRF, backend wyłącznie w istniejącym restricted Docker.
+  Kontrola działającego podglądu 16 passed/0.79s, w tym odmowy dostępu
+  i rzeczywista wycena 2125. Udostępniono adres właścicielowi; proces ma
+  sam zakończyć się po limicie. Nie publikowano strony klientom.
+- Narzędzia, dokładne raporty, ograniczenia i sposób ponownego otwarcia:
+  docs/organization-os/UPWORK_WEB_PILOT.md. Surowe raporty/ZIP/screenshoty
+  pozostają w prywatnym workspace; na GitHub wyłącznie kod/testy/docs.
+- Końcowa regresja: 95 passed, 5 skipped/3.20s. Pominięte wyłącznie jawne
+  pilotaże opt-in; kontrolę żywego podglądu i CSS opisano osobno powyżej.
+  `git diff --check` bez błędów.
+
 ## 2026-09-19 — syntetyczne zlecenie webowe: Qwen, poprawki, browser, ZIP
 
 - Po przypomnieniu priorytetu Upwork rozwinięto istniejący profil wieloplikowy,

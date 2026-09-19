@@ -105,3 +105,51 @@ Pod `/home/marcin/ai-company-workspaces/qwen-training/`:
 Nie dodajemy binarnych paczek, baz, konfiguracji ani surowych raportów do
 publicznego GitHub. Zachowano nieudany audit pierwszej poprawki oraz pierwszy
 zaliczony audit drugiej poprawki (przed dodaniem kontroli ZIP).
+
+## Osobny projektant CSS i podgląd właściciela
+
+`scripts/design_upwork_web_pilot.py REPORT BROWSER_REPORT --run` wykonuje
+jedną próbę zmiany wyłącznie `style.css`. Wymaga zgodnych hashy, zamrożonego
+briefu oraz zaliczonych testów backendu i przeglądarki wersji wejściowej.
+Nie zeruje limitu poprawek, nie zmienia HTML/JS/testów, nie uruchamia treningu.
+Bez `--run` jedynie sprawdza wejście. Odpowiedź projektanta, jego uwagi oraz
+złożone źródła są zapisywane oddzielnie. CSS nadal jest niezaufany: proste
+odrzucenie importów/url nie zastępuje CSP i izolacji przeglądarki.
+
+Próba z 19.09: `studio-design-o1sem2gt/report.json`, SHA-256
+`337fd0bdf4ed2af6b16c1d03e48928b6b2615dcfdd8657aaee528eab43f73c14`.
+Całość 17.703s; zmieniono tylko CSS. Backend i osiem HTTP ponownie zaliczone.
+Pierwszy audit `studio-browser-5968_3cj` zaliczył kontrole funkcjonalne
+i porównanie ZIP (1 passed/4.42s). Obejrzano cztery rzeczywiste screenshoty.
+Wygląd pozostaje prosty i szablonowy, nie jest zaakceptowany jako premium.
+Model nie wykonał m.in. jawnego wymagania ukrycia menu na desktopie.
+Dodano kontrolę tego wymagania wyłącznie dla etapu `css-design`.
+Powtórny audit `studio-browser-nyidp_ip` odrzucił tę samą wersję:
+`design-desktop-menu-hidden` (1 failed/3.83s). Oba raporty zachowano;
+starsze zaliczenie funkcji nie zastępuje późniejszej kontroli wyglądu.
+Nie ukryto porażki dodatkową generacją ani zmianą progu testu.
+
+Właściciel może obejrzeć także odrzucony wizualnie, ale działający prototyp:
+
+```bash
+.venv/bin/python scripts/serve_studio_preview.py /home/marcin/ai-company-workspaces/qwen-training/studio-design-o1sem2gt/report.json --minutes 120
+```
+
+Skrypt wypisuje losowy lokalny adres `http://127.0.0.1:PORT`. Należy otworzyć
+go na tym samym komputerze; bez logowania i bez tokena właściciela.
+Nie otwierać `index.html` bezpośrednio ani uruchamiać wygenerowanego `app.py`
+na hoście pomimo ogólnej instrukcji w samej demonstracyjnej stronie.
+To fikcyjna witryna FORMA, **nie nowy pulpit firmy i nie praca klienta**.
+
+Podgląd trwa maksymalnie 120 minut, dopuszcza do 60 obliczeń, działa wyłącznie
+na loopback. Używa istniejącej ramki o nieprzezroczystym origin i CSP,
+sprawdza Host/Origin/osobny CSRF, nie udostępnia API właściciela ani plików.
+Dozwolone jest tylko ograniczone `/api/estimate`; każde obliczenie przechodzi
+przez dotychczasowy izolowany runner z kontrolą zasobów i sprzątania.
+Brak produkcyjnej bazy, akceptacji, publikacji, zmian usług i wag modeli.
+To narzędzie lokalnego przeglądu, nie serwer do wystawienia w Internecie.
+
+Testy `tests/test_studio_preview.py` obejmują ograniczenia źródeł i żądań.
+Opcjonalny `AIC_STUDIO_PREVIEW_URL` włącza test rzeczywistego lokalnego
+podglądu: izolacja ramki, odmowa obcego Host/Origin i braku CSRF,
+brak API zadań, rzeczywisty wynik 2125. Wynik: 16 passed/0.79s.
