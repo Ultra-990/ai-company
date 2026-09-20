@@ -7,6 +7,8 @@ budowę. Przyczyna problemu nieustalona. Nie trzeba ponownie pytać o tę zgodę
 Zbudowano kompletny ZIP i osobny podgląd LAN dla telefonu — aktualne polecenia,
 artefakty, wyniki i pozostałe prace są w
 [STUDIO_BUNDLE.md](organization-os/STUDIO_BUNDLE.md).
+Naprawę pierwszego przewijania zapisano w `0bac9b4`. Następnie ukończono
+[obieg źródeł i PNG przez zadanie, testy, odbiór i ZIP](organization-os/MEDIA_PACKAGES.md).
 Poniższa lista jest zapisem stanu sprzed wznowienia.
 
 Właściciel poprosił o przygotowanie, a następnie restart komputera z powodu

@@ -18,6 +18,8 @@ from app.services.container_runner import configuration
 from app.services.execution_profiles import multifile_configuration, capabilities
 from app.services.multifile_profile import PROFILE as MULTIFILE_PROFILE, require_sources
 from app.services.application_layout import execution_profile
+from app.services.media_packages import PROFILE as MEDIA_PROFILE, bytes_of
+from app.services.media_package_runner import media_configuration
 
 ISOLATION_KEYS={'non_root','capabilities_dropped','no_new_privileges','seccomp','no_docker_socket',
                 'no_host_home','no_gpu_device','network_only_loopback','readonly_root','readonly_source'}
@@ -44,7 +46,12 @@ def start(session,task_id,package_id,package_checksum,request_id,runner,preview_
     artifact,payload=read_package(session,task_id,package_id)
     if artifact.checksum!=package_checksum:raise ValueError('Nieaktualna suma paczki.')
     files={entry['path']:entry['content'] for entry in payload['files']}
-    if execution_profile(files) == MULTIFILE_PROFILE:
+    layout = execution_profile(files, media=payload['schema'] == 'organization-os.workspace-media.v1')
+    if layout == MEDIA_PROFILE:
+        config_factory = lambda: media_configuration(preview_path is not None)
+        config = config_factory()
+        if preview_path is not None: config = config | {'request_path':validate_path(preview_path)}
+    elif layout == MULTIFILE_PROFILE:
         require_sources(files)
         if preview_path is not None:
             from app.services.multifile_preview import certified_configuration
@@ -81,16 +88,19 @@ def start(session,task_id,package_id,package_checksum,request_id,runner,preview_
     try:
         harness=json.loads(result.get('log',''))
         passed=(result.get('reason') is None and result.get('exit_code')==0 and result.get('cli_exit_code')==0 and
-                harness.get('schema')==('python-web-multifile-test.v1' if config['profile']==MULTIFILE_PROFILE else 'python-web-test.v1') and harness.get('tests_ok') is True and
+                harness.get('schema')==({MULTIFILE_PROFILE:'python-web-multifile-test.v1',MEDIA_PROFILE:'python-web-media-test.v1'}.get(config['profile'],'python-web-test.v1')) and harness.get('tests_ok') is True and
                 harness.get('http_ok') is True and harness.get('source_not_exposed') is True and
                 set(harness.get('isolation',{}))==ISOLATION_KEYS and all(v is True for v in harness['isolation'].values()) and
                 harness.get('errors')==[])
+        if config['profile'] == MEDIA_PROFILE:
+            passed = passed and harness.get('assets_ok') is True
         if preview_path is not None:
-            multifile_preview=config['profile']=='python-web-multifile-preview-v1'
+            multifile_preview=config['profile'] in ('python-web-multifile-preview-v1','python-web-media-preview-v1')
+            media_preview=config['profile']=='python-web-media-preview-v1'
             reply=harness.get('response',{})
             passed=(result.get('reason') is None and result.get('exit_code')==0 and result.get('cli_exit_code')==0
-                and harness.get('schema')==('python-web-multifile-preview.v1' if multifile_preview else 'python-web-preview.v1') and isinstance(reply.get('body'),str)
-                and len(reply['body'].encode('utf-8'))<=12000 and type(reply.get('status')) is int
+                and harness.get('schema')==('python-web-media-preview.v1' if media_preview else 'python-web-multifile-preview.v1' if multifile_preview else 'python-web-preview.v1') and isinstance(reply.get('body'),str)
+                and len(reply['body'].encode('utf-8'))<=(18000 if media_preview and preview_path=='/' else 12000) and type(reply.get('status')) is int
                 and 200<=reply['status']<=599 and isinstance(reply.get('content_type'),str))
             if multifile_preview:
                 passed=passed and set(harness.get('isolation',{}))==ISOLATION_KEYS and all(v is True for v in harness['isolation'].values()) and harness.get('errors')==[]
@@ -146,7 +156,7 @@ def validated_candidate(session,run_id):
 
 def candidate_zip(session,run_id,release=None,handoff=None):
     run,payload,report=validated_candidate(session,run_id)
-    multifile=run.profile.get('profile')==MULTIFILE_PROFILE
+    multifile=run.profile.get('profile') in (MULTIFILE_PROFILE, MEDIA_PROFILE)
     manifest={'schema':'delivery-candidate.v1','task_id':run.task_id,'package_id':run.package_id,
         'source_checksum':run.package_checksum,'test_run_id':run.id,'test_report_checksum':report.checksum,
         'accepted':False,'deployed':False,'profile':run.profile,
@@ -155,7 +165,7 @@ def candidate_zip(session,run_id,release=None,handoff=None):
         manifest.update(schema='owner-approved-delivery.v1',accepted=True,owner_review=release,client_accepted=False)
     output=io.BytesIO()
     with ZipFile(output,'w',compression=ZIP_STORED) as archive:
-        for f in payload['files']:archive.writestr('sources/'+f['path'],f['content'])
+        for f in payload['files']:archive.writestr('sources/'+f['path'],bytes_of(f))
         archive.writestr('delivery.json',canonical_json(manifest))
         archive.writestr('test-report.json',report.content)
         if handoff:
@@ -193,7 +203,7 @@ def delivery_readiness(session,run_id):
         checks.append({'key':'tests','passed':False,'message':'Brak zaliczonych testów tej paczki lub niespójne źródła i raport. Sprawdź raport wykonania.'})
         return result
     checks.append({'key':'tests','passed':True,'message':'Źródła i raport zaliczonych testów dotyczą tej samej wersji.'})
-    if run.profile.get('profile')==MULTIFILE_PROFILE:
+    if run.profile.get('profile') in (MULTIFILE_PROFILE, MEDIA_PROFILE):
         from app.services.package_acceptance import readiness
         return readiness(session,run_id,result)
     from app.services.acceptance_gate import require_current
@@ -229,7 +239,7 @@ def delivery_readiness(session,run_id):
 
 def approved_result(session,run):
     """Acceptance must be of the exact generated source, not any completed task."""
-    if run.profile.get('profile')==MULTIFILE_PROFILE:
+    if run.profile.get('profile') in (MULTIFILE_PROFILE, MEDIA_PROFILE):
         raise ValueError('Profil wielomodułowy wymaga odbioru konkretnej paczki, nie starego odbioru próby Qwen.')
     latest_run=next((r.id for r in session.scalars(select(PackageRun).where(PackageRun.package_id==run.package_id).order_by(PackageRun.id.desc())) if 'request_path' not in r.profile),None)
     if latest_run!=run.id or configuration()!=run.profile:
@@ -252,7 +262,7 @@ def approved_result(session,run):
 def release(session,run_id):
     run=session.get(PackageRun,run_id)
     if not run:raise LookupError('Brak wykonania.')
-    if run.profile.get('profile')==MULTIFILE_PROFILE:
+    if run.profile.get('profile') in (MULTIFILE_PROFILE, MEDIA_PROFILE):
         from app.services.package_acceptance import release as package_release
         return package_release(session,run_id)
     candidate_zip(session,run_id)  # validates source and test report before approval
@@ -297,7 +307,7 @@ def release_payload(artifact,run,attempt,acceptance_proof=None):
 def validated_release(session,run_id):
     """One read-only gate for the ZIP and its client-facing documents."""
     run,package,report=validated_candidate(session,run_id)
-    if run.profile.get('profile')==MULTIFILE_PROFILE:
+    if run.profile.get('profile') in (MULTIFILE_PROFILE, MEDIA_PROFILE):
         from app.services.package_acceptance import validated_release as package_release
         return package_release(session,run_id)
     from app.services.acceptance_gate import require_current

@@ -44,6 +44,9 @@ def assemble(base, changes, removals):
 def revise(session, task_id, package_id, *, request_id, base_checksum, changes, removals, purpose):
     """Caller holds BEGIN IMMEDIATE; source version + receipt + audit are atomic."""
     base, manifest = read_package(session, task_id, package_id)
+    from app.services.media_packages import NAME as MEDIA_NAME
+    if manifest['schema'] == MEDIA_NAME:
+        raise ValueError('Dla paczki z PNG zapisz nową kompletną wersję przez import źródeł i obrazów. Nie edytuj obrazów jako tekstu.')
     if base.checksum != base_checksum:
         raise ValueError('Wersja bazowa ma inną sumę. Wczytaj właściwą paczkę.')
     payload = dict(task_id=task_id, package_id=package_id, base_checksum=base_checksum,

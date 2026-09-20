@@ -31,7 +31,9 @@ def compare(session, task_id, package_id, base_id, path=None):
         left, right = old.get(path, {}).get('content', ''), new.get(path, {}).get('content', '')
         detail = dict(path=path, available=False, diff=None, reason=None)
         # Bound work before SequenceMatcher (quadratic worst case). Also bound output.
-        if any(len(s.encode('utf-8')) > MAX_DIFF_BYTES or
+        if any(entry.get('encoding') == 'base64' for entry in (old.get(path, {}), new.get(path, {}))):
+            detail['reason'] = 'Obraz binarny: porównaj sumy kontrolne lub pobierz paczki, aby obejrzeć zdjęcia.'
+        elif any(len(s.encode('utf-8')) > MAX_DIFF_BYTES or
                len(s.splitlines()) > MAX_DIFF_LINES for s in (left, right)):
             detail['reason'] = 'Plik przekracza limit 16 KiB lub 300 wierszy; pobierz paczki do przeglądu poza panelem.'
         else:

@@ -47,6 +47,13 @@ test('multifile package offers execution but no legacy QA controls',async()=>{
   assert.match(ui.elements.get('package-requirements').textContent,/Profil wielomodułowy/);
   assert(ui.requests.every(path=>path==='/api/package-runs'||path==='/api/tasks/1/workspace-packages/2'));
 });
+test('media package offers execution and full reimport instead of text editor',async()=>{
+  const ui=setup('python-web-media-v1');ui.connect();await settle();ui.load();await settle();
+  assert.equal(ui.get('run-form').hidden,false);
+  const panel=ui.elements.get('package-requirements');
+  assert.match(panel.textContent,/Źródła i zdjęcia są zapisane razem/);
+  assert.equal(panel.children.length,0);
+});
 test('multifile history keeps candidate and edits without unsupported preview or automatic repair',async()=>{
   const run={id:7,task_id:1,package_id:2,package_checksum:'a'.repeat(64),state:'passed',
     profile:{profile:'python-web-multifile-v1'},result:{},

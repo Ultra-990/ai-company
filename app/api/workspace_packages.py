@@ -14,7 +14,7 @@ from app.models.artifact import Artifact, ArtifactType
 from app.models.task import Task
 from app.services.package_edits import revise, protected_test
 from app.services.workspace_packages import (
-    PACKAGE_NAME, PackageIntegrityError, PackageNotFound, create_package,
+    PACKAGE_NAME, MEDIA_PACKAGE_NAME, PackageIntegrityError, PackageNotFound, create_package,
     package_summary, package_zip, read_package,
 )
 
@@ -26,6 +26,36 @@ class PackageRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     purpose: str = Field(min_length=1, max_length=2000)
     files: dict[str, str] = Field(min_length=1, max_length=100)
+
+
+class MediaPackageRequest(PackageRequest):
+    images: dict[str, str] = Field(min_length=1, max_length=12)
+
+
+async def media_payload(request: Request) -> MediaPackageRequest:
+    raw = bytearray()
+    async for chunk in request.stream():
+        if len(raw) + len(chunk) > 24 * 1024 * 1024:
+            raise HTTPException(413, 'Żądanie paczki z obrazami przekracza 24 MiB.')
+        raw.extend(chunk)
+    try:
+        return MediaPackageRequest.model_validate_json(raw)
+    except ValidationError as exc:
+        raise HTTPException(422, 'Oczekiwane: purpose, files (tekst), images (PNG base64).') from exc
+
+
+@router.post('/{task_id}/workspace-media-packages', status_code=201,
+             openapi_extra={'requestBody': {'required': True, 'content': {
+                 'application/json': {'schema': MediaPackageRequest.model_json_schema()}}}})
+def store_media_package(task_id: int, response: Response,
+                        payload: MediaPackageRequest = Depends(media_payload),
+                        session: Session = Depends(get_organization_session)):
+    from app.services.media_packages import create
+    def save():
+        artifact = create(session, task_id, payload.files, payload.images, payload.purpose)
+        return package_summary(*read_package(session, task_id, artifact.id))
+    from app.api.agent_packets import write
+    return write(session, response, save)
 
 
 class EditRequest(BaseModel):
@@ -106,7 +136,7 @@ def list_packages(task_id: int, response: Response,
         if session.get(Task, task_id) is None:
             raise HTTPException(404, "Nie znaleziono zadania.")
         query = select(Artifact.id).where(
-            Artifact.task_id == task_id, Artifact.name == PACKAGE_NAME,
+            Artifact.task_id == task_id, Artifact.name.in_([PACKAGE_NAME, MEDIA_PACKAGE_NAME]),
             Artifact.artifact_type == ArtifactType.SOURCE_CODE,
         )
         if before is not None:
@@ -156,6 +186,8 @@ def source_file(task_id: int, artifact_id: int, response: Response,
     entry = next((entry for entry in payload['files'] if entry['path'] == path), None)
     if entry is None:
         raise HTTPException(404, 'Nie znaleziono pliku w tej paczce.')
+    if entry.get('encoding') == 'base64':
+        raise HTTPException(409, 'Obraz jest plikiem binarnym. Pobierz ZIP paczki, aby go otworzyć.')
     response.headers['Cache-Control'] = 'no-store'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return dict(task_id=task_id, package_id=artifact_id, package_checksum=artifact.checksum,

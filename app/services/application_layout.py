@@ -3,7 +3,14 @@ REQUIRED_FILES = {'app.py', 'test_app.py', 'index.html', 'README.md'}
 OPTIONAL_FILES = {'style.css', 'app.js'}
 
 
-def execution_profile(files):
+def execution_profile(files, *, media=False):
+    from app.services.media_packages import validate, PROFILE as MEDIA_PROFILE
+    if media:
+        try:
+            validate(files)
+            return MEDIA_PROFILE
+        except (ValueError, TypeError):
+            return None
     if (REQUIRED_FILES <= set(files) <= REQUIRED_FILES | OPTIONAL_FILES
             and all(isinstance(value, str) and value.strip() for value in files.values())):
         return 'python-web-v1'

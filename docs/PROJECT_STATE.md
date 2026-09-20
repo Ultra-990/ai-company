@@ -10,8 +10,11 @@ Gotowy jest [kompletny kandydat FORMA](organization-os/STUDIO_BUNDLE.md):
 aplikacja, trzy grafiki, scena, galeria, menu, kreator briefu i nawigacja w jednym
 ZIP-ie. Odtworzony w izolacji i sprawdzony w Chrome (112 kontroli). Osobny
 podgląd działa też przez jawny adres LAN dla telefonu; nie udostępnia panelu.
-Nie jest to odbiór klienta ani wdrożenie. Kolejny krok to włączenie paczek z
-mediami do istniejących zadań, odbioru i wydawania, z zachowaniem ich bramek.
+Nie jest to odbiór klienta ani wdrożenie. [Paczki źródeł i PNG](organization-os/MEDIA_PACKAGES.md)
+są już włączone do zadań, testów, podglądu, odbioru konkretnej wersji i wydań.
+Panel `/os/build` importuje kompletny JSON; ZIP zawiera binarne obrazy.
+Obieg sprawdzono w tymczasowej bazie i izolowanym kontenerze, także w Chrome.
+Automatyczna naprawa paczek PNG pozostaje do dalszej integracji.
 Szczegóły bieżących prac i ograniczeń: WORK_LOG.md i organization-os/.
 
 Po zgłoszeniu gorszych przejść zdjęć naprawiono blokadę renderowania przed

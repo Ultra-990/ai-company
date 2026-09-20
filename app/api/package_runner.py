@@ -93,6 +93,8 @@ def preview(payload:PreviewRequest,response:Response,session:Session=Depends(get
             reply['assets']={entry['path']:entry['content'] for entry in package['files']
                              if entry['path'] in {'app.js','style.css'} or
                              (entry['path'].startswith('static/') and entry['path'].endswith(('.css','.js')))}
+            reply['assets'].update({entry['path']:'data:image/png;base64,'+entry['content']
+                for entry in package['files'] if entry.get('encoding')=='base64' and entry.get('media_type')=='image/png'})
         return reply
     except LookupError as exc:session.rollback();raise HTTPException(404,str(exc)) from exc
     except (ValueError,PackageIntegrityError) as exc:session.rollback();raise HTTPException(409,str(exc)) from exc

@@ -1,5 +1,61 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — źródła i PNG w zadaniu, testach, odbiorze i wydaniu
+
+- Po wznowieniu zakończono zapis poprawki pierwszego przewijania: commit
+  0bac9b4 i push na dotychczasową gałąź po czystych skanach staged/historii.
+  Następnie wykonano zapowiedzianą integrację pełnej paczki z procesem firmy.
+- Osobny schemat mediów i profil wykonania; tekstowe limity pozostają stare.
+  Import owner-only purpose/files/images, canonical base64, realny PNG/CRC,
+  limity ścieżek, ilości, rozmiarów i wymiarów. Hash PNG z decoded bytes,
+  checksum całej wersji obejmuje źródła i obrazy. Powtórka identycznego importu
+  pod transakcją zwraca tę samą paczkę. Stary tekstowy schemat nie może
+  aktywować profilu binarnego przez samą nazwę pliku .png.
+- Przypięty tester mediów wykorzystuje istniejący Docker bez rozszerzania
+  sieci, RAM/CPU/PID, dostępu do GPU/hosta czy limitu logów. Sprawdza izolację,
+  testy paczki, dokładne bytes/MIME wszystkich publicznych plików i prywatne
+  trasy. Błąd obrazów blokuje passed; niepewne cleanup blokuje slot.
+- Pilot media-package-pilot-rv0rwxdu: 9 wykonań passed (testy + 8 prób HTTP),
+  ten sam dokładny FORMA ZIP 957bd21a6c3e61ed5ec77638d4d19c506a2b7d3aa2c488db2b34214bc6890c05.
+  Import dodaje do przykładu niezmienione niezależne testy kalkulatora.
+  Dopiero po zaliczeniu przypięto SHA testera w profilu dostępnym przez API.
+- Syntetyczny obieg API z rzeczywistym kontenerem: 1 passed/1.75 s, wydanie
+  przed odbiorem odmówione, po testowym odbiorze ZIP z identycznymi PNG,
+  instrukcje, root preview i kalkulator 2125. Postęp zadania pozostał 0.
+  Test błędnego MIME w rzeczywistym kontenerze blokuje kandydata, mimo
+  działającej logiki. Razem z 6 wariantami unieważnienia: 7 passed/1.18 s.
+- Podgląd owner API przekazuje PNG do opaque CSP iframe, który osadza
+  względne img/src; brak pozycji inventory blokuje otwarcie. Bez CSS url(),
+  srcset i dowolnego pobierania obrazów. Chrome: 1 passed/3.19 s; 3 PNG mają
+  właściwe data URI i realne wymiary, desktopowa scena się inicjalizuje,
+  3 wyniki kalkulatora i walidacja błędnego wejścia zaliczone.
+- Dwie pierwsze próby browser test niezaliczone: odpowiedź diagnostyczna
+  z całymi data URI przekroczyła limit WebSocket 1 MiB (1.32 s), potem
+  domyślny mały viewport poprawnie użył mobilnego fallback zamiast sceny
+  desktopowej (1.32 s). Test teraz zwraca tylko metadane/boolean i jawnie
+  ustawia 1440×1000. Nie osłabiono limitów transportu ani zachowania strony.
+- /os/build ma import kompletnego JSON, wybór zapisanej paczki i istniejący
+  odbiór/wycofanie/gotowość/wydanie. Wylogowanie podczas czytania pliku
+  unieważnia wysyłkę. PNG nie trafia do edytora tekstowego ani diffu base64.
+  Centrum realizacji rozpoznaje nowy artefakt i kieruje do testów/podglądu.
+  Eksport Linux zapisuje decoded PNG, kontroluje hash i nie nadpisuje zmian.
+- Regresja Python: 162 passed/5 skipped/8.39 s. Późniejsza kontrola eksportu
+  i mediów: 38 passed/3 skipped/1.89 s. Node uruchomione bezpośrednio:
+  19 passed (import3, frame4, broker5, panel7); dodatkowy zbiorczy przebieg
+  objął również odbiór i instrukcje. Składnia JS i diff --check czyste.
+  Jedna próba pytest bez eskalacji utknęła w sandboxie przy lokalnym API;
+  przerwano wyłącznie własny PID 63752 (SIGINT nieskuteczny, SIGTERM zakończył).
+  Powtórkę wykonano z zatwierdzonym dostępem, na tymczasowych bazach.
+- Lokalny Qwen: ograniczony przegląd media-delivery-review, 4.581 s/160
+  tokenów. Zasugerował logout/read race, decoded hashes, MIME i stare dowody;
+  sprawdzono je niezależnie. Uwaga o CSP nie jest dowodem pełnego audytu.
+  Raport skopiowany do prywatnego katalogu pilota jako qwen-review.json.
+- Nie importowano do prawdziwych zadań, nie odebrano faktycznej pracy za
+  właściciela, nie wysłano klientowi ani nie wdrożono strony. Dane przykładów
+  i raporty pozostają poza publicznym Git. Bez treningu, generacji grafiki,
+  pulpitu, Windows, usług Vast.ai, obcych procesów i zmian konfiguracji hosta.
+  Dalsze ograniczenia i polecenia: organization-os/MEDIA_PACKAGES.md.
+
 ## 2026-09-20 — zdjęcia nie reagowały na pierwsze przewijanie
 
 - Właściciel doprecyzował, że pogorszyło się przełączanie zdjęć FORMA.

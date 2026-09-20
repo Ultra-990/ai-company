@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
-function setup(){
+function setup(images=false,missing=false){
   const checksum='a'.repeat(64),calls=[],messages=[],elements=new Map();let listener,handler;
   const node=()=>({hidden:true,children:[],setAttribute(){},scrollIntoView(){},
     replaceChildren(...children){this.children=children;},addEventListener(event,fn){this[event]=fn;}});
@@ -9,10 +9,10 @@ function setup(){
   const window={addEventListener(event,fn){listener=fn;}};
   async function request(url,options){
     calls.push({url,options});
-    if(!options)return {checksum,files:[{path:'static/main.js'}]};
+    if(!options)return {checksum,files:[{path:'static/main.js'},...(images?[{path:'static/photo.png',encoding:'base64',media_type:'image/png'}]:[])]};
     const body=JSON.parse(options.body);
     if(body.path!=='/'&&handler)return handler(body);
-    return {source_checksum:checksum,assets:{'static/main.js':'/* public */'},
+    return {source_checksum:checksum,assets:{'static/main.js':'/* public */',...(images&&!missing?{'static/photo.png':'data:image/png;base64,aGVsbG8='}:{})},
       response:{status:200,body:'<!doctype html><p>Application</p>',content_type:'text/html'}};
   }
   vm.runInNewContext(fs.readFileSync('app/static/organization-os/application-preview.js','utf8'),
@@ -63,4 +63,11 @@ test('request budget, local-path restriction and close are enforced before execu
   assert.equal(ui.calls.length,initial+30);assert(frame.contentWindow.replies.at(-1).error);
   ui.preview.close();await ui.send(frame,{kind:'application-request',id:32,path:'/api/total'});
   assert.equal(ui.calls.length,initial+30);assert(ui.get('application-preview').hidden);
+});
+test('PNG inventory requires provided images before preview opens',async()=>{
+  const broken=setup(true,true);await assert.rejects(broken.open(),/Brak obrazu/);
+  assert.equal(broken.frame(),undefined);
+  const ui=setup(true);await ui.open();const frame=ui.frame();
+  await ui.send(frame,{kind:'application-ready'});
+  assert.equal(frame.contentWindow.replies[0].files['static/photo.png'],'data:image/png;base64,aGVsbG8=');
 });

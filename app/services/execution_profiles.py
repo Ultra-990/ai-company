@@ -15,6 +15,12 @@ def multifile_configuration():
 
 class RoutedContainerRunner(ContainerRunner):
     def run(self, files, config, name):
+        from app.services.media_packages import PROFILE as MEDIA_PROFILE
+        if config.get('profile') == MEDIA_PROFILE:
+            from app.services.media_package_runner import MediaPackageRunner, media_configuration
+            if config != media_configuration():
+                raise ValueError('Nieaktualny profil paczki z PNG.')
+            return MediaPackageRunner().run(files, config, name)
         if config.get('profile') == PROFILE:
             if config != multifile_configuration():
                 raise ValueError('Nieaktualny profil wykonawcy wielomodułowego.')
@@ -26,7 +32,7 @@ class RoutedContainerRunner(ContainerRunner):
 
 def capabilities(profile):
     """Feature support only, not authorization, availability or readiness."""
-    if profile == PROFILE:
+    if profile in (PROFILE, 'python-web-media-v1'):
         return {'test': True, 'candidate': True, 'preview': True,
                 'automatic_repair': False, 'release': True, 'package_review': True}
     if profile == 'python-web-v1':

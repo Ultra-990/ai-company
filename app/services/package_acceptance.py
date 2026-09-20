@@ -30,12 +30,13 @@ def read_record(row):
 def context(session, run_id):
     from app.services import package_runner as runner
     run, package, report = runner.validated_candidate(session, run_id)
-    if run.profile.get('profile') != runner.MULTIFILE_PROFILE:
+    if run.profile.get('profile') not in (runner.MULTIFILE_PROFILE, runner.MEDIA_PROFILE):
         raise ValueError('Ten odbiór dotyczy profilu wielomodułowego. Dla płaskiego użyj odbioru zadania.')
     latest = next((r.id for r in session.scalars(select(PackageRun).where(
         PackageRun.package_id == run.package_id).order_by(PackageRun.id.desc()))
         if 'request_path' not in r.profile), None)
-    if latest != run.id or runner.multifile_configuration() != run.profile:
+    config = runner.media_configuration() if run.profile.get('profile') == runner.MEDIA_PROFILE else runner.multifile_configuration()
+    if latest != run.id or config != run.profile:
         raise ValueError('Odbiór wymaga najnowszego zaliczonego testu w aktualnym profilu.')
     from app.services.acceptance_gate import selected
     if selected(session, run.task_id) is not None:

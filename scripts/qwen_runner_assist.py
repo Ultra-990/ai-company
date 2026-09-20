@@ -118,8 +118,27 @@ gets HTML and scripts from this archive, images as data URLs in opaque CSP frame
 backend requests execute exact bundle sources in the restricted runner. Check
 archive corruption, missing assets, stale reports, and focus regression. No new
 model training, dependencies, GPU image generation or desktop automation.'''
+elif sys.argv[1:]==['--media-delivery-review']:
+    from scripts.compare_local_models import check_idle
+    check_idle()
+    prompt='''Review a bounded source+PNG delivery integration. Return JSON with
+risks and tests, at most four short strings each. Advisory only: no code or claims
+of execution. A separate immutable schema stores Python stdlib multifile sources
+and 1-12 PNG (4MB each, 12MB total, dimensions <=4096), canonical base64 transport,
+decoded-byte hashes. Old text schema and limits unchanged. Duplicate import same
+task+content returns same package. Owner-only import UI reads a local selected JSON;
+logout must cancel pending read before network send. No ZIP extraction on server.
+Trusted pinned harness in readonly nonroot network-none Docker verifies isolation,
+package unittest, hashes and MIME of all public assets, and denial of private paths.
+Package tests are not independent business acceptance. Synthetic pilot adds
+unchanged independent assertions. Opaque CSP iframe gets verified PNG as data URLs.
+Passed test permits candidate ZIP; final ZIP requires explicit owner review bound
+to source+PNG checksum, latest test, task scope and runner config. Tampered evidence,
+new test or revoked review blocks old release. New image means new version/review.
+No task completion, client send, deployment, auto repair, remote images or OS focus
+control. Which concrete integration gaps deserve tests? Keep under 220 words.'''
 options=configuration()|{'format':'json'}
-if sys.argv[1:] in (['--studio-interaction-review'], ['--studio-bundle-review']):
+if sys.argv[1:] in (['--studio-interaction-review'], ['--studio-bundle-review'], ['--media-delivery-review']):
     options=options|{'num_predict':800,'num_thread':4,'timeout_seconds':90}
 if sys.argv[1:]==['--preview-review']:
     options=options|{'num_predict':1536,'format':{

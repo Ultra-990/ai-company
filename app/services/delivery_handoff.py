@@ -124,14 +124,14 @@ ZIP nie zapewnia hostingu, automatycznej publikacji, SLA wsparcia ani płatnośc
 
 def documents(run, package, report, release, acceptance_proof=None):
     """Call only after source/report/current owner release have been validated."""
-    if run.profile.get('profile') not in {'python-web-v1','python-web-multifile-v1'}:
+    if run.profile.get('profile') not in {'python-web-v1','python-web-multifile-v1','python-web-media-v1'}:
         raise ValueError('Instrukcja przekazania wymaga obsługiwanego profilu Python web.')
     binding = (f'\n## Version / Wersja\n\n'
                f'Source SHA-256: {run.package_checksum}\n\n'
                f'Test report SHA-256: {report.checksum}\n')
     guides = {'CLIENT-START-HERE.md': EN_GUIDE + binding,
               'CLIENT-START-HERE.pl.md': PL_GUIDE + binding}
-    if run.profile['profile']=='python-web-multifile-v1':
+    if run.profile['profile'] in ('python-web-multifile-v1','python-web-media-v1'):
         guides={name:value.replace('unittest test_app -v','unittest discover -s tests -t . -p "test_*.py" -v')
                 for name,value in guides.items()}
     from app.services.delivery_summary import build

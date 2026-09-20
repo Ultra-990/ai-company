@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.models.artifact import Artifact, ArtifactType
 from app.models.audit import AuditEvent
 from app.services.workspace_packages import canonical_json, read_package, PackageIntegrityError
+from app.services.media_packages import bytes_of
 
 EXPORT_NAME = "organization-os.disk-export.v1"
 MARKER = ".export.json"
@@ -182,7 +183,7 @@ class WorkspaceStorage:
                                 next_fd = os.open(part, DIRECTORY_FLAGS, dir_fd=fd)
                                 os.close(fd); fd = next_fd
                                 self._private_directory(fd, os.fstat(folder).st_dev)
-                            self._write(fd, parts[-1], entry["content"].encode("utf-8"))
+                            self._write(fd, parts[-1], bytes_of(entry))
                             os.fsync(fd)
                         finally: os.close(fd)
                     self._write(folder, MARKER, marker)  # Commit marker is always last.

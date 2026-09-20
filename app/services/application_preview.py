@@ -24,6 +24,11 @@ class PreviewRunner(ContainerRunner):
         self.path = validate_path(path)
 
     def run(self, files, config, name):
+        if config.get('profile') == 'python-web-media-preview-v1':
+            from app.services.media_package_runner import MediaPackageRunner, media_configuration
+            if config != media_configuration(True) | {'request_path': self.path}:
+                raise ValueError('Nieaktualny profil podglądu PNG.')
+            return MediaPackageRunner(self.path).run(files, config, name)
         if config.get('profile') == 'python-web-multifile-preview-v1':
             from app.services.multifile_preview import MultifilePreviewRunner, certified_configuration
             if config != certified_configuration() | {'request_path': self.path}:

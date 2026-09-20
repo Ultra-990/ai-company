@@ -191,14 +191,16 @@
     $('artifacts').replaceChildren();
     if(!data.artifacts.length)$('artifacts').append(node('p','Brak zapisanych plików i dowodów.'));
     for(const a of data.artifacts){const card=node('article',undefined,'artifact');card.append(node('strong',`#${a.id} · ${a.type}`),node('p',a.description||a.name));
-      if(a.type==='source_code'&&a.name==='organization-os.workspace.v1'){
+      if(a.type==='source_code'&&['organization-os.workspace.v1','organization-os.workspace-media.v1'].includes(a.name)){
         const b=node('button','Pobierz ZIP');b.type='button';b.addEventListener('click',()=>act(()=>download(a.task_id,a.id)));
         const inspect=node('button','Sprawdź pliki');inspect.type='button';inspect.dataset.checkPackage=a.id;inspect.addEventListener('click',()=>act(()=>inspectPackage(a.task_id,a.id)));
         const disk=node('button','Zapisz na dysku Linux');disk.type='button';disk.dataset.diskExport=a.id;disk.addEventListener('click',()=>act(()=>diskExport(a.task_id,a.id,true)));
         const verify=node('button','Sprawdź zapis na dysku');verify.type='button';verify.dataset.diskVerify=a.id;verify.addEventListener('click',()=>act(()=>diskExport(a.task_id,a.id,false)));
         const preview=node('button','Podgląd strony');preview.type='button';preview.dataset.previewPackage=a.id;preview.addEventListener('click',()=>act(()=>previewPackage(a.task_id,a.id)));
         const build=node('a','Testy aplikacji Python →');build.href=`/os/build?task=${a.task_id}&package=${a.id}`;
-        const actions=node('div',undefined,'actions');actions.append(b,preview,inspect,disk,verify,build);card.append(actions);
+        const actions=node('div',undefined,'actions');actions.append(b);
+        if(a.name!=='organization-os.workspace-media.v1')actions.append(preview,inspect);
+        actions.append(disk,verify,build);card.append(actions);
       }
       if(a.type==='test_result'&&a.name==='organization-os.static-check.v1'){
         const open=node('button','Otwórz raport kontroli');open.type='button';open.dataset.checkReport=a.id;open.addEventListener('click',()=>act(()=>loadCheck(a.task_id,a.id)));card.append(open);

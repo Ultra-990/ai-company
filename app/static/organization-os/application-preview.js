@@ -23,6 +23,8 @@ window.createApplicationPreview=({request,message})=>{
     if(!files||typeof files!=='object')throw Error('Serwer nie przekazał plików podglądu. Odśwież panel.');
     for(const entry of pkg.files.filter(f=>['app.js','style.css'].includes(f.path)||(f.path.startsWith('static/')&&/\.(css|js)$/.test(f.path))))
       if(typeof files[entry.path]!=='string'||!files[entry.path].trim())throw Error('Brak treści pliku podglądu: '+entry.path);
+    for(const entry of pkg.files.filter(f=>f.encoding==='base64'&&f.media_type==='image/png'))
+      if(typeof files[entry.path]!=='string'||!files[entry.path].startsWith('data:image/png;base64,'))throw Error('Brak obrazu w podglądzie: '+entry.path);
     if(result.response.status!==200)throw Error('Serwer aplikacji nie zwrócił strony.');
     html=result.response.body;requests=0;
     frame=document.createElement('iframe');frame.title='Działający podgląd aplikacji';frame.setAttribute('sandbox','allow-scripts allow-forms');

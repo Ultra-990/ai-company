@@ -17,6 +17,7 @@ from app.models.task import Task
 from app.services.application_layout import execution_profile
 
 PACKAGE_NAME = "organization-os.workspace.v1"
+MEDIA_PACKAGE_NAME = 'organization-os.workspace-media.v1'
 MAX_FILES = 100
 MAX_FILE_BYTES = 256 * 1024
 MAX_TOTAL_BYTES = 1024 * 1024
@@ -95,7 +96,7 @@ def create_package(session: Session, task_id: int, files: dict[str, str], purpos
 def read_package(session: Session, task_id: int, artifact_id: int) -> tuple[Artifact, dict]:
     artifact = session.scalar(select(Artifact).where(
         Artifact.id == artifact_id, Artifact.task_id == task_id,
-        Artifact.name == PACKAGE_NAME, Artifact.artifact_type == ArtifactType.SOURCE_CODE,
+        Artifact.name.in_([PACKAGE_NAME, MEDIA_PACKAGE_NAME]), Artifact.artifact_type == ArtifactType.SOURCE_CODE,
     ))
     if artifact is None:
         raise PackageNotFound("Nie znaleziono paczki dla tego zadania.")
@@ -106,8 +107,12 @@ def read_package(session: Session, task_id: int, artifact_id: int) -> tuple[Arti
         payload = json.loads(content)
         entries = payload["files"]
         files = {entry["path"]: entry["content"] for entry in entries}
-        if (payload["schema"] != PACKAGE_NAME or payload["task_id"] != task_id
-                or len(files) != len(entries) or validate_files(files) != entries):
+        validator = validate_files
+        if artifact.name == MEDIA_PACKAGE_NAME:
+            from app.services.media_packages import validate
+            validator = validate
+        if (payload["schema"] != artifact.name or payload["task_id"] != task_id
+                or len(files) != len(entries) or validator(files) != entries):
             raise ValueError("Niezgodny manifest.")
     except (ValueError, TypeError, KeyError, AttributeError) as exc:
         raise PackageIntegrityError("Nieprawidłowy manifest paczki.") from exc
@@ -117,7 +122,8 @@ def read_package(session: Session, task_id: int, artifact_id: int) -> tuple[Arti
 def package_summary(artifact: Artifact, payload: dict) -> dict:
     from app.services.execution_profiles import capabilities
     entries = payload["files"]
-    profile = execution_profile({entry['path']:entry['content'] for entry in entries})
+    profile = execution_profile({entry['path']:entry['content'] for entry in entries},
+                                media=payload['schema'] == MEDIA_PACKAGE_NAME)
     created_at = artifact.created_at
     # SQLite returns naive datetimes; this model always writes UTC.
     if created_at.tzinfo is None:
@@ -140,5 +146,6 @@ def package_zip(payload: dict) -> bytes:
             info = ZipInfo(entry["path"], date_time=(1980, 1, 1, 0, 0, 0))
             info.create_system = 3
             info.external_attr = 0o100644 << 16
-            archive.writestr(info, entry["content"].encode("utf-8"))
+            from app.services.media_packages import bytes_of
+            archive.writestr(info, bytes_of(entry))
     return output.getvalue()

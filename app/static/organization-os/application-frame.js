@@ -30,6 +30,10 @@ window.addEventListener('message',e=>{
     return Object.prototype.hasOwnProperty.call(d.files,path)&&typeof d.files[path]==='string'?d.files[path]:'';
   };
   const scripts=[...parsed.querySelectorAll('script')].map(s=>s.getAttribute('src')?asset(s.getAttribute('src')):s.textContent);
+  for(const img of parsed.querySelectorAll('img[src]')){
+    const source=asset(img.getAttribute('src'));
+    if(/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(source))img.setAttribute('src',source);
+  }
   const styles=[...parsed.querySelectorAll('style,link[rel~="stylesheet"]')].map(s=>s.tagName==='STYLE'?s.textContent:asset(s.getAttribute('href')));
   const linksRootStyle=[...parsed.querySelectorAll('link[rel~="stylesheet"]')].some(s=>(s.getAttribute('href')||'').replace(/^\.?\//,'')==='style.css');
   if(!linksRootStyle&&d.files['style.css'])styles.unshift(d.files['style.css']);

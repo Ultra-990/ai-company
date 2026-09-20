@@ -105,8 +105,9 @@ nie zawiera tokenów właściciela, dostępu do bazy ani prawdziwych danych klie
 - Regresja pakowania, mediów, designu, napraw i profilu: **96 passed / 1 skipped**.
   Node: 3 testy fokusu i 8 testów geometrii/ruchu zaliczone.
 
-To emulacja Chrome, nie test fizycznego iPhone/Safari. Osobny pilot nie został
-jeszcze podłączony do produkcyjnego procesu odbioru i wydań. Pozostają dalszy
-odbiór wizualny, przegląd praw do materiałów dla rzeczywistego zlecenia oraz
-integracja paczki binarnej z zadaniami/dostawą. Nie zmieniamy ich statusów dla
-demonstracji. Paczka nie zawiera odtwarzacza wideo ani integracji płatności.
+To emulacja Chrome, nie test fizycznego iPhone/Safari. Kolejny etap dodał
+[import źródeł i PNG do zadań, odbioru i wydań](MEDIA_PACKAGES.md). Sam
+BundleRunner nadal jest osobnym pilotem; integracja korzysta z nowego
+przypiętego profilu mediów. Pozostają dalszy odbiór wizualny i przegląd praw
+do materiałów dla rzeczywistego zlecenia. Nie zmieniamy statusów prawdziwych
+zadań dla demonstracji. Paczka nie ma odtwarzacza wideo ani płatności.

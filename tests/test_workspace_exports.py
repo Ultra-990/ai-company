@@ -33,6 +33,26 @@ def package(client, repo, files=None):
 def path(task,pkg):return f"/api/tasks/{task.id}/workspace-packages/{pkg['artifact_id']}/disk-export"
 
 
+def test_media_export_preserves_png_bytes_and_detects_changed_image(client,task_repository,storage):
+    import base64
+    from tests.test_media_packages import payload
+    task=task_repository.create(title='Synthetic image disk export')
+    request=payload()
+    response=client.post(f'/api/tasks/{task.id}/workspace-media-packages',json=request,headers=OWNER_HEADERS)
+    assert response.status_code==201,response.text
+    pkg=response.json()
+    exported=client.post(path(task,pkg),headers=OWNER_HEADERS)
+    assert exported.status_code==200,exported.text
+    data=exported.json();image=Path(data['directory'])/'static/image.png'
+    assert image.read_bytes()==base64.b64decode(request['images']['static/image.png'])
+    retry=client.post(path(task,pkg),headers=OWNER_HEADERS).json()
+    assert retry['verified'] and not retry['created'] and retry['receipt_id']==data['receipt_id']
+    image.write_bytes(b'changed image')
+    assert client.get(path(task,pkg),headers=OWNER_HEADERS).status_code==409
+    assert client.post(path(task,pkg),headers=OWNER_HEADERS).status_code==409
+    assert image.read_bytes()==b'changed image'
+
+
 def test_export_bytes_private_modes_no_overwrite_and_receipt(client,task_repository,storage):
     task,pkg=package(client,task_repository)
     response=client.post(path(task,pkg),headers=OWNER_HEADERS)
