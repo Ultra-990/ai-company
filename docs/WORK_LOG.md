@@ -1,5 +1,20 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — przygotowanie restartu na polecenie właściciela
+
+- Właściciel poprosił najpierw o przygotowanie, następnie jawnie o restart
+  i kontynuację. Ochrona fokusu z 2eab5bd zapisana na origin; przyczyna myszy
+  /KWin niepotwierdzona. Restart nie jest dowodem naprawy.
+- SIGINT zamknął pięć własnych podglądów (901496, 910694, 918250, 942791,
+  953644). `docker ps` pusty, brak wykrytych aktywnych testów i runnera modelu.
+  Nie zatrzymano aplikacji użytkownika, usług Vast.ai ani obcych procesów.
+- Zachowano lokalny draft Qwen z /tmp w katalogu restart-20260920-OaBWT3
+  na Linuksie. Dodano docs/RESTART_CHECKPOINT.md z aktualnymi dowodami,
+  ograniczeniami, sposobem ponownego startu i listą niezakończonych prac.
+- Po zapisaniu/push checkpointu zaplanowane jest osobne polecenie restartu.
+  Właściciel uprzedzony o zapisaniu dokumentów i możliwości konieczności
+  ponownego otwarcia rozmowy. Nie skonfigurowano automatycznego agenta po boot.
+
 ## 2026-09-20 — FORMA: zabezpieczenie granicy przeglądarka/pulpit
 
 - Właściciel zgłosił niemożność przełączania okien Linuksa, nie przeciążenie.
