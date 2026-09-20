@@ -116,12 +116,12 @@
  stage.addEventListener('pointermove',event=>{if(reduce.matches||event.pointerType!=='mouse'||zoom<=1||phase!=='open')return;const r=stage.getBoundingClientRect();image.style.transformOrigin=`${Math.max(0,Math.min(100,(event.clientX-r.left)/r.width*100))}% ${Math.max(0,Math.min(100,(event.clientY-r.top)/r.height*100))}%`;});
  stage.addEventListener('pointerleave',()=>image.style.transformOrigin='50% 50%');
  function animate(){
-  scrollFrame=0;cards.forEach(card=>{const r=card.getBoundingClientRect();const distance=Math.max(-1,Math.min(1,(r.top+r.height/2-innerHeight/2)/innerHeight));
+  scrollFrame=0;if(document.hidden)return;cards.forEach(card=>{const r=card.getBoundingClientRect();const distance=Math.max(-1,Math.min(1,(r.top+r.height/2-innerHeight/2)/innerHeight));
    card.style.setProperty('--art-scale',reduce.matches?'1':String(1.14-Math.abs(distance)*.1));
    card.style.setProperty('--art-drift',reduce.matches?'0px':distance*16+'px');
   });
  }
- function schedule(){if(window.StudioFocus.active()&&!scrollFrame)scrollFrame=requestAnimationFrame(animate);}
+ function schedule(){if(!document.hidden&&!scrollFrame)scrollFrame=requestAnimationFrame(animate);}
  addEventListener('scroll',schedule,{passive:true});
  addEventListener('resize',()=>{finishMotion();schedule();});
  reduce.addEventListener('change',()=>{finishMotion();schedule();});schedule();

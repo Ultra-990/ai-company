@@ -15,7 +15,7 @@ from uuid import uuid4
 import websockets
 
 
-async def check(client, body, headers, *, cases=None, expected_color='rgb(0, 0, 255)', audit=None, frame_transform=None, preview_request=None):
+async def check(client, body, headers, *, cases=None, expected_color='rgb(0, 0, 255)', audit=None, frame_transform=None, preview_request=None, before_activation=None):
     cases = cases if cases is not None else [dict(inputs={}, result='2576', path='/api/total')]
     allowed_paths = {case['path'] for case in cases if case['path'] is not None}
     if preview_request is None:
@@ -140,6 +140,8 @@ window.addEventListener('message',async e=>{
                     assert context is not None,'Application frame not initialized'
                     # Activate only this offscreen target, not a desktop window.
                     await call('Page.bringToFront',session=session)
+                    if before_activation is not None:
+                        await before_activation(evaluate, context, call, session)
                     await call('Runtime.evaluate',{'expression':"document.querySelector('#app').focus()"},session)
                     if expected_color is not None:
                         assert await evaluate("getComputedStyle(document.body).color",context)==expected_color

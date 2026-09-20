@@ -1,5 +1,27 @@
 # FORMA: kompletna paczka demonstracyjna
 
+## Poprawka pierwszego przewijania — 20.09.2026
+
+Po zgłoszeniu pogorszenia przełączania zdjęć odtworzono regresję: widoczna
+ramka może przewijać się kółkiem bez uzyskania fokusu klawiatury. Warunek
+`document.hasFocus()` zatrzymywał pierwsze renderowanie i ruch zdjęć, które
+pozostawały nałożone na siebie aż do kliknięcia. Poprzedni test przed akcjami
+nadawał ramce fokus, więc nie wykrywał tego przypadku.
+
+Renderowanie sceny i paralaksy znów zależy od widoczności. Nawigacja, modal
+i przywracanie fokusu nadal wymagają aktywnego dokumentu; nie dodano żadnego
+wywołania focus. Utrata aktywności zatrzymuje bieżącą pętlę, ukryta karta nie
+renderuje. Zachowano wcześniejsze tory, geometrię, sprężyny i czasy przejść.
+
+Aktualny ZIP: `studio-bundle-9spiyivv/forma-candidate.zip`, SHA-256
+`957bd21a6c3e61ed5ec77638d4d19c506a2b7d3aa2c488db2b34214bc6890c05`.
+Audit `studio-design-o1sem2gt/studio-browser-960q0m3e/report.json` plus
+`test_studio_initial_scroll.py`: **2 passed / 30.23 s**. Nowy test od samego
+wejścia używa rzeczywistego wheel bez kliknięcia/focus: ruch do przodu i wstecz,
+trzy różne pozycje zdjęć, zero wywołań focus; ukrycie blokuje renderowanie.
+Regresja Python: 54 passed/1 skipped, Node: 11 passed. Stare ZIP-y pozostają
+zapisem historycznym; nie należy uruchamiać ich jako poprawionej wersji.
+
 ## Stan — 20.09.2026
 
 ZIP zawiera teraz aplikację, trzy PNG oraz wszystkie interakcje widoczne w
@@ -49,12 +71,14 @@ pozostaje osobno, związany sumą całego ZIP. Hash nie jest podpisem ani odbior
 
 ```bash
 .venv/bin/python scripts/serve_studio_preview.py \
-  /home/marcin/ai-company-workspaces/qwen-training/studio-bundle-txnwfeuv/forma-candidate.zip \
+  /home/marcin/ai-company-workspaces/qwen-training/studio-bundle-9spiyivv/forma-candidate.zip \
   --bundle --minutes 120
 ```
 
 Domyślnie tylko `127.0.0.1`. Dla telefonu dodać `--bind` z aktualnym adresem
 LAN komputera, np. `--bind 10.0.0.57`. Skrypt wypisuje nowy URL z losowym portem.
+Opcja `--port 32959` pozwala zachować adres przy zastępowaniu własnego podglądu.
+Nie zamyka procesu zajmującego port; zajęty port powoduje odmowę uruchomienia.
 Telefon musi mieć dostęp do tej samej sieci; adres może się zmienić po DHCP.
 Wildcard, publiczny adres i adres overlay VPN są odrzucane. Nie zmieniamy
 routera, zapory, usług systemowych ani konfiguracji panelu firmy.

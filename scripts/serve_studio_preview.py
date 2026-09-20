@@ -78,9 +78,12 @@ def main(argv=None):
     parser.add_argument('--bundle', action='store_true', help='Read complete candidate ZIP instead of base report')
     parser.add_argument('--bind', type=preview_bind, default='127.0.0.1',
                         help='Explicit private LAN address for phone preview; default loopback')
+    parser.add_argument('--port', type=int, default=0, help='Reuse a preview address; default random port')
     parser.add_argument('--media-report', type=Path, help='Optional verified local ComfyUI assets')
     parser.add_argument('--minutes', type=int, default=120, choices=range(1, 121))
     args = parser.parse_args(argv)
+    if args.port != 0 and not 1024 <= args.port <= 65535:
+        parser.error('--port must be 0 (random) or 1024–65535')
     request_runner = run_request
     if args.bundle:
         if args.media_report:
@@ -165,7 +168,7 @@ window.addEventListener('message',async e=>{
 
         def log_message(self, *args): pass
 
-    with HTTPServer((args.bind, 0), Handler) as server:
+    with HTTPServer((args.bind, args.port), Handler) as server:
         server.timeout = 1
         server.requests_left = 60
         authority = f'{args.bind}:{server.server_port}'

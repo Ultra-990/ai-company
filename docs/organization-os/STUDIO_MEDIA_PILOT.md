@@ -33,6 +33,15 @@ po generacji. Nie uruchamiano ani nie zatrzymywano cudzej instancji 8188.
 
 ## Interakcje
 
+### Regresja przewijania bez kliknięcia (20.09.2026)
+
+Zabezpieczenie fokusu z poprzedniego etapu zatrzymywało również renderowanie
+zdjęć wewnątrz widocznej ramki bez fokusu klawiatury. Kółko przewijało dokument,
+ale zdjęcia pozostawały nałożone. Usunięto zależność samego renderowania od
+fokusu, zachowując ochronę nawigacji i jego przywracania. Nie zmieniono torów
+ani czasów animacji. Dowody, test pierwszego wejścia i aktualna paczka:
+[STUDIO_BUNDLE.md](STUDIO_BUNDLE.md#poprawka-pierwszego-przewijania--20092026).
+
 ### Granica fokusu i pulpitu (20.09.2026)
 
 Po zgłoszeniu problemu z przełączaniem okien Linuksa dodano `studio-focus.js`.

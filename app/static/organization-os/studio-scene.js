@@ -41,7 +41,9 @@
  function stickyTop(){return parseFloat(getComputedStyle(stage).top)||0;}
  function measure(){const r=journey.getBoundingClientRect();targetProgress=clamp((stickyTop()-r.top)/Math.max(1,journey.offsetHeight-stage.offsetHeight),0,1)*2;}
  function render(now,instant=false){
-  frame=0;if(!enabled||!window.StudioFocus.active())return;
+  // Native wheel scroll does not give an iframe keyboard focus. Rendering the
+  // visible scene must not depend on focus or request it as a side effect.
+  frame=0;if(!enabled||document.hidden)return;
   // Low-FPS devices must not keep a spring running indefinitely.
   instant ||= now>=settleDeadline;
   const dt=last?Math.min(.05,(now-last)/1000):1/60;last=now;
@@ -69,7 +71,7 @@
   if(selected!==current){current=selected;counter.textContent=`0${selected+1} — 03`;word.textContent=['FORMA','PRZESTRZEŃ','MATERIAŁ'][selected];chapters.forEach((button,index)=>button.setAttribute('aria-current',String(index===selected)));}
   if(moving&&!settings.paused)frame=requestAnimationFrame(render);
  }
- function schedule(){settleDeadline=performance.now()+1800;if(!frame&&enabled&&!settings.paused&&window.StudioFocus.active()){last=0;frame=requestAnimationFrame(render);}}
+ function schedule(){settleDeadline=performance.now()+1800;if(!frame&&enabled&&!settings.paused&&!document.hidden){last=0;frame=requestAnimationFrame(render);}}
  function configure(){
   enabled=desktop.matches&&!reduced.matches;section.classList.toggle('scene-ready',enabled);
   if(frame)cancelAnimationFrame(frame);frame=0;last=0;poses=[];

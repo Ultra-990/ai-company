@@ -44,6 +44,14 @@ def test_preview_cannot_bind_wildcard_public_or_overlay_network(address):
         preview_bind(address)
 
 
+@pytest.mark.parametrize('port', ['-1', '80', '65536'])
+def test_preview_rejects_invalid_port_before_reading_or_running_sources(port):
+    from scripts.serve_studio_preview import main
+    with pytest.raises(SystemExit) as exc:
+        main(['unused-report.json', '--port', port])
+    assert exc.value.code == 2
+
+
 @pytest.mark.skipif(not os.environ.get('AIC_STUDIO_PREVIEW_URL'), reason='Explicit local preview only')
 def test_running_preview_has_real_calculation_and_no_owner_access():
     base = os.environ['AIC_STUDIO_PREVIEW_URL']

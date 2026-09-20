@@ -1,5 +1,39 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — zdjęcia nie reagowały na pierwsze przewijanie
+
+- Właściciel doprecyzował, że pogorszyło się przełączanie zdjęć FORMA.
+  Porównanie paczki z nakładką potwierdziło tę samą grafikę i skrypty;
+  historia wskazała warunek hasFocus dodany przy ochronie pulpitu.
+- Odtworzono wejście bez kliknięcia i bez narzędziowego focus ramki. Dokument
+  przewinął się o 1739 px, ale nie ustawił scenePosition, a wszystkie zdjęcia
+  miały identyczną macierz. Test przed poprawką: 1 failed/1.80 s. Sprzątanie
+  prywatnego Chrome zgłosiło też znany wyścig Directory not empty; nie usuwano
+  profilu ani aplikacji użytkownika. Dotychczasowy test maskował problem,
+  bo jawnie nadawał focus ramce przed kontrolami.
+- Przywrócono warunek widoczności dla renderowania sceny i paralaksy.
+  Nie zmieniono helisy, geometrii, sprężyn ani przejść modalu. Nawigacja,
+  przywracanie fokusu i zamykanie w tle zachowują dotychczasowe zabezpieczenia.
+  Nie dodano automatycznego focus. Ukryta karta nie renderuje, blur zatrzymuje
+  bieżący ruch; naturalne przewijanie widocznej ramki może go wznowić.
+- Test roboczych plików: 1 passed/2.74 s. Następnie nowy kompletny ZIP
+  studio-bundle-9spiyivv (1 288 665 bytes), SHA256
+  957bd21a6c3e61ed5ec77638d4d19c506a2b7d3aa2c488db2b34214bc6890c05.
+  Kontener zaliczony. Pełny audit studio-browser-960q0m3e + nowy test samego
+  ZIP: 2 passed/30.23 s. Fokus nadal false, zero focus(), pozycja sceny
+  0.5002, trzy różne macierze, wheel wstecz i blokada ukrytej karty zaliczone.
+- Regresja Python: 54 passed/1 skipped/1.13 s. Node: 3 testy fokusu i 8
+  geometrii/ruchu zaliczone. Składnia obu JS i diff --check bez błędów.
+- Dodano opcjonalny port podglądu (0 lub 1024–65535), żeby nie mnożyć URL-i.
+  Zamknięto wyłącznie własny poprzedni preview PID 16183 przez SIGINT i
+  zastąpiono nową paczką pod tym samym LAN URL. Serwer potwierdził nowy hash.
+  Bieżące stare karty wymagają odświeżenia. Stary ZIP zachowano jako dowód.
+  Kontrola nowego serwera pod dotychczasowym adresem: 31 passed/1.10 s.
+  Właściciel chwilowo wstrzymał pracę, następnie jawnie zezwolił ją wznowić.
+- Bez modeli, generacji obrazów, zmian DB/statusów, pulpitu, Windows,
+  sterowników, sieci, usług Vast.ai ani obcych procesów. To naprawa konkretnej
+  odtworzonej regresji; ocena wizualna właściciela pozostaje do potwierdzenia.
+
 ## 2026-09-20 — wznowienie, kompletna paczka FORMA i podgląd telefonu
 
 - Właściciel potwierdził po restarcie normalną pracę myszy i okien, polecił

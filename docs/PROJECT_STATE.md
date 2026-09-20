@@ -14,6 +14,11 @@ Nie jest to odbiór klienta ani wdrożenie. Kolejny krok to włączenie paczek z
 mediami do istniejących zadań, odbioru i wydawania, z zachowaniem ich bramek.
 Szczegóły bieżących prac i ograniczeń: WORK_LOG.md i organization-os/.
 
+Po zgłoszeniu gorszych przejść zdjęć naprawiono blokadę renderowania przed
+pierwszym kliknięciem w ramkę. Przewijanie od razu porusza zdjęcia; nie wymusza
+fokusu. Nowy test pierwszego wejścia oraz pełna regresja galerii zaliczone.
+Aktualny kandydat to `studio-bundle-9spiyivv`, szczegóły w STUDIO_BUNDLE.md.
+
 Poniższy opis fundamentów jest historycznym zapisem z początku projektu,
 nie aktualną listą wszystkich zaimplementowanych funkcji.
 
