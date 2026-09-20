@@ -15,12 +15,15 @@ from uuid import uuid4
 import websockets
 
 
-async def check(client, body, headers, *, cases=None, expected_color='rgb(0, 0, 255)', audit=None, frame_transform=None):
+async def check(client, body, headers, *, cases=None, expected_color='rgb(0, 0, 255)', audit=None, frame_transform=None, preview_request=None):
     cases = cases if cases is not None else [dict(inputs={}, result='2576', path='/api/total')]
     allowed_paths = {case['path'] for case in cases if case['path'] is not None}
-    opened = client.post('/api/package-runs/preview', headers=headers, json=body | {'request_id':str(uuid4()),'path':'/'})
-    assert opened.status_code == 200, opened.text
-    data = opened.json()
+    if preview_request is None:
+        opened = client.post('/api/package-runs/preview', headers=headers, json=body | {'request_id':str(uuid4()),'path':'/'})
+        assert opened.status_code == 200, opened.text
+        data = opened.json()
+    else:
+        data = preview_request('/')
     if frame_transform is not None:
         data['response']['body'], data['assets'] = frame_transform(data['response']['body'], data['assets'])
     init = json.dumps({'kind':'application-init', 'html':data['response']['body'], 'files':data['assets']}).replace('<','\\u003c')
@@ -60,6 +63,15 @@ window.addEventListener('message',async e=>{
             if not 0<length<=1024:self.send(b'{}',413);return
             path=json.loads(self.rfile.read(length)).get('path')
             if path not in allowed_paths:self.send(b'{}',403);return
+            if preview_request is not None:
+                try:
+                    result = preview_request(path)
+                    calls.append(200)
+                    self.send(json.dumps(result).encode(),200,{'Content-Type':'application/json'})
+                except Exception:
+                    calls.append(409)
+                    self.send(b'{"error":"Bundle probe failed"}',409)
+                return
             response=client.post('/api/package-runs/preview',headers=headers,
                 json=body|{'request_id':str(uuid4()),'path':path})
             calls.append(response.status_code)

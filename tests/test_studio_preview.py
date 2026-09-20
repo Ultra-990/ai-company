@@ -1,10 +1,11 @@
 import json
+import argparse
 import os
 import re
 
 import httpx
 import pytest
-from scripts.serve_studio_preview import estimate_path, sources
+from scripts.serve_studio_preview import estimate_path, sources, preview_bind
 from tests.test_upwork_web_design import baseline
 
 
@@ -31,10 +32,23 @@ def test_sources_are_frozen_synthetic_unpublished_candidate():
         with pytest.raises(ValueError): sources(report | changes)
 
 
+@pytest.mark.parametrize('address', ['127.0.0.1', '10.0.0.57', '192.168.1.2', '172.16.0.2'])
+def test_explicit_local_preview_addresses(address):
+    assert preview_bind(address) == address
+
+
+@pytest.mark.parametrize('address', ['0.0.0.0', '::', '8.8.8.8', '169.254.1.1',
+                                   '100.76.245.65', 'localhost', '127.1', '224.0.0.1'])
+def test_preview_cannot_bind_wildcard_public_or_overlay_network(address):
+    with pytest.raises(argparse.ArgumentTypeError):
+        preview_bind(address)
+
+
 @pytest.mark.skipif(not os.environ.get('AIC_STUDIO_PREVIEW_URL'), reason='Explicit local preview only')
 def test_running_preview_has_real_calculation_and_no_owner_access():
     base = os.environ['AIC_STUDIO_PREVIEW_URL']
-    assert re.fullmatch(r'http://127\.0\.0\.1:\d+', base)
+    match = re.fullmatch(r'http://([0-9.]+):\d+', base)
+    assert match and preview_bind(match[1])
     with httpx.Client(base_url=base, timeout=30, trust_env=False) as client:
         page = client.get('/')
         assert page.status_code == 200

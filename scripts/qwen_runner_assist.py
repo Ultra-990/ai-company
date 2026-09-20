@@ -100,8 +100,26 @@ zoom until open, no page scroll leak. All native page wheel and browser pinch
 remain intact; explicit pause is retained; reduced motion and mobile have readable
 fallback. Suggest concrete combined flow regressions and ordering risks, not a
 new framework. No actual video element or player exists in this prototype.'''
+elif sys.argv[1:]==['--studio-bundle-review']:
+    from scripts.compare_local_models import check_idle
+    check_idle()
+    prompt='''Review this bounded packaging plan. Return JSON with risks and tests,
+at most four short strings each. Advisory only; no execution or claims of tests.
+Synthetic FORMA has a verified Python stdlib backend, HTML/CSS/JS and three local
+PNG images. Today gallery/tools are injected only in preview, missing from ZIP.
+Assemble a new immutable candidate ZIP with complete HTML, original business logic,
+trusted static-route server, all interaction scripts, PNG files and checksums.
+Never overwrite baseline or mark accepted/deployed. No client data or credentials.
+Read bounded allowlisted archive entries in memory, no arbitrary ZIP extraction.
+Run exact archive bytes only inside existing nonroot network-none readonly Docker
+profile, same CPU/RAM/PID limits. Check all public assets against byte hashes,
+private source routes denied, independent business assertions unchanged. Browser
+gets HTML and scripts from this archive, images as data URLs in opaque CSP frame;
+backend requests execute exact bundle sources in the restricted runner. Check
+archive corruption, missing assets, stale reports, and focus regression. No new
+model training, dependencies, GPU image generation or desktop automation.'''
 options=configuration()|{'format':'json'}
-if sys.argv[1:]==['--studio-interaction-review']:
+if sys.argv[1:] in (['--studio-interaction-review'], ['--studio-bundle-review']):
     options=options|{'num_predict':800,'num_thread':4,'timeout_seconds':90}
 if sys.argv[1:]==['--preview-review']:
     options=options|{'num_predict':1536,'format':{

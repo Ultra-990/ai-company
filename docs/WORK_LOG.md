@@ -1,5 +1,51 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — wznowienie, kompletna paczka FORMA i podgląd telefonu
+
+- Właściciel potwierdził po restarcie normalną pracę myszy i okien, polecił
+  kontynuować budowę. Bez diagnozowania przyczyny na podstawie poprawy.
+  Repo czyste, Docker pusty, GPU 737 MiB / 1% przy wstępnej kontroli.
+- Qwen skonsultował ograniczony plan pakowania: 11.199 s / 131 tokenów,
+  draft qwen-runner-draft-ff4661ap. Wskazał integralność PNG, ZIP/traversal,
+  izolację CSP i limity pamięci. Wynik przejrzany, nie wykonano kodu modelu.
+  Nie było treningu, generacji nowych obrazów ani delegacji do innych modeli.
+- Dodano assembler, manifest i niekompresowany ZIP: aplikacja, oryginalna
+  logika, nadzorowany serwer publicznych tras, 3 PNG, wszystkie interakcje.
+  20 plików / 1 288 519 bytes. Stare źródła/raporty/ZIP-y bez zmian.
+  Odczyt tylko do pamięci z dokładnym inventory, limitami, hashami, bez
+  dowiązań/duplikatów/ekstrakcji. Nie rozszerzono profili i limitów API.
+- Nowy runner pilota zachowuje istniejącą izolację Docker. Wykonuje dokładne
+  bytes odczytane z ZIP, testy modelu i niezależne asercje, kontrolę każdego
+  publicznego zasobu (hash/MIME), API i prywatnych tras. Ramka dostaje zasoby
+  archiwum, obrazy jako data URI; backend także pochodzi z tej paczki.
+- Pierwsza próba studio-bundle-ov04aujc odmówiona przed wykonaniem przez
+  sandbox (PermissionError lokalnego socketu podczas preflight). Ponowienie
+  z zatwierdzonym dostępem: studio-bundle-txnwfeuv zaliczony. ZIP SHA-256
+  f0c898b0e36c609b85d31a75b93291a63ec08a51c5ec966b1b7fdb06a5f4ee73.
+- Chrome audit studio-browser-nrku0sg5: 1 passed / 30.52 s, 112 kontroli,
+  exact ZIP + prawdziwy kalkulator w kontenerze, granice fokusu i wcześniejsze
+  przepływy galerii/sceny/menu. Obejrzano screenshot menu 320 px. Headless
+  bez dostępu do X11/Wayland/sesyjnego D-Bus i bez GPU. Fizycznego iPhone
+  nie testowano. Wynik nie oznacza przyznania odbioru ani zmiany statusów.
+- Wcześniejszą prośbę o telefon zrealizowano osobnym preview z `--bind` na
+  jawnym prywatnym LAN IPv4. Loopback pozostaje domyślny. Brak wildcard,
+  publicznych adresów i VPN. Host/Origin/CSRF i trasy ograniczone; 60 obliczeń,
+  120 minut. Bez panelu, bazy, tokenów właściciela i konfiguracji sieci.
+- Testy: baseline 45 passed/1 skipped; pakowanie + regresja 63 passed/2 skipped
+  (ostrzeżenie świadomie zduplikowanego ZIP ograniczono w samym teście).
+  Jedna komenda regresji wskazała nieistniejący test_multifile_staging.py
+  i nie uruchomiła testów; poprawiony zestaw: 96 passed/1 skipped/2.00 s.
+  Kontrola działającego LAN i polityki adresów: 28 passed/1.04 s. Node:
+  3 testy fokusu + 8 testów ruchu/kontraktu zaliczone.
+  Po dodaniu odmowy niekompletnego raportu kontenera: 15 testów pakowania
+  passed/0.36 s. Kompilacja zmienionego Pythona i diff --check zaliczone;
+  przegląd staged obejmuje tylko zamierzony zakres, Gitleaks bez sekretów.
+- Artefakty, dokumentacja i ograniczenia: STUDIO_BUNDLE.md. Nowy kandydat
+  nie jest jeszcze częścią produkcyjnego procesu dostaw. Brak publikacji
+  strony w internecie, kontaktu z klientami, zmian DB, usług Vast.ai, Windows
+  i pulpitu. Zapis do istniejącego publicznego origin obejmuje wyłącznie kod,
+  testy i dokumentację, bez lokalnych raportów, PNG czy danych konfiguracji.
+
 ## 2026-09-20 — przygotowanie restartu na polecenie właściciela
 
 - Właściciel poprosił najpierw o przygotowanie, następnie jawnie o restart

@@ -57,10 +57,23 @@ def test_retained_studio_website(client, task_repository):
     files = verified_files(report)
     media_path = os.environ.get('AIC_STUDIO_MEDIA_REPORT')
     frame_transform = None
+    preview_request = None
     if media_path:
         from scripts.studio_gallery import load_assets, enhance
         assets = load_assets(media_path)
         frame_transform = lambda html, source_files: enhance(html, source_files, assets)
+    bundle_path = os.environ.get('AIC_STUDIO_BUNDLE')
+    if bundle_path:
+        from scripts import studio_bundle
+        bundle_files, bundle_manifest, bundle_hash = studio_bundle.read_bundle(bundle_path)
+        assert bundle_manifest['provenance']['source_report_sha256'] == sha256(raw).hexdigest()
+        assert media_path and bundle_manifest['provenance']['media_report_sha256'] == sha256(Path(media_path).read_bytes()).hexdigest()
+        frame_transform = None
+        def preview_request(path):
+            if path == '/':
+                html, frontend = studio_bundle.frame_content(bundle_files)
+                return {'response': {'body': html}, 'assets': frontend}
+            return studio_bundle.run_request(bundle_files, path)
     from scripts.compare_local_models import check_idle
     check_idle()
     out = Path(tempfile.mkdtemp(prefix='studio-browser-', dir=path.parent))
@@ -74,6 +87,10 @@ def test_retained_studio_website(client, task_repository):
             for name in ('studio-gallery.css','studio-gallery.js','studio-scene.css','studio-scene.js','studio-tools.css','studio-tools.js','studio-tools.html','studio-navigation.js','studio-focus.js')}
     def save():
         (out/'report.json').write_text(json.dumps(observations, ensure_ascii=False, indent=2))
+    if bundle_path:
+        observations['bundle_sha256'] = bundle_hash
+        observations['bundle_checksums'] = bundle_manifest['files']
+        observations.pop('overlay_checksums', None)
     save()
     body = package(client, task_repository, files)
 
@@ -359,8 +376,20 @@ def test_retained_studio_website(client, task_repository):
             await require('design-desktop-menu-hidden', "!document.querySelector('#menu-toggle').checkVisibility() && document.querySelector('#site-nav').checkVisibility()")
 
     try:
-        asyncio.run(check(client, body, OWNER_HEADERS, cases=case.BROWSER_CASES, expected_color=None, audit=audit, frame_transform=frame_transform))
+        asyncio.run(check(client, body, OWNER_HEADERS, cases=case.BROWSER_CASES, expected_color=None, audit=audit, frame_transform=frame_transform, preview_request=preview_request))
         observations['checks'].append({'id':'four-quote-interactions', 'passed':True})
+        if bundle_path:
+            run, result = studio_bundle.BundleRunner().execute(bundle_files)
+            assert result['tests_ok'] is True
+            observations['bundle_container_run'] = run
+            # Re-read the exact archive after tests: reject concurrent replacement.
+            assert studio_bundle.read_bundle(bundle_path)[2] == bundle_hash
+            observations['candidate'] = {'sha256': bundle_hash, 'owner_accepted': False,
+                                         'includes_media_overlay': True}
+            observations['checks'].append({'id':'candidate-sources-match-and-release-remains-gated', 'passed':True})
+            observations['status'] = 'passed'
+            assert task_repository.get_required(body['task_id']).progress == 0
+            return
         run_response = client.post('/api/package-runs', headers=OWNER_HEADERS, json=body)
         assert run_response.status_code == 200, run_response.text
         run = run_response.json()

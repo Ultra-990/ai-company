@@ -1,5 +1,22 @@
 # Stan projektu AI Company
 
+## Aktualizacja 20.09.2026 — wznowienie i kompletna paczka FORMA
+
+Właściciel po restarcie potwierdził poprawną pracę myszy i przełączania okien
+oraz polecił kontynuować budowę. Przyczyna wcześniejszego problemu pozostaje
+niepotwierdzona; zabezpieczenia fokusu i zakaz sterowania pulpitem obowiązują.
+
+Gotowy jest [kompletny kandydat FORMA](organization-os/STUDIO_BUNDLE.md):
+aplikacja, trzy grafiki, scena, galeria, menu, kreator briefu i nawigacja w jednym
+ZIP-ie. Odtworzony w izolacji i sprawdzony w Chrome (112 kontroli). Osobny
+podgląd działa też przez jawny adres LAN dla telefonu; nie udostępnia panelu.
+Nie jest to odbiór klienta ani wdrożenie. Kolejny krok to włączenie paczek z
+mediami do istniejących zadań, odbioru i wydawania, z zachowaniem ich bramek.
+Szczegóły bieżących prac i ograniczeń: WORK_LOG.md i organization-os/.
+
+Poniższy opis fundamentów jest historycznym zapisem z początku projektu,
+nie aktualną listą wszystkich zaimplementowanych funkcji.
+
 ## Aktualny etap
 
 Fundament aplikacji, konfiguracja oraz bramka bezpieczeństwa są gotowe.

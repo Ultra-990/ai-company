@@ -1,5 +1,14 @@
 # Punkt wznowienia — 20.09.2026
 
+## Wznowiono po restarcie
+
+Właściciel potwierdził poprawną pracę myszy i okien oraz zezwolił na dalszą
+budowę. Przyczyna problemu nieustalona. Nie trzeba ponownie pytać o tę zgodę.
+Zbudowano kompletny ZIP i osobny podgląd LAN dla telefonu — aktualne polecenia,
+artefakty, wyniki i pozostałe prace są w
+[STUDIO_BUNDLE.md](organization-os/STUDIO_BUNDLE.md).
+Poniższa lista jest zapisem stanu sprzed wznowienia.
+
 Właściciel poprosił o przygotowanie, a następnie restart komputera z powodu
 problemów myszy/przełączania okien Linuksa. Nie deklarujemy rozpoznania przyczyny
 ani naprawy KWin. Zmiany ochronne interfejsu są w commicie `2eab5bd` na gałęzi

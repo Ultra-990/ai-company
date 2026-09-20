@@ -1,9 +1,10 @@
-"""Temporary, loopback-only preview of the synthetic FORMA pilot. No live DB.
+"""Temporary preview of the synthetic FORMA pilot. No live DB.
 
 Generated Python runs only through the existing restricted container runner.
 Generated JS stays in the platform's opaque sandbox frame. Not a deployment.
 """
 import argparse
+import ipaddress
 import json
 from pathlib import Path
 import secrets
@@ -21,6 +22,18 @@ from scripts import upwork_web_case as case
 from app.services.multifile_generation import parse_sources
 from app.services.multifile_preview import MultifilePreviewRunner, certified_configuration
 from hashlib import sha256
+
+
+def preview_bind(value):
+    """Explicit local/private IPv4 only; never wildcard or public exposure."""
+    try:
+        address = ipaddress.IPv4Address(value)
+    except ipaddress.AddressValueError as exc:
+        raise argparse.ArgumentTypeError('Use 127.0.0.1 or an explicit private LAN IPv4') from exc
+    networks = ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')
+    if str(address) != '127.0.0.1' and not any(address in ipaddress.IPv4Network(n) for n in networks):
+        raise argparse.ArgumentTypeError('Only loopback or RFC1918 LAN addresses are allowed')
+    return str(address)
 
 
 def sources(report):
@@ -62,18 +75,31 @@ def run_request(files, path):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('report', type=Path)
+    parser.add_argument('--bundle', action='store_true', help='Read complete candidate ZIP instead of base report')
+    parser.add_argument('--bind', type=preview_bind, default='127.0.0.1',
+                        help='Explicit private LAN address for phone preview; default loopback')
     parser.add_argument('--media-report', type=Path, help='Optional verified local ComfyUI assets')
     parser.add_argument('--minutes', type=int, default=120, choices=range(1, 121))
     args = parser.parse_args(argv)
-    report, digest = read_report(args.report)
-    files = sources(report)
+    request_runner = run_request
+    if args.bundle:
+        if args.media_report:
+            parser.error('--bundle already contains media; do not add --media-report')
+        from scripts import studio_bundle
+        files, _, digest = studio_bundle.read_bundle(args.report)
+        studio_bundle.BundleRunner().execute(files)
+        html, frame_files = studio_bundle.frame_content(files)
+        request_runner = studio_bundle.run_request
+    else:
+        report, digest = read_report(args.report)
+        files = sources(report)
+        opening = run_request(files, '/')
+        html = opening['response']['body']
+        frame_files = {k: v for k, v in files.items() if k.endswith(('.css', '.js'))}
     # Reuse the platform frame and its existing CSP; no app startup/lifespan.
     from app.main import application_frame
     frame = application_frame()
-    opening = run_request(files, '/')
     token = secrets.token_urlsafe(32)  # Preview-only CSRF, never an owner credential.
-    html = opening['response']['body']
-    frame_files = {k: v for k, v in files.items() if k.endswith(('.css', '.js'))}
     if args.media_report:
         from scripts.studio_gallery import load_assets, enhance
         html, frame_files = enhance(html, frame_files, load_assets(args.media_report))
@@ -127,7 +153,7 @@ window.addEventListener('message',async e=>{
                 if self.server.requests_left <= 0:
                     self.send(b'{"error":"Limit 60 obliczen podgladu."}', 429); return
                 self.server.requests_left -= 1
-                reply = run_request(files, path)
+                reply = request_runner(files, path)
                 self.send(json.dumps(reply).encode(), headers={'Content-Type': 'application/json'})
             except Exception:
                 self.send(b'{"error":"Nie wykonano obliczenia: parametry, zasoby lub izolacja."}', 409,
@@ -139,10 +165,10 @@ window.addEventListener('message',async e=>{
 
         def log_message(self, *args): pass
 
-    with HTTPServer(('127.0.0.1', 0), Handler) as server:
+    with HTTPServer((args.bind, 0), Handler) as server:
         server.timeout = 1
         server.requests_left = 60
-        authority = f'127.0.0.1:{server.server_port}'
+        authority = f'{args.bind}:{server.server_port}'
         base = 'http://' + authority
         print(json.dumps({'url': base, 'minutes': args.minutes, 'source_sha256': digest,
                           'production_data_changed': False}), flush=True)

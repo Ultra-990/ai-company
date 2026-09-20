@@ -1,5 +1,14 @@
 # FORMA: Qwen → ComfyUI → interaktywna strona
 
+## Aktualizacja — kompletna paczka i telefon (20.09.2026)
+
+Powstał [odrębny kompletny kandydat ZIP](STUDIO_BUNDLE.md) z aplikacją,
+trzema PNG i interakcjami. Podgląd z `--bundle` używa plików z tego ZIP-a,
+również dla kalkulatora w kontenerze. Zaliczył 112 kontroli Chrome oraz
+niezależne testy backendu i statycznych tras. Dostęp z telefonu zapewnia
+osobny podgląd przez jawny prywatny adres LAN; panel firmy nie jest udostępniany.
+Starsze raporty i ZIP-y opisane niżej pozostają historycznymi artefaktami.
+
 ## Co działa (19.09.2026)
 
 Rzeczywisty lokalny pilot, nie makieta: Qwen przygotował trzy opisy grafik,
@@ -295,11 +304,11 @@ tokena właściciela ani prawdziwych danych klientów.
 Loader wymaga trzech PNG z lokalnego katalogu raportu, zgodnych hashy,
 rozmiarów, nagłówków i weryfikacji PNG. Tytuły/alt są escapowane, obrazy trafiają
 do istniejącej opaque ramki jako data URI; CSP nie została rozluźniona.
-Zamrożone źródła aplikacji i backend pozostają bez zmian. **Galeria/media są
-na razie osobną nakładką podglądu**, a dotychczasowy ZIP kandydata zawiera
-aplikację bazową bez nich. Raport jawnie zapisuje `includes_media_overlay=false`.
-Następny etap przed dostawą klientowi: wersjonowany pakiet aplikacja+media,
-testy jego odtwarzania i praw/licencji, integracja z produkcyjnym procesem zadań.
+Zamrożone źródła aplikacji i historyczny backend pozostają bez zmian. Starsze
+ZIP-y zawierają aplikację bazową bez nakładki (`includes_media_overlay=false`).
+Nowy [kompletny ZIP](STUDIO_BUNDLE.md) zawiera media/interakcje i ma osobne
+dowody odtwarzania. Przed rzeczywistą dostawą pozostają przegląd praw/licencji
+oraz integracja z produkcyjnym procesem zadań i odbioru.
 
 Nie jest to autonomiczny pełny workflow zlecenia ani dowód jakości Awwwards.
 Nie publikowano strony, nie odebrano zlecenia, nie wysyłano nic na Upwork.
