@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from hashlib import sha256
 import hmac
+import ipaddress
 import os
 import secrets
 import threading
@@ -21,6 +22,7 @@ class Session:
     origin: str
     fingerprint: str
     expires: float
+    local: bool = False
 
 
 SESSIONS: dict[str, Session] = {}
@@ -32,6 +34,26 @@ def digest(value: str) -> str:
 
 def fingerprint() -> str:
     return digest(os.environ.get('OWNER_API_TOKEN', '')+'\0'+os.environ.get('WORKER_API_TOKEN', ''))
+
+
+def local_access_check(request: Request):
+    """Explicit workstation mode; trust actual ASGI socket addresses, never forwarding headers."""
+    if os.environ.get('LOCAL_OWNER_ACCESS') != '1':
+        raise HTTPException(403, 'Lokalny dostęp właściciela nie jest włączony.')
+    if any(name == 'forwarded' or name.startswith('x-forwarded-') or name == 'x-real-ip'
+           for name in request.headers):
+        raise HTTPException(403, 'Lokalny dostęp wymaga bezpośredniego połączenia.')
+    server = request.scope.get('server')
+    try:
+        direct = (request.client is not None and server is not None
+                  and ipaddress.ip_address(request.client.host).is_loopback
+                  and ipaddress.ip_address(server[0]).is_loopback
+                  and request.url.hostname in {'localhost','127.0.0.1','::1'}
+                  and (request.url.port or (443 if request.url.scheme=='https' else 80)) == server[1])
+    except (ValueError, TypeError):
+        direct = False
+    if not direct:
+        raise HTTPException(403, 'Ten tryb działa wyłącznie na komputerze właściciela.')
 
 
 def origin_check(request: Request, *, mutation=False) -> str:
@@ -50,10 +72,12 @@ def origin_check(request: Request, *, mutation=False) -> str:
     return origin
 
 
-def create(request: Request) -> tuple[str, Session]:
+def create(request: Request, *, local=False) -> tuple[str, Session]:
+    if local:
+        local_access_check(request)
     origin = origin_check(request, mutation=True)
     now = time.time()
-    session = Session(secrets.token_urlsafe(32), origin, fingerprint(), now+TTL)
+    session = Session(secrets.token_urlsafe(32), origin, fingerprint(), now+TTL, local)
     raw = secrets.token_urlsafe(32)
     with LOCK:
         for key, item in list(SESSIONS.items()):
@@ -77,6 +101,8 @@ def validate(request: Request) -> Session:
             raise HTTPException(401, 'Sesja właściciela wygasła. Zaloguj się ponownie.')
     if item.origin != origin:
         raise HTTPException(403, 'Sesja należy do innego adresu panelu.')
+    if item.local:
+        local_access_check(request)
     if request.method not in {'GET', 'HEAD', 'OPTIONS'} and not hmac.compare_digest(
         request.headers.get('x-owner-csrf', '').encode(), item.csrf.encode()
     ):

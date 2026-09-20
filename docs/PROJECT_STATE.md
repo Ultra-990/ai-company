@@ -1,5 +1,14 @@
 # Stan projektu AI Company
 
+## Aktualizacja 20.09.2026 — lokalny panel bez tokena
+
+Na komputerze właściciela `http://127.0.0.1:8000/os` automatycznie otwiera
+sesję i pokazuje „Właściciel · ten komputer”. Włączono LOCAL_OWNER_ACCESS
+w prywatnym .env; token nie jest wpisywany ani przekazywany do przeglądarki.
+42 testy uprawnień/sesji i osiem rzeczywistych paneli Chrome zaliczone.
+Szczegóły: [sesja właściciela](organization-os/OWNER_SESSION.md).
+To zmiana dostępu; integracja szkoły modeli z panelem pozostaje do wykonania.
+
 ## Aktualizacja 20.09.2026 — realizacje mają wykonywać modele
 
 Właściciel skorygował kierunek: do ukończenia projektu asystent rozwija

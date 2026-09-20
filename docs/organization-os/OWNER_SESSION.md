@@ -1,5 +1,35 @@
 # Wspólne logowanie właściciela
 
+## Dostęp na komputerze właściciela — 20.09.2026
+
+Na żądanie właściciela lokalny panel otwiera sesję automatycznie, bez
+wpisywania tokena. Włączone w lokalnym `.env`: `LOCAL_OWNER_ACCESS=1`.
+Przykładowa konfiguracja w repo domyślnie ma 0. Uruchomienie:
+
+```bash
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --env-file .env --no-proxy-headers
+```
+
+Wejście: `http://127.0.0.1:8000/os`. W pasku pojawia się
+„Właściciel · ten komputer”. Przyciski logowania/wylogowania i formularze
+podawania tokena są ukryte w tym trybie, a istniejące panele odczytują dane
+przez wspólną sesję. Nowa wizyta lub wygaśnięcie sesji nie wymaga tokena.
+Nie ma automatycznego zatwierdzania zadań, uruchamiania modeli ani publikacji.
+
+`POST /api/owner-session/local` wymaga włączonego trybu, bezpośredniego
+połączenia loopback po obu stronach gniazda ASGI, zgodnego lokalnego Host
+i portu, Origin/X-Owner-Origin i właściwego Sec-Fetch-Site. Nagłówki proxy
+są odrzucane. Powstaje zwykła sesja HttpOnly/SameSite z ochroną CSRF;
+lokalność jest sprawdzana także przy używaniu jej cookie. Sesja nie daje
+uprawnień Worker. Klient ASGI nie udostępnia tego endpointu.
+To świadomie wybrany dostęp dla procesów/przeglądarek tego komputera,
+nie rozpoznawanie konkretnego konta systemowego ani dostęp z LAN.
+
+Kontrole: 42 testy sesji/pochodzenia/uprawnień oraz rzeczywisty headless
+Chrome na ośmiu panelach; nowa wizyta, ukryte pola i chroniony odczyt.
+Test nie wysyła tokena ani nie tworzy zadań. Instrukcja poniżej opisuje
+zachowany tryb tokenowy, używany gdy lokalny dostęp jest wyłączony.
+
 Wdrożenie: 2026-09-13. W górnym pasku `/os` kliknij **Zaloguj właściciela**,
 wpisz skonfigurowany token i zatwierdź. Kolejne panele korzystają z jednej
 sesji bez ponownego kopiowania tokena.

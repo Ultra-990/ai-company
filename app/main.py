@@ -209,7 +209,7 @@ def client_history_page() -> FileResponse:
 @app.get("/os/client-preview", response_class=HTMLResponse)
 def owner_client_preview() -> HTMLResponse:
     source = (Path(__file__).resolve().parent / "templates/organization-os/client.html").read_text(encoding="utf-8")
-    source = source.replace('</head>', '<link rel="stylesheet" href="/static/organization-os/owner-session.css?v=1"><script src="/static/organization-os/owner-session.js?v=1" defer></script></head>')
+    source = source.replace('</head>', '<link rel="stylesheet" href="/static/organization-os/owner-session.css?v=20260920-local"><script src="/static/organization-os/owner-session.js?v=20260920-local" defer></script></head>')
     source = source.replace('<body>', '<body data-owner-preview="true">').replace('href="/client" data-back', 'href="/os/clients" data-back').replace('href="/client" data-home>Panel klienta', 'href="/os" data-home>Pulpit')
     return HTMLResponse(source, headers={"Cache-Control":"no-store", "Referrer-Policy":"no-referrer",
         "Content-Security-Policy":"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"})

@@ -57,7 +57,7 @@
     if(!owner)body.append(make('p',state.next?`${state.next.title} — ${state.next.reason||''}`:'Rekomendacja jest niedostępna. Zobacz bieżące projekty.'));
     const entries=owner?[['Stan organizacji','#overview'],['Powiadomienia i decyzje','#decisions'],['Zlecenia i przydziały','/os/work'],['Odbiór zadań i pliki','/os/review'],['Publikacje dla klientów','/os/publishing'],['Historia projektów i klientów','/os/clients'],['Podgląd panelu klienta','/os/client-preview']]:[['Odpowiedzialność działów','#departments'],['Przydziel role w projekcie','/os/work'],['Instrukcje, wyniki i kolejka próbna','/os/work']];
     for(const [title,path] of entries){const a=link(`${title} →`,path);a.addEventListener('click',()=>$('command-menu').close());body.append(a);}
-    body.append(make('p',owner?'Publikujesz wyłącznie sprawdzone materiały. Token właściciela podajesz tylko w narzędziach, które go wymagają.':'Brain nie wykonuje obecnie autonomicznej pracy. Kolejka próbna nie uruchamia modelu, GPU ani procesów klienta.'));
+    body.append(make('p',owner?'Publikujesz wyłącznie sprawdzone materiały. Na tym komputerze panel może korzystać z automatycznego dostępu właściciela.':'Brain nie wykonuje obecnie autonomicznej pracy. Kolejka próbna nie uruchamia modelu, GPU ani procesów klienta.'));
     $('command-menu').showModal();
   }
   async function refresh(){

@@ -18,7 +18,7 @@
   window.OwnerSession={fetch:request,get active(){return !!session;}};
   async function boot(){
     const nav=document.querySelector('.app-navigation');if(!nav)return;
-    const button=make('button','Zaloguj właściciela');button.type='button';button.id='owner-session-button';
+    const button=make('button','Zaloguj właściciela');button.type='button';button.id='owner-session-button';button.hidden=true;
     const state=make('span','');state.id='owner-session-state';state.setAttribute('role','status');nav.append(state,button);
     const dialog=make('dialog');dialog.id='owner-session-dialog';dialog.setAttribute('aria-labelledby','owner-session-title');
     const title=make('h2','Jedno logowanie właściciela');title.id='owner-session-title';
@@ -52,14 +52,23 @@
       const r=await fetch(endpoint,{headers:{'X-Owner-Origin':location.origin},credentials:'same-origin',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(5000)});
       if(r.ok){const data=await r.json();if(data.authenticated&&typeof data.csrf==='string'&&data.expires_at*1000>Date.now())session=data;}
     }catch{state.textContent='Nie potwierdzono sesji.';}
-    if(!session)return;
-    button.textContent='Wyloguj właściciela';state.textContent='Właściciel zalogowany';
+    if(!session&&['localhost','127.0.0.1','[::1]'].includes(location.hostname)){
+      try{
+        const r=await fetch(endpoint+'/local',{method:'POST',headers:{'X-Owner-Origin':location.origin},credentials:'same-origin',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(5000)});
+        if(r.ok){const data=await r.json();if(data.authenticated&&data.mode==='local'&&typeof data.csrf==='string'&&data.expires_at*1000>Date.now())session=data;}
+      }catch{state.textContent='Nie potwierdzono lokalnego dostępu.';}
+    }
+    if(!session){button.hidden=false;return;}
+    button.hidden=session.mode==='local';button.textContent='Wyloguj właściciela';
+    document.body.dataset.ownerAccess=session.mode||'token';
+    state.textContent=session.mode==='local'?'Właściciel · ten komputer':'Właściciel zalogowany';
     expiryTimer=setTimeout(()=>location.reload(),Math.max(0,session.expires_at*1000-Date.now()));
     const ids=['token','history-token','delivery-token','publishing-token'];
     if(document.body.dataset.ownerPreview==='true')ids.push('client-token');
     for(const id of ids){const el=document.getElementById(id);if(!el)continue;el.required=false;el.value='';for(const label of el.labels||[])label.hidden=true;el.hidden=true;}
     const note=document.getElementById('delivery-token-note');if(note)note.textContent='Działa wspólna sesja właściciela. Wybierz ID zadania; tokena nie trzeba wpisywać ponownie.';
     for(const id of ['logout','history-logout',...(document.body.dataset.ownerPreview==='true'?['client-logout']:[])]){
+      if(session.mode==='local'){const el=document.getElementById(id);if(el)el.hidden=true;continue;}
       document.getElementById(id)?.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();logout();},{capture:true});
     }
     // Only read-only access forms auto-open; never submit publication/review actions.

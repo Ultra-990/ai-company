@@ -1,5 +1,36 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — wejście do lokalnego panelu bez tokena
+
+- Właściciel wskazał, że panel nie pokazuje ostatnich prac nad szkołą modeli
+  i nie powinien pytać o token na jego komputerze. Wyjaśniono, że szkoła
+  nadal działa poza panelem; ten etap dotyczy automatycznego dostępu.
+- Dodano jawnie włączany LOCAL_OWNER_ACCESS i POST /api/owner-session/local.
+  Weryfikacja rzeczywistego peer/server loopback, Host/port i pochodzenia,
+  odrzucanie nagłówków proxy. Zwykłe cookie HttpOnly/SameSite + CSRF,
+  ponowna kontrola lokalności dla sesji, bez obejścia ról i złych Bearerów.
+  Endpoint nie jest dostępny w aplikacji klienta. Tryb zaufanego komputera
+  nie odróżnia jego lokalnych kont/procesów — odpowiada zakresowi żądania.
+- Panel sam zakłada sesję i wyświetla „Właściciel · ten komputer”. Ukrywa
+  formularze tokena i przyciski logowania/wylogowania w tym trybie, również
+  po asynchronicznym wczytaniu panelu. Wersje URL JS/CSS zaktualizowane,
+  aby odświeżenie strony pobrało aktualne pliki. Tryb tokenowy zachowany.
+- 42 passed/1.21 s: dotychczasowe sesje i RBAC oraz nowe przypadki lokalne,
+  zdalny peer, spoof Host/port/proxy, obce Origin, brak CSRF, cookie z innego
+  połączenia, wyłączenie trybu, wygaśnięcie i odnowienie, separacja klienta.
+  node --check owner-session.js zaliczony.
+- Rzeczywisty Chrome headless (własny profil, bez GPU, dźwięku i sesji pulpitu):
+  /os, /os/work, /os/build, /os/clients, /os/review, /os/publishing, /os/media,
+  /os/upwork — wszystkie automatycznie dostępne, bez widocznych pól hasła.
+  Potwierdzono nową wizytę bez cookie, HttpOnly i chroniony odczyt opcji
+  zlecenia. Bez zmian zadań, wywołań modeli czy odczytu tokena przez test.
+- LOCAL_OWNER_ACCESS=1 zapisane wyłącznie w prywatnym .env, tokeny nietknięte.
+  Własny serwer panelu z poprzedniego kroku uruchomiono ponownie na
+  127.0.0.1:8000, z --no-proxy-headers. Przed pierwszym startem wykonano
+  kopię bazy w ai-company-workspaces/panel-start-mwawsgj5/before-start.sqlite.
+  Nie rozszerzono dostępu na LAN; szkoła modeli nie została tu podłączona
+  do interfejsu. Dokumentacja: organization-os/OWNER_SESSION.md.
+
 ## 2026-09-20 — system uczy i ocenia; realizacje pisze lokalny model
 
 - Właściciel wskazał, że trzy demonstracje nie sprawdzały zamierzonej
