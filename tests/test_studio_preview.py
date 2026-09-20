@@ -39,6 +39,8 @@ def test_running_preview_has_real_calculation_and_no_owner_access():
         page = client.get('/')
         assert page.status_code == 200
         assert 'sandbox="allow-scripts allow-forms"' in page.text
+        assert page.text.index("addEventListener('message'") < page.text.index("frame.src='/frame'")
+        assert not re.search(r'<iframe[^>]+\bsrc=', page.text)
         token = json.loads(re.search(r"'X-Preview-CSRF':(\"[^\"]+\")", page.text).group(1))
         frame = client.get('/frame')
         assert frame.status_code == 200

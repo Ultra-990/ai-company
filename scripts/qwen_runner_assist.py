@@ -82,7 +82,27 @@ Check stale replies, cross-frame messages, failed fetch and 8 hours * 322 = 2576
 '''+ '\n'.join((root/path).read_text() for path in [
         'app/static/organization-os/application-preview.js',
         'app/static/organization-os/application-frame.js'])
+elif sys.argv[1:]==['--studio-interaction-review']:
+    from scripts.compare_local_models import check_idle
+    check_idle()
+    prompt='''Review an interaction fix for a synthetic web studio. Reply JSON with
+risks and test_cases, at most 4 concise strings each. Advisory only: do not execute
+anything, claim tests passed or request tools. Existing scene uses native page
+scroll for CSS3D spring motion; chapter buttons and blank scene background undo
+chapter history. Section links keep separate scroll history. A modal preview
+animates from the card and supports wheel zoom. Problem: separate histories and
+click handlers can disagree; wheel during opening/switching is currently discarded.
+Proposed: one navigation coordinator, section/chapter transitions in one ordered
+history; local scene fallback Back for wheel-only movement; same Back button and
+blank-click policy. Guard selection/drag and controls. Modal closes before scene
+navigation and restores original opener/scroll; wheel during animation queues
+zoom until open, no page scroll leak. All native page wheel and browser pinch
+remain intact; explicit pause is retained; reduced motion and mobile have readable
+fallback. Suggest concrete combined flow regressions and ordering risks, not a
+new framework. No actual video element or player exists in this prototype.'''
 options=configuration()|{'format':'json'}
+if sys.argv[1:]==['--studio-interaction-review']:
+    options=options|{'num_predict':800,'num_thread':4,'timeout_seconds':90}
 if sys.argv[1:]==['--preview-review']:
     options=options|{'num_predict':1536,'format':{
         'type':'object','additionalProperties':False,

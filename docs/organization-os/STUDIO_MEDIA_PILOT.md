@@ -24,6 +24,39 @@ po generacji. Nie uruchamiano ani nie zatrzymywano cudzej instancji 8188.
 
 ## Interakcje
 
+### Połączone sterowanie i przypadki brzegowe (20.09.2026)
+
+Scena i linki sekcji korzystają z jednej uporządkowanej historii. Przyciski
+„Wróć” i „Poprzedni widok” oraz puste tło wywołują wspólnego koordynatora.
+Ruch wyłącznie kółkiem zachowuje lokalny powrót do poprzedniego rozdziału,
+zanim opuści scenę. Po zmianie ekranu historia sceny ma statyczny odpowiednik.
+Pauza efektów nie blokuje jawnego wyboru rozdziału — wtedy zmiana jest natychmiastowa.
+
+Zoom kółkiem podczas otwierania lub zmiany obrazu jest kolejkowany (ograniczony
+do zakresu 100–240%), nie gubi się i nie przewija strony pod modalem. Zamknięcie
+czyści kolejkę; powrót animuje do pierwotnego przycisku otwierającego, zgodnie
+z przywracanym fokusem. Kółko przerywa automatyczny scroll: tylko pierwsza delta
+przy przerwaniu jest aplikowana jawnie, ponieważ Chromium potrafi ją odrzucić.
+Reszta przewijania jest natywna; Ctrl+wheel i pinch nie są przejmowane.
+
+Testy łączą scenę, przejście do narzędzi, powrót, kółko, otwarcie podglądu,
+zoom podczas lotu/zmiany obrazu i ponowny scroll. Dodatkowo: zaznaczenie tekstu,
+przeciągnięcie, podwójne zamknięcie, resize podczas lotu, brak Web Animations API,
+reduced motion, pauza oraz układy mobilne. Te testy nie są dowodem obsługi
+nieistniejącego jeszcze odtwarzacza wideo ani wszystkich przeglądarek.
+
+Podgląd uruchamia ramkę dopiero po zarejestrowaniu listenera komunikatów.
+Zapobiega to utracie jednorazowego `application-ready` podczas parsowania
+dużego pakietu z obrazami. Izolacja opaque origin i ograniczenia sieci bez zmian.
+
+Audit `studio-design-o1sem2gt/studio-browser-mgchxyqt/report.json`:
+**1 passed/25.95s**, SHA256
+`491cba4fa0d7c436176872df0decdcda708f52faf29acf14943c5ad3205a5427`.
+Lokalny Qwen zaproponował ryzyka i scenariusze; główny agent zweryfikował
+propozycję, wdrożył kod i przeprowadził niezależne testy. Nie był to trening.
+Starsze uruchomione linki podglądu zachowują poprzednie zasoby — należy
+korzystać z najnowszego linku, nie porównywać różnych portów jako jednej wersji.
+
 ### Powrót pustym tłem między widokami (20.09.2026)
 
 Przejścia przez menu Studio i linki do sekcji zapisują poprzednie miejsce
@@ -32,8 +65,8 @@ przywraca ten widok, bez przeładowania, usuwania briefu czy zmiany ustawień.
 Po przejściu pojawia się pasek **← Poprzedni widok** z podpowiedzią.
 Pasek uwzględnia rozmiar tekstu i nie zasłania sticky sceny.
 
-Priorytet powrotu: otwarty podgląd/menu → zamknięcie; scena → poprzednie
-studium; pozostałe sekcje → poprzednie miejsce na stronie. Kliknięcia
+Priorytet powrotu: otwarty podgląd/menu → zamknięcie; dalej wspólna historia
+studiów i sekcji (ujednolicona w opisanej wyżej aktualizacji). Kliknięcia
 formularzy, przycisków, linków, tekstu, zaznaczanie i przeciąganie nie są
 globalnym poleceniem cofania. Bez historii tło nie robi nic. Nie wywołujemy
 historii nadrzędnej przeglądarki i nie opuszczamy izolowanej ramki.
@@ -91,7 +124,7 @@ zatrzymują się; limit 1.8s kończy dojście również przy niskim FPS. Ukrycie
 karty wstrzymuje pętlę. Pauza nie blokuje przewijania dokumentu. Animacja
 nie przechwytuje kółka na stronie. Kółko w otwartym widoku zdjęcia przybliża
 i oddala (100–240%); Ctrl+kółko i systemowy pinch pozostają dla przeglądarki.
-Kliknięcie pustego tła sceny cofa poprzedni wybór studium (historia do 16);
+Kliknięcie pustego tła sceny cofa poprzedni wybór studium (obecnie wspólna historia do 24);
 równoważny przycisk „Wróć” działa klawiaturą. Przy braku historii wraca do
 poprzedniego studium. Puste tło podglądu zdjęcia zamyka podgląd. Kliknięcia
 narzędzi nie są globalnym poleceniem cofania.

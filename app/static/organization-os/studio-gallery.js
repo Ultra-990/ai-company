@@ -20,7 +20,7 @@
  const label=dialog.querySelector('#art-title'),counter=dialog.querySelector('#art-counter');
  const stage=dialog.querySelector('.art-stage'),zoomLabel=dialog.querySelector('#zoom-level');
  const reduce=matchMedia('(prefers-reduced-motion: reduce)'),active=new Set();
- let index=0,initialIndex=0,zoom=1,opener=null,scrollFrame=0,phase='closed',queuedClose=false;
+ let index=0,zoom=1,opener=null,scrollFrame=0,phase='closed',queuedClose=false,queuedZoom=0;
  const ease='cubic-bezier(.22,.75,.15,1)';
  function state(value){
   phase=value;dialog.dataset.phase=value;
@@ -34,6 +34,7 @@
  }
  function finishMotion(){for(const animation of active)try{animation.finish();}catch{animation.cancel();}}
  function setZoom(value){zoom=Math.max(1,Math.min(2.4,value));image.style.transform=`scale(${zoom})`;zoomLabel.textContent=Math.round(zoom*100)+'%';}
+ function applyQueuedZoom(){if(queuedZoom){setZoom(zoom+queuedZoom);queuedZoom=0;}}
  function show(value){
   index=(value+cards.length)%cards.length;const source=cards[index].querySelector('img');
   image.src=source.src;image.alt=source.alt;image.style.transformOrigin='50% 50%';
@@ -58,10 +59,10 @@
  }
  async function open(value,button){
   if(phase!=='closed')return;
-  opener=button;initialIndex=value;const box=thumbnail(button);
+  opener=button;queuedZoom=0;const box=thumbnail(button);
   show(value);state('opening');dialog.showModal();document.body.classList.add('art-open');
   dialog.querySelector('[data-close]').focus({preventScroll:true});
-  try{await fly(box);}finally{state('open');if(queuedClose){queuedClose=false;close();}}
+  try{await fly(box);}finally{state('open');applyQueuedZoom();if(queuedClose){queuedClose=false;close();}}
  }
  async function close(){
   if(phase==='closed'||phase==='closing')return;
@@ -69,7 +70,7 @@
   state('closing');
   try{
    if(zoom!==1){const before=image.style.transform;setZoom(1);await motion(image,[{transform:before},{transform:'scale(1)'}],180);}
-   const target=index===initialIndex?opener:cards[index].querySelector('button');
+   const target=opener;
    await fly(thumbnail(target),true);
   }finally{dialog.close();}
  }
@@ -80,7 +81,7 @@
    await motion(image,[{opacity:1,transform:image.style.transform},{opacity:0,transform:`translateX(${-direction*48}px) scale(.96)`}],200);
    show(index+direction);
    await motion(image,[{opacity:0,transform:`translateX(${direction*64}px) scale(1.04)`},{opacity:1,transform:'translateX(0px) scale(1)'}],380);
-  }finally{state('open');if(queuedClose){queuedClose=false;close();}}
+  }finally{state('open');applyQueuedZoom();if(queuedClose){queuedClose=false;close();}}
  }
  document.querySelectorAll('[data-open-art]').forEach(b=>b.addEventListener('click',()=>open(Number(b.dataset.openArt),b)));
  dialog.querySelector('[data-close]').addEventListener('click',close);
@@ -93,7 +94,7 @@
   }
  });
  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
- dialog.addEventListener('close',()=>{finishMotion();state('closed');queuedClose=false;document.body.classList.remove('art-open');opener?.focus({preventScroll:true});});
+ dialog.addEventListener('close',()=>{finishMotion();state('closed');queuedClose=false;queuedZoom=0;document.body.classList.remove('art-open');opener?.focus({preventScroll:true});});
  dialog.querySelector('[data-prev]').addEventListener('click',()=>change(-1));
  dialog.querySelector('[data-next]').addEventListener('click',()=>change(1));
  dialog.querySelector('[data-zoom-in]').addEventListener('click',()=>setZoom(zoom+.2));
@@ -106,7 +107,7 @@
   if(event.key==='ArrowRight'){event.preventDefault();change(1);}
   if(event.key==='ArrowLeft'){event.preventDefault();change(-1);}
  });
- dialog.addEventListener('wheel',event=>{if(event.ctrlKey||!dialog.open||event.deltaY===0)return;event.preventDefault();if(phase==='open')setZoom(zoom+(event.deltaY<0?.1:-.1));},{passive:false});
+ dialog.addEventListener('wheel',event=>{if(event.ctrlKey||!dialog.open||event.deltaY===0)return;event.preventDefault();const delta=event.deltaY<0?.1:-.1;if(phase==='open')setZoom(zoom+delta);else if(phase==='opening'||phase==='switching')queuedZoom=Math.max(-1.4,Math.min(1.4,queuedZoom+delta));},{passive:false});
  stage.addEventListener('pointermove',event=>{if(reduce.matches||event.pointerType!=='mouse'||zoom<=1||phase!=='open')return;const r=stage.getBoundingClientRect();image.style.transformOrigin=`${Math.max(0,Math.min(100,(event.clientX-r.left)/r.width*100))}% ${Math.max(0,Math.min(100,(event.clientY-r.top)/r.height*100))}%`;});
  stage.addEventListener('pointerleave',()=>image.style.transformOrigin='50% 50%');
  function animate(){

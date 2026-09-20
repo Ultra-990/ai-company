@@ -25,7 +25,7 @@ async def check(client, body, headers, *, cases=None, expected_color='rgb(0, 0, 
     init = json.dumps({'kind':'application-init', 'html':data['response']['body'], 'files':data['assets']}).replace('<','\\u003c')
     parent = ('''<!doctype html><title>Synthetic browser pilot</title>
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden}iframe{display:block;border:0;width:100%;height:100%}</style>
-<iframe id="app" src="/os/application-frame" sandbox="allow-scripts allow-forms"></iframe>
+<iframe id="app" sandbox="allow-scripts allow-forms"></iframe>
 <script>
 const frame=document.querySelector('#app');
 window.addEventListener('message',async e=>{
@@ -35,7 +35,7 @@ window.addEventListener('message',async e=>{
   const r=await fetch('/probe',{method:'POST',body:JSON.stringify({path:e.data.path})});
   const reply=await r.json();frame.contentWindow.postMessage({kind:'application-reply',id:e.data.id,...reply},'*');
  }
-});</script>''').replace('INIT', init).encode()
+});frame.src='/os/application-frame';</script>''').replace('INIT', init).encode()
     calls = []
 
     class Handler(BaseHTTPRequestHandler):

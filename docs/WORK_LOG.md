@@ -1,5 +1,39 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — FORMA: połączenie sceny, nawigacji i zoomu
+
+- Właściciel zgłosił, że funkcje działają naprzemiennie. Osobne historie
+  rozdziałów i sekcji zastąpiono wspólną kolejnością powrotu. Kliknięcie tła
+  i przyciski korzystają z koordynatora; gest przeciągnięcia i zaznaczenie
+  nie cofają. Po resize scena ma statyczny punkt powrotu. Pauza nie blokuje
+  jawnej nawigacji; animacja zamknięcia zdjęcia wraca do właściwego otwierającego.
+- Zoom z kółka podczas otwierania/zmiany zdjęcia jest kolejkowany i czyszczony
+  po zamknięciu. Bez nowych zależności, modeli, generacji grafik lub treningu.
+- Lokalny Qwen skonsultował ryzyka/4 propozycje testów po check_idle:
+  12.364s/206 tokenów wyjściowych; /tmp/qwen-runner-draft-pz_izj1k/draft.json,
+  SHA256 199f7f1b694212a01c2657f46c9a1121c4cd079b96eaef6e6d014840ac3330fd.
+  Wskazał kolejkę zoomu przy zamknięciu, przeplatanie historii, gesty i mobile.
+  To konsultacja planu, nie przegląd pełnego kodu ani dowód testów. Kod i testy
+  zintegrował główny agent. Nie wykonano kodu modelu na hoście.
+- Audity mul5radf/16.90s, d8g05rvw/16.87s i 3dfhf2jn/16.88s wykryły utratę
+  pierwszej delty kółka podczas kończenia smooth scroll. Samo anulowanie
+  animacji nie wystarczyło. Pierwszą deltę przerwania aplikujemy jawnie;
+  kolejne pozostają native. ltusxqr2: 1 passed/24.95s, przepływ połączony.
+- Rozszerzono przypadki brzegowe według kolejnej uwagi właściciela. 6fcdk2oh:
+  błąd inicjalizacji ramki/11.29s, bez wykonanych kontroli UI. Usunięto wyścig
+  startu: src ramki ustawiany po listenerze, zarówno w helperze, jak i podglądzie.
+- Regresja 74 passed/1 skipped/1.45s; Node geometria/sprężyny/kontrakt tła OK.
+  Testy nadal używają syntetycznych danych, restricted Docker i prywatnego
+  headless Chrome, bez zmian DB, usług Vast.ai, Windows czy obcych procesów.
+- Końcowy audit mgchxyqt: 1 passed/25.95s. Wszystkie kontrole zaliczone,
+  łącznie z przepływem mieszanym, kółkiem podczas lotu/zmiany, pauzą/nawigacją,
+  zaznaczeniem/przeciąganiem, resize, szybkim podwójnym close i brakiem API
+  animacji. SHA256 491cba4fa0d7c436176872df0decdcda708f52faf29acf14943c5ad3205a5427.
+  Następny etap pozostaje oddzielny: składanie sprawdzonych źródeł, mediów
+  i interakcji w jedną paczkę dostawy; obecny ZIP nadal zawiera aplikację bazową.
+- Kontrola uruchomionego podglądu: 16 passed/0.79s, w tym start listenera przed
+  src ramki, ograniczenia origin/CSRF/tras i rzeczywisty wynik syntetycznego API.
+
 ## 2026-09-20 — FORMA: brakujący powrót między sekcjami
 
 - Właściciel nie widział powrotu po kliknięciu pustego miejsca. Poprzednio

@@ -83,7 +83,7 @@ def main(argv=None):
 <style>html,body{margin:0;height:100%;font:14px system-ui;background:#171717;color:#fff}
 body{display:flex;flex-direction:column}aside{padding:10px 16px}iframe{border:0;width:100%;flex:1;min-height:0}</style>
 <aside>FORMA · interaktywne studio: przestrzeń, narzędzia i projekt · lokalny prototyp, nie zatwierdzone wydanie</aside>
-<iframe title="Strona FORMA" src="/frame" sandbox="allow-scripts allow-forms"></iframe>
+<iframe title="Strona FORMA" sandbox="allow-scripts allow-forms"></iframe>
 <script>const frame=document.querySelector('iframe');
 window.addEventListener('message',async e=>{
  if(e.source!==frame.contentWindow||e.origin!=='null')return;
@@ -92,7 +92,7 @@ window.addEventListener('message',async e=>{
  let reply;try{const r=await fetch('/probe',{method:'POST',headers:{'Content-Type':'application/json','X-Preview-CSRF':TOKEN},body:JSON.stringify({path:e.data.path})});reply=await r.json();}
  catch{reply={error:'Podgląd zakończył się lub jest niedostępny.'};}
  frame.contentWindow.postMessage({kind:'application-reply',id:e.data.id,...reply},'*');
-});</script></html>''').replace('TOKEN', json.dumps(token)).replace('INIT', init).encode()
+});frame.src='/frame';</script></html>''').replace('TOKEN', json.dumps(token)).replace('INIT', init).encode()
 
     class Handler(BaseHTTPRequestHandler):
         def send(self, content, status=200, headers=None):

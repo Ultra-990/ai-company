@@ -83,7 +83,7 @@ def test_retained_studio_website(client, task_repository):
             value = await js(expression)
             observations['checks'].append({'id':name, 'passed':value is True})
             if value is not True:
-                observations['failed_layout'] = await js("({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,focus:document.activeElement.id,menuOpen:document.querySelector('#studio-menu')?.open,briefTop:document.querySelector('#brief-builder')?.getBoundingClientRect().top,overflow:[...document.querySelectorAll('body *')].filter(e=>e.checkVisibility()).map(e=>({tag:e.tagName,cls:e.className,left:e.getBoundingClientRect().left,right:e.getBoundingClientRect().right})).filter(r=>r.left<0||r.right>innerWidth+1).slice(0,20)})")
+                observations['failed_layout'] = await js("({width:innerWidth,scrollY,scenePosition:document.querySelector('#visuals')?.dataset.scenePosition,scrollWidth:document.documentElement.scrollWidth,focus:document.activeElement.id,menuOpen:document.querySelector('#studio-menu')?.open,briefTop:document.querySelector('#brief-builder')?.getBoundingClientRect().top,overflow:[...document.querySelectorAll('body *')].filter(e=>e.checkVisibility()).map(e=>({tag:e.tagName,cls:e.className,left:e.getBoundingClientRect().left,right:e.getBoundingClientRect().right})).filter(r=>r.left<0||r.right>innerWidth+1).slice(0,20)})")
             save()
             assert value is True, name
         async def eventually(name, expression):
@@ -199,6 +199,31 @@ def test_retained_studio_website(client, task_repository):
             await call('Input.dispatchMouseEvent', {'type':'mouseReleased','x':4,'y':4,'button':'left','clickCount':1}, session)
             await eventually('gallery-background-closes', "document.querySelector('#art-viewer').dataset.phase==='closed' && !document.querySelector('#art-viewer').open")
 
+            # One continuous user journey, not isolated feature demonstrations.
+            await js("document.querySelector('[data-scene-chapter=\"1\"]').click()")
+            await eventually('combined-start-in-scene', "Math.abs(Number(document.querySelector('#visuals').dataset.scenePosition)-1)<.02")
+            await js("document.querySelector('.scene-hud a[href=\"#studio\"]').click()")
+            await eventually('combined-opens-tools', "Math.abs(document.querySelector('#studio').getBoundingClientRect().top)<innerHeight/2")
+            await js("(()=>{const r=document.createRange();r.selectNodeContents(document.querySelector('#studio h2'));getSelection().removeAllRanges();getSelection().addRange(r);document.body.dispatchEvent(new MouseEvent('click',{bubbles:true}));})()")
+            await require('selection-does-not-trigger-back', "document.activeElement.id==='studio'")
+            await js("getSelection().removeAllRanges();document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:2,clientY:400}));document.body.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:2,clientY:450}))")
+            await require('drag-does-not-trigger-back', "document.activeElement.id==='studio'")
+            await js("document.querySelector('#view-return button').click()")
+            await eventually('combined-tools-back-restores-scene', "Math.abs(Number(document.querySelector('#visuals').dataset.scenePosition)-1)<.03")
+            observations['combined_before_wheel']=await js("({scrollY,position:document.querySelector('#visuals').dataset.scenePosition,target:document.elementFromPoint(720,450).outerHTML.slice(0,150),overflow:getComputedStyle(document.body).overflow})")
+            save()
+            await call('Input.dispatchMouseEvent', {'type':'mouseMoved','x':720,'y':450}, session)
+            await call('Input.dispatchMouseEvent', {'type':'mouseWheel','x':720,'y':450,'deltaX':0,'deltaY':200}, session)
+            await eventually('combined-wheel-still-moves-scene', "Number(document.querySelector('#visuals').dataset.scenePosition)>1.05")
+            await js("window.combinedScroll=scrollY;document.querySelector('[data-open-art=\"1\"]').click();document.querySelector('#art-viewer').dispatchEvent(new WheelEvent('wheel',{deltaY:-100,bubbles:true,cancelable:true}))")
+            await eventually('combined-opening-keeps-wheel-input', "document.querySelector('#art-viewer').dataset.phase==='open' && document.querySelector('#zoom-level').textContent==='110%'")
+            await js("document.querySelector('[data-next]').click();document.querySelector('#art-viewer').dispatchEvent(new WheelEvent('wheel',{deltaY:-100,bubbles:true,cancelable:true}))")
+            await eventually('combined-switch-keeps-wheel-input', "document.querySelector('#art-viewer').dataset.phase==='open' && document.querySelector('#zoom-level').textContent==='110%' && document.querySelector('#art-counter').textContent==='3 / 3'")
+            await js("document.querySelector('[data-close]').click()")
+            await eventually('combined-modal-back-preserves-scene', "document.querySelector('#art-viewer').dataset.phase==='closed' && Math.abs(scrollY-window.combinedScroll)<3")
+            await call('Input.dispatchMouseEvent', {'type':'mouseWheel','x':720,'y':450,'deltaX':0,'deltaY':-200}, session)
+            await eventually('combined-wheel-works-after-modal', "scrollY<window.combinedScroll-100")
+
             await js("document.querySelector('#studio').scrollIntoView({behavior:'instant'});document.querySelectorAll('.studio-tree details').forEach(e=>e.open=true)")
             await require('functional-tree-expands', "document.querySelectorAll('.studio-tree details[open]').length===3 && [...document.querySelectorAll('.studio-tree a')].every(a=>!!document.querySelector(a.hash))")
             await js("document.querySelector('#brief-type').value='platform';document.querySelector('#brief-goal').value='Portal dla twórców';document.querySelector('.studio-modules input[value=accounts]').click();document.querySelector('.studio-modules input[value=search]').click();document.querySelector('#brief-build').click()")
@@ -214,6 +239,8 @@ def test_retained_studio_website(client, task_repository):
             await asyncio.sleep(.15)
             assert frozen == await js("document.querySelector('[data-art=\"1\"]').style.transform+'|'+document.querySelector('[data-art=\"1\"]').style.getPropertyValue('--scene-x')"), 'Paused scene changed'
             await require('motion-controls-pause-and-ranges', "document.querySelector('#motion-pause').getAttribute('aria-pressed')==='true' && document.querySelector('#elasticity-value').textContent==='80%' && document.querySelector('#depth-value').textContent==='120%'")
+            await js("document.querySelector('[data-scene-chapter=\"2\"]').click()")
+            await require('explicit-navigation-works-while-motion-paused', "Number(document.querySelector('#visuals').dataset.scenePosition)>1.98 && document.querySelector('#motion-pause').getAttribute('aria-pressed')==='true'")
             await js("document.querySelector('#motion-reset').click()")
             await eventually('motion-resumes-and-settles', "document.querySelector('#visuals').dataset.sceneMoving==='false' && document.querySelector('#motion-pause').getAttribute('aria-pressed')==='false'")
             await shot('spring-helix-scene')
@@ -302,8 +329,19 @@ def test_retained_studio_website(client, task_repository):
             await eventually('gallery-reduced-motion-close', "!document.querySelector('#art-viewer').open && !document.body.classList.contains('art-open')")
             for target in {session,context[0]}:
                 await call('Emulation.setEmulatedMedia', {'features':[{'name':'prefers-reduced-motion','value':'no-preference'}]}, target)
-            await js("document.querySelector('[data-open-art=\"1\"]').click();document.querySelector('[data-close]').click()")
+            await js("document.querySelector('[data-open-art=\"1\"]').click();document.querySelector('#art-viewer').dispatchEvent(new WheelEvent('wheel',{deltaY:-100,bubbles:true,cancelable:true}));document.querySelector('[data-close]').click();document.querySelector('[data-close]').click()")
             await eventually('gallery-close-during-animation', "!document.querySelector('#art-viewer').open && !document.querySelector('.art-flight') && !document.body.classList.contains('art-open')")
+            await eventually('gallery-fast-close-fully-complete', "document.querySelector('#art-viewer').dataset.phase==='closed'")
+            await js("document.querySelector('[data-open-art=\"1\"]').click()")
+            await viewport(480,800)
+            await eventually('gallery-resize-during-flight-recovers', "document.querySelector('#art-viewer').dataset.phase==='open' && !document.querySelector('.art-flight') && document.querySelector('#zoom-level').textContent==='100%'")
+            await js("document.querySelector('[data-close]').click()")
+            await eventually('gallery-resized-close-cleans-state', "document.querySelector('#art-viewer').dataset.phase==='closed' && !document.body.classList.contains('art-open')")
+            await js("window.savedAnimation=Element.prototype.animate;Element.prototype.animate=undefined;document.querySelector('[data-open-art=\"1\"]').click()")
+            await eventually('gallery-missing-animation-api-still-opens', "document.querySelector('#art-viewer').dataset.phase==='open' && !document.querySelector('.art-flight')")
+            await js("document.querySelector('[data-close]').click()")
+            await eventually('gallery-missing-animation-api-still-closes', "document.querySelector('#art-viewer').dataset.phase==='closed' && !document.body.classList.contains('art-open')")
+            await js("Element.prototype.animate=window.savedAnimation;delete window.savedAnimation")
 
         # This extra requirement belongs to the CSS design brief, not the older
         # functional baseline. Screenshots above survive a rejected design.
