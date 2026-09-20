@@ -1,5 +1,15 @@
 # Stan projektu AI Company
 
+## Aktualizacja 20.09.2026 — trzy nowe prototypy
+
+Ukończono [trzy testy stron](organization-os/THREE_WEB_TRIALS.md): kolekcja
+znaczków, portfolio muzyczne z własnym logo/audio i filmem sterowanym scroll
+oraz ruletka/automat/blackjack na wirtualne żetony. 48/48 kontroli Chrome,
+224 przypadki obliczeń gier, 15 testów transportu. Osobne kompletne ZIP-y.
+Qwen dostarczył katalog i moduły logiki; asystent interfejsy, integrację,
+media proceduralne i niezależną kontrolę. To nie ukończony trening ani
+dowód pełnej samodzielności modeli. Materiały właściciela pozostają lokalne.
+
 ## Aktualizacja 20.09.2026 — wznowienie i kompletna paczka FORMA
 
 Właściciel po restarcie potwierdził poprawną pracę myszy i przełączania okien

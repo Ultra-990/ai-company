@@ -1,5 +1,48 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — trzy nowe strony według briefów właściciela
+
+- Właściciel zlecił katalog sprzedaży znaczków, portfolio trance z własnym
+  logo/audio i filmem na scroll oraz kasyno z 3 grami bez realnych pieniędzy.
+  Powstał osobny katalog three-sites-ufpa30po, bez ingerencji w starsze FORMA.
+- Preflight: Docker pusty, RTX5090 1053 MiB/12%. Windows już zamontowany
+  read-only na /media/marcin/Windows. Nowy brief upoważnia do odczytu logo;
+  wyszukano związane materiały. Logo z grafiki profilu w folderze kanału,
+  okładka i 3 MP3 skopiowane dokładnie na Linux. Oryginały nietknięte.
+- Lokalny Qwen kolejno: katalog/logika 12.503 s/1582 tokeny, portfolio/logika
+  10.523 s/1127 tokenów, gry/logika 9.501 s/1117 tokenów. Zachowano prompt,
+  digest i oryginalne odpowiedzi. Kod modelu nie wykonywany na hoście.
+  Logika zaliczona bez modyfikacji; polski brief projektu znaczków dostał
+  angielską koncepcję. Termin „Świeży” poprawiono w roboczym katalogu.
+- Asystent wykonał trzy różne interfejsy, stan koszyka/portfela/odtwarzacza,
+  wektorowe ilustracje znaczków i proceduralny film H.264 1280×720/24 fps/
+  10 s. Nie przedstawiamy tego jako wideo z sieci generatywnej ani jako
+  stron wykonanych w pełni samodzielnie przez Qwena. Brak nowego treningu.
+- Pierwszy Chrome browser-qrssf8au: 48 kontroli, 7 failed. Brak logo przed
+  identyfikacją, 2 szerokości przy 320 px, 4 reduced motion (emulacja tylko
+  procesu rodzica zamiast również ramki). Poprawiono faktyczne siatki,
+  zidentyfikowano logo i poprawiono zakres emulacji. browser-mgjo51hj 48/48.
+- Po korekcie symboli (tekstowe strzałki zamiast kolorowych emoji w Linuksie)
+  i dołożeniu sandbox do nagłówka stron, browser-5oeqq9_y: 48/48, brak
+  wyjątków JS. 224 niezależne przypadki obliczeń gier oraz realne interakcje.
+  Naturalny wheel przewija rzeczywiste wideo w obie strony, audio odtwarza,
+  pauzuje i zmienia pozycję/utwór, ukrycie karty pauzuje. Zero wywołań focus
+  w badanej opóźnionej pracy. Sprawdzono desktop/390/768/320 i reduced motion.
+- Transport/paczki: 15 passed/0.79 s. Range, HEAD, Host, CSP, prywatne trasy,
+  dokładne bytes oraz deterministyczne ZIP-y. Wcześniejsze zamykanie Chrome
+  wywołało ConnectionResetError w HTTP keepalive; odpowiedzi zamykane jawnie.
+  Nie było modyfikacji danych projektu ani awarii aplikacji z tego powodu.
+- Gotowe ZIP-y: 143211, 48008329 i 30406 bytes; hashe i dowody w
+  organization-os/THREE_WEB_TRIALS.md. Serwer LAN 10.0.0.57:33117 na 240 min;
+  /stamps, /music, /casino, wspólna nawigacja i pobieranie każdej paczki.
+  Odczyt LAN potwierdził trzy zgodne ZIP-y i Range filmu oraz odmowę obcego
+  Host/prywatnych raportów. Zamykano wyłącznie własne tymczasowe serwery.
+- Wszystkie materiały właściciela i surowe raporty poza Git. Brak zmian
+  prawdziwych zadań/DB, zamówień, płatności, publicznego hostingu, Windows,
+  sieci, Vast.ai, GPU sterowników, cudzych usług i pulpitu. Statyczny pilot
+  browserowy nie rozszerza profilu produkcyjnego Python+PNG o multimedia.
+  Odbiór wizualny właściciela pozostaje otwarty.
+
 ## 2026-09-20 — źródła i PNG w zadaniu, testach, odbiorze i wydaniu
 
 - Po wznowieniu zakończono zapis poprawki pierwszego przewijania: commit
