@@ -45,6 +45,11 @@ Trening tekstowego Qwena nie stroi automatycznie generatora obrazów.
 Próby i ewentualne adaptery graficzne będą miały osobne dane, warunki i odbiór.
 Menu i układ panelu pozostają poza bieżącym zakresem na życzenie właściciela.
 
+20–21.09 wykonano [pierwszą szkołę wnętrz](INTERIOR_SCHOOL.md): modelowy plan,
+trzy lokalne obrazy, sześć obserwacji wizualnych oraz paczki z trackerem.
+Opisy 0/3 odebranych przed i po uwagach. To rozwój procesu i rozpoznanie
+błędów; bez eksportu tej partii do SFT lub aktualizacji wag.
+
 ## Pierwszy trening na odebranych danych
 
 `config/qwen-sft-pilot-001.json` zamraża osobny eksperyment integracyjny:

@@ -1,5 +1,39 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20/21 — lokalna szkoła obrazów i koordynacji redakcyjnej
+
+- Właściciel ponowił zgodę na działania. Kontynuacja aktywnego celu pięciu
+  usług; asystent buduje szkołę i ocenia, realizacje piszą/generują modele.
+- Dodano syntetyczny kontrakt Hearth & Linen, etapy plan/render/inspect,
+  ograniczony adapter wizji i poprawki powiązane z oryginalnymi odpowiedziami.
+  Wykorzystano oficjalny kontrakt Ollama vision (base64 w messages[].images).
+  Bez chmury/Midjourney, pobierania modeli lub nowych zależności.
+- plan-kzsdwkxm: lokalny bazowy Qwen, plan 33.758 s. render-s51xuqeg:
+  trzy PNG 768×512/512×768/768×512 w 159.692 s, natywny Z-Image Turbo,
+  8 kroków. Własny ComfyUI 8189 zakończony, dotychczasowe usługi bez zmian.
+  Preflight przed etapami, Docker pusty; wagi z dozwolonego montowania ro.
+- inspect-179k_n_w: Qwen zobaczył trzy rzeczywiste obrazy bez promptów
+  generowania, 30.212 s. Po szczegółowych uwagach nauczyciela kolejna próba
+  inspect-kmgzp4m3, 20.173 s. Dokładne odpowiedzi, obrazy, tracker CSV,
+  brief autora i pakiet proponowanego URL pozostają na Linuksie prywatnie.
+- Obejrzano trzy PNG i wszystkie sześć odpowiedzi. Obrazy to kandydaty
+  ćwiczeniowe. Opisy 0/3 przed i 0/3 po: niepewne szczegóły jako fakty,
+  nieuzasadnione diagnozy wad, niepełne zdania przy formalnie poprawnym JSON.
+  Poprawka skorygowała gatunek drewna i lokalizację ręcznika, lecz dodała
+  niewidoczne kosze; jeden alt text ponownie niepełny. Nic nie dopisano ręcznie.
+- Prywatna assessment-001.json wiąże ocenę z SHA obrazów/odpowiedzi/paczek.
+  Żadne z tych sześciu metadanych nie jest zaakceptowanym rekordem SFT;
+  bez eksportu i treningu wag. Nie jest to niezależny holdout ani dowód
+  gotowości usługi. Szczegóły i następne lekcje w INTERIOR_SCHOOL.md.
+- Testy etapami: 32/33/34 passed, końcowo 34 w 0.72 s. Ostatni dodany
+  test sprawdza faktyczne przekazanie PNG i mechaniczne paczkowanie bez
+  zmiany tekstu/obrazu lub automatycznego odbioru. Bez live DB i publikacji.
+  Jedna pomocnicza komenda odczytu wskazała błędny katalog dokumentacji;
+  poprawiono ścieżkę bez wpływu na inferencję. Interfejs bez zmian.
+- Końcowa kontrola GPU z sandboxa nie miała dostępu do sterownika; powtórzona
+  z wymaganym uprawnieniem wykazała 766 MiB użycia i 1% obciążenia.
+  Bez restartu lub modyfikacji sterownika.
+
 ## 2026-09-20 — drugi trening QLoRA i niezależna ocena nowych recenzji
 
 - Kontynuacja aktywnego celu, poprzedni etap dostarczył3 odebrane recenzje.

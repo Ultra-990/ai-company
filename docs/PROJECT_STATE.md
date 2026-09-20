@@ -1,5 +1,16 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — obrazy wnętrz i nauka opisów
+
+[Szkoła wnętrz](organization-os/INTERIOR_SCHOOL.md) wykonała lokalnie plan,
+trzy obrazy, sześć obserwacji wizualnych i dwie wersje paczki redakcyjnej.
+Autorstwo modeli zachowane. Obrazy nadają się na kandydaty ćwiczeniowe;
+opisy **0/3 odebranych przed i po uwagach**: nieuzasadnione twierdzenia,
+pozorne wady i urwane zdania. Zachowano błędy i ocenę, bez ręcznej naprawy.
+34 testy infrastruktury zaliczone. Ta partia nie zasiliła treningu wag.
+Brak podstaw do deklaracji gotowości usługi; panel i produkcyjne zlecenia
+bez zmian. Dalsza nauka obejmuje ugruntowanie opisów w obrazie i zwięzłość.
+
 ## Aktualizacja 20.09.2026 — drugi trening i porównanie recenzji
 
 Ukończono kolejny rzeczywisty trening:17 zatwierdzonych przykładów,
