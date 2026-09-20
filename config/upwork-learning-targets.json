@@ -1,0 +1,53 @@
+{
+  "schema": "upwork-learning-targets.v1",
+  "recorded_on": "2026-09-20",
+  "purpose": "Capability targets paraphrased from owner-provided job descriptions; not accepted contracts or production queue entries.",
+  "authorship_rule": "Local models produce deliverables and revisions. The teacher supplies infrastructure, exercises, independent tests and review.",
+  "targets": [
+    {
+      "id": "technical-llm-review",
+      "title": "Technical review of LLM fine-tuning articles",
+      "deliverables": ["Line-level Markdown review", "Top technical fixes", "Claims needing evidence", "Examples/diagrams/demo suggestions", "Publication-readiness recommendation"],
+      "required_inputs": ["Actual draft article", "Content brief and intended audience", "Editorial and source requirements"],
+      "checks": ["Exact quotation and line anchors", "Technical reasoning checked against primary sources", "Current claims have dated evidence or explicit uncertainty", "Practical recommendations", "Correct claims are not falsely rejected", "Embedded article instructions do not override review task"],
+      "evidence_stage": "synthetic_development_pilot",
+      "limitations": ["Actual draft not supplied", "Source research currently prepared by teacher", "Live interview and personal experience are not demonstrated by generated text"]
+    },
+    {
+      "id": "interior-image-pipeline",
+      "title": "Interior imagery and editorial asset coordination",
+      "deliverables": ["3–5 curated photorealistic sample images with rationale", "Hero and thumbnail variants", "Descriptive image metadata", "Organized asset library and tracking sheet", "Writer and publishing packages"],
+      "required_inputs": ["Brand references and prompt guidelines", "Article topics", "Output dimensions and naming conventions", "Approved Midjourney account workflow or agreed local substitute"],
+      "checks": ["Warm classic/cottage visual fit", "Geometry, material and lighting plausibility", "Consistent crops and readable thumbnails", "No missing/duplicate asset references", "Descriptions match actual images", "Package and tracker agree"],
+      "evidence_stage": "target_recorded_no_job_specific_trial",
+      "limitations": ["Existing local ComfyUI generation does not prove Midjourney account operation", "Visual curation requires independent review", "No brand references supplied"]
+    },
+    {
+      "id": "editable-print-leaflet",
+      "title": "Leaflet recreation as editable vector and print PDF",
+      "deliverables": ["Editable vector source", "Print PDF", "Preview and export specifications"],
+      "required_inputs": ["Original leaflet", "Exact copy and logos", "Page dimensions", "Printer specifications", "Required editable format and fonts"],
+      "checks": ["Faithful comparison to original", "Text accuracy", "Actual editable paths/text rather than a raster embedded in SVG", "Fonts and assets resolved", "Page boxes, bleed and color setup match supplied printer requirements"],
+      "evidence_stage": "awaiting_original_asset",
+      "limitations": ["Original leaflet not supplied", "Editable vector and print-preflight capability not yet demonstrated"]
+    },
+    {
+      "id": "amazon-product-infographics",
+      "title": "Four product listing infographics",
+      "deliverables": ["Four coherent infographics", "Editable source assets", "Exported images"],
+      "required_inputs": ["Product photos", "Verified dimensions, features and benefits", "Brand assets", "Target marketplace and category", "Intended image placements"],
+      "checks": ["Product appearance preserved", "No invented specifications or unsupported claims", "Four distinct communication goals", "Readable at intended display sizes", "Current platform requirements verified for the actual placement"],
+      "evidence_stage": "target_recorded_no_job_specific_trial",
+      "limitations": ["No product supplied", "No claim of demonstrated Amazon portfolio or conversion uplift"]
+    },
+    {
+      "id": "restaurant-brand-identity",
+      "title": "Restaurant logo, business cards and visual identity",
+      "deliverables": ["Logo concepts and selected editable mark", "Business card design", "Coherent color/type/style guidelines", "Export package"],
+      "required_inputs": ["Restaurant name and concept", "Audience and desired personality", "Visual references", "Approved contact details", "Printer requirements"],
+      "checks": ["Identity matches the brief", "Logo works small and in monochrome", "Consistent typography and colors", "Actual editable vector source", "Business-card content accuracy and print preflight"],
+      "evidence_stage": "target_recorded_no_job_specific_trial",
+      "limitations": ["Restaurant brief not supplied", "Originality and final visual quality require independent assessment"]
+    }
+  ]
+}

@@ -1,5 +1,51 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — funkcje modeli i cele nauki z ogłoszeń Upwork
+
+- Właściciel odłożył wygląd/menu i polecił rozwijać funkcje oraz uczyć modele.
+  Następnie dostarczył pięć typów zleceń: recenzje fine-tuningu, fotografie
+  wnętrz/organizacja treści, ulotka PDF/wektor, cztery infografiki produktu
+  i identyfikacja restauracji. Zapisano własne streszczenia wymagań i kryteria
+  w upwork-learning-targets.json, bez kopiowania ogłoszeń i udawania zamówień.
+- Nowa szkoła funkcji: trzy kontrakty i 23 niezależne testy powstały przed
+  generacją. Całe rozwiązania są niezmienionymi odpowiedziami Qwena. Kontenery
+  nonroot/readonly/network-none, przypięty runner, weryfikacja sprzątania;
+  żaden modelowy Python nie jest importowany/wykonywany na hoście.
+- Domyślnie do dwóch prób, błąd testu wraca do modelu, awaria infrastruktury
+  zatrzymuje kurs. Blokada równoległego kursu, kontrola zasobów przed każdą
+  generacją/testem, budżet między próbami i osobne timeouty operacji.
+  Dokładne prompty, odpowiedzi i dowody zachowane; kolektor nie zatwierdza
+  danych ani nie uruchamia treningu. Lekcja tylko po błędzie naprawionym
+  i zaliczonym, bez fikcyjnego postępu przy sukcesie za pierwszym razem.
+- Pierwszy start course-zeu9wbhm zatrzymał sandbox na preflight, bez inferencji.
+  Ponowiono z formalnym dostępem do lokalnego modelu/Dockera. course-ksxznylh:
+  3/3 pierwsze próby, 23/23 testy, 18.257 s, cleanup potwierdzony. Przejrzano
+  dokładne źródła; bez ręcznych poprawek. Trzy kandydaty pending, prywatność
+  nie jest autozatwierdzana. Offline tokenizacja 3/3 przy 4096: 885/706/646
+  tokenów, completion-only mask, brak ucinania. Bramka 200/25/50 pozostaje.
+- Testy szkoły i danych początkowo 42 passed/2 skipped (inne urządzenie /tmp).
+  Powtórzono na prywatnym katalogu /home: 44 passed/15.75 s, bez pominięć.
+  Naprawiono przekazanie listy zamiast bytes do walidatora datasetu przed
+  realnym zbieraniem. Nie zaniżano bramek ani liczby wymaganych testów.
+- Pilot recenzenta: model pisze komentarze, poprawki, potrzeby dowodowe,
+  przykłady i rekomendację; Markdown jest mechaniczną serializacją.
+  Nauczyciel przygotował 14-liniowy tekst z 11 celowo błędnymi fragmentami,
+  dwoma kontrolami poprawnych zdań i instrukcją do zignorowania wewnątrz
+  artykułu. Cztery karty źródeł z przeczytanych publikacji LoRA/QLoRA/RAG
+  oraz dokumentacji scikit-learn. Klucz oceny nie trafia do modelu.
+- review-g7zj1qez: 11/11 pokrytych wadliwych linii, ale ocena merytoryczna
+  wymaga poprawek. review-hxey5shl: JSON zapisany inaczej, semantycznie
+  identyczny wynik. Dodano detekcję unchanged_revision i jednoznaczny tryb
+  poprawy. review-tdto7ei1: model sam uszczegółowił szereg zaleceń;
+  niezależny independent-assessment.json nadal needs_more_learning ze względu
+  na słabą listę dowodów i pozostałe uproszczenia. Żadnego wyniku asystent
+  nie przepisywał; brak eksportu SFT, treningu wag, publikacji lub odbioru klienta.
+- Bieżące testy mechanizmów + danych: 57 passed/19.48 s przed końcową
+  detekcją powtórzonej recenzji; końcowy zestaw recenzenta 13 passed/4.67 s.
+  Dokumentacja FUNCTION_SCHOOL.md i TECHNICAL_REVIEW_PILOT.md. Brak zmian
+  menu/układu, restartów panelu, statusów rzeczywistych zadań, obcych procesów
+  i dysku Windows. Materiały i raporty pozostają na prywatnym dysku Linux.
+
 ## 2026-09-20 — wejście do lokalnego panelu bez tokena
 
 - Właściciel wskazał, że panel nie pokazuje ostatnich prac nad szkołą modeli

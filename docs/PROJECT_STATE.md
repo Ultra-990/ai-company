@@ -1,5 +1,20 @@
 # Stan projektu AI Company
 
+## Aktualizacja 20.09.2026 — ćwiczenia funkcjonalne i pięć celów Upwork
+
+Właściciel odłożył zmiany wyglądu panelu i polecił rozwijać funkcje oraz naukę.
+[Szkoła funkcji](organization-os/FUNCTION_SCHOOL.md) działa: lokalny model
+napisał trzy rozwiązania (koszyk, rezerwacje, wirtualny portfel), 23/23 testy
+w izolacji. Trzy dokładne kandydaty SFT pending, tokenizacja 3/3; brak treningu wag.
+
+Zapisano pięć typów zleceń w `config/upwork-learning-targets.json`.
+[Recenzent techniczny](organization-os/TECHNICAL_REVIEW_PILOT.md) wykonał
+syntetyczną próbę i dwie poprawki. Ostatnia jest merytorycznie lepsza,
+ale nadal `needs_more_learning`; pierwsza poprawka powtórzyła cały wynik.
+Pozostałe cztery kierunki wymagają prób i wejściowych materiałów klienta.
+Nie ma jeszcze podstaw do deklaracji samodzielnej realizacji wszystkich
+pięciu zleceń. Menu, układ panelu i produkcyjne zadania nie zostały zmienione.
+
 ## Aktualizacja 20.09.2026 — lokalny panel bez tokena
 
 Na komputerze właściciela `http://127.0.0.1:8000/os` automatycznie otwiera
