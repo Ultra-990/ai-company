@@ -41,7 +41,7 @@
  function stickyTop(){return parseFloat(getComputedStyle(stage).top)||0;}
  function measure(){const r=journey.getBoundingClientRect();targetProgress=clamp((stickyTop()-r.top)/Math.max(1,journey.offsetHeight-stage.offsetHeight),0,1)*2;}
  function render(now,instant=false){
-  frame=0;if(!enabled||document.hidden)return;
+  frame=0;if(!enabled||!window.StudioFocus.active())return;
   // Low-FPS devices must not keep a spring running indefinitely.
   instant ||= now>=settleDeadline;
   const dt=last?Math.min(.05,(now-last)/1000):1/60;last=now;
@@ -69,7 +69,7 @@
   if(selected!==current){current=selected;counter.textContent=`0${selected+1} — 03`;word.textContent=['FORMA','PRZESTRZEŃ','MATERIAŁ'][selected];chapters.forEach((button,index)=>button.setAttribute('aria-current',String(index===selected)));}
   if(moving&&!settings.paused)frame=requestAnimationFrame(render);
  }
- function schedule(){settleDeadline=performance.now()+1800;if(!frame&&enabled&&!settings.paused&&!document.hidden){last=0;frame=requestAnimationFrame(render);}}
+ function schedule(){settleDeadline=performance.now()+1800;if(!frame&&enabled&&!settings.paused&&window.StudioFocus.active()){last=0;frame=requestAnimationFrame(render);}}
  function configure(){
   enabled=desktop.matches&&!reduced.matches;section.classList.toggle('scene-ready',enabled);
   if(frame)cancelAnimationFrame(frame);frame=0;last=0;poses=[];
@@ -77,6 +77,7 @@
   else{measure();render(performance.now(),true);}
  }
  function go(index,behavior='smooth',remember=true){
+  if(!window.StudioFocus.active())return;
   if(!enabled){cards[Math.round(clamp(index,0,2))].scrollIntoView({behavior:'instant',block:'center'});return;}
   if(remember&&Math.abs(index-targetProgress)>.01){const previous=targetProgress;window.StudioNavigation.rememberScene(()=>go(previous,'smooth',false));}
   if(settings.paused||reduced.matches)behavior='instant';
@@ -99,6 +100,7 @@
   if(settings.paused){if(frame)cancelAnimationFrame(frame);frame=0;section.dataset.sceneMoving='false';}else{measure();schedule();}
  });
  addEventListener('scroll',()=>{measure();schedule();},{passive:true});addEventListener('resize',configure);
- document.addEventListener('visibilitychange',()=>{if(document.hidden){if(frame)cancelAnimationFrame(frame);frame=0;}else{measure();schedule();}});
+ document.addEventListener('studio:suspend',()=>{if(frame)cancelAnimationFrame(frame);frame=0;section.dataset.sceneMoving='false';});
+ document.addEventListener('studio:resume',()=>{measure();schedule();});
  reduced.addEventListener('change',configure);desktop.addEventListener('change',configure);configure();
 })();

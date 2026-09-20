@@ -24,6 +24,31 @@ po generacji. Nie uruchamiano ani nie zatrzymywano cudzej instancji 8188.
 
 ## Interakcje
 
+### Granica fokusu i pulpitu (20.09.2026)
+
+Po zgłoszeniu problemu z przełączaniem okien Linuksa dodano `studio-focus.js`.
+Operacje nawigacji i programowego fokusu wymagają widocznego dokumentu z
+`document.hasFocus()`. Utrata fokusu unieważnia identyfikatory opóźnionych
+operacji, wstrzymuje scenę i kończy aktywne animacje podglądu. Zamknięcie
+podglądu rozpoczęte przed utratą fokusu kończy się dopiero po aktywacji strony;
+w tle nie wykonuje `dialog.close()` ani odtwarzania fokusu. Menu nie wykonuje
+spóźnionego skoku po zmianie aktywności. Zmodyfikowane klawisze Alt/Ctrl/Meta
+i IME nie są poleceniami galerii/menu. Nie użyto `window.focus`, blokady
+klawiatury/myszy, pełnego ekranu ani narzędzi sterowania sesją OS.
+
+Headless Chrome testów ma własny profil, backend Ozone headless, wyłączone GPU,
+usunięte DISPLAY/WAYLAND_DISPLAY/XAUTHORITY i nieaktywny adres sesyjnego D-Bus.
+Test symuluje brak fokusu dokumentu; nie przełącza okien na pulpicie właściciela.
+Nie jest to odtworzenie Alt+Tab w fizycznej sesji KDE. Błędy KWin `BadDamage`
+zaobserwowane w logu nie potwierdzają przyczyny ani związku ze stroną.
+Poprawkę należy sprawdzić po zamknięciu starych kart demonstracji i otwarciu
+aktualnego podglądu — stare karty nadal wykonują wcześniej załadowany JS.
+
+Audit `studio-design-o1sem2gt/studio-browser-cutmo6rd/report.json`:
+**1 passed/26.47s**, SHA256
+`468937f368627b0bde49267383d8942aa71f0a2ef70666de8ee37d2f8cf16de1`.
+Regresja Python 74 passed/1 skipped/1.46s; Node sprawdza politykę fokusu.
+
 ### Połączone sterowanie i przypadki brzegowe (20.09.2026)
 
 Scena i linki sekcji korzystają z jednej uporządkowanej historii. Przyciski

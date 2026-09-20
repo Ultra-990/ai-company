@@ -60,6 +60,8 @@ def test_verified_pngs_become_data_urls_and_escaped_markup(tmp_path,monkeypatch)
     assert files['app.js']=='original' and 'studio-gallery.js' in files
     assert 'studio-navigation.js' in files and 'id="view-return"' in html
     assert html.index('src="studio-navigation.js"') < html.index('src="studio-tools.js"')
+    assert 'studio-focus.js' in files
+    assert html.index('src="studio-focus.js"') < html.index('src="studio-navigation.js"')
 
 
 @pytest.mark.parametrize('change',['status','hash','escape','size','stopped'])

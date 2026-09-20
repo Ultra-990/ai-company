@@ -4,6 +4,7 @@ No production DB, owner secrets, host application execution or tenant processes.
 """
 import asyncio
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -69,10 +70,12 @@ window.addEventListener('message',async e=>{
     thread=Thread(target=server.serve_forever,daemon=True);thread.start()
     try:
         with tempfile.TemporaryDirectory(prefix='aic-multifile-browser-') as profile:
-            process=subprocess.Popen(['/usr/bin/google-chrome','--headless','--disable-gpu',
+            browser_env={k:v for k,v in os.environ.items() if k not in {'DISPLAY','WAYLAND_DISPLAY','XAUTHORITY','DBUS_SESSION_BUS_ADDRESS'}}
+            browser_env['DBUS_SESSION_BUS_ADDRESS']='unix:path=/nonexistent'
+            process=subprocess.Popen(['/usr/bin/google-chrome','--headless','--ozone-platform=headless','--disable-gpu',
                 '--disable-extensions','--disable-background-networking','--no-first-run',
                 '--no-default-browser-check','--remote-debugging-port=0',f'--user-data-dir={profile}','about:blank'],
-                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env=browser_env)
             try:
                 portfile=Path(profile)/'DevToolsActivePort'
                 for _ in range(100):
@@ -123,6 +126,9 @@ window.addEventListener('message',async e=>{
                                 context=candidate;break
                         if context is not None:break
                     assert context is not None,'Application frame not initialized'
+                    # Activate only this offscreen target, not a desktop window.
+                    await call('Page.bringToFront',session=session)
+                    await call('Runtime.evaluate',{'expression':"document.querySelector('#app').focus()"},session)
                     if expected_color is not None:
                         assert await evaluate("getComputedStyle(document.body).color",context)==expected_color
                     assert await evaluate("(()=>{try{return parent.document.title}catch{return 'isolated'}})()",context)=='isolated'

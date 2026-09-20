@@ -1,5 +1,17 @@
 # Zasady pracy w repozytorium AI Company
 
+## Granica interfejsu — 2026-09-20
+
+- Właściciel wymaga działania interfejsu w przeglądarce, bez sterowania
+  pulpitem Linuksa, aktywnymi oknami OS, kursorem ani skrótami systemowymi.
+- Model/backend mogą wykonywać zatwierdzone prace w izolacji; nie daje to
+  uprawnień do automatyzacji sesji graficznej. Nie używaj desktop automation
+  do testów UI. Przeglądarka testowa: oddzielny headless profil, bez DISPLAY,
+  WAYLAND_DISPLAY, XAUTHORITY i połączenia z sesyjnym D-Bus użytkownika.
+- Nie traktuj niskiego obciążenia jako dowodu poprawności przełączania okien.
+  Po utracie aktywności strony nie przywracaj programowo fokusu; weryfikuj
+  opóźnione callbacki. Rzeczywisty problem KWin wymaga osobnego potwierdzenia.
+
 ## Kontrola modeli i zapis na GitHub — 2026-09-19
 
 - Właściciel polecił wykorzystywać lokalne modele do ograniczonych podzadań,

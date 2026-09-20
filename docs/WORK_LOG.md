@@ -1,5 +1,35 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — FORMA: zabezpieczenie granicy przeglądarka/pulpit
+
+- Właściciel zgłosił niemożność przełączania okien Linuksa, nie przeciążenie.
+  W poprzedniej diagnostyce odczytano KWin XCB BadDamage; to wskazówka, nie
+  rozpoznana przyczyna. Nie zmieniono KWin, sterowników, skrótów, sesji ani
+  procesów właściciela. Wstrzymano modele i prace niezwiązane z problemem.
+- Dodano wspólną kontrolę dokumentu aktywnego/widocznego oraz identyfikatory
+  unieważniane przez blur. Focus/navigation w tle nie działają. Gallery close
+  po utracie aktywności odkłada native close do powrotu strony, bez focus w tle.
+  Menu odrzuca przeterminowane skoki. Animacje przerywane po blur, brak obsługi
+  Alt/Ctrl/Meta/IME jako poleceń galerii. Nie deklarujemy naprawy OS bez obserwacji
+  właściciela; to zabezpieczenie konkretnych ryzyk w naszym kodzie.
+- Przeglądarka kontrolna ma jawny backend headless i środowisko bez DISPLAY,
+  WAYLAND_DISPLAY/XAUTHORITY; adres sesyjnego D-Bus jest nieaktywny. Aktywowany
+  jest wyłącznie offscreen target testu, nie okno OS. Pierwszy audit y_u9vmt2
+  nie miał aktywnej ramki: 1 failed/5.88s (scena słusznie nie renderowała).
+  Dodano aktywację ramki wewnątrz prywatnej przeglądarki headless.
+- Audit cutmo6rd: 1 passed/26.47s, symulowane background close bez wywołań
+  HTMLElement.focus, odmowa background navigation, bez konsumowania modyfikatorów,
+  bezpieczne dokończenie close po powrocie. Dotychczasowe interakcje zaliczone.
+  Nie wykonano automatycznego Alt+Tab w sesji właściciela.
+  SHA256 raportu: 468937f368627b0bde49267383d8942aa71f0a2ef70666de8ee37d2f8cf16de1.
+- Node: blokada hidden/nieaktywnego dokumentu, obcego elementu i starego ticketu,
+  modyfikatory/IME oraz regresja sprężyn. Python początkowo 24 passed/1 skipped
+  /0.51s. Brak inferencji, GPU generacji, treningu i nowych zależności.
+  Końcowa regresja Python: 74 passed/1 skipped/1.46s; składnia JS/diff OK.
+- Pytanie dodatkowe o iPhone: obecny podgląd jest loopback-only. Nie otwarto
+  panelu właściciela/API do LAN; osobny telefoniczny podgląd wymaga następnego
+  kroku po weryfikacji problemu pulpitu.
+
 ## 2026-09-20 — FORMA: połączenie sceny, nawigacji i zoomu
 
 - Właściciel zgłosił, że funkcje działają naprzemiennie. Osobne historie

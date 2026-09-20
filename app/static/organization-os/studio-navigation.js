@@ -6,7 +6,8 @@
  if(typeof document==='undefined')return;
  const strip=document.querySelector('#view-return');if(!strip)return;
  const button=strip.querySelector('button'),stack=[];let press=null,restoring=false,scene=null,movingUntil=0;
- function move(options){movingUntil=options.behavior==='smooth'?performance.now()+1800:0;scrollTo(options);}
+ function move(options){if(!window.StudioFocus.active())return;movingUntil=options.behavior==='smooth'?performance.now()+1800:0;scrollTo(options);}
+ document.addEventListener('studio:suspend',()=>{movingUntil=0;press=null;});
  // Manual input takes priority over any in-flight navigation animation.
  addEventListener('wheel',event=>{
   if(event.ctrlKey||!event.deltaY||movingUntil<=performance.now()||document.querySelector('dialog[open]'))return;
@@ -19,22 +20,22 @@
  addEventListener('scrollend',()=>{movingUntil=0;},{passive:true});
  function update(){strip.hidden=stack.length===0;document.body.classList.toggle('nav-can-back',stack.length>0);button.disabled=stack.length===0;document.documentElement.style.setProperty('--return-height',strip.hidden?'0px':strip.getBoundingClientRect().height+'px');}
  function go(target,source=document.activeElement){
-  if(!target||!document.contains(target))return false;
+  if(!window.StudioFocus.active()||!target||!document.contains(target))return false;
   stack.push({kind:'section',y:scrollY,source});if(stack.length>24)stack.shift();update();
-  target.setAttribute('tabindex','-1');target.focus({preventScroll:true});
+  target.setAttribute('tabindex','-1');window.StudioFocus.focus(target);
   const behavior=matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth';
   movingUntil=behavior==='smooth'?performance.now()+1800:0;target.scrollIntoView({behavior});
   return true;
  }
  function back(){
-  if(document.querySelector('dialog[open]'))return false;
+  if(!window.StudioFocus.active()||document.querySelector('dialog[open]'))return false;
   // Wheel-only movement can return to a chapter before leaving the scene.
   if(stack.at(-1)?.kind!=='scene'&&scene?.active()&&scene.canBack())return scene.back();
   const previous=stack.pop();if(!previous)return false;update();
   if(previous.restore){previous.restore();return true;}
   // Scene focus must not create another chapter-history entry during Back.
   const focus=previous.source?.isConnected?previous.source:document.querySelector('#main');
-  restoring=true;try{if(focus)focus.focus({preventScroll:true});}finally{restoring=false;}
+  restoring=true;try{window.StudioFocus.focus(focus);}finally{restoring=false;}
   move({top:previous.y,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
   return true;
  }

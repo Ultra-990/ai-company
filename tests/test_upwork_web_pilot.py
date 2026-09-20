@@ -71,7 +71,7 @@ def test_retained_studio_website(client, task_repository):
         from scripts.studio_gallery import STATIC
         observations['media_report_sha256'] = sha256(Path(media_path).read_bytes()).hexdigest()
         observations['overlay_checksums'] = {name:sha256((STATIC/name).read_bytes()).hexdigest()
-            for name in ('studio-gallery.css','studio-gallery.js','studio-scene.css','studio-scene.js','studio-tools.css','studio-tools.js','studio-tools.html','studio-navigation.js')}
+            for name in ('studio-gallery.css','studio-gallery.js','studio-scene.css','studio-scene.js','studio-tools.css','studio-tools.js','studio-tools.html','studio-navigation.js','studio-focus.js')}
     def save():
         (out/'report.json').write_text(json.dumps(observations, ensure_ascii=False, indent=2))
     save()
@@ -342,6 +342,15 @@ def test_retained_studio_website(client, task_repository):
             await js("document.querySelector('[data-close]').click()")
             await eventually('gallery-missing-animation-api-still-closes', "document.querySelector('#art-viewer').dataset.phase==='closed' && !document.body.classList.contains('art-open')")
             await js("Element.prototype.animate=window.savedAnimation;delete window.savedAnimation")
+            await js("document.querySelector('[data-open-art=\"1\"]').click()")
+            await eventually('focus-test-viewer-ready', "document.querySelector('#art-viewer').dataset.phase==='open'")
+            await require('system-modifiers-not-consumed', "['altKey','ctrlKey','metaKey'].every(key=>{const e=new KeyboardEvent('keydown',{key:'ArrowLeft',[key]:true,bubbles:true,cancelable:true});document.querySelector('#art-viewer').dispatchEvent(e);return !e.defaultPrevented;})")
+            await js("window.focusCalls=0;window.savedElementFocus=HTMLElement.prototype.focus;HTMLElement.prototype.focus=function(...args){window.focusCalls++;return window.savedElementFocus.apply(this,args)};document.querySelector('[data-close]').click();Object.defineProperty(document,'hasFocus',{configurable:true,value:()=>false});window.dispatchEvent(new Event('blur'))")
+            await eventually('background-close-does-not-restore-focus', "document.querySelector('#art-viewer').dataset.phase==='open' && document.querySelector('#art-viewer').open && !document.querySelector('.art-flight') && window.focusCalls===0")
+            await require('background-navigation-does-not-run', "window.StudioNavigation.go(document.querySelector('#studio'))===false && window.StudioNavigation.back()===false && window.focusCalls===0")
+            await js("delete document.hasFocus;window.dispatchEvent(new Event('focus'))")
+            await eventually('foreground-can-finish-close', "document.querySelector('#art-viewer').dataset.phase==='closed' && !document.body.classList.contains('art-open')")
+            await js("HTMLElement.prototype.focus=window.savedElementFocus;delete window.savedElementFocus")
 
         # This extra requirement belongs to the CSS design brief, not the older
         # functional baseline. Screenshots above survive a rejected design.

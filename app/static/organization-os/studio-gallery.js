@@ -20,14 +20,14 @@
  const label=dialog.querySelector('#art-title'),counter=dialog.querySelector('#art-counter');
  const stage=dialog.querySelector('.art-stage'),zoomLabel=dialog.querySelector('#zoom-level');
  const reduce=matchMedia('(prefers-reduced-motion: reduce)'),active=new Set();
- let index=0,zoom=1,opener=null,scrollFrame=0,phase='closed',queuedClose=false,queuedZoom=0;
+ let index=0,zoom=1,opener=null,scrollFrame=0,phase='closed',queuedClose=false,queuedZoom=0,deferredClose=false,closeTicket=0;
  const ease='cubic-bezier(.22,.75,.15,1)';
  function state(value){
   phase=value;dialog.dataset.phase=value;
   dialog.querySelectorAll('.art-controls button').forEach(b=>b.disabled=value!=='open');
  }
  async function motion(element,frames,duration){
-  if(reduce.matches||typeof element.animate!=='function')return;
+  if(!window.StudioFocus.active()||reduce.matches||typeof element.animate!=='function')return;
   const animation=element.animate(frames,{duration,easing:ease,fill:'both'});active.add(animation);
   try{await animation.finished;}catch{/* resize/cancel must not strand a dialog */}
   finally{active.delete(animation);animation.cancel();}
@@ -58,21 +58,23 @@
   finally{clone.remove();image.style.visibility='';}
  }
  async function open(value,button){
-  if(phase!=='closed')return;
+  if(phase!=='closed'||!window.StudioFocus.active())return;
   opener=button;queuedZoom=0;const box=thumbnail(button);
   show(value);state('opening');dialog.showModal();document.body.classList.add('art-open');
-  dialog.querySelector('[data-close]').focus({preventScroll:true});
+  window.StudioFocus.focus(dialog.querySelector('[data-close]'));
   try{await fly(box);}finally{state('open');applyQueuedZoom();if(queuedClose){queuedClose=false;close();}}
  }
  async function close(){
   if(phase==='closed'||phase==='closing')return;
+  if(!window.StudioFocus.active()){deferredClose=true;return;}
   if(phase!=='open'){queuedClose=true;finishMotion();return;}
+  closeTicket=window.StudioFocus.ticket();deferredClose=false;
   state('closing');
   try{
    if(zoom!==1){const before=image.style.transform;setZoom(1);await motion(image,[{transform:before},{transform:'scale(1)'}],180);}
    const target=opener;
    await fly(thumbnail(target),true);
-  }finally{dialog.close();}
+  }finally{if(window.StudioFocus.active())dialog.close();else{deferredClose=true;state('open');}}
  }
  async function change(direction){
   if(phase!=='open')return;
@@ -94,13 +96,16 @@
   }
  });
  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
- dialog.addEventListener('close',()=>{finishMotion();state('closed');queuedClose=false;queuedZoom=0;document.body.classList.remove('art-open');opener?.focus({preventScroll:true});});
+ dialog.addEventListener('close',()=>{finishMotion();state('closed');queuedClose=false;queuedZoom=0;deferredClose=false;document.body.classList.remove('art-open');window.StudioFocus.focus(opener,closeTicket);});
+ document.addEventListener('studio:suspend',()=>{queuedZoom=0;if(scrollFrame)cancelAnimationFrame(scrollFrame);scrollFrame=0;finishMotion();});
+ document.addEventListener('studio:resume',()=>{if(deferredClose)close();});
  dialog.querySelector('[data-prev]').addEventListener('click',()=>change(-1));
  dialog.querySelector('[data-next]').addEventListener('click',()=>change(1));
  dialog.querySelector('[data-zoom-in]').addEventListener('click',()=>setZoom(zoom+.2));
  dialog.querySelector('[data-zoom-out]').addEventListener('click',()=>setZoom(zoom-.2));
  dialog.querySelector('[data-reset]').addEventListener('click',()=>setZoom(1));
  dialog.addEventListener('keydown',event=>{
+  if(!window.StudioFocus.plainKey(event))return;
   // Handle the key before the native close watcher: cancel is not always
   // cancelable (for example without a browser user-activation history).
   if(event.key==='Escape'){event.preventDefault();event.stopPropagation();close();}
@@ -116,7 +121,7 @@
    card.style.setProperty('--art-drift',reduce.matches?'0px':distance*16+'px');
   });
  }
- function schedule(){if(!scrollFrame)scrollFrame=requestAnimationFrame(animate);}
+ function schedule(){if(window.StudioFocus.active()&&!scrollFrame)scrollFrame=requestAnimationFrame(animate);}
  addEventListener('scroll',schedule,{passive:true});
  addEventListener('resize',()=>{finishMotion();schedule();});
  reduce.addEventListener('change',()=>{finishMotion();schedule();});schedule();
