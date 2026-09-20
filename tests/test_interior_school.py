@@ -8,7 +8,7 @@ import pytest
 
 from app.services import local_vision as vision
 from scripts import interior_school as school
-from scripts.interior_school_contract import Plan,check_plan
+from scripts.interior_school_contract import Plan,check_plan,Inspection,VISION_INSTRUCTION,inspection_instruction
 
 
 def fixture_plan():
@@ -57,6 +57,15 @@ def test_default_never_invokes_model(monkeypatch,capsys):
     monkeypatch.setattr('sys.argv',['interior_school.py','--plan'])
     monkeypatch.setattr(school.media,'check_idle',lambda:pytest.fail('Unexpected model preflight'))
     assert school.main()==0 and json.loads(capsys.readouterr().out)['model_invoked'] is False
+
+
+def test_visible_schema_matches_decoder_contract_and_legacy_is_preserved():
+    assert inspection_instruction('legacy')==VISION_INSTRUCTION
+    for name in ('schema-visible-v1','grounded-concise-v1'):
+        instruction=inspection_instruction(name)
+        assert len(instruction)<12000
+        assert json.loads(instruction.split('maxima, not targets):\n')[1])==Inspection.model_json_schema()
+    with pytest.raises(ValueError):inspection_instruction('arbitrary')
 
 
 def test_feedback_rejects_changed_model_answer_or_different_render(tmp_path,monkeypatch):

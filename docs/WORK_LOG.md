@@ -1,5 +1,37 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — lekcja wizyjna i dokładne dane do późniejszego treningu
+
+- Kontynuacja celu i zmian rozpoczętych przed przerwaniem narzędzia przez
+  właściciela. Potwierdzono dwa zakończone przebiegi i obecność uwag; brak
+  raportu trzeciej próby. Nowa próba przeszła kontrolę bezczynności i zasobów.
+  Właściciel ponownie podkreślił: poprawki realizują modele, nie asystent.
+- Dodano profile legacy/schema-visible-v1/grounded-concise-v1. Ten sam schemat
+  trafił do instrukcji zgodnie z dokumentacją Ollamy; drugi profil dodaje
+  lekcję zwięzłości i opisu popartego widocznymi szczegółami. Schemat API,
+  obrazy i parametry generacji nie zmienione. Tytuły koncepcji oznaczono
+  jako planowane, bez zmiany modelowych tekstów w nowych paczkach.
+- inspect-dm1mo8dj: 20.122 s, inspect-8orm_8o6: 18.709 s,
+  inspect-izdxjllv z uwagami: 17.792 s. Dziewięć surowych odpowiedzi zachowane.
+  Widoczny schemat współwystępuje z kompletnymi zdaniami w tej próbie;
+  sama lekcja nie usuwa błędów obserwacji. Nie jest to pomiar treningu wag.
+- Obejrzano ponownie trzy oryginalne PNG, oceniono dziewięć odpowiedzi.
+  Pełne obserwacje odebrane: 0/3, 0/3, 1/3. Hero po uwagach zaliczone;
+  pin niepewna identyfikacja materiału uciętego uchwytu, detail 17 słów
+  zamiast maksymalnie 16 w alt text. Błędy nie zostały poprawione ręcznie.
+  Prywatne teacher-judgments.json i assessment-002.json wiążą ocenę hashami.
+- Nowy offline interior_learning_records.py sprawdza oryginalny obraz,
+  prompt, odpowiedź, render i osobną decyzję nauczyciela. Eksportuje pełne
+  rozmowy z PNG do odrębnego formatu; samo candidate nie daje akceptacji.
+  Jedna rodzina train dla wariantów tego renderu, zakaz eksportu do test.
+- vision-candidates-fyodznnk: jeden zatwierdzony syntetyczny rekord;
+  SHA records.jsonl 5533273410e47ca63d78dcef8375d59536ca8f4f13cbdc2f2f82407325176be3.
+  ready_for_trainer=false, brak treningu wag. Potrzebny procesor/maski wizji,
+  większe dane i niezależne zadania. Tekstowy loader odrzuca ten format.
+- Testy: 25 passed po zmianie profilu, 35 passed po dodatkowym teście schematu,
+  końcowo 41 passed/0.92 s z kontrolą eksportu i podmiany danych. Bez zmian UI,
+  routingu, produkcyjnych zleceń, chmurowej generacji lub publikacji obrazów.
+
 ## 2026-09-20/21 — lokalna szkoła obrazów i koordynacji redakcyjnej
 
 - Właściciel ponowił zgodę na działania. Kontynuacja aktywnego celu pięciu

@@ -1,5 +1,15 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — pierwszy odebrany przykład wizyjny
+
+Dalsze dziewięć obserwacji lokalnego Qwena: jawny schemat, krótka lekcja
+i poprawka wykonana przez model. Jedna pełna obserwacja odebrana do nauki,
+dwie z ostatniej próby nadal z uwagami. [Wyniki](organization-os/INTERIOR_SCHOOL.md).
+Zapisano dokładny prompt, odpowiedź i rzeczywisty obraz w osobnym formacie
+multimodalnym; 41 testów infrastruktury zaliczonych. **Nie wykonano jeszcze
+treningu wag na tej partii**, potrzebne dalsze dane i audyt wejść trenera.
+Nie jest to dowód gotowości usługi lub przeniesienia poprawy na nowe obrazy.
+
 ## Aktualizacja 21.09.2026 — obrazy wnętrz i nauka opisów
 
 [Szkoła wnętrz](organization-os/INTERIOR_SCHOOL.md) wykonała lokalnie plan,

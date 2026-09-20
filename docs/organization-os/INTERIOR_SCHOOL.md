@@ -92,3 +92,55 @@ podmianę źródła/odpowiedzi, brak inferencji bez `--run`, wysyłanie pikseli 
 promptu generowania, dokładne kopiowanie tekstów i obrazów oraz pozostawienie
 paczki bez odbioru i publikacji. Testy jednostkowe nie mierzą smaku ani trafności
 opisu; te ograniczenia wykazała rzeczywista próba powyżej.
+
+## 21.09 — jawny schemat, lekcja i pierwszy odebrany zapis obraz–tekst
+
+Dodano jawne profile `--vision-profile schema-visible-v1` oraz
+`grounded-concise-v1`; domyślny `legacy` zachowuje starą instrukcję.
+Pierwszy pokazuje modelowi ten sam schemat, który API wymusza przy generacji.
+[Dokumentacja Ollamy](https://docs.ollama.com/capabilities/structured-outputs)
+zaleca również podawanie schematu w treści instrukcji. Drugi dodaje lekcję
+krótkich kompletnych zdań, widocznych szczegółów i uzasadnionej krytyki obrazu.
+Sam schemat walidacji, obrazy, model i budżet generacji pozostały takie same.
+
+Próby na tych samych trzech obrazach, bez aktualizacji wag:
+
+| Próba prywatna | Instrukcja | Czas | Pełne obserwacje odebrane |
+| --- | --- | --- | --- |
+| inspect-dm1mo8dj | Jawny schemat | 20.122 s | 0/3 |
+| inspect-8orm_8o6 | Schemat i lekcja | 18.709 s | 0/3 |
+| inspect-izdxjllv | Schemat, lekcja i uwagi do obrazów | 17.792 s | 1/3 |
+
+Jawny schemat współwystąpił z kompletnymi zdaniami we wszystkich trzech
+odpowiedziach tej próby. To pojedyncze próbki sekwencyjne, bez zaślepienia,
+nie dowód przyczynowy ani przeniesienia umiejętności na inne zadania.
+Ocena i źródła są powiązane w prywatnej `assessment-002.json`.
+
+Odebrano dokładny wynik modelu dla hero: poprawione położenie ręcznika
+i baterii, zwięzły alt text, brak wymyślonych wad, uzasadnienie stylu
+i niepewność materiałowa. Pin nadal zbyt pewnie identyfikuje materiał
+częściowo uciętego uchwytu naczynia. Detail ma kompletny alt text, ale
+17 słów przy jawnym limicie 16 w uwagach. Nie zmieniano odpowiedzi ręcznie.
+Tytuły koncepcji w nowych paczkach są oznaczone `planned_concept_title`
+i `Planned concept`, aby nie mylić intencji generowania z obserwacją.
+
+`scripts/interior_learning_records.py REPORT JUDGMENTS --export` odkłada
+wyłącznie obserwacje zatwierdzone przez osobną ocenę nauczycielską. Sprawdza
+raport, wejście, dokładną odpowiedź i obraz po hashach; nie ufa rekomendacji
+`candidate` modelu. Zapisuje rzeczywisty PNG, dokładny tekst system/user/assistant
+(łącznie z uwagami), konfigurację i pochodzenie. Wszystkie warianty tego renderu
+mają tę samą rodzinę i pozostają w `train`; nie można eksportować ich jako test.
+
+Rzeczywisty zapis `vision-candidates-fyodznnk` zawiera jeden zatwierdzony
+syntetyczny rekord `company-vision-candidate.v1`. SHA `records.jsonl`:
+`5533273410e47ca63d78dcef8375d59536ca8f4f13cbdc2f2f82407325176be3`.
+Format jest celowo odrębny od tekstowego SFT — nie wolno zgubić obrazu,
+zostawiając sam opis. Wagi nadal nie zostały na nim wytrenowane. Manifest
+ma `ready_for_trainer=false`: potrzebny audyt procesora i masek multimodalnych,
+szersze dane oraz odrębne rodziny walidacji/testu. Przykładowy mechanizm
+przetwarzania opisuje [Unsloth vision fine-tuning](https://unsloth.ai/docs/basics/vision-fine-tuning).
+Nie potwierdzono gotowości całej paczki, komercyjnych praw ani usługi klienta.
+
+Końcowo 41 testów infrastruktury: dodatkowo odtworzenie dokładnego wejścia
+obraz–tekst, wykrywanie podmiany obrazu/promptu/odpowiedzi/renderu, brak eksportu
+po samej samoocenie modelu i odrzucenie rekordu przez tekstowy loader SFT.

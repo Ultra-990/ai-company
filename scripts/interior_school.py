@@ -23,7 +23,7 @@ from app.services import local_vision
 from scripts import build_studio_media as media
 from scripts.check_technical_reviewer import save
 from scripts.prepare_training_data import unique_object
-from scripts.interior_school_contract import BRIEF,VISION_INSTRUCTION,Plan,Inspection,SHAPES,check_plan
+from scripts.interior_school_contract import BRIEF,Plan,Inspection,SHAPES,check_plan,inspection_instruction,VISION_PROFILES
 
 ROOT=Path('/home/marcin/ai-company-workspaces/interior-school')
 
@@ -152,7 +152,9 @@ def load_feedback(path,source):
     return feedback
 
 
-def inspect(source,out,report,persist,feedback_path=None):
+def inspect(source,out,report,persist,feedback_path=None,vision_profile='legacy'):
+    instruction=inspection_instruction(vision_profile)
+    report['vision_profile']=vision_profile
     parent,previous=load_stage(source,'rendered')
     feedback=load_feedback(feedback_path,source) if feedback_path else None
     if feedback:
@@ -185,9 +187,9 @@ def inspect(source,out,report,persist,feedback_path=None):
         if feedback:
             user+='\nTeacher feedback on your previous inspection:\n'+feedback['comments'][asset.id]
             user+='\nReinspect the image and write all fields afresh. Keep complete sentences comfortably below each character limit. Do not copy the feedback into the deliverable.'
-        save(out/(asset.id+'-request.json'),{'system':VISION_INSTRUCTION,'user':user,'image_sha256':entry['sha256'],
+        save(out/(asset.id+'-request.json'),{'system':instruction,'user':user,'image_sha256':entry['sha256'],
                                           'image_source':str(path),'config':config})
-        result=local_vision.complete(config,VISION_INSTRUCTION,user,image)
+        result=local_vision.complete(config,instruction,user,image)
         save(out/(asset.id+'-response.json'),result)
         observation=Inspection.model_validate(json.loads(result['content'],object_pairs_hook=unique_object))
         item={'id':asset.id,'image_sha256':entry['sha256'],'image_source':str(path),
@@ -199,14 +201,14 @@ def inspect(source,out,report,persist,feedback_path=None):
                      observation.recommendation,'independent_review_pending','not_published'])
         print(json.dumps({'inspected':asset.id,'candidate_status':observation.recommendation}),flush=True)
     with (out/'image-tracker.csv').open('w',newline='',encoding='utf-8') as stream:
-        writer=csv.writer(stream);writer.writerow(['id','filename','title','description','alt_text','width','height','sha256','origin','model_recommendation','review','publication'])
+        writer=csv.writer(stream);writer.writerow(['id','filename','planned_concept_title','description','alt_text','width','height','sha256','origin','model_recommendation','review','publication'])
         writer.writerows([[csv_cell(value) for value in row] for row in rows])
     # Mechanical packaging: every editorial sentence below is exact model text.
     package=['# '+plan.article_title,'',plan.writer_brief,'','## Outline','']+['- '+x for x in plan.outline]
     package+=['','## Publishing checks','']+['- '+x for x in plan.publishing_checks]
     package+=['','## Observed image candidates','']
     for asset,item in zip(plan.assets,report['inspections']):
-        ob=item['observation'];package+=['### '+asset.title,'',f'![{ob["alt_text"]}](library/{asset.filename})','',ob['description'],'',ob['brand_fit'],'',ob['uncertainty'],'']
+        ob=item['observation'];package+=['### Planned concept: '+asset.title,'',f'![{ob["alt_text"]}](library/{asset.filename})','',ob['description'],'',ob['brand_fit'],'',ob['uncertainty'],'']
     (out/'writer-package.md').write_text('\n'.join(package),encoding='utf-8')
     save(out/'new-url-package.json',{'article_title':plan.article_title,'proposed_slug':plan.proposed_slug,
         'meta_description':plan.meta_description,'publication_status':'draft_pending_independent_review',
@@ -221,8 +223,10 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);mode=parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--plan',action='store_true');mode.add_argument('--render',type=Path);mode.add_argument('--inspect',type=Path)
     parser.add_argument('--feedback',type=Path,help='Teacher feedback bound to an earlier inspection; only with --inspect')
+    parser.add_argument('--vision-profile',choices=VISION_PROFILES,default='legacy')
     parser.add_argument('--run',action='store_true');args=parser.parse_args()
     if args.feedback and not args.inspect:parser.error('--feedback requires --inspect')
+    if args.vision_profile!='legacy' and not args.inspect:parser.error('--vision-profile requires --inspect')
     if not args.run:print(json.dumps({'model_invoked':False,'training_started':False}));return 0
     resources=media.check_idle()
     if any(p.is_symlink() for p in (ROOT,*ROOT.parents)):raise ValueError('Symlink workspace')
@@ -239,7 +243,7 @@ def main():
     try:
         if args.plan:plan(out,report)
         elif args.render:render(args.render,out,report,persist)
-        else:inspect(args.inspect,out,report,persist,args.feedback)
+        else:inspect(args.inspect,out,report,persist,args.feedback,args.vision_profile)
     except Exception as exc:
         report.update(status='failed',error_type=type(exc).__name__)
         import traceback
