@@ -136,7 +136,7 @@ def verify_labels(trainer,encoded):
             raise ValueError('Empty prompt/completion mask')
 
 
-def run_training(output,report,plan,rows,suite,persist):
+def run_training(output,report,plan,rows,suite,persist,service_evaluator=None):
     # Resource policy lives in the application environment; do not import its
     # SQLAlchemy/application packages into the isolated ML environment.
     checked=subprocess.run([str(REPO/'.venv/bin/python'),'-c',
@@ -181,6 +181,9 @@ def run_training(output,report,plan,rows,suite,persist):
                             'supervised_tokens':sum(v!=-100 for v in e['labels'])} for row,e in zip(rows,encoded)]
     report['stage']='baseline';persist()
     report['baseline']=evaluate(model,tokenizer,suite,plan['evaluation'],True,output/'baseline.json',persist)
+    if service_evaluator:
+        report['stage']='service_baseline';persist()
+        service_evaluator(model,tokenizer,True,output,report,persist)
     report['stage']='training_setup';persist()
     FastModel.for_training(model)
     tokenizer.padding_side='right'
@@ -222,6 +225,9 @@ def run_training(output,report,plan,rows,suite,persist):
     gc.collect();torch.cuda.empty_cache()
     report['after']=evaluate(model,tokenizer,suite,plan['evaluation'],False,output/'after.json',persist)
     report['comparison']=compare(report['baseline'],report['after'],len(suite['cases']))
+    if service_evaluator:
+        report['stage']='service_after';persist()
+        service_evaluator(model,tokenizer,False,output,report,persist)
     report['stage']='complete'
 
 

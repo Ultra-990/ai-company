@@ -1,5 +1,43 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — drugi trening QLoRA i niezależna ocena nowych recenzji
+
+- Kontynuacja aktywnego celu, poprzedni etap dostarczył3 odebrane recenzje.
+  Protokół002:14 historycznych+3 nowe=17, hash wspólny
+  917a7ce3436cf054aad2c9a73f915b93fb606fe31b38d335438641e801dadccb.
+  Sprawdzane hashe wszystkich prywatnych odpowiedzi/wejść i ocen; dokładna
+  zgodność rekordów z modelowym autorstwem. Bez publicznego zapisu rawdanych.
+- Zarezerwowano reviewer-suite-001 przed treningiem:3 inne rodziny artykułów
+  z niezależnymi rubrykami, checksum i zakazem importu do train/validation.
+  Sam generator nie widzi rubryk. Syntetyczne liczby/artefakty, bez klienta.
+- CPU audit:17/17, maksimum2992tokeny; prompty egzaminu1189/1194/1151
+  plus1700 odpowiedzi mieszczą się w4096. Protokół001 pozostał bez zmian.
+  Nowy runner wykorzystuje istniejący trainer z opcjonalnym osobnym pomiarem
+  usługi; świeży adapter z bazy, r8/alpha16, batch1/akumulacja2,18kroków,lr5e-5.
+- Preflight reviewer-sft-3q8l0dpn:ComfyUI nie słucha,Docker pusty,GPUfree31208MiB,
+  dostępneRAM23 743 463 424B. Brak obcych procesów zatrzymanych lub zmian usług.
+  Run ukończony:18kroków/2epoki,55.7758s treningu,488.719s całości,
+  loss0.695493,peak allocated23 528 112 128B, maski rzeczywistego treneraOK,
+  LoRA_B zmienione. Adapter safetensors zweryfikowany z dysku:
+  38a7d1da6fe6ae365eec71a1ed3f6a5a0e2aa34d845b9d742d6694fd039505a3.
+- Ta sama baza HFbnb4/runtime/tokenizer/greedy przed i po. Role11/12 →11/12,
+  ten sam błąd. Recenzje sześć pełnych generacjiEOS. Etykiety faz ukryto do
+  zapisania judgments; wcześniej widoczne długości ograniczają zaślepienie.
+- Ocena treści:serving3→5,extraction3→2,release5→2, suma11/15→9/15.
+  Format rawJSON0/3→1/3; pięć odpowiedzi ma Markdown fences. Pełny kontrakt
+  0/3→0/3. Nie usuwano fences dla zaliczenia; zakres to HFbez gramatykiAPI,
+  nie pomiar transportu Ollama. Nauczycielska ocena małej próby, nie wniosek
+  statystyczny. Nieprecyzyjna kontrola niezależności ewaluatora w jednym
+  artykule odnotowana; wynik nie opiera się wyłącznie na tej kontroli.
+- Surowe wyniki/raport zachowane; osobny exam-assessment-8n2rlwpg zawiera
+  kryteria, anonimowe próbki, uwagi, mapowanie i porównanie powiązane hashami.
+  Odrzucono promocję adaptera: brak spójnej poprawy. Egzamin pozostaje poza
+  treningiem. Oryginalne wagi, wcześniejszy adapter i routing bez zmian.
+- Testy wstępne57passed/1.30s; regresja107passed/2.27s; dodatkowy test
+  wykrywania podmiany mapowania faz passed/0.04s. Końcowy proces zakończony,
+  GPUused769MiB. Bez nowych zależności, pulpitów, Windows, klientowskich zadań
+  lub deklaracji ukończenia całego celu. Szczegóły w TRAINING_OBJECTIVE.md.
+
 ## 2026-09-20 — sześć lekcji recenzenta i trzy odebrane rekordy
 
 - Kontynuacja aktywnego celu jakości pięciu usług. Dodano sześć syntetycznych

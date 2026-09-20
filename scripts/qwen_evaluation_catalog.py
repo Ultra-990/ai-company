@@ -7,6 +7,8 @@ SUITE = Path(__file__).resolve().parents[1]/'datasets/qwen/evaluation/repair-sui
 CHECKSUM = 'fb5f375568d738d238d8f5a9cc5a33923b82cea1150780d884835bab7a7ce41d'
 ROLE_SUITE = SUITE.with_name('role-suite-001.json')
 ROLE_CHECKSUM = '611d1d2fbaaae6071b81f4b7e108fcc3f45e353622e1e12c86f6d053e03d5578'
+REVIEWER_SUITE = SUITE.with_name('reviewer-suite-001.json')
+REVIEWER_CHECKSUM = 'ecf12bb97cde6807db52dba36431588a21f858bcc9d1f25c43fa6dec8eaded75'
 
 
 def load_suite():
@@ -30,4 +32,14 @@ def load_role_suite():
 
 
 def reserved_cases():
-    return load_suite()['cases']+load_role_suite()['cases']
+    return load_suite()['cases']+load_role_suite()['cases']+load_reviewer_suite()['cases']
+
+
+def load_reviewer_suite():
+    raw=REVIEWER_SUITE.read_bytes()
+    if sha256(raw).hexdigest()!=REVIEWER_CHECKSUM:
+        raise ValueError('Reviewer evaluation changed: create a new version')
+    suite=json.loads(raw)
+    if suite['version']!='reviewer-evaluation.v1' or suite['usage']!='evaluation_only':
+        raise ValueError('Invalid reviewer suite')
+    return suite

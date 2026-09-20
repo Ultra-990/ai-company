@@ -1,0 +1,62 @@
+{
+  "schema": "reviewer-sft-research.v1",
+  "purpose": "Fixed second research experiment: 14 original reviewed records plus three independently approved exact local-model technical reviews; new 4096 context and three reserved service probes.",
+  "datasets": [
+    {
+      "path": "datasets/qwen/specialization-batch-001.jsonl",
+      "sha256": "3aaf75065c2e526656efc1dd434a48c4c3988df37035732b5b492bc5e4034ff9"
+    },
+    {
+      "path": "datasets/qwen/repair-batch-001.jsonl",
+      "sha256": "962a25312f16a2ad8a0135bd2653d85e4066704659338261745ee0203e4b626c"
+    },
+    {
+      "path": "datasets/qwen/web-design-batch-001.jsonl",
+      "sha256": "d3813551aaa72f4974a3cd09cc3418b84e39525dda009d8bae30384afb8363a9"
+    }
+  ],
+  "records": 17,
+  "combined_sha256": "917a7ce3436cf054aad2c9a73f915b93fb606fe31b38d335438641e801dadccb",
+  "model": "unsloth/Qwen3.8-27B-unsloth-bnb-4bit",
+  "revision": "8aa5f05d26b7205477066e1449e0af13f762a299",
+  "training": {
+    "max_length": 4096,
+    "rank": 8,
+    "alpha": 16,
+    "batch_size": 1,
+    "gradient_accumulation_steps": 2,
+    "max_steps": 18,
+    "learning_rate": 5e-05,
+    "seed": 3407
+  },
+  "evaluation": {
+    "role_suite_sha256": "611d1d2fbaaae6071b81f4b7e108fcc3f45e353622e1e12c86f6d053e03d5578",
+    "case_count": 12,
+    "max_new_tokens": 256,
+    "do_sample": false,
+    "max_time_seconds_per_case": 60,
+    "use": "Public frozen decision regression, never training or hyperparameter selection; explanations require independent review."
+  },
+  "deadline_seconds": 1800,
+  "production_ready": false,
+  "automatic_promotion": false,
+  "limitations": [
+    "This fixed research run does not pass or lower the production 200/25/50 dataset gate.",
+    "Three short synthetic articles are a small public reserved service probe, not proof of parity or client readiness.",
+    "Only one fixed recipe; no hyperparameter selection on these probes. Independent semantic assessment follows raw generation.",
+    "Train a fresh separate adapter from the pinned base; do not overwrite the prior research adapter or active Ollama model."
+  ],
+  "parent_protocol_sha256": "a7600587bac17d6d21d2a931f813eb960e8ae85d2ff49108d3011afb0d4d0111",
+  "reviewer_dataset": {
+    "path": "/home/marcin/ai-company-workspaces/technical-review/curated-rk_wk_sw/approved-records.jsonl",
+    "sha256": "ca5642594716d22b8aaf558e6274d199088de892e33df0dd2b55b59f078a036d"
+  },
+  "reviewer_evaluation": {
+    "sha256": "ecf12bb97cde6807db52dba36431588a21f858bcc9d1f25c43fa6dec8eaded75",
+    "case_count": 3,
+    "max_new_tokens": 1700,
+    "max_time_seconds_per_case": 150,
+    "max_context": 4096,
+    "do_sample": false
+  }
+}

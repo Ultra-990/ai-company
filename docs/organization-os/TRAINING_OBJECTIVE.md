@@ -106,5 +106,110 @@ Rekordy mają 2274–2992 tokeny i przeszły audyt completion-only. Nie mieszcz�
 się w historycznym kontekście 2048: przed kolejnym treningiem trzeba zamrozić
 osobny protokół, połączyć wyłącznie odebrane dane i ustalić odrębne rodziny
 oceny. Nie wolno uciąć odpowiedzi ani potraktować znanych poprawek jako testu.
-Te trzy recenzje **nie zostały jeszcze użyte do aktualizacji wag**. Brak
-nowej generacji obrazów, klientowskich realizacji i deklaracji osiągnięcia celu.
+W kolejnym opisanym poniżej eksperymencie te trzy recenzje zostały użyte
+do aktualizacji wag. Brak nowej generacji obrazów, klientowskich realizacji
+i deklaracji osiągnięcia celu.
+
+## Drugi, odrębny eksperyment — specjalizacja recenzenta
+
+`config/qwen-sft-pilot-002.json` i `scripts/train_reviewer_pilot.py` zamrażają
+17 rekordów: 14 historycznych oraz trzy dokładne odebrane recenzje modelu.
+Prywatne źródła/uwagi/odpowiedzi pozostają poza publicznym repo. Loader
+sprawdza hashe partii, oryginalnych request/response/article/sources i osobnej
+oceny, a także równość szkolonej odpowiedzi z surową odpowiedzią modelu.
+Nie wystarczy przestawić metadata na approved. Historyczny protokół001
+jest bez zmian i nadal ma 14 rekordów/2048 kontekstu.
+
+Protokół002: świeży adapter z tej samej bazy, kontekst4096, r8/alpha16,
+batch1/akumulacja2, 18 kroków/2epoki, lr5e-5 liniowo malejący, seed3407.
+To stały eksperyment, bez przeszukiwania parametrów na egzaminie, promocji,
+podmiany pierwotnego adaptera czy aktywnego modelu. Bramka200/25/50 bez zmian.
+
+`datasets/qwen/evaluation/reviewer-suite-001.json` rezerwuje przed treningiem
+trzy nowe artykuły: interpretacja latency/throughput, audyt ekstrakcji
+i dowody testu konkretnego adaptera/template. Różne rodziny evaluation_only,
+przypięty checksum. Katalog danych odrzuca te rodziny i dokładne briefy
+w train/validation. Rubryki i poprawne kontrole nie wchodzą do promptu.
+To publiczny, mały sprawdzian syntetyczny; nie reprezentatywny test usług
+ani statystyczny dowód równoważności z asystentem. Rodziny pozostają
+wyłączone z dalszej nauki również po obejrzeniu błędów.
+
+Przed i po: te same prompty, tokenizer/HFbnb4, greedy, bez thinking,
+do1700 nowych tokenów/150s na artykuł. Adapter wyłączony przed i włączony
+po uczeniu; żadnego porównania Ollama z HF przypisywanego treningowi.
+Pomiar ról12 przypadków pozostaje oddzielną regresją. Cały run ma limit1800s.
+
+`reviewer_exam_assessment.py` tworzy losowo oznaczone odpowiedzi bez nazw
+before/after. Nauczyciel punktuje przed odczytem mapowania: dwie konkretne
+usterki, zachowanie poprawnych zdań, zakres dowodów/niepewność oraz komplet
+praktycznych produktów recenzji — po1 punkcie. Zaliczenie wymaga5/5 oraz
+pełnej generacji i dokładnych kotwic. Format nie zastępuje oceny treści.
+Oceny są jawnie oceną nauczyciela, nie automatycznym certyfikatem jakości.
+Skrypt wiąże oceny z hashami odpowiedzi i rzeczywistymi fazami; nie eksportuje
+odpowiedzi egzaminacyjnych do treningu.
+
+```bash
+.venv/bin/python scripts/train_reviewer_pilot.py
+/home/marcin/ai-company-workspaces/qwen-training/venv/bin/python \
+  scripts/train_reviewer_pilot.py --run
+.venv/bin/python scripts/reviewer_exam_assessment.py --prepare /path/to/completed/run
+# Niezależna ocena blind-packet.json do judgments.json, przed ujawnieniem mapowania.
+.venv/bin/python scripts/reviewer_exam_assessment.py --finalize /path/to/assessment
+```
+
+Audyt CPU przed GPU: 17/17 mieści się bez ucinania; maksimum2992tokeny.
+Prompty egzaminu1189/1194/1151 plus1700 odpowiedzi mieszczą się w4096.
+Dokładne maski odpowiedzi są ponownie sprawdzane w rzeczywistym trainerze.
+
+### Wynik002 — adapter badawczy odrzucony do wdrożenia
+
+`reviewer-sft-3q8l0dpn` ukończył18kroków/2epoki. Czas treningu55.7758s,
+całości488.719s, loss0.695493, peak allocated23 528 112 128B. Potwierdzono
+maski w trenerze, zmianę LoRA_B i zapis osobnego adaptera; hash safetensors
+`38a7d1da6fe6ae365eec71a1ed3f6a5a0e2aa34d845b9d742d6694fd039505a3`.
+Pierwotny adapter i model/routing Ollamy bez zmian. Po zakończeniu procesu
+GPU używało769MiB; nie pozostał proces treningu ani automatyczne ponawianie.
+
+Ocena ról **11/12 → 11/12**, ten sam niezaliczony przypadek. Ocena treści
+trzech recenzji, po ukryciu etykiet faz i zapisaniu ocen przed mapowaniem:
+
+| Nowy artykuł | Baza /5 | Adapter /5 |
+| --- | ---: | ---: |
+| Latency/throughput | 3 | 5 |
+| Audyt ekstrakcji | 3 | 2 |
+| Dowody testu adaptera | 5 | 2 |
+| Łącznie | 11 | 9 |
+
+Pięć z sześciu odpowiedzi zawierało znaczniki Markdown wokół JSON; odpowiedź
+adaptera o ekstrakcji miała poprawny format. Wszystkie zakończyły generację
+EOS, bez limitowego ucięcia. Zaliczenie pełnego kontraktu **0/3 → 0/3**.
+Nie usuwano znaczników ani nie poprawiano kotwic po fakcie. To wynik HF
+z instrukcją schematu, bez wymuszania gramatyki API; nie należy przypisywać
+go automatycznie transportowi Ollama, który wymusza schemat. Ocena treści
+została celowo policzona oddzielnie od formatu.
+
+Istotne błędy: pewne przypisanie średniego throughput każdemu użytkownikowi
+w bazie; po uczeniu nadinterpretacja mianownika exact-match, zbędna krytyka
+poprawnych zdań i prośba o dowód obalonej tezy o nazwach plików. Odpowiedź
+o wydajności po uczeniu lepiej warunkuje średnią i prosi o pomiary per-request.
+Nie daje to spójnej poprawy całej małej próby, tym bardziej gotowości usługi.
+
+Ograniczenia: tylko3 artykuły i ocena autora rubryki, bez mocy statystycznej
+lub zewnętrznego porównania z asystentem. Etykiety before/after były ukryte
+podczas punktowania, ale nauczyciel wcześniej widział długości odpowiedzi
+w logach postępu; nie twierdzimy, że ocena była w pełni zaślepiona.
+Kontrola line2 w artykule o adapterze ma niedopowiedzianą niezależność
+ewaluatora w karcie źródeł; porażka kontroli tej odpowiedzi opiera się też
+na niezależnym fałszywym alarmie w line3, nie wyłącznie na line2.
+
+Pełne prywatne dowody w `exam-assessment-8n2rlwpg`: blind-packet,
+judgments, mapowanie, metoda i comparison. Oryginalny raport generacji
+zachowuje status pending_semantic_review; ocena jest osobnym artefaktem,
+nie przepisaniem surowego raportu. Adapter pozostaje wyłącznie badawczy.
+Odrzucono promocję; egzamin nie wraca do treningu ani do wyboru hiperparametrów.
+Następny etap wymaga bogatszych niezależnych rodzin train i validation oraz
+osobnych prób pozostałych czterech usług, nie kolejnych epok na tym egzaminie.
+
+Regresja infrastruktury:107testów passed/2.27s. Po dodatkowym sprawdzeniu
+niezmienności mapowania faz test oceny passed/0.04s. Brak nowych zależności,
+ingerencji w cudze procesy, pulpit, Windows czy produkcyjne zlecenia.
