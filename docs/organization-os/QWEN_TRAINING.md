@@ -1,5 +1,16 @@
 # Dostrojenie Qwena dla AI Company
 
+## 20.09.2026 — ukończony trening na odebranych przykładach
+
+Wykonano [osobny eksperyment QLoRA](TRAINING_OBJECTIVE.md) na 14 historycznych,
+zatwierdzonych przykładach: 14 kroków, completion-only loss, zapis adaptera,
+potwierdzona zmiana parametrów. Porównanie na tej samej bazie HF bnb4:
+11/12 decyzji przed i 11/12 po. **Nie wykazano poprawy jakości.**
+To mały profil badawczy; bramka 200/25/50 i brak wdrożenia pozostają.
+Nowy cel właściciela: jakość pięciu usług Upwork porównywalna do asystenta
+prowadzącego, potwierdzana oddzielnymi próbami, bez obietnicy wyniku treningu.
+Poniższe wpisy opisują wcześniejsze etapy i brak adaptera w ich czasie.
+
 ## Korekta sposobu pracy — 20.09.2026
 
 Właściciel wymaga pełnego autorstwa realizacji po stronie lokalnych modeli;

@@ -1,5 +1,47 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — pierwszy trening specjalizacyjny na odebranych danych
+
+- Właściciel jawnie polecił kontynuować trening do jakości porównywalnej
+  z asystentem. Utworzono aktywny cel, bez deklaracji jego osiągnięcia.
+  TRAINING_OBJECTIVE.md definiuje zakres pięciu usług i ograniczenia oceny.
+- Zamrożono osobny protokół badawczy qwen-sft-pilot-001.json: 14 wcześniej
+  zatwierdzonych rekordów, hashe trzech partii i dowodów odbioru; nie zmieniono
+  istniejącego walidatora/eksportera ani bramki 200/25/50. 14/14 mieści się
+  w 2048 tokenach bez ucinania, z jawną maską promptu i EOS odpowiedzi.
+- Nowy train_qwen_pilot.py używa przypiętej bazy HF bnb4, osobnego venv,
+  QLoRA r8/alpha16, batch1/akumulacja2, 14 kroków i lr5e-5, seed3407.
+  Generuje punkt odniesienia bez adaptera i wynik z adapterem w tym samym
+  runtime. Zestaw ról jest regresją publiczną, nie prywatnym holdoutem usług.
+  Żadnego wykonywania kodu przykładów na hoście, zmiany oryginalnych wag
+  czy automatycznej promocji. Oddzielny katalog i zapis safetensors.
+- Preflight: ComfyUI nie słucha, Docker pusty, GPU wolne 31305 MiB.
+  RAM dostępny około20 GiB, miejsce dyskowe około240 GiB. Nie zatrzymano
+  żadnego obcego procesu ani usługi; nie instalowano nowych zależności.
+- Pierwszy start odrzucony przy imporcie: środowisko ML nie ma SQLAlchemy.
+  Wyodrębniono role_evaluation_contract.py bez zależności aplikacji; zachowano
+  kompatybilny import starego evaluatora. Preflight aplikacji w osobnym venv.
+- reviewed-sft-wuihjzum i reviewed-sft-3hd8fo2h: błąd Unsloth generate,
+  architectures=None po text_only. Uzupełniono metadata z faktycznej klasy
+  Qwen3_5ForCausalLM wyłącznie w RAM, bez edycji checkpointu lub bibliotek.
+- reviewed-sft-jh44a7a1: baza 11/12; audyt masek odrzucił collator po tym,
+  jak konstruktor UnslothSFTTrainer przywrócił tryb inference/left padding.
+  Nie wykonano kroku treningu. Dodano jawne for_training/right padding po
+  konstruktorze. Niezależny CPU audit collatora potwierdził maski 14/14.
+- reviewed-sft-bsoy9jvr: **ukończony**, 14 kroków/2 epoki; potwierdzona
+  zmiana parametru LoRA_B, 39 845 888 trainable, skończony loss0.7963818,
+  49.273 s treningu, 183.183 s całości, peak allocated22 904 749 568 B.
+  Adapter zapisany w adapter-RESEARCH-NOT-FOR-PRODUCTION; pełne hashe
+  w raporcie. Porównanie **11/12 → 11/12**, brak poprawy i brak regresji
+  decyzji; nie jest to pomiar wszystkich kompetencji ani jakość uzasadnień.
+- Użyto dokumentacji pierwotnej TRL0.24, PEFT quantization i Unsloth oraz
+  kodu przypiętych lokalnych bibliotek. Raporty nieudane zachowane. Publiczne
+  źródła/dokumentacja/testy oddzielone od prywatnych wag i raportów.
+- Testy nowych bramek/masek/danych: 50 passed/1.09 s; po wyodrębnieniu
+  kontraktu ról 27 passed/0.57 s. Oryginalne suite/hash ocen bez zmian.
+  Końcowa regresja masek, danych, ról i porównywarki: 84 passed/1.75 s.
+  Nie uznano celu za osiągnięty i nie podmieniono modelu produkcyjnego.
+
 ## 2026-09-20 — funkcje modeli i cele nauki z ogłoszeń Upwork
 
 - Właściciel odłożył wygląd/menu i polecił rozwijać funkcje oraz uczyć modele.

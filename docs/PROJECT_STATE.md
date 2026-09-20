@@ -1,5 +1,14 @@
 # Stan projektu AI Company
 
+## Aktualizacja 20.09.2026 — rzeczywisty trening adaptera
+
+Cel właściciela: trenować lokalne modele do jakości porównywalnej z asystentem
+na wskazanych usługach. [Protokół i wyniki](organization-os/TRAINING_OBJECTIVE.md).
+Ukończono 14 kroków QLoRA na 14 odebranych przykładach, zweryfikowano maski,
+zmianę parametrów i zapis adaptera. Ocena 11/12 przed i 11/12 po: **brak
+wykazanej poprawy**. Eksperyment nie zastępuje szerszego zbioru, holdoutu
+ani odbioru usług. Oryginalny model i routing pozostają bez zmian.
+
 ## Aktualizacja 20.09.2026 — ćwiczenia funkcjonalne i pięć celów Upwork
 
 Właściciel odłożył zmiany wyglądu panelu i polecił rozwijać funkcje oraz naukę.
