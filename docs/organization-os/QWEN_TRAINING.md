@@ -1,5 +1,16 @@
 # Dostrojenie Qwena dla AI Company
 
+## Korekta sposobu pracy — 20.09.2026
+
+Właściciel wymaga pełnego autorstwa realizacji po stronie lokalnych modeli;
+asystent ma rozwijać system, uczyć i niezależnie sprawdzać. Nowa
+[szkoła wykonawcy web](LOCAL_WEB_SCHOOL.md) zapisuje pełne źródła Qwena,
+przekazuje błędy do automatycznych napraw i zbiera dokładne odpowiedzi jako
+kandydatów SFT/pending. Nie dopisuje ręcznych implementacji asystenta.
+Pierwszy wynik 30 kontroli po samonaprawie to ćwiczenie rozwojowe, nie holdout.
+Pamięć lekcji nie zmienia wag. Żaden nowy adapter nie został tu wytrenowany
+ani automatycznie wdrożony; wcześniejsze bramki danych i oceny nadal obowiązują.
+
 ## Priorytet właściciela: specjalizacja przed stroną pokazową
 
 Aktualny zakres i źródła: [WEB_MODEL_SPECIALIZATION.md](WEB_MODEL_SPECIALIZATION.md).

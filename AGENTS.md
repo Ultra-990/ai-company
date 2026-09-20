@@ -1,5 +1,25 @@
 # Zasady pracy w repozytorium AI Company
 
+## Autorstwo realizacji i nauka modeli — 2026-09-20
+
+- Do ukończenia projektu realizacje użytkowe (strony, demonstracje i inne
+  zlecane produkty) mają wykonywać lokalne modele przez system. Asystent
+  prowadzący nie pisze za nie interfejsów, implementacji ani poprawek produktu.
+- Rolą asystenta jest rozbudowa systemu, przygotowanie programu nauki,
+  wymagań, niezależnych testów i oceny. Raport błędów wraca do modelu;
+  zachowuj jego oryginalne odpowiedzi i autorstwo każdej wersji. Brak sukcesu
+  raportuj jako brak sukcesu, bez ręcznego zastępowania pracy modelu.
+- Oszczędzaj tokeny asystenta na rozwój systemu. Poprzednie demonstracje
+  stworzone głównie przez asystenta nie są dowodem samodzielności modeli.
+- Docelowo system ma samodzielnie gromadzić sprawdzone doświadczenia i
+  dokształcać modele. Rozróżniaj pamięć/podpowiedzi, naprawę bieżącego zadania
+  i trening wag. Poprawę oceniaj na osobnych zadaniach; własna deklaracja
+  modelu nie zatwierdza przykładu, adaptera ani gotowego produktu.
+- Właściciel udzielił stałego zielonego światła na działania potrzebne do
+  rozbudowy systemu i nauki modeli; kontynuuj bez ponawiania pytań o rutynowe
+  decyzje. Ta zgoda nie zmienia zakazu wyręczania modeli, pracy na cudzych
+  procesach, sterowania pulpitem ani ochrony prywatnych danych przy publikacji.
+
 ## Granica interfejsu — 2026-09-20
 
 - Właściciel wymaga działania interfejsu w przeglądarce, bez sterowania

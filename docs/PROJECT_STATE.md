@@ -1,5 +1,19 @@
 # Stan projektu AI Company
 
+## Aktualizacja 20.09.2026 — realizacje mają wykonywać modele
+
+Właściciel skorygował kierunek: do ukończenia projektu asystent rozwija
+system, uczy i ocenia; nie pisze za lokalne modele stron ani ich poprawek.
+Zasada i stała zgoda na kontynuowanie prac są zapisane w AGENTS.md.
+
+Dodano [szkołę lokalnego wykonawcy](organization-os/LOCAL_WEB_SCHOOL.md):
+pełne pliki od Qwena, niezależny egzamin, raport do samodzielnej naprawy,
+pamięć zweryfikowanych błędów i automatyczne odkładanie kandydatów SFT.
+Pierwsze ćwiczenie przeszło 30 kontroli po poprawce modelu; źródła zachowane
+bez zmian asystenta. To pilot jednej rodziny, nie gotowa specjalizacja.
+Trening wag, holdout, estetyka i integracja z kolejką/panelem pozostają
+do wykonania. Szczegóły i nieudane próby w WORK_LOG.md.
+
 ## Aktualizacja 20.09.2026 — trzy nowe prototypy
 
 Ukończono [trzy testy stron](organization-os/THREE_WEB_TRIALS.md): kolekcja

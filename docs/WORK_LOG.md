@@ -1,5 +1,74 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — system uczy i ocenia; realizacje pisze lokalny model
+
+- Właściciel wskazał, że trzy demonstracje nie sprawdzały zamierzonej
+  samodzielności systemu. Do ukończenia projektu zabronił asystentowi pisania
+  realizacji i poprawek za modele; tokeny mają służyć rozbudowie systemu.
+  Udzielił stałej zgody na kontynuację. Zapisano w AGENTS.md bez zmiany
+  ograniczeń cudzych procesów, pulpitu i danych prywatnych.
+- Dodano scripts/web_school: pełne HTML/CSS/JS od przypiętego lokalnego
+  Qwena, niezależny egzamin w oddzielnym headless Chrome, ograniczone próby,
+  diagnoza błędów przez model i naprawy przez model. Bez szablonów poprzednich
+  demonstracji i bez edycji źródeł produktu przez asystenta. Kontrole zasobów
+  przed każdym wywołaniem; brak aktualizacji bazowych wag, produkcyjnej DB,
+  konfiguracji modelu, Windows, sterowników, wynajmu lub sesji graficznej.
+- Pamięć zawiera fakty z niezaliczonych, a potem zaliczonych kontroli.
+  Wczytanie weryfikuje źródła, wyniki i wersję egzaminatora; błędy struktury
+  są ponownie odtwarzane walidatorem na oryginalnych odpowiedziach. Powstało
+  też automatyczne zbieranie dokładnych odpowiedzi jako SFT/pending, bez
+  zatwierdzania lub ucinania. Recheck tworzy nowe dowody bez inferencji;
+  revise-from przekazuje istniejące źródła i błędy do dalszej pracy modelu.
+- Rzeczywiste przebiegi poza Git w ai-company-workspaces/web-school:
+  stamps-hf7z5tdu — pierwsza próba 9/31, naprawa przerwana przez limit 4096
+  tokenów (truncated_output). Transport nie zwraca częściowego tekstu;
+  zachowano błąd i wszystkie wcześniejsze pełne odpowiedzi. Limit podniesiono
+  do 6000, polecono zwięzłe pliki i ograniczono zbędny kontekst CSS dla JS.
+- Błędy nauczyciela ujawnione i zachowane: automatyczny favicon liczony jako
+  błąd produktu; test SELECT wysyłał tylko change, choć poprawny interfejs może
+  obsługiwać input; walidator przepuszczał HTML w pliku CSS i powtórzone ID.
+  Dodano właściwe zdarzenia input+change, rozdzielono favicon oraz typy i ID.
+  Nowy test ochronny najpierw 1 failed/14 passed, po poprawce zaliczony.
+  stamps-gi94wvf3: trzy próby, ostatnia 20/30 według ówczesnego wadliwego
+  testu zdarzeń. Nie przedstawiamy tego jako wiarygodnego wyniku ucznia.
+- stamps-l7uxchl3: model poprawił powtórzony ID po raporcie walidatora,
+  druga próba 30/30. Trzy rekordy SFT/pending, bez wzrostu approved_counts.
+  Przejrzano źródła i desktop: poprawna podstawowa demonstracja, powtarzalne
+  grafiki i nierówne położenie cen/przycisków; nie odebrano jakości premium.
+  Automatycznie rozpoczęto zmieniony wariant stamps-cwero7zr, lecz sprzątanie
+  profilu Chrome przerwało zapis oceny (Directory not empty: Default).
+- Poprawiono zamykanie własnej grupy procesów headless, oczekiwanie na koniec
+  i raportowanie usunięcia profilu. Recheck-6hk0vsge potwierdził 30/30 dla
+  dokładnie tych samych źródeł, bez nowej inferencji; profil usunięty.
+- stamps-rrpz38fj rzeczywiście otrzymał zapisaną lekcję o ID/typach plików.
+  Brak błędu statycznego; 25/30, potem 27/30. Model poprawił przepełnienie
+  na 320/390 px, pozostały checkout i menu. Dodano obserwacje tagName,
+  disabled i klas/display do raportu, bez osłabiania kryteriów. Recheck-bsqdo07b
+  zachował wyniki obu prób na aktualnym egzaminatorze, bez zmiany źródeł.
+- Kontynuacja stamps-b98colfg: model naprawił menu, lecz naprzemiennie
+  powielał ID checkout i przypisywał go sekcji zamiast przyciskowi; 28/30.
+  Rozpoznano problem procesu: błąd statyczny usuwał wcześniejszy raport
+  funkcjonalny z kontekstu. Teraz zachowuje się oba; przed naprawą lokalny
+  model sporządza osobną diagnozę. Żadnej poprawki strony nie napisał asystent.
+- Testy mechanizmu oraz dotychczasowego formatu danych: 47 passed/15.68 s.
+  W pierwszym uruchomieniu jeden test pominięty przez różne urządzenia /tmp
+  i /home; przeniesiono tymczasowy katalog testu na Linux /home i wykonano
+  wszystkie testy. Brak automatycznego treningu wag lub promocji adaptera.
+  Ćwiczenia są z jednej rodziny train/development, nie holdoutem.
+  Opis funkcji: organization-os/LOCAL_WEB_SCHOOL.md.
+- Końcowa kontynuacja stamps-4yc77u4i: diagnoza Qwena 8.036 s/272 tokeny
+  poprawnie wskazała konflikt selektora sekcji i przycisku. Następnie model
+  zmienił komplet plików; 30/30 w pierwszej próbie, bez wyjątków JS i obcych
+  żądań, profil usunięty. Egzaminator SHA-256
+  e72522ed7ad59a11651657c0aecebcb650baadba6436c3f1e8c3fc9780b645bf.
+  Sprawdzono także screenshot mobile; nie nadano odbioru estetycznego premium.
+  Łącznie sześć nowych kandydatów SFT/pending z dwóch zaliczonych wersji;
+  pozostałe wersje i recheck nie są liczone jako dodatkowe przykłady.
+- Offline audyt przypiętego tokenizera: 6/6, 6525–10367 tokenów rekordu,
+  kontekst 16384, prawidłowa maska odpowiedzi/EOS, bez ucinania i bez wag.
+  Zbiorczy hash partii 52a815981baac582ae76b624045c3ffc6277451d69821b70da17a91974ef64ca.
+  Pending pozostaje pending; export_ready i training_ready false, bez treningu.
+
 ## 2026-09-20 — trzy nowe strony według briefów właściciela
 
 - Właściciel zlecił katalog sprzedaży znaczków, portfolio trance z własnym
