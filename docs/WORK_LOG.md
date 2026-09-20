@@ -1,5 +1,34 @@
 # Dziennik budowy AI Company
 
+## 2026-09-20 — sześć lekcji recenzenta i trzy odebrane rekordy
+
+- Kontynuacja aktywnego celu jakości pięciu usług. Dodano sześć syntetycznych
+  rodzin train z kartami faktów/liczb i niezależną rubryką; wykonania są
+  wyłącznie modelowe. Bez nowych artykułów klienta, UI lub produkcyjnych zadań.
+- Uogólniono karty źródeł recenzenta; hash i własny pakiet zachowany w poprawce
+  i Markdown. Błędny cytat może naprawić model bez zaakceptowania oryginału.
+  Szkoła ma sześć sekwencyjnych prób, preflight każdej i blokadę własnego runu.
+- school-ewpkqc09: 6 odpowiedzi, 4 strukturalnie poprawne, 2 złe kotwice;
+  wszystkie wymagały uwag. school-88i1jaje: 6 poprawek, jedna identyczna
+  z poprzednią; odebrano koszty. Pierwsze wywołanie poprawki odrzucone przed
+  inferencją przez klucze int/string w JSON rubryki; poprawiono/testowano.
+- school-ni42dxxi: 5 nowych rekonstrukcji z uwag bez poprzedniej recenzji
+  oraz ze wzmocnionymi wskazówkami o dowodach. Odebrano pamięć i porównanie
+  platform. Zmiana promptu, nie eksperyment izolujący jedną przyczynę poprawy.
+  Razem 17 odpowiedzi, 228.750 s, bazowy Qwen Ollama bez nowego adaptera.
+- Wszystkie odpowiedzi/uwagi/oceny i hashe prywatne; nie zmieniono surowych
+  tekstów modelu. curated-rk_wk_sw zawiera trzy approved records, SHA256
+  ca5642594716d22b8aaf558e6274d199088de892e33df0dd2b55b59f078a036d.
+  Odebrane dla nauki syntetycznej, nie klienta. Pozostałe odrzucone z opisem
+  błędów, w tym nieudowodnionych przyczyn błędów danych i gwarancji RAG.
+- CPU tokenizacja 3/3, bez ucinania; długości2992/2427/2274, completion
+  747/920/908. Potrzebują kontekstu co najmniej4096; historyczny eksperyment
+  2048 pozostaje zamrożony. Bez nowego treningu wag na tej partii ani promocji.
+- Jedno wywołanie pytest wskazało złą nazwę pliku i wykonało zero testów.
+  Po korekcie 62 passed/20.98 s: źródła, kotwice, metadane poprawek, niezmienne
+  autorstwo, dane i maskowanie. Bramka200/25/50 nadal niezaliczona. Szczegóły
+  i ograniczenia odbioru w TECHNICAL_REVIEW_PILOT.md oraz TRAINING_OBJECTIVE.md.
+
 ## 2026-09-20 — pierwszy trening specjalizacyjny na odebranych danych
 
 - Właściciel jawnie polecił kontynuować trening do jakości porównywalnej

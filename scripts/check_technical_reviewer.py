@@ -90,15 +90,36 @@ def save(path, value):
     path.write_text(json.dumps(value,ensure_ascii=False,indent=2),encoding='utf-8')
 
 
-def messages_for(article, revision=None):
+def validate_sources(sources):
+    required={'id','title','url','checked_on','scope','notes'}
+    if not isinstance(sources,list) or not 1<=len(sources)<=12:
+        raise ValueError('One to twelve evidence cards required')
+    seen=set()
+    for card in sources:
+        if not isinstance(card,dict) or set(card)!=required or any(not isinstance(v,str) for v in card.values()):
+            raise ValueError('Invalid evidence card')
+        if not card['id'] or card['id'] in seen or len(card['id'])>80:
+            raise ValueError('Duplicate/invalid evidence ID')
+        seen.add(card['id'])
+        if (not card['title'] or not card['scope'] or not card['notes']
+                or any('\x00' in value or len(value)>2400 for value in card.values())
+                or (card['url'] and not card['url'].startswith('https://'))):
+            raise ValueError('Invalid evidence content or URL')
+        date.fromisoformat(card['checked_on'])
+    if len(json.dumps(sources))>24000:raise ValueError('Evidence pack too large')
+
+
+def messages_for(article, revision=None, sources=SOURCES):
+    validate_sources(sources)
     instruction=INSTRUCTION
     payload={
         'review_date':date.today().isoformat(),
         'audience':'AI/ML engineers, technical founders and enterprise AI buyers',
-        'source_cards':SOURCES,
+        'source_cards':sources,
         'article_lines':[{'line':i,'text':line} for i,line in enumerate(article.splitlines(),1)]}
     if revision:
-        payload['previous_model_review']=revision['previous_review']
+        fresh=revision.get('context_mode')=='feedback_only'
+        if not fresh:payload['previous_model_review']=revision['previous_review']
         payload['independent_feedback']=revision['feedback']
         payload['revision_task']='Return a complete improved review. Address specific feedback yourself; preserve correct findings and exact quote anchors.'
         instruction+='''\nREVISION MODE: independent_feedback is the teacher's authoritative
@@ -108,6 +129,16 @@ Rewrite every recommendation identified as inadequate. Do not repeat the same
 recommendation with cosmetic edits. A verbatim repeated review will fail.
 For each correction supply the specific missing engineering detail. Preserve
 accurate findings and return the complete revised JSON with all five deliverables.'''
+        if fresh:
+            instruction+='''\nFRESH RECONSTRUCTION: the rejected review is deliberately omitted.
+Work from the article and evidence cards, applying every required_improvement in
+the feedback. Do not discuss the revision history in your deliverable. An accurate
+article statement is not an error: omit comments on it or label optional additions
+as suggestion. Citation requests must quote an EXACT substring of the numbered
+line and seek evidence for a defensible bounded claim, never demand proof of a
+known false universal claim. citation_needs may be empty when supplied evidence
+already settles the issues. Clearly labelled synthetic examples are legitimate
+teaching material; do not allege that their fictional status is undisclosed.'''
     return [{'role':'system','content':instruction}, {'role':'user','content':json.dumps(payload,ensure_ascii=False)}]
 
 
@@ -125,28 +156,37 @@ def load_revision(parent, feedback_path):
     report=json.loads(artifacts['report.json'].read_text())
     response=json.loads(artifacts['response.json'].read_text())
     article=artifacts['article.md'].read_text()
-    if (report.get('schema')!='technical-review-pilot.v1' or report.get('status')!='structurally_valid'
+    valid_parent=(report.get('status')=='structurally_valid' or
+                  (report.get('status')=='invalid_output' and report.get('error_stage')=='structure'))
+    if (report.get('schema')!='technical-review-pilot.v1' or not valid_parent
             or sha256(artifacts['report.json'].read_bytes()).hexdigest()!=feedback.parent_report_sha256
             or sha256(response['content'].encode()).hexdigest()!=feedback.parent_response_sha256
             or report['response_sha256']!=feedback.parent_response_sha256
             or sha256(article.encode()).hexdigest()!=report['article_sha256']
             or response.get('model')!=report['model'] or response.get('digest')!=report['digest']
-            or sha256(artifacts['sources.json'].read_bytes()).hexdigest()!=report['sources_sha256']
-            or json.loads(artifacts['sources.json'].read_text())!=SOURCES):
+            or sha256(artifacts['sources.json'].read_bytes()).hexdigest()!=report['sources_sha256']):
         raise ValueError('Changed parent review or source evidence')
-    review=check_response(response['content'],article)
+    sources=json.loads(artifacts['sources.json'].read_text());validate_sources(sources)
+    # An anchored/schema-shaped draft can itself contain a bad quote/source ID.
+    # Preserve it as rejected input so the MODEL can fix it; acceptance still
+    # requires the complete structural and independent semantic checks.
+    if report['status']=='invalid_output':
+        review=Review.model_validate(json.loads(response['content'],object_pairs_hook=unique_object))
+    else:
+        review=check_response(response['content'],article,sources)
     if any(f.line>len(article.splitlines()) for f in feedback.findings):
         raise ValueError('Feedback outside article')
     return {'parent':str(parent.resolve()),'article':article,
             'synthetic':report['synthetic_development_exercise'],
-            'previous_review':review.model_dump(),'feedback':feedback.model_dump()}
+            'previous_review':review.model_dump(),'feedback':feedback.model_dump(),'sources':sources}
 
 
-def check_response(raw, article):
+def check_response(raw, article, sources=SOURCES):
+    validate_sources(sources)
     if not isinstance(raw,str) or len(raw)>32000 or '\x00' in raw:
         raise ValueError('Invalid output size/content')
     review = Review.model_validate(json.loads(raw, object_pairs_hook=unique_object))
-    lines=article.splitlines(); known={s['id'] for s in SOURCES}; seen=set()
+    lines=article.splitlines(); known={s['id'] for s in sources}; seen=set()
     for comment in review.comments:
         if comment.line>len(lines) or comment.quote != lines[comment.line-1]:
             raise ValueError('Quote does not match the exact numbered line')
@@ -171,7 +211,7 @@ def coverage(review):
             'limitation':'Line coverage alone does not assess correctness, citation support or quality.'}
 
 
-def render(review):
+def render(review, sources=SOURCES):
     # Mechanical serialization only: all editorial wording is the exact model
     # output. Source URLs come from the teacher's evidence pack.
     lines=['# Technical review — local model draft', '',
@@ -182,9 +222,10 @@ def render(review):
     for comment in review.comments:
         lines += [f'### Line {comment.line} — {comment.severity}', '', '> '+comment.quote, '',
                   comment.issue, '', '**Recommendation:** '+comment.recommendation, '']
-        cited=[s for s in SOURCES if s['id'] in comment.source_ids]
+        cited=[s for s in sources if s['id'] in comment.source_ids]
         if cited:
-            lines += ['Sources: '+', '.join(f"[{s['title']}]({s['url']})" for s in cited), '']
+            lines += ['Sources: '+', '.join(f"[{s['title']}]({s['url']})" if s['url'] else
+                       s['title']+' (provided evidence card)' for s in cited), '']
     lines += ['## Claims needing evidence', '']
     for need in review.citation_needs:
         lines += [f'- Line {need.line}: {need.claim} — {need.evidence_required}']
@@ -193,7 +234,10 @@ def render(review):
     return '\n'.join(lines)
 
 
-def execute(article, synthetic, config, provider=None, preflight=check_idle, revision=None):
+def execute(article, synthetic, config, provider=None, preflight=check_idle, revision=None, sources=SOURCES):
+    validate_sources(sources)
+    if revision and (sources!=revision['sources'] or article!=revision['article']):
+        raise ValueError('Revision must preserve the parent article and source evidence')
     if (not isinstance(article,str) or not article.strip() or len(article)>24000
             or len(article.splitlines())>1000 or '\x00' in article):
         raise ValueError('Article must be nonempty, at most 24000 characters and 1000 lines')
@@ -204,8 +248,8 @@ def execute(article, synthetic, config, provider=None, preflight=check_idle, rev
         raise ValueError('Linux workspace required')
     out=Path(tempfile.mkdtemp(prefix='review-',dir=ROOT))
     (out/'article.md').write_text(article,encoding='utf-8')
-    save(out/'sources.json',SOURCES)
-    messages=messages_for(article,revision); save(out/'request.json',messages)
+    save(out/'sources.json',sources)
+    messages=messages_for(article,revision,sources); save(out/'request.json',messages)
     report={'schema':'technical-review-pilot.v1', 'status':'running',
             'model':config['model'],'digest':config['digest'],'sampling':generation_options(config),
             'article_sha256':sha256(article.encode()).hexdigest(),
@@ -218,7 +262,8 @@ def execute(article, synthetic, config, provider=None, preflight=check_idle, rev
             'limitations':'Source-assisted draft review, not autonomous web research, live interview, client acceptance or held-out evaluation.'}
     if revision:
         report['revision_origin']={'path':revision['parent'],
-                                   'report_sha256':revision['feedback']['parent_report_sha256']}
+                                   'report_sha256':revision['feedback']['parent_report_sha256'],
+                                   'context_mode':revision.get('context_mode','full_previous_review')}
         save(out/'independent-feedback.json',revision['feedback'])
     save(out/'report.json',report)
     print(json.dumps({'output':str(out)}),flush=True)
@@ -232,15 +277,15 @@ def execute(article, synthetic, config, provider=None, preflight=check_idle, rev
         report['response_sha256']=sha256(response['content'].encode()).hexdigest()
         report['seconds']=response['elapsed_seconds']; report['tokens']=response['eval_count']
         stage='structure'
-        review=check_response(response['content'],article)
+        review=check_response(response['content'],article,sources)
         save(out/'review.json',review.model_dump())
-        (out/'review.md').write_text(render(review),encoding='utf-8')
+        (out/'review.md').write_text(render(review,sources),encoding='utf-8')
         report['status']='structurally_valid'
         if revision:
             changed=review.model_dump()!=revision['previous_review']
             report['revision_changed']=changed
             if not changed:report['status']='unchanged_revision'
-        if synthetic:report['coverage']=coverage(review)
+        if synthetic and article==ARTICLE:report['coverage']=coverage(review)
     except Exception as exc:
         report['status']='invalid_output' if stage=='structure' else 'infrastructure_error'
         report['error_stage']=stage; report['error_type']=type(exc).__name__
@@ -260,17 +305,17 @@ def main():
     if not args.run:
         print(json.dumps({'model_invoked':False,'source_cards':len(SOURCES),
                           'synthetic_development_exercise':args.article is None}));return 0
-    article=ARTICLE;revision=None;synthetic=args.article is None
+    article=ARTICLE;revision=None;synthetic=args.article is None;sources=SOURCES
     if args.article:
         with args.article.open('rb') as stream:raw=stream.read(96001)
         if len(raw)>96000:raise ValueError('Article too large')
         article=raw.decode('utf-8')
     if args.revise_from:
         revision=load_revision(args.revise_from,args.feedback)
-        article=revision['article'];synthetic=revision['synthetic']
+        article=revision['article'];synthetic=revision['synthetic'];sources=revision['sources']
     config=configuration()|{'num_ctx':16384,'num_predict':6000,'num_thread':4,
                             'timeout_seconds':180,'format':Review.model_json_schema()}
-    out,report=execute(article,synthetic,config,revision=revision)
+    out,report=execute(article,synthetic,config,revision=revision,sources=sources)
     print(json.dumps({'report':str(out/'report.json'),'status':report['status'],
                       'semantic_review':'pending','accepted':False}),flush=True)
     return 0 if report['status']=='structurally_valid' else 1

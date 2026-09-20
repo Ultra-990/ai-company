@@ -93,3 +93,18 @@ preflight wykonuje się w venv aplikacji; metadane uzupełnia rzeczywista klasa
 załadowanego dekodera, a po konstruktorze jawnie przywracany jest tryb treningu.
 Kontrola masek zatrzymała próbę przed wykonaniem błędnego kroku uczenia.
 Nie zmieniano zainstalowanych bibliotek ani plików bazowego checkpointu.
+
+## Następna partia: recenzje techniczne
+
+[Szkoła recenzenta](TECHNICAL_REVIEW_PILOT.md) przygotowała sześć rodzin train
+i 17 dokładnych odpowiedzi modelu. Niezależny odbiór dopuścił trzy do nauki
+(koszty, pamięć, dowody dostawców); reszta nadal wymaga poprawy. Prompt,
+informacja zwrotna i autorstwo modelu zachowane. Nie trening na deklarowanej
+przez model samoocenie ani ręczne zastępowanie jego tekstu.
+
+Rekordy mają 2274–2992 tokeny i przeszły audyt completion-only. Nie mieszczą
+się w historycznym kontekście 2048: przed kolejnym treningiem trzeba zamrozić
+osobny protokół, połączyć wyłącznie odebrane dane i ustalić odrębne rodziny
+oceny. Nie wolno uciąć odpowiedzi ani potraktować znanych poprawek jako testu.
+Te trzy recenzje **nie zostały jeszcze użyte do aktualizacji wag**. Brak
+nowej generacji obrazów, klientowskich realizacji i deklaracji osiągnięcia celu.

@@ -1,5 +1,15 @@
 # Stan projektu AI Company
 
+## Aktualizacja 20.09.2026 — dane do specjalizacji recenzenta
+
+Sześć syntetycznych ćwiczeń i 17 odpowiedzi lokalnego Qwena, z zachowanymi
+wersjami oraz niezależnymi uwagami. Odebrano do nauki trzy dokładne recenzje:
+koszty, pamięć QLoRA i ograniczenia dowodów w porównaniu platform. Pozostałe
+wersje odrzucone. [Przebieg szkoły](organization-os/TECHNICAL_REVIEW_PILOT.md).
+Trzy rekordy przeszły tokenizację i maskowanie odpowiedzi; **nie wykonano na
+nich jeszcze treningu wag**. Ulepszenia wynikają z informacji zwrotnej,
+nie z użycia pierwszego adaptera. Nadal brak potwierdzonej gotowości pięciu usług.
+
 ## Aktualizacja 20.09.2026 — rzeczywisty trening adaptera
 
 Cel właściciela: trenować lokalne modele do jakości porównywalnej z asystentem
