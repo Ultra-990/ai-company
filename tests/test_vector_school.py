@@ -456,6 +456,28 @@ def source_feedback_fixture(path):
             'comments': 'Correct the observed source defect yourself.'}
 
 
+def test_reserved_reference_preparation_is_separate_from_student_feedback_and_training(tmp_path, monkeypatch):
+    path, report = reserved_reference(tmp_path, monkeypatch)
+    feedback = source_feedback_fixture(path)
+    with pytest.raises(ValueError, match='Reserved'):
+        school.source_request(report['curriculum'], feedback)
+    feedback['schema'] = 'vector-evaluation-reference-feedback.v1'
+    request = school.source_request(report['curriculum'], feedback)
+    assert request['source_feedback'] == feedback
+    assert request['user'].startswith(CURRICULA[report['curriculum']]['brief'])
+    with pytest.raises(ValueError, match='Reserved'): school.make_request(path)
+    report['role'] = 'recreation'; path.write_text(json.dumps(report))
+    feedback['source_sha256'] = school.checksum(path)
+    with pytest.raises(ValueError, match='original family'):
+        school.source_request(report['curriculum'], feedback)
+
+
+def test_evaluation_preparation_permission_cannot_relabel_a_training_source(tmp_path, monkeypatch):
+    path = reference(tmp_path, monkeypatch); feedback = source_feedback_fixture(path)
+    feedback['schema'] = 'vector-evaluation-reference-feedback.v1'
+    with pytest.raises(ValueError, match='reserved family'): school.source_request(LEGACY, feedback)
+
+
 def test_source_repair_preserves_family_and_binds_even_failed_raw_reply(tmp_path, monkeypatch):
     path = reference(tmp_path, monkeypatch)
     report = json.loads(path.read_text()); report['status'] = 'failed'; path.write_text(json.dumps(report))

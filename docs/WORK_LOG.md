@@ -1,5 +1,48 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — przygotowanie zarezerwowanych wzorców przez model
+
+- Rozpoczęto po e224488. Cel pozostaje aktywny: samodzielna nauka i jakość
+  pięciu usług nie są osiągnięte. Rozdzielono przygotowanie egzaminu od
+  odpowiedzi ucznia i danych treningowych. Brak zmian produkcyjnej bazy,
+  routingu, wag, pulpitu oraz obcych procesów.
+- Sześć surowych generacji źródeł science/travel nie dało odebranego wzorca:
+  nadmiarowe teksty, jedna ucięta odpowiedź; dwie związane hashem poprawki
+  powtórzyły wadę. Dostawca uciętej odpowiedzi nie zachował częściowego tekstu.
+  Dodano jawny typ feedbacku przygotowania źródeł validation/test; nie
+  uprawnia do poprawiania odpowiedzi ucznia ani eksportu do treningu.
+- Dodano vector_structured_source: model wybiera wszystkie wartości sceny,
+  a narzędzie dosłownie serializuje XML. Osobny walidator nadal sprawdza
+  bezpieczny SVG, dokładną składnię liczb/kolorów i osiem różnych tekstów.
+  Zachowane surowe żądania, odpowiedzi, model/digest, sześć hashy artefaktów;
+  autentykacja wymaga identycznych bajtów ponownej kompilacji.
+- Pierwsza próba schematu dostała model_http_error. Ograniczona diagnostyka
+  lokalnego HTTP ujawniła 400 failed to parse grammar. Wyniku drugiej
+  diagnostyki nie odzyskano, więc nie jest dowodem. Po usunięciu regexów
+  wyłącznie z dekodera rzeczywiste generacje działały. Końcowy walidator
+  nie został osłabiony. Puste kształty prototypu wymusiły wymaganie geometrii
+  i wersję literal-scene-svg.v2; prototypowe raporty pozostają zachowane.
+- W ośmiu próbach sceny model sam poprawił nagłówek astronomiczny.
+  structured-source-lhidhlo_ został obejrzany, ponownie uwierzytelniony
+  i odebrany jako usable_reserved_reference (validation). Cztery obrazy
+  podróżnicze obejrzano i odrzucono: brak dwóch wymaganych tekstów w sidebarze,
+  mimo reference_ready w kontrolach technicznych. Ostatni p3z6mouf nadal
+  wymaga poprawy. Żaden wynik test nie został odebrany.
+- W dwóch feedbackach błędnie oceniono długość The Illustrated Line:
+  rzeczywiste 20 znaków spełnia limit. Jawnie sprostowano tę uwagę w ocenach,
+  bez przepisywania historycznych odpowiedzi lub eksportu feedbacku do SFT.
+  Odrzucenie za brak tekstów w sidebarze pozostaje zasadne.
+- Prywatna ocena 14 prób reserved-reference-preparation-001-assessment.json,
+  SHA-256 c91f022758b65ae906b402c9c3d9ec89f49a0bea296385a74b9426b8712b09c7.
+  Brak odpowiedzi egzaminacyjnych ucznia, nowego treningu i wdrożenia.
+  To wejście do przyszłego egzaminu, nie dowód poprawy po dostrojeniu.
+- Pierwsze testy fixture kompilatora: dwa niepowodzenia przez przypadkowe
+  włączenie pytest DB do listy artefaktów. Fixture poprawiono na sześć
+  jawnych nazw, bez zmiany walidacji produktu. Końcowe testy kierunkowe:
+  106 passed. Pełne .venv/bin/pytest -q: 1620 passed, 21 skipped, 80,01 s.
+  Sprawdzenia obejmują zakaz relabelowania rodzin, użycia odpowiedzi ucznia
+  jako źródła, podmiany SVG oraz brak automatycznego naprawiania złych wartości.
+
 ## 2026-09-21 — 69 lokalnych napraw z automatycznym sprawdzeniem
 
 - Zastany worktree był czysty po 5b76468. Poprzedni etap był postępem:

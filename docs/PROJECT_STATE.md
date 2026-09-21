@@ -1,5 +1,16 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — wzorce niezależnego egzaminu
+
+[Strukturalne sceny lokalnego modelu](organization-os/VECTOR_STRUCTURED_REFERENCES.md)
+mają dosłowny kompilator SVG, wymagane parametry kształtów i niezależne
+kontrole tekstu, obrazu oraz PDF. Po 14 próbach przygotowania źródeł
+odebrano jeden wzorzec validation; wzorzec test nadal wymaga poprawy.
+Model sam naprawił nieczytelny nagłówek po informacji o błędzie.
+Zapisano również porażki i sprostowanie błędnej uwagi nauczyciela.
+To przygotowanie egzaminu: **bez odpowiedzi ucznia, treningu wag i wdrożenia**.
+Pełne `.venv/bin/pytest -q`: **1620 passed, 21 skipped**, 80,01 s.
+
 ## Aktualizacja 21.09.2026 — naprawy odbierane bez oceny każdej odpowiedzi
 
 [Kontrolowane ćwiczenia SVG](organization-os/VECTOR_CONTROLLED_PRACTICE.md):

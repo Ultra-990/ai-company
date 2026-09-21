@@ -1,5 +1,9 @@
 # Szkoła odtwarzania ulotek
 
+Nowszy etap: [przygotowanie wzorców egzaminacyjnych](VECTOR_STRUCTURED_REFERENCES.md).
+Jeden wzorzec validation odebrany, test nadal nieodebrany; bez odpowiedzi
+ucznia na egzaminie i bez aktualizacji wag. Poniższe sekcje opisują wcześniejsze etapy.
+
 ## Partia trzech rodzin — 21.09.2026
 
 `vector_curriculum.py` ustala rodziny przed generowaniem: ogród, degustacja

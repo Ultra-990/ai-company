@@ -48,7 +48,7 @@ def source_request(curriculum, feedback=None, _depth=0):
     if _depth >= 3: raise ValueError('At most three bound source revisions')
     keys = {'schema', 'source_report', 'source_sha256', 'request_sha256', 'response_sha256', 'comments'}
     if (not isinstance(feedback, dict) or set(feedback) != keys
-            or feedback['schema'] != 'vector-source-feedback.v1'
+            or feedback['schema'] not in {'vector-source-feedback.v1', 'vector-evaluation-reference-feedback.v1'}
             or not isinstance(feedback['comments'], str) or not 1 <= len(feedback['comments']) <= 2000):
         raise ValueError('Bound source feedback required')
     previous_path = checked(Path(feedback['source_report']))
@@ -60,7 +60,12 @@ def source_request(curriculum, feedback=None, _depth=0):
             or previous.get('status') not in {'reference_ready', 'reference_rejected', 'failed'}
             or metadata(previous) != metadata({'curriculum': curriculum})):
         raise ValueError('Source repair must retain its original family')
-    require_learning(previous)
+    evaluation_reference = feedback['schema'] == 'vector-evaluation-reference-feedback.v1'
+    if evaluation_reference:
+        if metadata(previous)['data_split'] not in {'validation', 'test'}:
+            raise ValueError('Evaluation reference preparation needs a reserved family')
+    else:
+        require_learning(previous)
     original_request = json.loads((previous_path.parent/'request.json').read_text(), object_pairs_hook=unique_object)
     # Bounded source repairs preserve all predecessors, including replies that
     # could not be rendered. Recursive verification never adds history to the
@@ -81,7 +86,7 @@ def source_request(curriculum, feedback=None, _depth=0):
 def load_source(path, *, require_review=True):
     path = checked(path)
     report = json.loads(path.read_text(), object_pairs_hook=unique_object)
-    if (report.get('schema') != 'vector-school.v1' or report.get('status') != 'reference_ready'
+    if (report.get('schema') not in {'vector-school.v1', 'vector-structured-source.v1'} or report.get('status') != 'reference_ready'
             or report.get('role') != 'source'):
         raise ValueError('Completed synthetic reference required')
     require_learning(report)
@@ -99,6 +104,9 @@ def load_source(path, *, require_review=True):
 
 
 def authenticate(path, report):
+    if report.get('schema') == 'vector-structured-source.v1':
+        from scripts.vector_structured_source import authenticate as authenticate_scene
+        return authenticate_scene(path, report)
     parent = path.parent
     for name, digest in report['artifact_sha256'].items():
         if name not in {'request.json', 'response.json', 'artwork.svg', 'preview.png', 'preview.pdf', 'render.json'}:
