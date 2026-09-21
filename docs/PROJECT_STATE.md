@@ -1,5 +1,16 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — trzy rodziny ćwiczeń i kontrola wzorców
+
+[Szkoła wektorowa](organization-os/VECTOR_SCHOOL.md) ma zamrożony podział
+rodzin train/validation/test oraz wymaga niezależnego odbioru wzorców train.
+Model przygotował trzy przyjęte wzorce po własnych poprawkach. Pierwsze
+odtworzenia: **0/3 odebrane**; jedna późniejsza precyzyjna naprawa zaliczyła
+lokalną lekcję bez zmiany siedmiu chronionych pól. 106 testów infrastruktury
+zaliczonych. Zapisano doświadczenie train; bez eksportu SFT, nowych wag
+i odpowiedzi z rodzin walidacyjnej/testowej. To rozwój infrastruktury
+oraz danych do nauki, nie dowód gotowości pięciu usług.
+
 ## Aktualizacja 21.09.2026 — modelowa naprawa bez regresji
 
 [Lekcja precyzyjnych zmian SVG](organization-os/VECTOR_SCHOOL.md): lokalny

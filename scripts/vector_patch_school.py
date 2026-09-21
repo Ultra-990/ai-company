@@ -20,6 +20,7 @@ from app.services import local_vision
 from scripts import vector_school as school
 from scripts.vector_school_contract import NS, ATTRS, THRESHOLDS, validate_svg, compare
 from scripts.prepare_training_data import unique_object
+from scripts.vector_curriculum import metadata, require_learning
 
 EDIT_SCHEMA = {'type': 'object', 'additionalProperties': False, 'required': ['edits'], 'properties': {
     'edits': {'type': 'array', 'minItems': 1, 'maxItems': 12, 'items': {
@@ -95,16 +96,19 @@ def apply_edits(source, raw, allowed):
     return result, document['edits']
 
 
-def prepare(previous_path):
+def prepare(previous_path, diagnostics='bbox-v1'):
+    if diagnostics not in {'bbox-v1', 'named-deltas-v1'}: raise ValueError('Unknown diagnostic profile')
     previous_path = school.checked(previous_path)
     previous = json.loads(previous_path.read_text(), object_pairs_hook=unique_object)
     if (previous.get('schema') != 'vector-school.v1' or previous.get('role') != 'recreation'
-            or previous.get('status') != 'needs_revision' or previous.get('data_split') != 'development'):
-        raise ValueError('Failed development reconstruction required')
+            or previous.get('status') != 'needs_revision'):
+        raise ValueError('Failed learning reconstruction required')
+    require_learning(previous)
     prior_render = school.authenticate(previous_path, previous)
     source_path = Path(previous['source_report'])
     school.require_checksum(source_path, previous['source_sha256'])
-    school.load_source(source_path)
+    source_report = school.load_source(source_path)
+    if metadata(previous) != metadata(source_report): raise ValueError('Patch split differs from reference')
     reference = json.loads((source_path.parent/'render.json').read_text())
     score = compare(reference['layout'], prior_render['layout'], source_path.parent/'preview.png', previous_path.parent/'preview.png')
     if (not score['text_exact'] or score['layout_issues'] or score['mean_rgb_error'] > THRESHOLDS['mean_rgb_error_max']
@@ -120,21 +124,29 @@ def prepare(previous_path):
                 'reference_bbox': expected[e['text']]} for e in entries if e['tag'] == 'text'
                and score['text_bbox_max_deltas'][e['text']] > THRESHOLDS['text_bbox_max_delta']]
     if not targets: raise ValueError('No measured text geometry failures')
+    if diagnostics == 'named-deltas-v1':
+        for target in targets:
+            delta = {name: current-expected for name, current, expected in
+                     zip(('left', 'top', 'width', 'height'), target['current_bbox'], target['reference_bbox'])}
+            target['current_minus_reference'] = delta
+            target['dimensions_failing_tolerance'] = [name for name, value in delta.items()
+                                                       if abs(value) > THRESHOLDS['text_bbox_max_delta']]
     request = {'system': INSTRUCTION, 'user': json.dumps({'task': 'Repair these remaining geometry errors without regressions.',
                'editable_elements': [t['element'] for t in targets], 'geometry_errors': targets,
                'current_catalogue': entries, 'units': '592x840 SVG user units; bbox=[left,top,width,height]'}, ensure_ascii=False),
                'image': {'path': str(source_path.parent/'preview.png'), 'sha256': school.checksum(source_path.parent/'preview.png')},
                'previous_report': str(previous_path), 'previous_sha256': school.checksum(previous_path),
                'reference_report': str(source_path), 'reference_sha256': school.checksum(source_path)}
+    if diagnostics != 'bbox-v1': request['diagnostic_profile'] = diagnostics
     return request, source, prior_render, reference, targets
 
 
-def run(previous_path):
-    request, source, previous, reference, targets = prepare(previous_path)
+def run(previous_path, diagnostics='bbox-v1'):
+    request, source, previous, reference, targets = prepare(previous_path, diagnostics)
     resources = school.check_idle()
     config = configuration() | {'format': EDIT_SCHEMA, 'num_ctx': 8192, 'num_predict': 1200, 'num_thread': 4, 'timeout_seconds': 180}
     out = Path(tempfile.mkdtemp(prefix='patch-', dir=school.ROOT))
-    report = {'schema': 'vector-attribute-lesson.v1', 'status': 'started', 'data_split': 'development',
+    report = {'schema': 'vector-attribute-lesson.v1', 'status': 'started',
               'model': config['model'], 'digest': config['digest'], 'config': config, 'resources_before': resources,
               'previous_report': str(previous_path), 'previous_sha256': request['previous_sha256'],
               'source_report': request['reference_report'], 'source_sha256': request['reference_sha256'],
@@ -142,7 +154,8 @@ def run(previous_path):
               'authorship': 'exact local-model edit response mechanically applied to authenticated local-model SVG',
               'training_started': False, 'training_exported': False, 'print_ready': False, 'production_routing_changed': False,
               'implementation_sha256': {name: school.checksum(Path(__file__).parent/name) for name in
-                                      ('vector_patch_school.py', 'vector_school.py', 'vector_school_contract.py', 'render_school_svg.py')}}
+                                      ('vector_patch_school.py', 'vector_school.py', 'vector_school_contract.py', 'render_school_svg.py', 'vector_curriculum.py')}}
+    report.update(require_learning(json.loads(previous_path.read_text())))
     school.save(out/'request.json', request); school.save(out/'report.json', report)
     print(json.dumps({'report': str(out/'report.json')}), flush=True)
     started = time.monotonic()
@@ -160,7 +173,7 @@ def run(previous_path):
         school.require_checksum(previous_path, request['previous_sha256'])
         school.require_checksum(Path(request['reference_report']), request['reference_sha256'])
         # Also validate the whole prior artifact chain after rendering.
-        prepare(previous_path)
+        prepare(previous_path, diagnostics)
         score = compare(reference['layout'], rendered['layout'], Path(request['image']['path']), out/'preview.png')
         before_boxes = {x['text']: x['bbox'] for x in previous['layout']}
         protected = {x['text'] for x in reference['layout']} - {t['text'] for t in targets}
@@ -184,18 +197,23 @@ def verify(report_path):
     """Replay the literal model operations and recheck their source chain, no inference."""
     report_path = school.checked(report_path)
     report = json.loads(report_path.read_text(), object_pairs_hook=unique_object)
-    if (report.get('schema') != 'vector-attribute-lesson.v1' or report.get('data_split') != 'development'
+    if (report.get('schema') != 'vector-attribute-lesson.v1'
             or report.get('status') not in {'pending_independent_review', 'needs_more_learning'}
             or report.get('thresholds') != THRESHOLDS):
         raise ValueError('Completed unmodified attribute lesson required')
+    require_learning(report)
     names = {'request.json', 'response.json', 'artwork.svg', 'preview.png', 'preview.pdf', 'render.json'}
     if set(report['artifact_sha256']) != names: raise ValueError('Incomplete artifact bindings')
     for name, digest in report['artifact_sha256'].items(): school.require_checksum(report_path.parent/name, digest)
     previous_path = Path(report['previous_report'])
     school.require_checksum(previous_path, report['previous_sha256'])
     school.require_checksum(Path(report['source_report']), report['source_sha256'])
-    expected_request, previous_svg, prior_render, reference, targets = prepare(previous_path)
     request = json.loads((report_path.parent/'request.json').read_text(), object_pairs_hook=unique_object)
+    profile = request.get('diagnostic_profile', 'bbox-v1')
+    expected_request, previous_svg, prior_render, reference, targets = (prepare(previous_path) if profile == 'bbox-v1'
+                                                                    else prepare(previous_path, profile))
+    if metadata(report) != metadata(json.loads(previous_path.read_text())):
+        raise ValueError('Experience split differs from source family')
     if request != expected_request: raise ValueError('Model input differs from the verified lesson')
     response = json.loads((report_path.parent/'response.json').read_text(), object_pairs_hook=unique_object)
     if (response['model'] != report['model'] or response['digest'] != report['digest']
@@ -243,7 +261,7 @@ def experience(report_path, judgment_path):
     response = json.loads((report_path.parent/'response.json').read_text())
     return {'version': 'company-vision-experience.v1', 'task': 'svg_attribute_repair',
             'id': 'svg-patch-'+report['raw_response_sha256'][:16],
-            'family': 'community-print-fair-001', 'split': 'development',
+            'family': metadata(report)['family'], 'split': metadata(report)['data_split'],
             'model': report['model'], 'digest': report['digest'],
             'messages': [{'role': 'system', 'content': request['system']},
                          {'role': 'user', 'content': [{'type': 'text', 'text': request['user']},
@@ -261,6 +279,7 @@ def experience(report_path, judgment_path):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('report', type=Path)
+    parser.add_argument('--diagnostics', choices=['bbox-v1', 'named-deltas-v1'], default='bbox-v1')
     action = parser.add_mutually_exclusive_group()
     action.add_argument('--run', action='store_true')
     action.add_argument('--verify', action='store_true')
@@ -273,5 +292,5 @@ if __name__ == '__main__':
         with target.open('x', encoding='utf-8') as handle: json.dump(record, handle, ensure_ascii=False, indent=2)
         print(json.dumps({'experience': str(target), 'training_exported': False}))
     elif args.verify: print(json.dumps(verify(args.report)))
-    elif args.run: run(args.report)
+    elif args.run: run(args.report, args.diagnostics)
     else: print(json.dumps({'inference': False, 'training': False, 'purpose': 'model-authored localized SVG edits'}))

@@ -21,6 +21,7 @@ from scripts.prepare_training_data import unique_object
 from scripts.render_school_svg import render
 from scripts.vector_school_contract import (SCHEMA, RULES, SOURCE_BRIEF, RECREATE_BRIEF,
                                             THRESHOLDS, parse_response, compare, layout_issues)
+from scripts.vector_curriculum import CURRICULA, LEGACY, metadata, require_learning
 
 ROOT = Path('/home/marcin/ai-company-workspaces/vector-school')
 
@@ -41,13 +42,59 @@ def checked(path):
     return path
 
 
-def load_source(path):
+def source_request(curriculum, feedback=None, _depth=0):
+    request = {'system': RULES, 'user': CURRICULA[curriculum]['brief'], 'image': None}
+    if feedback is None: return request
+    if _depth >= 3: raise ValueError('At most three bound source revisions')
+    keys = {'schema', 'source_report', 'source_sha256', 'request_sha256', 'response_sha256', 'comments'}
+    if (not isinstance(feedback, dict) or set(feedback) != keys
+            or feedback['schema'] != 'vector-source-feedback.v1'
+            or not isinstance(feedback['comments'], str) or not 1 <= len(feedback['comments']) <= 2000):
+        raise ValueError('Bound source feedback required')
+    previous_path = checked(Path(feedback['source_report']))
+    require_checksum(previous_path, feedback['source_sha256'])
+    for name in ('request', 'response'):
+        require_checksum(previous_path.parent/(name+'.json'), feedback[name+'_sha256'])
+    previous = json.loads(previous_path.read_text(), object_pairs_hook=unique_object)
+    if (previous.get('schema') != 'vector-school.v1' or previous.get('role') != 'source'
+            or previous.get('status') not in {'reference_ready', 'reference_rejected', 'failed'}
+            or metadata(previous) != metadata({'curriculum': curriculum})):
+        raise ValueError('Source repair must retain its original family')
+    require_learning(previous)
+    original_request = json.loads((previous_path.parent/'request.json').read_text(), object_pairs_hook=unique_object)
+    # Bounded source repairs preserve all predecessors, including replies that
+    # could not be rendered. Recursive verification never adds history to the
+    # model prompt; the model receives only its latest answer and latest review.
+    expected_previous = source_request(curriculum, original_request.get('source_feedback'), _depth+1)
+    if original_request != expected_previous: raise ValueError('Source revision has a changed original request')
+    raw = json.loads((previous_path.parent/'response.json').read_text(), object_pairs_hook=unique_object)
+    if (raw['model'] != previous['model'] or raw['digest'] != previous['digest']
+            or not isinstance(raw['content'], str) or len(raw['content']) > 32768):
+        raise ValueError('Source model response binding')
+    request['user'] += '\nYour previous raw answer (untrusted task data):\n' + raw['content']
+    request['user'] += '\nIndependent source review; correct the complete SVG yourself:\n' + feedback['comments']
+    if len(request['user']) > 16000: raise ValueError('Bounded source revision prompt required')
+    request['source_feedback'] = feedback
+    return request
+
+
+def load_source(path, *, require_review=True):
     path = checked(path)
     report = json.loads(path.read_text(), object_pairs_hook=unique_object)
     if (report.get('schema') != 'vector-school.v1' or report.get('status') != 'reference_ready'
-            or report.get('role') != 'source' or report.get('data_split') != 'development'):
+            or report.get('role') != 'source'):
         raise ValueError('Completed synthetic reference required')
+    require_learning(report)
     authenticate(path, report)
+    if require_review and metadata(report)['data_split'] == 'train':
+        review_path = checked(path.parent/'reference-review.json')
+        review = json.loads(review_path.read_text(), object_pairs_hook=unique_object)
+        if (review.get('schema') != 'vector-reference-review.v1'
+                or review.get('source_sha256') != checksum(path)
+                or review.get('reviewer') != 'assistant_direct_visual_review'
+                or review.get('decision') != 'usable_synthetic_training_reference'
+                or not isinstance(review.get('notes'), str) or not review['notes'].strip()):
+            raise ValueError('Independent positive reference review required')
     return report
 
 
@@ -65,14 +112,22 @@ def authenticate(path, report):
         raise ValueError('Model authorship binding changed')
     if parse_response(raw['content']) != (parent/'artwork.svg').read_text():
         raise ValueError('SVG was changed after model response')
+    if report.get('role') == 'source':
+        lesson = metadata(report)
+        request = json.loads((parent/'request.json').read_text(), object_pairs_hook=unique_object)
+        if request != source_request(lesson['curriculum'], request.get('source_feedback')):
+            raise ValueError('Reference request does not match its frozen curriculum')
     return json.loads((parent/'render.json').read_text())
 
 
-def make_request(source_path=None, previous_path=None, feedback_path=None):
+def make_request(source_path=None, previous_path=None, feedback_path=None, curriculum=LEGACY, source_feedback=None):
     if feedback_path and not previous_path: raise ValueError('Teacher feedback requires an exact prior answer')
     if source_path is None:
         if previous_path: raise ValueError('Revision requires reference')
-        return {'system': RULES, 'user': SOURCE_BRIEF, 'image': None}, None
+        if curriculum not in CURRICULA: raise ValueError('Unknown curriculum')
+        return source_request(curriculum, source_feedback), None
+    if source_feedback is not None: raise ValueError('Source feedback cannot repair a reconstruction')
+    if curriculum != LEGACY: raise ValueError('Reconstruction inherits its reference curriculum')
     source = load_source(source_path)
     image_path = checked(source_path.parent/'preview.png')
     request = {'system': RULES, 'user': RECREATE_BRIEF,
@@ -80,6 +135,7 @@ def make_request(source_path=None, previous_path=None, feedback_path=None):
     if previous_path:
         previous_path = checked(previous_path)
         previous = json.loads(previous_path.read_text(), object_pairs_hook=unique_object)
+        if metadata(previous) != metadata(source): raise ValueError('Revision split differs from reference')
         if (previous.get('schema') != 'vector-school.v1' or previous.get('role') != 'recreation'
                 or previous.get('status') != 'needs_revision' or type(previous.get('revision_number')) is not int
                 or not 0 <= previous['revision_number'] < 3
@@ -112,23 +168,23 @@ def make_request(source_path=None, previous_path=None, feedback_path=None):
     return request, source
 
 
-def run(source_path=None, previous_path=None, feedback_path=None):
+def run(source_path=None, previous_path=None, feedback_path=None, curriculum=LEGACY, source_feedback=None):
     if any(p.is_symlink() for p in (ROOT, *ROOT.parents)): raise ValueError('Symlink workspace')
     ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
     if ROOT.stat().st_dev != Path('/home/marcin').stat().st_dev: raise ValueError('Linux workspace required')
-    request, source = make_request(source_path, previous_path, feedback_path)
+    request, source = make_request(source_path, previous_path, feedback_path, curriculum, source_feedback)
     resources = check_idle()
     config = configuration() | {'format': SCHEMA, 'num_predict': 2400, 'num_ctx': 8192, 'num_thread': 4, 'timeout_seconds': 180}
     out = Path(tempfile.mkdtemp(prefix='recreate-' if source else 'source-', dir=ROOT))
     report = {'schema': 'vector-school.v1', 'role': 'recreation' if source else 'source',
-              'status': 'started', 'data_split': 'development', 'synthetic': True,
-              'family': 'community-print-fair-001', 'resources_before': resources,
+              'status': 'started', 'synthetic': True, 'resources_before': resources,
               'training_started': False, 'training_exported': False, 'production_routing_changed': False,
               'owner_accepted': False, 'print_ready': False, 'revision_number': request.get('revision_number', 0),
               'revision_mode': request.get('revision_mode'),
               'model': config['model'], 'digest': config['digest'], 'config': config, 'thresholds': THRESHOLDS}
+    report.update(metadata(source or {'curriculum': curriculum}))
     report['implementation_sha256'] = {name: checksum(Path(__file__).parent/name) for name in
-                                       ('vector_school.py', 'vector_school_contract.py', 'render_school_svg.py')}
+                                       ('vector_school.py', 'vector_school_contract.py', 'render_school_svg.py', 'vector_curriculum.py')}
     if source:
         report.update(source_report=str(source_path), source_sha256=checksum(source_path))
     save(out/'request.json', request)
@@ -172,8 +228,24 @@ def run(source_path=None, previous_path=None, feedback_path=None):
         raise
     finally:
         report['elapsed_seconds'] = round(time.monotonic()-started, 3)
+        report['captured_sha256'] = {name: checksum(out/name) for name in ('request.json', 'response.json') if (out/name).is_file()}
         save(out/'report.json', report)
         print(json.dumps({'report': str(out/'report.json'), 'status': report['status'], 'seconds': report['elapsed_seconds']}), flush=True)
+
+
+def audit_source(path):
+    source = load_source(path, require_review=False)
+    captured = checksum(path)
+    check_idle()
+    out = Path(tempfile.mkdtemp(prefix='source-audit-', dir=ROOT))
+    rendered = asyncio.run(render((path.parent/'artwork.svg').read_text(), out))
+    require_checksum(path, captured)
+    authenticate(path, source)
+    report = {'schema': 'vector-source-audit.v1', 'source_report': str(path), 'source_sha256': captured,
+              'render': rendered, 'layout_issues': layout_issues(rendered['layout']), 'model_calls': 0,
+              'original_changed': False, 'training_started': False}
+    save(out/'report.json', report)
+    return {'audit': str(out/'report.json'), 'layout_issues': report['layout_issues'], 'model_calls': 0}
 
 
 def main():
@@ -182,10 +254,18 @@ def main():
     parser.add_argument('--source', type=Path, help='Completed reference report, absent to generate a reference')
     parser.add_argument('--revise', type=Path, help='Exact failed reconstruction report, at most three revisions')
     parser.add_argument('--feedback', type=Path, help='Teacher comments bound to the revision source report')
+    parser.add_argument('--curriculum', choices=list(CURRICULA), default=LEGACY, help='Reference generation only')
+    parser.add_argument('--source-feedback', type=Path, help='Teacher-reviewed source repair, at most three revisions')
+    parser.add_argument('--audit-source', type=Path, help='Re-render an existing reference with current checks, no inference')
     args = parser.parse_args()
+    if args.audit_source:
+        if args.run or args.source or args.revise or args.feedback or args.source_feedback or args.curriculum != LEGACY:
+            raise ValueError('Source audit is separate from model generation')
+        print(json.dumps(audit_source(args.audit_source))); return
     if not args.run:
         print(json.dumps({'inference': False, 'training': False, 'purpose': 'synthetic image-to-editable-vector lesson'})); return
-    run(args.source, args.revise, args.feedback)
+    feedback = json.loads(checked(args.source_feedback).read_text(), object_pairs_hook=unique_object) if args.source_feedback else None
+    run(args.source, args.revise, args.feedback, args.curriculum, feedback)
 
 
 if __name__ == '__main__': main()

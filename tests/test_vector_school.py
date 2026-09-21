@@ -11,6 +11,7 @@ from scripts import vector_school_contract as contract
 from scripts.render_school_svg import chrome_args, chrome_env, document, pdf_checks
 from scripts.vector_patch_school import apply_edits, catalogue, prepare
 from scripts import vector_patch_school as patches
+from scripts.vector_curriculum import CURRICULA, LEGACY, metadata, require_learning
 
 
 def fixture_svg():
@@ -76,6 +77,11 @@ def test_hidden_text_cannot_pass_from_dom_copy_alone(tmp_path):
     assert result['layout_issues'][0]['kind'] == 'text_occluded'
 
 
+def test_nearly_invisible_text_cannot_pass_from_geometry_alone():
+    invisible = layout(); invisible[0]['low_contrast_character_centers'] = [0, 1, 2]
+    assert contract.layout_issues(invisible)[0]['kind'] == 'text_near_background_color'
+
+
 def test_teacher_feedback_cannot_attach_to_an_unbound_attempt(tmp_path):
     with pytest.raises(ValueError, match='exact prior answer'):
         school.make_request(feedback_path=tmp_path/'feedback.json')
@@ -111,7 +117,7 @@ def reference(tmp_path, monkeypatch):
     source = fixture_svg()
     (folder/'artwork.svg').write_text(source)
     (folder/'response.json').write_text(json.dumps({'model': 'fixture-model', 'digest': 'd'*64, 'content': json.dumps({'svg': source})}))
-    (folder/'request.json').write_text('{}')
+    (folder/'request.json').write_text(json.dumps({'system': contract.RULES, 'user': contract.SOURCE_BRIEF, 'image': None}))
     (folder/'render.json').write_text(json.dumps({'layout': layout()}))
     Image.new('RGB', (592, 840), 'white').save(folder/'preview.png')
     (folder/'preview.pdf').write_bytes(b'%PDF-fixture')
@@ -261,6 +267,10 @@ def test_patch_targets_come_from_verified_measurements_and_keep_reference_svg_pr
     assert targets[0]['reference_bbox'][2] == 100 and targets[0]['current_bbox'][2] == 140
     assert '<svg' not in request['system'] + request['user']
     assert request['image']['sha256'] == school.checksum(source.parent/'preview.png')
+    named, _, _, _, errors = prepare(previous, 'named-deltas-v1')
+    assert named['diagnostic_profile'] == 'named-deltas-v1'
+    assert errors[0]['dimensions_failing_tolerance'] == ['width']
+    assert errors[0]['current_minus_reference']['width'] == 40
 
 
 def verified_patch_fixture(tmp_path, monkeypatch):
@@ -326,3 +336,103 @@ def test_experience_needs_an_explicit_independent_review(tmp_path, monkeypatch, 
     judgment['decision'] = decision; judgment['visual_checks']['text_readable'] = check
     target.write_text(json.dumps(judgment))
     with pytest.raises(ValueError, match='teacher review'): patches.experience(path, target)
+
+
+def test_new_families_are_disjoint_and_hash_bound_before_generation():
+    assert len({value['family'] for value in CURRICULA.values()}) == len(CURRICULA)
+    assert {value['data_split'] for value in CURRICULA.values()} == {'development', 'train', 'validation', 'test'}
+    for name in CURRICULA:
+        frozen = metadata({'curriculum': name})
+        assert metadata({'schema': 'vector-school.v1', **frozen}) == frozen
+        if name != LEGACY:
+            with pytest.raises(ValueError, match='Incomplete'): metadata({'schema': 'vector-school.v1', 'curriculum': name})
+            with pytest.raises(ValueError): metadata({**frozen, 'curriculum_sha256': 'changed'})
+
+
+@pytest.mark.parametrize('name', ['science-evening-validation-v1', 'travel-club-test-v1'])
+def test_reserved_families_cannot_be_relabelled_for_learning(name):
+    frozen = metadata({'curriculum': name})
+    with pytest.raises(ValueError, match='Reserved'): require_learning(frozen)
+    with pytest.raises(ValueError, match='changed'): require_learning({**frozen, 'data_split': 'train'})
+
+
+def reserved_reference(tmp_path, monkeypatch):
+    path = reference(tmp_path, monkeypatch)
+    report = json.loads(path.read_text())
+    name = 'travel-club-test-v1'; report.update(metadata({'curriculum': name}))
+    request = {'system': contract.RULES, 'user': CURRICULA[name]['brief'], 'image': None}
+    (path.parent/'request.json').write_text(json.dumps(request))
+    report['artifact_sha256']['request.json'] = school.checksum(path.parent/'request.json')
+    path.write_text(json.dumps(report))
+    return path, report
+
+
+def test_reserved_reference_is_blocked_before_reconstruction(tmp_path, monkeypatch):
+    path, _ = reserved_reference(tmp_path, monkeypatch)
+    with pytest.raises(ValueError, match='Reserved'): school.make_request(path)
+
+
+def test_stripping_holdout_metadata_still_fails_its_original_brief_binding(tmp_path, monkeypatch):
+    path, report = reserved_reference(tmp_path, monkeypatch)
+    for key in ('curriculum', 'curriculum_sha256', 'family'): report.pop(key)
+    report['data_split'] = 'development'; path.write_text(json.dumps(report))
+    with pytest.raises(ValueError, match='frozen curriculum'): school.load_source(path)
+
+
+def source_feedback_fixture(path):
+    return {'schema': 'vector-source-feedback.v1', 'source_report': str(path), 'source_sha256': school.checksum(path),
+            'request_sha256': school.checksum(path.parent/'request.json'), 'response_sha256': school.checksum(path.parent/'response.json'),
+            'comments': 'Correct the observed source defect yourself.'}
+
+
+def test_source_repair_preserves_family_and_binds_even_failed_raw_reply(tmp_path, monkeypatch):
+    path = reference(tmp_path, monkeypatch)
+    report = json.loads(path.read_text()); report['status'] = 'failed'; path.write_text(json.dumps(report))
+    feedback = source_feedback_fixture(path)
+    request = school.source_request(LEGACY, feedback)
+    assert 'Correct the observed source defect' in request['user']
+    assert request['source_feedback'] == feedback
+    assert request['user'].startswith(contract.SOURCE_BRIEF)
+    with pytest.raises(ValueError, match='original family'): school.source_request('garden-workshop-train-v1', feedback)
+    (path.parent/'response.json').write_text('{}')
+    with pytest.raises(ValueError, match='changed'): school.source_request(LEGACY, feedback)
+
+
+def test_source_feedback_cannot_forge_a_recursive_predecessor(tmp_path, monkeypatch):
+    path = reference(tmp_path, monkeypatch)
+    feedback = source_feedback_fixture(path)
+    request = school.source_request(LEGACY, feedback)
+    (path.parent/'request.json').write_text(json.dumps(request))
+    feedback = source_feedback_fixture(path)
+    with pytest.raises(ValueError): school.source_request(LEGACY, feedback)
+
+
+def test_source_revision_chain_stops_at_three(tmp_path, monkeypatch):
+    path = reference(tmp_path, monkeypatch)
+    for number in range(3):
+        request = school.source_request(LEGACY, source_feedback_fixture(path))
+        folder = tmp_path/('source-revision-'+str(number)); shutil.copytree(path.parent, folder)
+        report = json.loads((folder/'report.json').read_text())
+        (folder/'request.json').write_text(json.dumps(request))
+        report['artifact_sha256']['request.json'] = school.checksum(folder/'request.json')
+        path = folder/'report.json'; path.write_text(json.dumps(report))
+    with pytest.raises(ValueError, match='three bound'): school.source_request(LEGACY, source_feedback_fixture(path))
+
+
+def test_training_reference_needs_bound_positive_visual_review(tmp_path, monkeypatch):
+    path = reference(tmp_path, monkeypatch)
+    report = json.loads(path.read_text()); name = 'garden-workshop-train-v1'
+    report.update(metadata({'curriculum': name}))
+    (path.parent/'request.json').write_text(json.dumps(school.source_request(name)))
+    report['artifact_sha256']['request.json'] = school.checksum(path.parent/'request.json')
+    path.write_text(json.dumps(report))
+    with pytest.raises(ValueError): school.make_request(path)
+    review = {'schema': 'vector-reference-review.v1', 'source_sha256': school.checksum(path),
+              'reviewer': 'assistant_direct_visual_review', 'decision': 'rejected_reference', 'notes': 'Fixture defect.'}
+    (path.parent/'reference-review.json').write_text(json.dumps(review))
+    with pytest.raises(ValueError, match='positive reference'): school.make_request(path)
+    review['decision'] = 'usable_synthetic_training_reference'
+    (path.parent/'reference-review.json').write_text(json.dumps(review))
+    assert school.make_request(path)[1]['data_split'] == 'train'
+    review['source_sha256'] = 'changed'; (path.parent/'reference-review.json').write_text(json.dumps(review))
+    with pytest.raises(ValueError, match='positive reference'): school.make_request(path)

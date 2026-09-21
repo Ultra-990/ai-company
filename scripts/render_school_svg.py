@@ -42,15 +42,22 @@ svg{display:block} @page{size:148mm 210mm;margin:0}
 </head><body>''' + source + '</body></html>'
 
 
-MEASURE = '''(async()=>{await document.fonts.ready;
+MEASURE = r'''(async()=>{await document.fonts.ready;
 return [...document.querySelectorAll('svg>text')].map(el=>{
-const b=el.getBBox(),occluded=[];
+const b=el.getBBox(),occluded=[],lowContrast=[];
+const rgb=value=>{const m=value.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);return m?m.slice(1).map(Number):null;};
+const foreground=rgb(getComputedStyle(el).fill);
 for(let i=0;i<el.getNumberOfChars();i++){
 if(!el.textContent[i].trim())continue;
 const c=el.getExtentOfChar(i);
-if(document.elementFromPoint(c.x+c.width/2,c.y+c.height/2)!==el)occluded.push(i);
+const stack=document.elementsFromPoint(c.x+c.width/2,c.y+c.height/2);
+if(stack[0]!==el)occluded.push(i);
+const under=stack.find(n=>n!==el&&['rect','circle','ellipse','line','path','text'].includes(n.localName));
+const paint=under?getComputedStyle(under):null;
+const background=paint?rgb(paint.fill==='none'?paint.stroke:paint.fill):[255,255,255];
+if(foreground&&background&&Math.max(...foreground.map((v,j)=>Math.abs(v-background[j])))<24)lowContrast.push(i);
 }
-return {text:el.textContent,bbox:[b.x,b.y,b.width,b.height],occluded_character_centers:occluded,
+return {text:el.textContent,bbox:[b.x,b.y,b.width,b.height],occluded_character_centers:occluded,low_contrast_character_centers:lowContrast,
 font_family:getComputedStyle(el).fontFamily,font_size:getComputedStyle(el).fontSize};});})()'''
 
 

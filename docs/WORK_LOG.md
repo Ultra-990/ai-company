@@ -1,5 +1,49 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — rodziny treningowe, odbiór źródeł i nazwane pomiary
+
+- Dodano zamrożony program: trzy rodziny train, jedna validation, jedna
+  test i historyczna development. Hash briefu, rzeczywiste żądanie modelu
+  i rodzina są sprawdzane łącznie; odrzucane są podmiany i uczenie na
+  rodzinach zarezerwowanych. Nie generowano odpowiedzi validation/test.
+- Sześć generacji źródeł: garden source-cflale3j przyjęty; restaurant
+  source-9ssbsod1 miał niewidoczny nagłówek, poprawiony przez model
+  w source-x83gkexn; vinyl source-q5jz4pm7 miał tylko siedem tekstów,
+  source-le2p1wz7 przekraczał dolny margines, source-k3vaexfx przyjęty.
+  Nieudana próba odczytu PNG źródła bez renderu nie zmieniła plików.
+- Dodano feedback źródła z hashami raportu/request/response, obsługą
+  niepoprawnej surowej odpowiedzi i rekurencyjnym sprawdzaniem historii.
+  Limit napraw zwiększono z jednej do trzech po ujawnieniu kolejnego błędu
+  marginesu. Model dostaje własną ostatnią odpowiedź i opis usterki.
+- Niezależna ocena obrazu wiązana hashem jest wymagana dla źródeł train.
+  Nowy audyt źródła bez inferencji: source-audit-ml8srxj3 wykrył wszystkie
+  13 niewidocznych znaków tytułu restauracji, source-audit-x11pwfa6 nie
+  znalazł usterek ogrodu. Przybliżona kontrola kolorów nie zastępuje oceny
+  wzrokowej ani pełnego badania kontrastu.
+- Trzy odtworzenia: recreate-p6excl30, recreate-t0pb23da,
+  recreate-7rahyvl2; teksty 8/8, odbiór 0/3. Błędy RGB odpowiednio
+  0,110406; 0,032371; 0,056062. Ogród zmieniał układ i symbol;
+  restauracja miała za wąski podtytuł; płyty przekraczały marginesy.
+- Restaurant patch-npxucbhj zmienił y i nie usunął błędu szerokości.
+  Nowy profil named-deltas-v1 wskazuje nazwy wymiarów, nie rozwiązanie.
+  patch-os5fviqb: model wybrał font-size 18→20; siedem chronionych pól
+  bez zmian, pomiary i rzeczywisty PDF zaliczone, replay --verify poprawny.
+  Obejrzano wynik i odebrano lokalną lekcję, z jawnymi różnicami typografii,
+  panelu i kolorów. Nie przyjęto idealnej reprodukcji lub produktu do druku.
+- Wszystkie SVG i poprawki są autorstwa lokalnego modelu; system stosował
+  dosłowne operacje. Nie zmieniano produkcyjnych wag, routingu ani UI.
+  Prywatne doświadczenie train ma SHA-256
+  95b4885fa0e41898e95cbab14c5db0fb27b3eeb89850029ae19eafaa36b51d18;
+  ocena nauczyciela 8a145f18800b3ad4969b1254e430d0bdbf136a919b22d118a7102a5b4f1aed4c.
+  Brak eksportu SFT i treningu; integracja z trenerem pozostaje do wykonania.
+- Ocena cohort-001-assessment.json: 11 wywołań modelu, 78,173 s etapów
+  generowania/renderu, trzy zaakceptowane wzorce, jedna lokalna lekcja.
+  Nie obejmuje to czasu przygotowania i oceny. SHA-256
+  fb9bad403844cadcef029c645337cee77d4be33da8df9ea505c6decd5e7a21ac.
+- Testy: test_vector_school, test_local_ollama, test_interior_school,
+  test_vision_training_inputs — 106 passed w 2,40 s. Surowe odpowiedzi,
+  obrazy, raporty i doświadczenia pozostają poza publicznym repozytorium.
+
 ## 2026-09-21 — poprawka SVG wybrana przez model, bez przepisywania całości
 
 - Poprzedni etap stanowił postęp: realne SVG/PDF, cztery nieudane

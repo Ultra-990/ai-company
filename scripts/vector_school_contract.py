@@ -131,6 +131,9 @@ def validate_svg(source):
 def layout_issues(layout):
     issues = []
     for item in layout:
+        if item.get('low_contrast_character_centers'):
+            issues.append({'kind': 'text_near_background_color', 'text': item['text'],
+                           'character_indices': item['low_contrast_character_centers']})
         if item.get('occluded_character_centers'):
             issues.append({'kind': 'text_occluded', 'text': item['text'],
                            'character_indices': item['occluded_character_centers']})

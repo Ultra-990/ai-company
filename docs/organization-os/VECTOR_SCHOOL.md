@@ -1,5 +1,47 @@
 # Szkoła odtwarzania ulotek
 
+## Partia trzech rodzin — 21.09.2026
+
+`vector_curriculum.py` ustala rodziny przed generowaniem: ogród, degustacja
+i giełda płyt do treningu; wieczór naukowy do walidacji; klub podróżniczy
+do testu. Historyczna ulotka pozostaje w development. Metadane i hash
+wiążą rodzinę z rzeczywistym briefem. Walidacja i test są blokowane przez
+ścieżkę nauki; nie wygenerowano jeszcze ich odpowiedzi ani obrazów.
+
+W 11 lokalnych wywołaniach model przygotował trzy zaakceptowane wzorce,
+trzy pierwsze odtworzenia i poprawki. Początkowe odtworzenia: **0/3 odebrane**.
+Źródło restauracyjne wymagało poprawienia niewidocznego nagłówka; płytowe
+miało najpierw siedem zamiast ośmiu tekstów, potem przekroczony margines.
+Wszystkie poprawki treści i SVG wykonał lokalny model. Asystent przekazywał
+opis błędu i pomiary, zachowując oryginalne nieudane odpowiedzi.
+
+`--source-feedback` wiąże ocenę z raportem, żądaniem i surową odpowiedzią,
+również niepoprawną strukturalnie. Limit wynosi trzy naprawy źródła;
+łańcuch jest weryfikowany rekurencyjnie. Źródła train wymagają pozytywnej,
+niezależnej oceny obrazu powiązanej hashem przed użyciem do odtwarzania.
+`--audit-source` ponawia jedynie renderowanie i pomiary istniejącego SVG.
+Detektor niemal identycznego koloru tekstu i tła wykrył 13 niewidocznych
+znaków nagłówka w próbie negatywnej. To przybliżona kontrola środków znaków,
+nie pełna analiza kontrastu, zgodność WCAG ani zastępstwo oceny wzrokowej.
+
+Pierwszy patch restauracji zmienił położenie, pozostawiając błąd szerokości.
+Profil `--diagnostics named-deltas-v1` nazywa wymiary błędów bez podawania
+wartości naprawy. W drugiej próbie model sam zmienił rozmiar podtytułu;
+osiem pól zaliczyło tolerancję, siedem chronionych pozostało bez zmian.
+Niezależnie odebrano **jedną lokalną lekcję użycia narzędzia**. Typografia
+nie jest identyczna ze źródłem; pozostają różnice panelu i kolorów.
+Nie oznacza to odbioru reprodukcji do druku lub całej usługi.
+
+Dokładne doświadczenie zapisano prywatnie jako train, bez eksportu do SFT
+i bez uruchomienia treningu wag. Obecny audyt trenera obraz–tekst obsługuje
+zbiór wnętrz, nie ten zapis wektorowy. Łączny czas 11 etapów modelu/renderu
+wyniósł 78,173 s; nie obejmuje pracy nad infrastrukturą ani oceny nauczyciela.
+106 testów infrastruktury zaliczonych. Prywatna ocena partii:
+`vector-school/cohort-001-assessment.json`, SHA-256
+`fb9bad403844cadcef029c645337cee77d4be33da8df9ea505c6decd5e7a21ac`.
+
+## Poprzednia partia rozwojowa
+
 Stan 21.09.2026: cztery próby pełnego odtworzenia SVG nie przeszły sprawdzianu.
 Następnie **jedna modelowa poprawka atrybutów zaliczyła lekcję bez regresji**:
 model wskazał dwie zmiany, a system zastosował je dosłownie. Nadal nie jest
