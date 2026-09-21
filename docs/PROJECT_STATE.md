@@ -1,5 +1,22 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — trening 71 przykładów i porównanie adaptera
+
+[Trener zbioru obraz–tekst](organization-os/VISION_CORPUS_TRAINING.md)
+wykonał 18 aktualizacji osobnego adaptera na wszystkich 71 sprawdzonych rozmowach.
+Potwierdzono rzeczywiste przetwarzanie obrazów i zmianę wag. W identycznym
+środowisku HF wygenerowano po 25 odpowiedzi bazy i adaptera, następnie
+niezależnie odtworzono 50 wyników oraz sprawdzono 50 PDF.
+
+**Brak poprawy: 23/24 → 23/24 napraw; 0/1 → 0/1 pełnego odtworzenia.**
+Adapter nie został wdrożony. Dane obejmują cztery rodziny, głównie drobne
+naprawy SVG; potrzebne szersze realizacje treningowe i osobny egzamin testowy.
+Jawne uruchomienie próby potrafi już połączyć trening, porównawcze generowanie
+i ocenę po zakończeniu procesu GPU. Timer nadal automatyzuje tylko zbieranie
+danych; pełna samodzielna nauka i gotowość pięciu usług nie są osiągnięte.
+Zbiór zawiera tylko cztery różne obrazy, więc 71 rozmów nie oznacza 71 projektów.
+Pełne `.venv/bin/pytest -q`: **1648 passed, 21 skipped**, 85,08 s.
+
 ## Aktualizacja 21.09.2026 — rzeczywisty egzamin walidacyjny modelu
 
 [Egzamin SVG](organization-os/VECTOR_EXAM.md) zamraża 25 zadań przed

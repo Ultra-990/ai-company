@@ -1,5 +1,57 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — rzeczywisty trening zbioru i brak poprawy na walidacji
+
+- Poprzedni etap był postępem: po fabc44c worktree czysty, zamrożony egzamin
+  i rzeczywisty punkt odniesienia istnieją. Aktualny intake potwierdził 71
+  rozmów, dziewięć pakietów, cztery rodziny, bez błędów. Cel pozostaje aktywny.
+- Dodano jawny protokół badawczy vision-corpus-research-001 i trener zbioru.
+  Ponownie sprawdza odbiór przykładów, pakiety, audyt CPU i maskowanie;
+  odrzuca duplikaty, nie-train oraz wspólne rodziny/obrazy z walidacją.
+  Limit 128 przykładów i jeden przebieg dotyczą tej próby, nie obniżenia
+  produkcyjnych minimów 200/25/50. Brak promocji, zmian routingu i danych klientów.
+- Harmonogram seed 3407 objął każdy z 71 przykładów raz. Akumulacja 4,
+  ostatnia grupa 3, dały 18 aktualizacji. Obrazy były faktycznie przetwarzane:
+  71 wywołań modułu visual; maski i wejścia mają zapisane hashe.
+  Wyłącznie 29 181 952 językowych parametrów LoRA r4/alpha8,lr1e-5;
+  bazowe wagi i warstwy wizji zamrożone. Szczyt VRAM 22,27 GiB.
+- Rzeczywista próba vision-corpus-sft-cs6ptj9i zakończona bez błędów.
+  Potwierdzono zmianę LoRA_B i adapter safetensors SHA-256
+  d8db240a091e2aadd4848ef047c353ccb67ba53ad2a5ba64a86945b43d1f8400.
+  Ładowanie, trening i walidacyjne generowanie trwały 431,441 s.
+- Po treningu 25 zadań z wyłączonym adapterem oraz 25 z włączonym, do_sample=False.
+  Zgodność tokenów wejściowych, pikseli i promptów sprawdzona parami.
+  Po zakończeniu procesu GPU niezależny renderer ocenił wszystkie50odpowiedzi.
+  WynikHF: 23/24 → 23/24 dokładnych napraw, 0/1 → 0/1 pełnego odtworzenia.
+  Nie porównywano bezpośrednio z innym dekoderem Ollama.
+- W obu fazach pierwsza naprawa dała 45 zamiast 46. Pełne SVG i PNG obu
+  faz są identyczne; tekst 8/8 poprawny, błąd geometrii nagłówka 12,168
+  i podtytułu 28,906 przekracza 12. Bez zmiany progów lub ręcznej poprawki.
+  Niezależnie obejrzano obraz, odtworzono 50 operacji/źródeł i sprawdzono 50 PDF,
+  kompletność 71 przykładów oraz hashe adaptera, raportów i każdego artefaktu.
+- Prywatne comparison.json SHA-256
+  e0742ef8260fef82a691f136232b8d95c7d9c8a471ffe2281dedc8752463a719;
+  independent-audit.json SHA-256
+  0e83a4857b3ee4f5db9f6ce59ce26eed7d66bcc82850f967ecfb77c76821ac5e.
+  Adapter nie wdrożony: brak zysku jakości, jedna rodzina walidacyjna,
+  brak końcowego testu i dowodu kompetencji dla wszystkich pięciu usług.
+- Po rzeczywistym przebiegu połączono zakończenie workera z automatycznym
+  etapem oceniania w --run. Warunek udanego zakończenia workera sprawdzony
+  testem; nie uruchamia oceny po błędzie procesu. Pierwsza rzeczywista próba
+  wykonała oba etapy osobnymi poleceniami, bez ich ponawiania po tej zmianie.
+- Wersje czterech skryptów próby zachowano prywatnie i sprawdzono względem
+  hashy zapisanych przed startem. Dla głównego pliku odtworzono dokładny
+  stan sprzed dwóch dodanych po zakończeniu linii automatycznej oceny;
+  identyczność SHA-256 potwierdzona. Nowe uruchomienia zapisują kopie kodu
+  przed startem workera, z kontrolą niezmienności podczas zapisu.
+- Testy kierunkowe 26 passed; po integracji oceny 28 passed. Pełny zestaw przed
+  ostatnią integracją 1646 passed, 21 skipped w 85,12 s. Wynik końcowy poniżej.
+  Nie wystąpiły błędy wykonania treningu; brak poprawy jakości jest wynikiem
+  eksperymentu i wskazuje potrzebę szerszych danych pełnych realizacji.
+- Końcowe pełne testy po wszystkich zmianach: 1648 passed, 21 skipped, 85,08 s.
+  Dodatkowy odczyt potwierdził tylko cztery unikatowe obrazy w 71 rozmowach;
+  ograniczenie różnorodności zapisano w dokumentacji zamiast liczyć je jako 71 projektów.
+
 ## 2026-09-21 — zamrożony egzamin i wznowienie bez ponownej odpowiedzi
 
 - Poprzedni etap sklasyfikowano jako postęp: po 8e95220 worktree czysty,

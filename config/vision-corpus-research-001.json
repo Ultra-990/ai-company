@@ -1,0 +1,24 @@
+{
+  "schema": "vision-corpus-research.v1",
+  "model": "unsloth/Qwen3.8-27B-unsloth-bnb-4bit",
+  "revision": "8aa5f05d26b7205477066e1449e0af13f762a299",
+  "purpose": "One bounded pass over independently reviewed image conversations followed by matched base/adapter validation; not production qualification.",
+  "training": {
+    "max_length": 4096,
+    "epochs": 1,
+    "minimum_records": 2,
+    "maximum_records": 128,
+    "gradient_accumulation": 4,
+    "rank": 4,
+    "alpha": 8,
+    "learning_rate": 0.00001,
+    "seed": 3407,
+    "batch_size": 1,
+    "vision_layers_frozen": true,
+    "optimizer": "torch_adamw"
+  },
+  "deadline_seconds": 2400,
+  "automatic_promotion": false,
+  "production_ready": false,
+  "production_data_gate_changed": false
+}
