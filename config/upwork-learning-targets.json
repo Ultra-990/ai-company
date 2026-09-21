@@ -29,7 +29,7 @@
       "required_inputs": ["Original leaflet", "Exact copy and logos", "Page dimensions", "Printer specifications", "Required editable format and fonts"],
       "checks": ["Faithful comparison to original", "Text accuracy", "Actual editable paths/text rather than a raster embedded in SVG", "Fonts and assets resolved", "Page boxes, bleed and color setup match supplied printer requirements"],
       "evidence_stage": "synthetic_development_pilot",
-      "limitations": ["Original leaflet not supplied", "Local models produced editable SVG and A5 PDF exports, but 0/4 synthetic reconstructions passed fidelity review", "Printer-specific preflight and independent transfer after training remain unproven"]
+      "limitations": ["Original leaflet not supplied", "Four whole-SVG attempts failed; one subsequent model-authored attribute repair passed development checks without regression, not a full-service qualification", "Printer-specific preflight and independent transfer after training remain unproven"]
     },
     {
       "id": "amazon-product-infographics",

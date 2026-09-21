@@ -1,9 +1,63 @@
 # Szkoła odtwarzania ulotek
 
-Stan 21.09.2026: lokalny Qwen wykonał syntetyczny wzorzec i cztery próby
-odtworzenia z obrazu. SVG oraz PDF powstały, lecz **0/4 odtworzeń odebrano**.
-Poprawki rozwiązywały część problemów, równocześnie zmieniając poprawne
-elementy. Nie jest to gotowość do zlecenia klienta ani poprawa wag modelu.
+Stan 21.09.2026: cztery próby pełnego odtworzenia SVG nie przeszły sprawdzianu.
+Następnie **jedna modelowa poprawka atrybutów zaliczyła lekcję bez regresji**:
+model wskazał dwie zmiany, a system zastosował je dosłownie. Nadal nie jest
+to potwierdzenie gotowości całej usługi, wiernej reprodukcji do druku ani
+poprawy wag modelu. Szczegóły obu etapów poniżej.
+
+## Precyzyjna poprawka po pełnych odtworzeniach
+
+`scripts/vector_patch_school.py` uczy model korzystania z narzędzia zmiany
+atrybutów istniejącego SVG. Wymaga poprawnego tekstu, jego widoczności
+i zaliczonego globalnego porównania obrazu. Z pozostałych błędów geometrii
+wyznacza elementy do naprawy; nie oblicza nowych wartości za model.
+Model dostaje obraz wzorca, katalog własnych istniejących elementów
+i pomiary błędów. Odpowiada operacjami `element/attribute/before/after`.
+
+System sprawdza indeksy, stare wartości, dozwolone elementy i bezpieczeństwo
+nowych wartości. Stosuje dosłowne operacje modelu, zachowując pozostałe
+bajty źródła, zamiast przepisywać XML. Nie dodaje operacji ani nie zgaduje
+wartości. Niedozwolony, nieaktualny lub pusty patch jest odrzucany.
+Ta lekcja dotyczy istniejących atrybutów; nie dodaje figur, tekstu lub warstw.
+Pełne tworzenie źródła pozostaje zadaniem modelu w poprzednim etapie.
+
+Rzeczywista próba `patch-8ykjbubf` bazowała na wcześniejszej wersji
+`recreate-456pyqiw`, wybranej z prób rozwojowych, bo miała najniższy błąd
+obrazu i czytelne teksty. Niezależny pomiar wyznaczył dwa błędne elementy.
+Qwen sam wskazał zmianę rozmiaru daty20→22 i stopki25→23. Nie otrzymał
+kodowego rozwiązania od asystenta. Odpowiedź61tokenów, wejście2299tokenów,
+inferencja4,011s, cały etap4,528s; niezmieniony model i digest.
+
+Wynik:8/8tekstów dokładnych,8/8pól w tolerancji,6chronionych pól bez zmiany,
+brak zasłoniętych znaków. Błąd RGB0,035415, zmienione piksele0,047257.
+SVG różni się od poprzednika **tylko dwoma pozycjami bajtów**. Eksport
+PDF ponownie sprawdzono przez odczyt rzeczywistego pliku. `--verify`
+odtwarza operacje z oryginalnej odpowiedzi modelu, sprawdza łańcuch plików,
+wejścia, wyniki pomiarów i PDF bez kolejnej inferencji.
+
+Nauczyciel obejrzał wynik i odebrał **lokalną naprawę atrybutów**, z jawnym
+ograniczeniem: nadal istnieją niewielkie różnice pierścienia, kolorów
+i nietargetowanej typografii względem wzorca. Tolerancja ćwiczenia nie
+oznacza idealnej reprodukcji ani zgodności z wymaganiami drukarni.
+Nie porównywano tu bazy z nowymi wagami ani niezależnych rodzin zadań.
+
+`teacher-review.json` wiąże ocenę z hashem raportu. Po zaliczeniu audytu
+i niezależnej oceny `--record-experience` zapisuje dokładną rozmowę,
+modelowy patch, konfigurację oraz odnośnik/hash rzeczywistego obrazu.
+Format `company-vision-experience.v1`, podzbiór `development`, **nie eksport
+SFT lub zbiór gotowy dla trenera**. Nie nadpisuje wcześniejszego doświadczenia
+i nie akceptuje samooceny modelu. Prywatny `experience.json` ma SHA-256
+`e6c4040d5fe836119a00002f5633d760ea6e3e95482fa6085e6505a18a7243fa`.
+Następna partia wymaga większej różnorodności i jawnego przydziału rodzin
+train/validation/test przed tworzeniem wariantów.
+
+Uruchomienie: `.venv/bin/python scripts/vector_patch_school.py RAPORT_POPRZEDNIKA --run`.
+Audyt: ten sam skrypt z `RAPORT_PATCHA --verify`.
+Zapis doświadczenia: `RAPORT_PATCHA --record-experience PLIK_OCENY`.
+96testów infrastruktury zaliczonych, w tym odrzucanie zmian chronionych
+elementów, podmienionego źródła/odpowiedzi, innych instrukcji wejściowych,
+złych wartości, samooceny i pozornych wartości logicznych zamiast odbioru.
 
 ## Autorstwo i przebieg
 

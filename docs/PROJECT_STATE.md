@@ -1,5 +1,16 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — modelowa naprawa bez regresji
+
+[Lekcja precyzyjnych zmian SVG](organization-os/VECTOR_SCHOOL.md): lokalny
+Qwen sam wskazał dwa atrybuty do zmiany. System zastosował jego dosłowne
+operacje; tylko2bajty SVG zmienione,8/8pól tekstowych w tolerancji,
+6chronionych bez zmian. Niezależnie odebrano tę lekcję i zapisano dokładne
+doświadczenie rozwojowe. 96testów zaliczonych. To poprawa sposobu pracy
+z narzędziem, **bez treningu wag**, porównania na nowych rodzinach lub
+deklaracji gotowości całej usługi. Potrzebna szersza partia danych z podziałem
+rodzin przed ćwiczeniami. Poprzednie nieudane wersje pozostają zachowane.
+
 ## Aktualizacja 21.09.2026 — odtwarzanie ulotki przez model
 
 [Szkoła wektorowa](organization-os/VECTOR_SCHOOL.md): Qwen stworzył wzorzec

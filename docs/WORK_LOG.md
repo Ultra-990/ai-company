@@ -1,5 +1,45 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — poprawka SVG wybrana przez model, bez przepisywania całości
+
+- Poprzedni etap stanowił postęp: realne SVG/PDF, cztery nieudane
+  odtworzenia i rozpoznane regresje. Stan repozytorium404b3d1 czysty;
+  odczytano aktualny kod i rzeczywisty najlepszy wariant456pyqiw.
+- Dodano vector_patch_school: model dostaje obraz, katalog istniejącego
+  własnego SVG i wyznaczone pomiarem błędy. Odpowiada operacjami zmiany
+  istniejących atrybutów. System sprawdza stare wartości, chronione
+  elementy, brak duplikatów/iniekcji i stosuje wyłącznie dosłowne operacje
+  modelu. Nie wylicza poprawnego SVG lub nowych wartości za wykonawcę.
+- Ograniczenie tej lekcji: poprawne teksty, widoczność i globalne progi
+  obrazu już zaliczone; pozostają błędy geometrii tekstu. To moduł naprawy,
+  nie zamiennik pełnego tworzenia przez model ani zawężenie celu pięciu usług.
+- Kontrola zasobów potwierdziła31300MiB wolnej pamięci (około30,6GiB),
+  brak aktywnych kontenerów i bezczynne usługi. Formalna
+  eskalacja nowego skryptu dotyczyła dostępu do lokalnej Ollamy i własnego
+  Chrome. Nie zatrzymywano cudzych usług ani nie sterowano pulpitem.
+- patch-8ykjbubf: Qwen3.8:27b, istniejący digest22130167…79643,
+  ctx8192/predict1200/thread4. Model sam wybrał font-size daty20→22
+  i stopki25→23. Odpowiedź61tokenów, prompt2299tokenów, inferencja4,011s,
+  cały etap4,528s. Kontrakt i feedback nie zawierały tych dwóch operacji.
+- Po zastosowaniu patcha8/8tekstów dokładnych,8/8pól w tolerancji12,
+  6chronionych bez zmiany. Błąd RGB0,03541481, udział różnic0,04725708,
+  brak zasłoniętych znaków. Niezależne porównanie źródeł wykazało tylko
+  2różne bajty przy identycznej długości. PDF rzeczywiście ponownie
+  odczytany i sprawdzony, z osadzonymi fontami i bez rastrów.
+- Obejrzano wynik. Przyjęto lokalną lekcję naprawy, nie całą usługę ani
+  idealną reprodukcję: pozostały drobne różnice kształtów/kolorów/typografii
+  mieszczące się w roboczych tolerancjach. Raport nadal jawnie wymaga
+  niezależnej oceny; decyzja nauczyciela jest osobnym związanym plikiem.
+- Audyt--verify odtwarza dokładny patch z modelowej odpowiedzi i sprawdza
+  poprzednika, request, SVG, hashe, pomiary oraz PDF. Archiwizacja odbioru
+  zapisuje dokładne wiadomości i obraz jako doświadczenie development,
+  bez eksportu SFT i uruchamiania treningu. Plikexperience.json SHA
+  e6c4040d5fe836119a00002f5633d760ea6e3e95482fa6085e6505a18a7243fa.
+- Testy53passed po operacjach, końcowo96passed/2,20s z kontrolą autorstwa,
+  regresji, odbioru, dotychczasowych kontraktów i wejść treningowych.
+  Model/adapter/routing/UI/liveDB bez zmian. Następny etap: szersza partia
+  i jawne rodziny train/validation/test, nie kolejny trening na jednym sukcesie.
+
 ## 2026-09-21 — modelowe odtworzenia ulotki i eksport wektorowy
 
 - Po wyjaśnieniu granicy autorstwa podjęto nową praktyczną pracę: lokalny

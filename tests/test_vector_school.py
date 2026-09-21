@@ -1,4 +1,5 @@
 import json
+from hashlib import sha256
 from pathlib import Path
 import shutil
 
@@ -8,6 +9,8 @@ import pytest
 from scripts import vector_school as school
 from scripts import vector_school_contract as contract
 from scripts.render_school_svg import chrome_args, chrome_env, document, pdf_checks
+from scripts.vector_patch_school import apply_edits, catalogue, prepare
+from scripts import vector_patch_school as patches
 
 
 def fixture_svg():
@@ -208,3 +211,118 @@ def test_pdf_requires_embedded_fonts_vector_export_a5_and_copy(monkeypatch, defe
     if defect == 'wrong_size': outputs['/usr/bin/pdfinfo'] = 'Pages: 1\nPage size: 612 x 792 pts\n'
     if defect == 'lost_text': outputs['/usr/bin/pdftotext'] = 'fixture'
     with pytest.raises(ValueError, match='PDF'): pdf_checks(Path('/unused.pdf'), ['fixture text'])
+
+
+def edit(element=3, attribute='font-size', before='20', after='22'):
+    return {'element': element, 'attribute': attribute, 'before': before, 'after': after}
+
+
+def test_model_patch_changes_only_named_value_and_preserves_all_other_bytes():
+    source = fixture_svg().replace('font-size="20"', "font-size = '20'", 1)
+    output, edits = apply_edits(source, json.dumps({'edits': [edit()]}), {3})
+    assert output == source.replace("font-size = '20'", "font-size = '22'", 1)
+    assert edits == [edit()]
+    assert catalogue(output)[3]['attributes']['font-size'] == '22'
+
+
+def test_multiple_model_edits_use_original_indices_not_shifted_string_offsets():
+    source = fixture_svg()
+    patches = [edit(after='24'), edit(element=4, attribute='x', before='30', after='130')]
+    output, _ = apply_edits(source, json.dumps({'edits': patches}), {3, 4})
+    entries = catalogue(output)
+    assert entries[3]['attributes']['font-size'] == '24'
+    assert entries[4]['attributes']['x'] == '130'
+    assert entries[5:] == catalogue(source)[5:]
+
+
+@pytest.mark.parametrize('bad', [edit(element=4), edit(element=True), edit(before='19'),
+    edit(after='20'), edit(after='100000'), edit(after='22" onload="x'), edit(after='&quot;'),
+    edit(attribute='onclick', before='', after='x'), edit(attribute='letter-spacing', before='', after='2')])
+def test_invalid_stale_unsafe_and_protected_edits_fail_without_repair(bad):
+    with pytest.raises(ValueError): apply_edits(fixture_svg(), json.dumps({'edits': [bad]}), {3})
+
+
+def test_duplicate_patch_operations_and_schema_wrappers_are_rejected():
+    for data in [{'edits': [edit(), edit(after='24')]}, {'properties': {'edits': [edit()]}}, {'edits': []}]:
+        with pytest.raises(ValueError): apply_edits(fixture_svg(), json.dumps(data), {3})
+
+
+def test_patch_targets_come_from_verified_measurements_and_keep_reference_svg_private(tmp_path, monkeypatch):
+    source, previous = revision_fixture(tmp_path, monkeypatch, 2)
+    rendering = json.loads((previous.parent/'render.json').read_text())
+    rendering['layout'][0]['bbox'][2] = 140
+    for item in rendering['layout']: item['occluded_character_centers'] = []
+    (previous.parent/'render.json').write_text(json.dumps(rendering))
+    report = json.loads(previous.read_text())
+    report['artifact_sha256']['render.json'] = school.checksum(previous.parent/'render.json')
+    previous.write_text(json.dumps(report))
+    request, prior_svg, prior_render, expected, targets = prepare(previous)
+    assert [item['element'] for item in targets] == [3]
+    assert targets[0]['reference_bbox'][2] == 100 and targets[0]['current_bbox'][2] == 140
+    assert '<svg' not in request['system'] + request['user']
+    assert request['image']['sha256'] == school.checksum(source.parent/'preview.png')
+
+
+def verified_patch_fixture(tmp_path, monkeypatch):
+    monkeypatch.setattr(school, 'ROOT', tmp_path)
+    previous, source_report = tmp_path/'prior.json', tmp_path/'source.json'
+    previous.write_text('{}'); source_report.write_text('{}')
+    image = tmp_path/'reference.png'; Image.new('RGB', (592, 840), 'white').save(image)
+    request = {'system': 'fixture instruction', 'user': 'fixture diagnosis',
+               'image': {'path': str(image), 'sha256': school.checksum(image)}}
+    prior = layout(); prior[0]['bbox'][2] = 140
+    target = [{'element': 3, 'text': 'fixture 0'}]
+    monkeypatch.setattr(patches, 'prepare', lambda path: (request, fixture_svg(), {'layout': prior}, {'layout': layout()}, target))
+    monkeypatch.setattr('scripts.render_school_svg.pdf_checks', lambda *args: {'fixture': True})
+    folder = tmp_path/'patch'; folder.mkdir()
+    raw = json.dumps({'edits': [edit()]})
+    output, edits = apply_edits(fixture_svg(), raw, [3])
+    (folder/'artwork.svg').write_text(output)
+    (folder/'request.json').write_text(json.dumps(request))
+    (folder/'response.json').write_text(json.dumps({'model': 'fixture', 'digest': 'd'*64, 'content': raw}))
+    (folder/'render.json').write_text(json.dumps({'layout': layout()}))
+    shutil.copyfile(image, folder/'preview.png'); (folder/'preview.pdf').write_bytes(b'%PDF-fixture')
+    report = {'schema': 'vector-attribute-lesson.v1', 'data_split': 'development', 'status': 'pending_independent_review',
+              'thresholds': contract.THRESHOLDS, 'model': 'fixture', 'digest': 'd'*64, 'config': {},
+              'previous_report': str(previous), 'previous_sha256': school.checksum(previous),
+              'source_report': str(source_report), 'source_sha256': school.checksum(source_report),
+              'editable_elements': [3], 'edits': edits, 'raw_response_sha256': sha256(raw.encode()).hexdigest(),
+              'protected_text_geometry_unchanged': True,
+              'comparison': contract.compare(layout(), layout(), image, folder/'preview.png'),
+              'artifact_sha256': {p.name: school.checksum(p) for p in folder.iterdir()}}
+    path = folder/'report.json'; path.write_text(json.dumps(report))
+    return path
+
+
+@pytest.mark.parametrize('kind', ['manual_svg', 'changed_input', 'reported_edit'])
+def test_rehashed_changes_cannot_replace_the_models_actual_patch(tmp_path, monkeypatch, kind):
+    path = verified_patch_fixture(tmp_path, monkeypatch)
+    assert patches.verify(path)['verified']
+    report = json.loads(path.read_text())
+    if kind == 'manual_svg':
+        item = path.parent/'artwork.svg'; item.write_text(item.read_text().replace('font-size="22"', 'font-size="24"'))
+        report['artifact_sha256'][item.name] = school.checksum(item)
+    elif kind == 'changed_input':
+        item = path.parent/'request.json'; request = json.loads(item.read_text()); request['user'] = 'different'
+        item.write_text(json.dumps(request)); report['artifact_sha256'][item.name] = school.checksum(item)
+    else: report['edits'][0]['after'] = '24'
+    path.write_text(json.dumps(report))
+    with pytest.raises(ValueError): patches.verify(path)
+
+
+@pytest.mark.parametrize('decision,check', [('model_self_approval', True), ('approved_development_attribute_repair', False),
+                                         ('approved_development_attribute_repair', 1)])
+def test_experience_needs_an_explicit_independent_review(tmp_path, monkeypatch, decision, check):
+    path = verified_patch_fixture(tmp_path, monkeypatch)
+    judgment = {'schema': 'vector-attribute-review.v1', 'report_sha256': school.checksum(path),
+                'reviewer': 'assistant_direct_visual_review', 'decision': 'approved_development_attribute_repair',
+                'notes': 'Fixture review of a limited edit lesson.',
+                'visual_checks': {'text_readable': True, 'target_geometry_improved': True,
+                                  'no_new_visual_defects': True, 'limited_scope_acknowledged': True}}
+    target = tmp_path/'review.json'; target.write_text(json.dumps(judgment))
+    record = patches.experience(path, target)
+    assert record['split'] == 'development' and not record['training_exported']
+    assert record['messages'][2]['content'] == json.loads((path.parent/'response.json').read_text())['content']
+    judgment['decision'] = decision; judgment['visual_checks']['text_readable'] = check
+    target.write_text(json.dumps(judgment))
+    with pytest.raises(ValueError, match='teacher review'): patches.experience(path, target)
