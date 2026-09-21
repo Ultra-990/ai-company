@@ -3,6 +3,22 @@ import json
 from scripts.check_vision_training_inputs import completion_labels
 
 
+def test_candidate_images_cannot_escape_bundle_even_with_matching_hash(tmp_path,monkeypatch):
+    from scripts import vector_school
+    from scripts.check_vision_training_inputs import candidate_image
+    from hashlib import sha256
+    monkeypatch.setattr(vector_school,'ROOT',tmp_path)
+    monkeypatch.setattr('scripts.check_vision_training_inputs.BUNDLE_ROOTS',(tmp_path,))
+    out=tmp_path/'bundle';out.mkdir();(out/'images').mkdir()
+    private=tmp_path/'outside.png';private.write_bytes(b'fixture')
+    digest=sha256(private.read_bytes()).hexdigest()
+    image={'sha256':digest,'file':'../outside.png'}
+    with pytest.raises(ValueError):candidate_image(out,image)
+    image['file']='images/'+digest+'.png'
+    (out/image['file']).symlink_to(private)
+    with pytest.raises(ValueError):candidate_image(out,image)
+
+
 def test_image_and_instruction_tokens_never_become_learning_targets():
     assert completion_labels([1,9,9,2,3,4,7],[1,9,9,2],9,2,7,20)==[-100,-100,-100,-100,3,4,7]
 

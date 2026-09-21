@@ -1,0 +1,11 @@
+[Unit]
+Description=Collect and audit new reviewed AI Company examples every five minutes
+
+[Timer]
+OnStartupSec=2min
+OnUnitInactiveSec=5min
+AccuracySec=30s
+Unit=ai-company-learning-intake.service
+
+[Install]
+WantedBy=timers.target

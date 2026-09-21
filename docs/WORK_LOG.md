@@ -1,5 +1,62 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — automatyczny odbiór danych i zgłoszone 23 błędy pytest
+
+- Poprzedni etap zakończony commitem 6b20471 był postępem: zamrożone rodziny,
+  trzy modelowe wzorce i jedna przyjęta lokalna naprawa. Sprawdzono czysty
+  worktree oraz rzeczywiste kolektory i ograniczenia trenera.
+- Dodano vector_learning_records: kandydat zawiera dokładną odpowiedź
+  lokalnego modelu i PNG wzorca. Wymaga ponownego odtworzenia operacji,
+  niezależnej oceny i rodziny train; odrzuca stare development, zmienioną
+  odpowiedź i duplikaty. Wspólny audyt zachowuje kolektor wnętrz i dodaje
+  jawny kolektor wektorowy. Obraz jest hashowany i ograniczony do paczki.
+- Rzeczywisty eksport vision-candidates-34v_5q0k. Pierwszy audyt
+  vision-input-audit-05gzq3c2 zakończył się błędem: nowa kontrola ścieżek
+  importowała aplikację i SQLAlchemy do izolowanego środowiska ML.
+  Usunięto import, bez instalacji zależności i zmiany środowisk. Ponowny
+  vision-input-audit-iq9x17iz zaliczony: 2166 tokenów, 2132 zamaskowane,
+  34 nadzorowane, 468 tokenów obrazu, piksele 1872×1536; brak CUDA i wag.
+- Właściciel rozszerzył zadanie o automatyczną naukę i funkcjonalność
+  wszystkich działów. Odczytano rzeczywiste chartery, role, cztery etapy,
+  kolejkę symulacyjną i oddzielną lokalną inferencję. Wymagania dwunastu
+  działów zapisano w DEPARTMENT_DEVELOPMENT, bez deklaracji ich realizacji.
+- Dodano learning_autopilot: cykliczne ponowne sprawdzanie ocen i źródeł,
+  eksport nowych kandydatów oraz do dwóch audytów CPU na cykl. Blokada
+  plikowa, wykrywanie duplikatów i ponowne użycie niezmienionych audytów.
+  Rzeczywisty cykl: dwa przykłady train, trzy źródła pominięte, zero błędów.
+  Powtórzenie zakończyło się w około 0,2 s bez nowych audytów procesora.
+- Prywatne nowe paczki: vector vision-candidates-0s7i12qp i interior
+  vision-candidates-ebxpabqb. Audyty wtkvlrfr i no09me17 mają SHA-256
+  65b02a8d7c5f6de50493a50296e5d88ade06ecd477446251a7c1647d582c5128 oraz
+  d238f988554b4eadf677ec4dac4ba8fe37fffc89ea27ce7a101f97b4dd0fd5f7.
+  Pełne odpowiedzi, obrazy i raporty pozostają poza publicznym repozytorium.
+- Endpoint właściciela /api/learning/status zwraca tylko liczniki i świeżość,
+  bez prywatnych ścieżek/promptów i bez uruchamiania pracy. Brak danych
+  oraz nieaktualny raport nie udają aktywnego treningu. Nie restartowano API.
+- Zestaw kierunkowy: 106 passed. Następnie właściciel zgłosił 23 błędy
+  pełnego pytest. Odtworzono dokładnie 23 błędy już w --collect-only:
+  ćwiczenia test_app.py z .pytest_cache importowały niedostępne solution.
+  pytest.ini nadpisywał wykluczenia bez cache; dodano testpaths=tests
+  i wykluczenie .pytest_cache. Nie usuwano ćwiczeń ani nie ukrywano tests/.
+- Pierwszy pełny przebieg po zmianie: 1 failed, 1589 passed, 21 skipped,
+  79,96 s. Test panelu oczekiwał command.js?v=1, mimo istniejącego
+  ?v=20260920-local. Teraz weryfikuje wersjonowany URL skryptu oraz rzeczywistą
+  odpowiedź 200 i typ JavaScript. Nie zmieniano produktu tylko dla testu.
+- Drugi pełny przebieg: **1590 passed, 21 skipped w 79,42 s**. Systemowy
+  /usr/bin/pytest nie ma FastAPI; dokumentacja wskazuje .venv/bin/pytest -q
+  lub aktywację środowiska przed pytest. Pominięte testy integracyjne nie
+  stanowią dowodu aktualnej próby GPU/przeglądarki/kontenera.
+- Weryfikator systemd i odczyt menedżera użytkownika wymagały eskalacji
+  z powodu zablokowanych gniazd sandboxa. Szablony jednostek zweryfikowano,
+  zainstalowano własny timer, wykonano daemon-reload i enable --now.
+  systemctl show potwierdził wykonanie 04:58:27 CEST, Result=success,
+  ExecMainStatus=0 i timer active/waiting. Nie restartowano cudzych usług.
+  Timer co pięć minut, CPUQuota=200%, MemoryMax=4G, timeout 360 s,
+  bez GPU/IP/pulpitu. Nie zmieniano ustawienia linger.
+- Automatyczne treningi wag nadal niepodłączone: potrzeba większego zbioru,
+  odrębnych sprawdzianów i trenera z porównaniem. Progi 200/25/50 utrzymane.
+  Nie ma nowych wag, poprawy na sprawdzianie, zmiany routingu ani odbioru usług.
+
 ## 2026-09-21 — rodziny treningowe, odbiór źródeł i nazwane pomiary
 
 - Dodano zamrożony program: trzy rodziny train, jedna validation, jedna

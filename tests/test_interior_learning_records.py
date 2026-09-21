@@ -12,6 +12,7 @@ from scripts.prepare_training_data import validate_record,DatasetError
 
 def fixture(tmp_path,monkeypatch):
     monkeypatch.setattr(school,'ROOT',tmp_path)
+    monkeypatch.setattr('scripts.check_vision_training_inputs.BUNDLE_ROOTS',(tmp_path,))
     report={'schema':'interior-school.v1','status':'packaged_pending_independent_review',
             'synthetic':True,'published':False,'model':'fixture','digest':'0'*64,'inspections':[]}
     rendered={'schema':'interior-school.v1','status':'rendered','assets':[]}
@@ -55,6 +56,8 @@ def test_export_keeps_image_exact_response_and_train_family(tmp_path,monkeypatch
     assert row['messages'][0]['content']=='Exact fixture system.'
     manifest=json.loads((out/'manifest.json').read_text())
     assert manifest['ready_for_trainer'] is False and manifest['training_started'] is False
+    from scripts.check_vision_training_inputs import verify_bundle
+    assert verify_bundle(out)==rows
     with pytest.raises(DatasetError):validate_record(row)
 
 

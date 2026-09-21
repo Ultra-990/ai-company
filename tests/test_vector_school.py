@@ -304,6 +304,77 @@ def verified_patch_fixture(tmp_path, monkeypatch):
     return path
 
 
+def candidate_fixture(tmp_path, monkeypatch, split='train'):
+    monkeypatch.setattr('scripts.check_vision_training_inputs.BUNDLE_ROOTS', (tmp_path,))
+    from scripts.vector_curriculum import metadata
+    path = verified_patch_fixture(tmp_path, monkeypatch)
+    report = json.loads(path.read_text())
+    if split == 'train':
+        curriculum = metadata({'curriculum': 'restaurant-tasting-train-v1'})
+        previous = Path(report['previous_report'])
+        previous.write_text(json.dumps(curriculum))
+        report.update(curriculum, previous_sha256=school.checksum(previous))
+        path.write_text(json.dumps(report))
+    judgment = {'schema': 'vector-attribute-review.v1', 'report_sha256': school.checksum(path),
+                'reviewer': 'assistant_direct_visual_review', 'decision': 'approved_development_attribute_repair',
+                'notes': 'Fixture independent review; limited tool operation only.',
+                'visual_checks': {'text_readable': True, 'target_geometry_improved': True,
+                                  'no_new_visual_defects': True, 'limited_scope_acknowledged': True}}
+    target = tmp_path/'review.json'; target.write_text(json.dumps(judgment))
+    archived = path.parent/'experience.json'
+    archived.write_text(json.dumps(patches.experience(path, target)))
+    return path, target, archived
+
+
+def test_vector_candidates_preserve_actual_model_response_and_reference_pixels(tmp_path, monkeypatch):
+    from scripts import vector_learning_records as records
+    from scripts.check_vision_training_inputs import verify_bundle, feature
+    path, _, archived = candidate_fixture(tmp_path, monkeypatch)
+    out = records.export([archived])
+    rows = verify_bundle(out)
+    assert len(rows) == 1 and rows[0]['family'] == 'restaurant-tasting-001'
+    assert rows[0]['messages'][-1]['content'] == json.loads((path.parent/'response.json').read_text())['content']
+    assert (out/rows[0]['images'][0]['file']).read_bytes() == (tmp_path/'reference.png').read_bytes()
+    assert feature(rows[0], out)['images'][0].size == (592, 840)
+    manifest = json.loads((out/'manifest.json').read_text())
+    assert manifest['training_started'] is False and manifest['ready_for_trainer'] is False
+
+
+def test_development_experience_cannot_enter_vector_training_candidates(tmp_path, monkeypatch):
+    from scripts import vector_learning_records as records
+    _, _, archived = candidate_fixture(tmp_path, monkeypatch, split='development')
+    with pytest.raises(ValueError, match='predeclared train'): records.export([archived])
+
+
+@pytest.mark.parametrize('change', ['archived_answer', 'review', 'copied_image', 'record_answer', 'collector', 'duplicate'])
+def test_candidate_audit_rejects_changes_even_with_rehashed_manifest(tmp_path, monkeypatch, change):
+    from scripts import vector_learning_records as records
+    from scripts.check_vision_training_inputs import verify_bundle
+    _, review, archived = candidate_fixture(tmp_path, monkeypatch)
+    if change == 'archived_answer':
+        data = json.loads(archived.read_text()); data['messages'][-1]['content'] = 'teacher replacement'
+        archived.write_text(json.dumps(data))
+        with pytest.raises(ValueError, match='Archived'): records.export([archived])
+        return
+    if change == 'duplicate':
+        with pytest.raises(ValueError, match='Duplicate'): records.export([archived, archived])
+        return
+    out = records.export([archived]); manifest = json.loads((out/'manifest.json').read_text())
+    row = json.loads((out/'records.jsonl').read_text())
+    if change == 'review':
+        data = json.loads(review.read_text()); data['visual_checks']['text_readable'] = False
+        review.write_text(json.dumps(data))
+    elif change == 'copied_image':
+        (out/row['images'][0]['file']).write_bytes(b'changed image')
+    elif change == 'record_answer':
+        row['messages'][-1]['content'] = 'teacher replacement'
+        payload = json.dumps(row)+'\n'; (out/'records.jsonl').write_text(payload)
+        manifest['records_sha256'] = sha256(payload.encode()).hexdigest()
+    elif change == 'collector': manifest['collector'] = 'unknown'
+    (out/'manifest.json').write_text(json.dumps(manifest))
+    with pytest.raises(ValueError): verify_bundle(out)
+
+
 @pytest.mark.parametrize('kind', ['manual_svg', 'changed_input', 'reported_edit'])
 def test_rehashed_changes_cannot_replace_the_models_actual_patch(tmp_path, monkeypatch, kind):
     path = verified_patch_fixture(tmp_path, monkeypatch)

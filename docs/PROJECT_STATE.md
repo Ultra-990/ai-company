@@ -1,5 +1,21 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — harmonogram danych i naprawione pełne testy
+
+[Automatyczne przygotowanie danych](organization-os/LEARNING_AUTOPILOT.md)
+zbiera niezależnie zaakceptowane rozmowy wnętrz i wektorów, sprawdza piksele
+i maskowanie odpowiedzi. Timer użytkownika co pięć minut działa; pierwszy
+cykl systemd zakończył się kodem 0. Dwa przyjęte przykłady, trzy pominięte
+źródła. To przygotowanie danych, **bez automatycznych aktualizacji wag**.
+Dodano chroniony odczyt `/api/learning/status`; wymaga załadowania nowej
+wersji aplikacji. [Zakres wszystkich działów](organization-os/DEPARTMENT_DEVELOPMENT.md)
+zapisuje nowe wymaganie właściciela; pełna operacyjność nadal do wykonania.
+
+Odtworzono zgłoszone 23 błędy zbierania pytest: katalog cache ćwiczeń był
+traktowany jak testy projektu. Ustalono `testpaths = tests` i wyłączono cache.
+Poprawiono też test przypięty do starego numeru wersji skryptu panelu.
+Pełne `.venv/bin/pytest -q`: **1590 passed, 21 skipped, 0 failed**, 79,42 s.
+
 ## Aktualizacja 21.09.2026 — trzy rodziny ćwiczeń i kontrola wzorców
 
 [Szkoła wektorowa](organization-os/VECTOR_SCHOOL.md) ma zamrożony podział

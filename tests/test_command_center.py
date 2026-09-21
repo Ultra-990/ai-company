@@ -1,4 +1,5 @@
 from uuid import uuid4
+import re
 
 from sqlalchemy import select
 
@@ -10,7 +11,10 @@ from tests.conftest import OWNER_HEADERS
 def test_new_center_and_archived_views_are_separate(client):
     page = client.get('/os')
     assert page.status_code == 200
-    assert 'command.js?v=1' in page.text
+    script = re.search(r'<script\b[^>]*\bsrc="(/static/organization-os/command\.js\?v=[^\"]+)"', page.text)
+    assert script, 'The command center must load its versioned script'
+    asset = client.get(script.group(1))
+    assert asset.status_code == 200 and 'javascript' in asset.headers['content-type']
     assert 'command-owner' in page.text and 'command-brain' in page.text
     assert '/os/legacy' in page.text and '/os/publishing' in page.text
     assert 'data-media-slot="command-hero"' in page.text

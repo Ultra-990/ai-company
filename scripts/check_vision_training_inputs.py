@@ -13,6 +13,27 @@ from scripts.qwen_qlora_smoke import ROOT,MODEL,REVISION
 
 SNAPSHOT=ROOT/'hf-cache/hub/models--unsloth--Qwen3.8-27B-unsloth-bnb-4bit/snapshots'/REVISION
 REPO=Path(__file__).resolve().parents[1]
+BUNDLE_ROOTS=(ROOT.parent/'interior-school',ROOT.parent/'vector-school')
+
+
+def bundle_file(bundle, name, max_bytes=4*1024*1024):
+    path=bundle/name
+    if (not any(bundle.resolve().is_relative_to(root.resolve()) for root in BUNDLE_ROOTS)
+            or not path.resolve().is_relative_to(bundle.resolve())
+            or any(p.is_symlink() for p in (path,*path.parents))
+            or not path.is_file() or path.stat().st_size>max_bytes):
+        raise ValueError('Bounded private candidate file required')
+    return path
+
+
+def candidate_image(bundle, image):
+    digest=image['sha256']
+    if (not isinstance(digest,str) or len(digest)!=64 or any(c not in '0123456789abcdef' for c in digest)
+            or image['file']!='images/'+digest+'.png'):
+        raise ValueError('Content-addressed bundle image required')
+    path=bundle_file(bundle,image['file'])
+    if sha256(path.read_bytes()).hexdigest()!=digest:raise ValueError('Candidate image changed')
+    return path
 
 
 def completion_labels(ids,prefix,image_id,expected_images,eos,max_length):
@@ -62,21 +83,28 @@ class VisionResponseCollator:
 
 
 def verify_bundle(bundle):
-    from scripts import interior_learning_records as records
-    manifest=records.read(bundle/'manifest.json')
-    payload=(records.school.bounded_path(bundle/'records.jsonl')).read_bytes()
+    from scripts.prepare_training_data import unique_object
+    manifest=json.loads(bundle_file(bundle,'manifest.json').read_text(),object_pairs_hook=unique_object)
+    collector=manifest.get('collector','interior-v1')
+    if collector=='interior-v1':
+        from scripts import interior_learning_records as records
+    elif collector=='vector-attribute-v1':
+        from scripts import vector_learning_records as records
+    else:raise ValueError('Unknown approved-conversation collector')
+    payload=bundle_file(bundle,'records.jsonl').read_bytes()
     if (manifest.get('schema')!='vision-candidate-bundle.v1'
             or sha256(payload).hexdigest()!=manifest['records_sha256'] or manifest['split']!='train'):
         raise ValueError('Changed candidate manifest')
-    rows=[json.loads(line) for line in payload.decode().splitlines()]
+    rows=[json.loads(line,object_pairs_hook=unique_object) for line in payload.decode().splitlines()]
     if not 1<=len(rows)<=16 or len(rows)!=manifest['records']:raise ValueError('Bounded candidate batch required')
     if len({r['id'] for r in rows})!=len(rows):raise ValueError('Duplicate candidate')
     for row in rows:
+        if row.get('version')!='company-vision-candidate.v1' or row.get('split')!='train':
+            raise ValueError('Training candidate schema and split required')
         expected,_=records.collect(Path(row['source']['report']),Path(row['review']['judgments']))
         if row not in expected:raise ValueError('Candidate differs from approved conversation')
         for image in row['images']:
-            path=bundle/image['file']
-            if records.digest(path)!=image['sha256']:raise ValueError('Candidate image changed')
+            candidate_image(bundle,image)
     return rows
 
 
@@ -84,8 +112,7 @@ def feature(row,bundle):
     from PIL import Image
     if len(row['images'])!=1:raise ValueError('One image required')
     image=row['images'][0]
-    path=bundle/image['file']
-    if sha256(path.read_bytes()).hexdigest()!=image['sha256']:raise ValueError('Changed image in worker')
+    path=candidate_image(bundle,image)
     with Image.open(path) as original:
         if original.format!='PNG' or original.width*original.height>1024*1024:raise ValueError('Bounded PNG')
         pixels=original.convert('RGB')

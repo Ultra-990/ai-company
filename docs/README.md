@@ -10,6 +10,10 @@ są opisane w [architekturze docelowej](ARCHITECTURE.md). Dokument rozróżnia
 planowane zdolności od stanu istniejącego kodu.
 
 Przebieg implementacji i wyniki kontroli: [dziennik prac](WORK_LOG.md).
+Testy projektu uruchamiaj z jego środowiska: `.venv/bin/pytest -q`.
+Po `source .venv/bin/activate` równoważne jest `pytest -q`.
+Domyślnie zbierane są testy z `tests/`; materiały ćwiczeń w `.pytest_cache`
+nie stanowią samodzielnego zestawu testowego projektu.
 Instrukcje dla właściciela i klienta: [Centrum pomocy](organization-os/HELP_CENTER.md).
 Znajdowanie paneli i funkcji: [Wyszukiwarka nawigacji](organization-os/NAVIGATION_SEARCH.md).
 Jedno logowanie do paneli: [Sesja właściciela](organization-os/OWNER_SESSION.md).

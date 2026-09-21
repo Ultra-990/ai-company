@@ -1,0 +1,18 @@
+[Unit]
+Description=AI Company reviewed learning data intake and CPU audit
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/marcin/ai-company
+ExecStart=/home/marcin/ai-company/.venv/bin/python scripts/learning_autopilot.py --once
+Environment=CUDA_VISIBLE_DEVICES=
+Environment=HF_HUB_OFFLINE=1
+Environment=TRANSFORMERS_OFFLINE=1
+UnsetEnvironment=DISPLAY WAYLAND_DISPLAY XAUTHORITY DBUS_SESSION_BUS_ADDRESS
+Nice=10
+CPUQuota=200%
+MemoryMax=4G
+TimeoutStartSec=360
+UMask=0077
+NoNewPrivileges=true
+RestrictAddressFamilies=AF_UNIX

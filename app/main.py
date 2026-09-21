@@ -56,6 +56,7 @@ from app.api.agent_teams import router as agent_teams_router
 from app.api.agent_packets import router as agent_packets_router
 from app.api.local_model_queue import router as local_model_queue_router
 from app.api.local_inference import router as local_inference_router
+from app.api.learning import router as learning_router
 from app.api.media_generation import router as media_generation_router
 from app.api.package_runner import router as package_runner_router
 from app.api.requirement_checks import router as requirement_checks_router
@@ -261,6 +262,7 @@ app.include_router(agent_teams_router)
 app.include_router(agent_packets_router)
 app.include_router(local_model_queue_router)
 app.include_router(local_inference_router)
+app.include_router(learning_router)
 app.include_router(media_generation_router)
 app.include_router(package_runner_router)
 app.include_router(requirement_checks_router)
