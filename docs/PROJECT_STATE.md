@@ -1,5 +1,18 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — rzeczywisty egzamin walidacyjny modelu
+
+[Egzamin SVG](organization-os/VECTOR_EXAM.md) zamraża 25 zadań przed
+odpowiedziami ucznia. Usterki i rozwiązania wykonał lokalny model w osobnych
+wywołaniach. Wynik przypiętej bazy: **23/24 dokładnych napraw, 0/1 pełnego
+odtworzenia**; niezależny replay potwierdził wyniki i rzeczywiste PDF.
+Odtworzenie zachowało wszystkie teksty, ale przekroczyło próg błędu RGB.
+Naprawiono sprzątanie własnych profili Chrome oraz wznowienie przerwania
+infrastrukturalnego z zachowanej odpowiedzi, bez ponownej inferencji.
+Nie zmieniono progów oceny, wag ani routingu. Testowy wzorzec nadal odrzucony;
+porównanie bazy i nowego adaptera oraz pełna autonomia pozostają do wykonania.
+Pełne `.venv/bin/pytest -q`: **1635 passed, 21 skipped**, 84,13 s.
+
 ## Aktualizacja 21.09.2026 — wzorce niezależnego egzaminu
 
 [Strukturalne sceny lokalnego modelu](organization-os/VECTOR_STRUCTURED_REFERENCES.md)

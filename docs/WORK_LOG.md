@@ -1,5 +1,55 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — zamrożony egzamin i wznowienie bez ponownej odpowiedzi
+
+- Poprzedni etap sklasyfikowano jako postęp: po 8e95220 worktree czysty,
+  istnieje odebrany wzorzec validation oraz sprawdzone blokady eksportu
+  zarezerwowanych rodzin. Cel pięciu usług i autonomii pozostaje aktywny.
+- Trzecia, ostatnia poprawka sceny travel-club (structured-source-i2wext4h)
+  została wykonana przez lokalny model; bez dwóch tekstów w sidebarze.
+  Niezależnie obejrzano PNG i odrzucono wzorzec mimo reference_ready.
+  W tej uwadze poprawiono też wcześniejszą pomyłkę co do długości tytułu.
+- Nowy vector_exam wymaga odebranego źródła validation/test. Przygotowuje
+  24 modelowe usterki font-size/x/y i zadanie odtworzenia całego obrazu.
+  Wszystkie wejścia oraz progi zamrożone przed odpowiedziami ucznia.
+  Autentykacja odtwarza operacje modelu i sprawdza żądania, artefakty,
+  rodzinę oraz niezależny odbiór źródła. Brak eksportu doświadczeń do SFT.
+- Oddzielny cel renderowania controlled_fault_input pozwala zachować
+  diagnostykę eksportu celowo wadliwego wejścia. Domyślny render wzorca
+  i każdej odpowiedzi nadal wymaga pełnego PDF. Test negatywny potwierdza,
+  że błąd eksportu odpowiedzi nie może przejść tą ścieżką.
+- Przygotowano exam-arn1vaw6: 24/24 usterki poprawne, 25 zadań zamrożonych.
+  Żadne z tych wejść nie potrzebowało wyjątku eksportu PDF.
+- Egzamin exam-answer-nncqflxg przerwał OSError ENOTEMPTY podczas usuwania
+  katalogu Default własnego Chrome, po zapisaniu odpowiedzi nr4. W tym
+  momencie 3/4 ocenionych napraw dokładne; nr4 nie był błędem modelu.
+  Docker ps po przerwaniu pusty. Nie zatrzymywano obcych usług/procesów.
+- Chrome uruchamiany jest teraz we własnej sesji/grupie procesów. Zamykanie
+  obejmuje tylko tę grupę, a usuwanie własnego profilu ponawia ENOTEMPTY
+  w ograniczonym czasie. Dodano wznowienie zakończonego przerwania
+  infrastrukturalnego, z weryfikacją wcześniejszych wyników i kopią raportu
+  oraz ostatnich artefaktów. Istniejąca odpowiedź nie jest generowana drugi raz.
+- Rzeczywiste wznowienie ponownie oceniło zachowaną odpowiedź nr4 i dokończyło
+  pozostałe zadania. 23/24 naprawy dokładne; nr0 zwrócił 45 zamiast 46.
+  Pełne odtworzenie: 8/8 tekstów poprawnych, geometria w tolerancji,
+  RGB 0,0468693 > 0,045, więc 0/1. Wynik obejrzano niezależnie; bez ręcznej
+  poprawki źródła i bez obniżenia progów.
+- Niezależny --verify potwierdził wszystkie wyniki z surowych odpowiedzi,
+  scen, obrazów i PDF. Osobno sprawdzono hashe przerwanego raportu, kopie
+  wszystkich zapisanych plików nr4 i identyczność odpowiedzi przed/po wznowieniu.
+  24 wywołania autora usterek +25 odpowiedzi ucznia, 210,065s inferencji.
+  Prywatna ocena reserved-exam-001-assessment.json, SHA-256
+  d9250f8682f4aceaecb71ecacd8dc4cb52491b653b219dbed74c999b9c8fae63.
+- Pierwszy test końcowego weryfikatora wykrył zły import validate_svg:
+  1 failed,104 passed. Naprawiono import; końcowe kierunkowe121passed.
+  Testy obejmują podmianę żądań, scen i autorstwa, brak zadania, niedozwolony
+  eksport do nauki, ścisły render wyniku, sprzątanie tylko własnej grupy oraz
+  wznowienie bez zwiększenia liczby odpowiedzi modelu.
+- To punkt odniesienia jednej rodziny walidacyjnej i określonego narzędzia,
+  nie poprawa wag, egzamin testowy, gotowość komercyjna ani osiągnięcie celu.
+- Końcowy pełny zestaw: .venv/bin/pytest -q — 1635 passed,21 skipped,
+  84,13s. Pominięte testy integracyjne nie są dowodem zaliczenia ich zakresu.
+
 ## 2026-09-21 — przygotowanie zarezerwowanych wzorców przez model
 
 - Rozpoczęto po e224488. Cel pozostaje aktywny: samodzielna nauka i jakość

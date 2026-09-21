@@ -1,5 +1,8 @@
 # Szkoła odtwarzania ulotek
 
+Najnowszy etap: [egzamin walidacyjny 25 zadań](VECTOR_EXAM.md) — 23/24
+dokładnych napraw i 0/1 pełnego odtworzenia przez obecną bazę, bez treningu.
+
 Nowszy etap: [przygotowanie wzorców egzaminacyjnych](VECTOR_STRUCTURED_REFERENCES.md).
 Jeden wzorzec validation odebrany, test nadal nieodebrany; bez odpowiedzi
 ucznia na egzaminie i bez aktualizacji wag. Poniższe sekcje opisują wcześniejsze etapy.

@@ -6,12 +6,17 @@ of the owner is used. CDP evaluates only the fixed measurement code below.
 import asyncio
 import base64
 from collections import Counter
+from contextlib import contextmanager
+import errno
 import json
 import os
 from pathlib import Path
 import re
+import shutil
+import signal
 import subprocess
 import tempfile
+import time
 
 import websockets
 
@@ -28,6 +33,35 @@ def chrome_args(profile):
 def chrome_env():
     return {key: value for key, value in os.environ.items()
             if key not in {'DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS'}}
+
+
+@contextmanager
+def owned_profile(output):
+    profile = tempfile.mkdtemp(prefix='chrome-', dir=output)
+    try:
+        yield profile
+    finally:
+        # Chrome descendants can finish a profile write just after their parent
+        # exits. Retry only removal of this invocation's own temporary directory.
+        for attempt in range(20):
+            try:
+                shutil.rmtree(profile)
+                break
+            except FileNotFoundError:
+                break
+            except OSError as exc:
+                if exc.errno != errno.ENOTEMPTY or attempt == 19: raise
+                time.sleep(.1)
+
+
+def stop_owned_chrome(process):
+    # Popen creates a new session below: this group contains only this browser.
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try: os.killpg(process.pid, sig)
+        except ProcessLookupError: pass
+        try: process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            if sig == signal.SIGKILL: raise
 
 
 def document(source):
@@ -85,11 +119,27 @@ def pdf_checks(path, texts):
     return result
 
 
-async def render(source, output):
+def export_assessment(path, texts, purpose):
+    if purpose not in {'deliverable', 'controlled_fault_input'}:
+        raise ValueError('Explicit render purpose required')
+    try:
+        return pdf_checks(path, texts)
+    except ValueError as exc:
+        if purpose != 'controlled_fault_input': raise
+        # A deliberately displaced line can fail text extraction. This is an
+        # input to a repair exercise, never acceptance of a learner output.
+        return {'accepted_as_deliverable': False, 'error': str(exc),
+                'purpose': 'controlled_fault_input'}
+
+
+async def render(source, output, *, purpose='deliverable'):
+    if purpose not in {'deliverable', 'controlled_fault_input'}:
+        raise ValueError('Explicit render purpose required')
     validated = validate_svg(source)
     wrapper = document(source)
-    with tempfile.TemporaryDirectory(prefix='chrome-', dir=output) as profile:
+    with owned_profile(output) as profile:
         process = subprocess.Popen(chrome_args(profile), env=chrome_env(),
+                                   start_new_session=True,
                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         try:
             async with asyncio.timeout(50):
@@ -139,11 +189,10 @@ async def render(source, output):
                     if not pdf.startswith(b'%PDF-') or len(pdf) > 4*1024*1024: raise ValueError('PDF output limit')
                     (output/'preview.pdf').write_bytes(pdf)
                     result = {'layout': layout, 'browser_version': version, 'static_svg': validated,
-                              'pdf': pdf_checks(output/'preview.pdf', validated['texts']),
+                              'pdf': export_assessment(output/'preview.pdf', validated['texts'], purpose),
+                              'render_purpose': purpose,
                               'desktop_used': False, 'sandbox_disabled': False, 'external_page_loaded': False}
         finally:
-            process.terminate()
-            try: process.wait(timeout=5)
-            except subprocess.TimeoutExpired: process.kill(); process.wait(timeout=5)
+            stop_owned_chrome(process)
         result['own_browser_stopped'] = process.poll() is not None
         return result
