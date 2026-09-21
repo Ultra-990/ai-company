@@ -23,7 +23,7 @@ from app.services import local_vision
 from scripts import build_studio_media as media
 from scripts.check_technical_reviewer import save
 from scripts.prepare_training_data import unique_object
-from scripts.interior_school_contract import BRIEF,Plan,Inspection,SHAPES,check_plan,inspection_instruction,VISION_PROFILES
+from scripts.interior_school_contract import BRIEF,Plan,Inspection,SHAPES,check_plan,inspection_instruction,VISION_PROFILES,CURRICULA,curriculum_metadata
 
 ROOT=Path('/home/marcin/ai-company-workspaces/interior-school')
 
@@ -42,9 +42,10 @@ def load_stage(path,status):
     return path.parent,report
 
 
-def plan(out,report):
+def plan(out,report,curriculum='country-kitchen-train-v1'):
+    report.update(curriculum_metadata({'curriculum':curriculum}))
     config=configuration()|{'format':Plan.model_json_schema(),'num_predict':2600,'num_ctx':8192,'num_thread':4,'timeout_seconds':180}
-    messages=[{'role':'system','content':BRIEF},{'role':'user','content':'Prepare the complete three-image editorial teaching package.'}]
+    messages=[{'role':'system','content':CURRICULA[curriculum]['brief']},{'role':'user','content':'Prepare the complete three-image editorial teaching package.'}]
     save(out/'request.json',messages)
     result=OllamaProvider(config).complete(messages);save(out/'response.json',result)
     parsed=check_plan(Plan.model_validate(json.loads(result['content'],object_pairs_hook=unique_object)))
@@ -54,6 +55,7 @@ def plan(out,report):
 
 def render(source,out,report,persist):
     parent,previous=load_stage(source,'planned')
+    report.update(curriculum_metadata(previous))
     response=json.loads(bounded_path(parent/'response.json').read_text())
     if (sha256(response['content'].encode()).hexdigest()!=previous['response_sha256']
             or response['model']!=previous['model'] or response['digest']!=previous['digest']
@@ -156,6 +158,8 @@ def inspect(source,out,report,persist,feedback_path=None,vision_profile='legacy'
     instruction=inspection_instruction(vision_profile)
     report['vision_profile']=vision_profile
     parent,previous=load_stage(source,'rendered')
+    report.update(curriculum_metadata(previous))
+    if report['data_split']=='test':raise ValueError('Reserved images require the matched evaluation runner, not school inspection/revisions')
     feedback=load_feedback(feedback_path,source) if feedback_path else None
     if feedback:
         save(out/'feedback.json',feedback)
@@ -224,9 +228,11 @@ def main():
     mode.add_argument('--plan',action='store_true');mode.add_argument('--render',type=Path);mode.add_argument('--inspect',type=Path)
     parser.add_argument('--feedback',type=Path,help='Teacher feedback bound to an earlier inspection; only with --inspect')
     parser.add_argument('--vision-profile',choices=VISION_PROFILES,default='legacy')
+    parser.add_argument('--curriculum',choices=tuple(CURRICULA),default='country-kitchen-train-v1')
     parser.add_argument('--run',action='store_true');args=parser.parse_args()
     if args.feedback and not args.inspect:parser.error('--feedback requires --inspect')
     if args.vision_profile!='legacy' and not args.inspect:parser.error('--vision-profile requires --inspect')
+    if args.curriculum!='country-kitchen-train-v1' and not args.plan:parser.error('--curriculum requires --plan')
     if not args.run:print(json.dumps({'model_invoked':False,'training_started':False}));return 0
     resources=media.check_idle()
     if any(p.is_symlink() for p in (ROOT,*ROOT.parents)):raise ValueError('Symlink workspace')
@@ -241,7 +247,7 @@ def main():
     def persist():report['elapsed_seconds']=round(time.monotonic()-started,3);save(out/'report.json',report)
     persist();print(json.dumps({'output':str(out)}),flush=True)
     try:
-        if args.plan:plan(out,report)
+        if args.plan:plan(out,report,args.curriculum)
         elif args.render:render(args.render,out,report,persist)
         else:inspect(args.inspect,out,report,persist,args.feedback,args.vision_profile)
     except Exception as exc:

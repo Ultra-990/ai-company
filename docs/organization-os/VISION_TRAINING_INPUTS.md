@@ -79,3 +79,52 @@ porównanie jakości bazy i adaptera w tym samym środowisku.
 niepoprawna liczba tokenów obrazu, podmiana danych, ograniczenia protokołu
 i przywracanie reguły konwersji po błędzie. Rzeczywisty trening powyżej
 sprawdził dodatkowo obliczenia obrazu, gradienty i zapis zmienionych wag.
+
+## Pierwszy sprawdzian na nowej rodzinie obrazów
+
+21.09 po zapisaniu adaptera zarezerwowano `cottage-reading-eval-v1`:
+nowe wnętrze do czytania, inne od kuchni użytej w nauce. Lokalny Qwen
+przygotował plan (`plan-lio0gych`, 22.200 s), Z-Image wygenerował trzy
+kompozycje (`render-m14illll`, 165.023 s). Wszystkie mają `data_split=test`
+i rodzinę `cottage-reading-room-001`. Szkoła nie przyjmuje ich do inspekcji
+z poprawkami, a eksporter danych odrzuca również próbę przypisania takiego
+renderu do oznaczonej jako treningowa obserwacji. Materiały nie trafiły do SFT.
+
+`scripts/check_vision_transfer.py RENDER_REPORT --run` przypina obraz,
+instrukcję, model i SHA adaptera. Obie fazy używają jednego załadowanego
+modelu HF bnb4, identycznych wejść, kontekstu4096, greedy, maksymalnie1100
+nowych tokenów i90s na odpowiedź. W bazie adapter jest wyłączony, w drugiej
+fazie włączony. Nie używa się wymuszania JSON przez API Ollamy; schema
+jest widoczna w instrukcji. Porównanie dotyczy tego środowiska HF.
+
+Raport `vision-transfer-v0toop42`: sześć generacji w119.866s, wszystkie
+zakończone tokenem końca tury, bez ucinania limitami. Przed generacją
+zamrożono pięć kryteriów: oparcie opisu na obrazie, uzasadnienie wad,
+kompletność/zwięzłość, niepewność i dopasowanie do marki. Asystent obejrzał
+obrazy i sześć losowo uporządkowanych odpowiedzi bez etykiet faz; zapisał
+oceny przed odczytem mapowania. Sprawdzono również liczby słów i znaków.
+
+| Miara | Baza | Adapter po trzech krokach |
+| --- | --- | --- |
+| Punkty nauczycielskie | 10/15 | 9/15 |
+| Poprawna struktura odpowiedzi | 3/3 | 2/3 |
+| Pełny zestaw wymagań | 0/3 | 0/3 |
+
+Błędy obejmują niepotwierdzoną liczbę poduszek, etykietę wingback,
+interpretację deski stołu i sęka jako szuflady/uchwytu oraz przekroczone
+limity zwięzłości. Adapter dla hero zwrócił wrapper schematu z danymi
+wewnątrz `properties`, co nie spełnia wymaganego obiektu Inspection.
+Nie poprawiano ani nie przepakowywano odpowiedzi, aby uzyskać zaliczenie.
+Oceny materiałów lub kolorów nie były jedyną podstawą odrzucenia.
+
+Prywatny `comparison.json` SHA:
+`005e9daabc28425153b06b1ab935e5a947b00385ec31758af0409ae28437b216`.
+Osobna decyzja `do_not_promote` wiąże wynik i raport hashami. **Brak
+wykazanej poprawy; adapter nie został wdrożony.** To trzy widoki jednej
+nowej syntetycznej rodziny, nie trzy niezależne rodziny ani statystyczny
+dowód równoważności. Sprawdzian pozostaje poza nauką i nie służy do wyboru
+hiperparametrów. Następny trening wymaga szerszych danych rozwojowych.
+
+57 testów infrastruktury zaliczone po dodaniu oddzielenia podzbiorów,
+anonimizacji sześciu próbek, weryfikacji źródeł ocen i wykrywania zmiany
+obrazu po generacji. Testy infrastruktury nie zastępują opisanej oceny treści.

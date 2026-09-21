@@ -9,7 +9,7 @@ import tempfile
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from scripts import interior_school as school
-from scripts.interior_school_contract import Inspection,SHAPES
+from scripts.interior_school_contract import Inspection,SHAPES,curriculum_metadata
 from scripts.prepare_training_data import unique_object
 
 VERSION='company-vision-candidate.v1'
@@ -25,6 +25,7 @@ def collect(report_path,judgments_path):
     parent,report=school.load_stage(report_path,'packaged_pending_independent_review')
     if report.get('synthetic') is not True or report.get('published') is not False:
         raise ValueError('Only unpublished synthetic school runs')
+    if curriculum_metadata(report)['data_split']!='train':raise ValueError('Reserved evaluation cannot enter training')
     judgments=read(judgments_path)
     if (judgments.get('schema')!='interior-teacher-judgments.v1'
             or judgments.get('report_sha256')!=digest(report_path)
@@ -36,6 +37,7 @@ def collect(report_path,judgments_path):
     if [x['id'] for x in report['inspections']]!=list(SHAPES):raise ValueError('Incomplete observations')
     rendered_path=Path(report['source_report'])
     rendered_parent,rendered=school.load_stage(rendered_path,'rendered')
+    if curriculum_metadata(rendered)['data_split']!='train':raise ValueError('Reserved evaluation images cannot enter training')
     if report['source_sha256']!=digest(rendered_path):raise ValueError('Changed render report')
     if [x['id'] for x in rendered['assets']]!=list(SHAPES):raise ValueError('Incomplete images')
     rows=[];images={}

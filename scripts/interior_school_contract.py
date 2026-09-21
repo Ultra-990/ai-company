@@ -24,6 +24,24 @@ has occurred. Descriptions at this stage are intended concepts, not observed fac
 Do not invent links, client approvals, tracking results or deadlines. Return JSON
 matching the supplied schema, no executable code or workflow nodes.'''
 
+CURRICULA={
+    'country-kitchen-train-v1':{'split':'train','family':'country-kitchen-001','brief':BRIEF},
+    'cottage-reading-eval-v1':{'split':'test','family':'cottage-reading-room-001','brief':
+        BRIEF.replace('country kitchen','cottage reading room').replace('kitchen candidates','reading-room candidates')+
+        '\nInclude comfortable seating, books without legible lettering, and daylight. '
+        'The hero, portrait, and detail should offer distinct compositions around reading and relaxation.'},
+}
+
+
+def curriculum_metadata(report):
+    name=report.get('curriculum','country-kitchen-train-v1')
+    if name not in CURRICULA:raise ValueError('Unknown curriculum')
+    item=CURRICULA[name]
+    expected={'curriculum':name,'data_split':item['split'],'family':item['family']}
+    if any(key in report and report[key]!=value for key,value in expected.items()):
+        raise ValueError('Curriculum split or family changed')
+    return expected
+
 
 class Strict(BaseModel):
     model_config=ConfigDict(extra='forbid',strict=True)

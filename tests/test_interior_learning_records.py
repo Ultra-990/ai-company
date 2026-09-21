@@ -77,3 +77,13 @@ def test_model_self_recommendation_cannot_approve_or_move_to_test(tmp_path,monke
     with pytest.raises(ValueError,match='No approved'):records.export(source,proof)
     decisions['assets'][0]['approved']=True;decisions['split']='test';school.save(proof,decisions)
     with pytest.raises(ValueError):records.collect(source,proof)
+
+
+def test_evaluation_render_cannot_be_relabelled_as_training_inspection(tmp_path,monkeypatch):
+    source,proof=fixture(tmp_path,monkeypatch)
+    rendered=records.read(tmp_path/'render.json')
+    rendered.update(curriculum='cottage-reading-eval-v1',data_split='test',family='cottage-reading-room-001')
+    school.save(tmp_path/'render.json',rendered)
+    report=records.read(source);report['source_sha256']=records.digest(tmp_path/'render.json');school.save(source,report)
+    decisions=records.read(proof);decisions['report_sha256']=records.digest(source);school.save(proof,decisions)
+    with pytest.raises(ValueError,match='Reserved evaluation images'):records.collect(source,proof)

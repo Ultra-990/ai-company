@@ -1,5 +1,15 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — wynik sprawdzianu wizyjnego
+
+Na trzech nowych obrazach miejsca do czytania porównano bazę i adapter
+po trzech krokach treningu, w tym samym środowisku HF. Ocena bez etykiet
+faz: **10/15 → 9/15, pełne wymagania 0/3 → 0/3**. Jeden błąd struktury
+po stronie adaptera. [Szczegóły](organization-os/VISION_TRAINING_INPUTS.md).
+Brak wykazanej poprawy; adapter nie został wdrożony. Materiały zarezerwowane
+do oceny, z blokadą eksportu do treningu. 57 testów infrastruktury zaliczone.
+Potrzebne szersze sprawdzone dane; gotowość pięciu usług nadal niepotwierdzona.
+
 ## Aktualizacja 21.09.2026 — rzeczywisty trening obraz–tekst
 
 Wykonano trzy aktualizacje osobnego adaptera na jednym odebranym wyniku

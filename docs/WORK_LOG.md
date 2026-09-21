@@ -1,5 +1,34 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — niezależna rodzina wizji i porównanie adaptera
+
+- Kontynuacja celu: nowa rodzina cottage-reading-room-001 zarezerwowana
+  jako test po treningu na kuchni. Plan lokalnego Qwena22.200s,
+  trzy obrazy Z-Image165.023s, źródła plan-lio0gych/render-m14illll.
+  Asystent nie pisał promptów realizacji ani nie zmieniał obrazów.
+- Dodano propagację curriculum/data_split/family. Inspekcja szkoleniowa
+  odrzuca test; eksporter odrzuca także testowy render pod treningową etykietą
+  raportu. Historyczne ćwiczenie kuchni zachowuje train. Odpowiedzi egzaminu
+  nie są rekordami SFT ani materiałem do poprawiania przez model.
+- Zamrożono instrukcję, pięć kryteriów, adapter SHA i trzy obrazy przed
+  sześcioma generacjami. Ten sam model HF bnb4 z adapterem wyłączonym/włączonym,
+  greedy/context4096/max1100tokens/90s. Bez gramatyki JSON Ollamy.
+- vision-transfer-v0toop42 ukończony119.866s;6/6EOS, bez limitowego ucinania.
+  Porównano hashe wejść obu faz. Obejrzano obrazy i anonimowe odpowiedzi;
+  zapisano judgments przed odsłonięciem faz, dodatkowo sprawdzono długości.
+- Baza10/15, adapter9/15; pełne wymagania0/3→0/3, struktura3/3→2/3.
+  Adapter zwrócił raz wrapper schematu zamiast danych. Pozostałe problemy:
+  niepotwierdzone szczegóły/typy obiektów i limity zwięzłości. Wszystkie
+  odpowiedzi zachowane dokładnie, bez ręcznego usuwania błędów dla zaliczenia.
+- comparison.json SHA005e9daabc28425153b06b1ab935e5a947b00385ec31758af0409ae28437b216;
+  promotion-decision.json:do_not_promote, hash raportu/oceny. Brak zmiany
+  aktywnego modelu i treningu na egzaminie. Jedna nowa rodzina, trzy obrazy,
+  nie statystyczny dowód jakości asystenta lub gotowości pięciu usług.
+- Testy:24passed po propagacji metadata,28 po testach oceny,
+  końcowo57passed/1.26s. Dodano wykrywanie podmiany mapowania i obrazu po
+  generacji. Bez UI, live DB, zależności, ręcznych poprawek produktów lub
+  publicznego zapisu obrazów/modelowych odpowiedzi. Dokumentacja uaktualniona.
+
 ## 2026-09-21 — działający trening obraz–tekst, osobny adapter
 
 - CPU audyt zatwierdzonego rekordu w istniejącym środowisku ML, offline,
