@@ -1,0 +1,24 @@
+{
+  "schema": "vision-input-training-research.v1",
+  "purpose": "Three real adapter updates to validate the image/label training path; not a service-quality experiment or production training authorization.",
+  "model": "unsloth/Qwen3.8-27B-unsloth-bnb-4bit",
+  "revision": "8aa5f05d26b7205477066e1449e0af13f762a299",
+  "bundle": "/home/marcin/ai-company-workspaces/interior-school/vision-candidates-fyodznnk",
+  "records_sha256": "5533273410e47ca63d78dcef8375d59536ca8f4f13cbdc2f2f82407325176be3",
+  "records": 1,
+  "training": {
+    "max_length": 4096,
+    "max_steps": 3,
+    "rank": 4,
+    "alpha": 8,
+    "learning_rate": 0.00001,
+    "seed": 3407,
+    "batch_size": 1,
+    "vision_layers_frozen": true,
+    "optimizer": "torch_adamw"
+  },
+  "deadline_seconds": 900,
+  "production_ready": false,
+  "automatic_promotion": false,
+  "held_out_quality_measured": false
+}

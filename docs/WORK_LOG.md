@@ -1,5 +1,36 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — działający trening obraz–tekst, osobny adapter
+
+- CPU audyt zatwierdzonego rekordu w istniejącym środowisku ML, offline,
+  bez wag i CUDA. 1552 tokeny, 1283 zamaskowane, 269 odpowiedzi, 384 obrazu.
+  Rzeczywiste piksele i dokładny sufiks sprawdzone; brak obrazu odrzucony.
+  Dwa raporty audytu, przed/po wydzieleniu maski do niezależnych testów.
+- Dodano jawny protokół trzech aktualizacji dla integracji wejścia, nie
+  eksperymentu jakości. QLoRA r4/alpha8 w części językowej pełnego VLM,
+  enkoder wizji zamrożony, batch1, lr1e-5, AdamW, niezmienione dane modelowe.
+- vision-input-sft-ow7veubi: preflight prawidłowy, ale pierwszy forward
+  zakończył się błędem packed weight bez quant_state; 0 kroków, brak adaptera.
+  Nagłówek safetensors zawiera metadane; lokalny loader 5.5.0 błędnie stosuje
+  konwersję nazw tekstowego podmodułu wewnątrz pełnego modelu. Dokumentacja
+  upstream sprawdzona; nie kopiowano w ciemno diagnozy uszkodzonego checkpointu.
+- Dodano procesowe wyłączenie wyłącznie rozpoznanej konwersji na czas ładowania,
+  z przywróceniem finally i kontrolą stanów wszystkich warstw. Bez modyfikacji
+  bibliotek, aktualizacji pakietów, pobierania nowych wag lub restartów usług.
+- vision-input-sft-uiau78tj: Docker pusty, Comfy nie słucha, GPUfree31101MiB;
+  352 warstwy zweryfikowane. 3 kroki, 29 181 952 parametrów LoRA,
+  loss0.361193/0.359410/0.358137, obraz przetworzony 3 razy, LoRA_B zmienione.
+  Całość51.091s, peakVRAM23 602 985 472B. Plik116 876 728B,992tensoryLoRA,
+  SHA1ead1a8413150f3b7d172d0db2e0e654b7ac56926fffff702c7c1ab5e44b5f52
+  potwierdzone niezależnym odczytem. Oryginalne wagi/routing bez zmian.
+- Końcowo52 testy passed/1.16s. Początkowe20 testów masek/danych,
+  następnie51 i dodatkowy test przywracania rejestru. Jedno pomocnicze
+  git status wykonano poza repo; poprawiono katalog, bez skutków ubocznych.
+- GPU po zakończeniu993MiB/5%. Bez wdrożenia, generacji egzaminacyjnej
+  lub deklaracji wzrostu jakości na podstawie loss jednego przykładu.
+  Szczegóły w VISION_TRAINING_INPUTS.md. Kolejne wymagane etapy: szersze
+  dane i osobne rodziny oceny, porównanie bazy/adaptera, pozostałe usługi.
+
 ## 2026-09-21 — lekcja wizyjna i dokładne dane do późniejszego treningu
 
 - Kontynuacja celu i zmian rozpoczętych przed przerwaniem narzędzia przez

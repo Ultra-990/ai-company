@@ -144,3 +144,8 @@ Nie potwierdzono gotowości całej paczki, komercyjnych praw ani usługi klienta
 Końcowo 41 testów infrastruktury: dodatkowo odtworzenie dokładnego wejścia
 obraz–tekst, wykrywanie podmiany obrazu/promptu/odpowiedzi/renderu, brak eksportu
 po samej samoocenie modelu i odrzucenie rekordu przez tekstowy loader SFT.
+
+Kolejny etap 21.09: [audyt wejścia i trzy rzeczywiste aktualizacje adaptera
+obraz–tekst](VISION_TRAINING_INPUTS.md). Wcześniejszy manifest paczki zachowuje
+stan z chwili eksportu; osobny raport dokumentuje wykonany później trening
+integracyjny. Nie oznacza to spełnienia warunków treningu produkcyjnego.

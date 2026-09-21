@@ -1,5 +1,16 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — rzeczywisty trening obraz–tekst
+
+Wykonano trzy aktualizacje osobnego adaptera na jednym odebranym wyniku
+lokalnego modelu wraz z rzeczywistym PNG. Obraz przetworzony w każdym kroku,
+269 tokenów odpowiedzi nadzorowanych, zmiana LoRA_B i plik wag potwierdzone.
+[Przebieg i naprawa ładowania](organization-os/VISION_TRAINING_INPUTS.md).
+Pierwsza próba przerwana przed aktualizacją przez błąd ładowania kwantyzacji;
+druga ukończona po ograniczonej poprawce procesu. 52 testy zaliczone.
+To potwierdzenie mechanizmu treningowego, **nie poprawy jakości usługi**.
+Nie wdrożono adaptera; nadal potrzebne szersze dane i niezależne porównanie.
+
 ## Aktualizacja 21.09.2026 — pierwszy odebrany przykład wizyjny
 
 Dalsze dziewięć obserwacji lokalnego Qwena: jawny schemat, krótka lekcja
