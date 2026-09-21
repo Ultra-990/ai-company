@@ -63,3 +63,20 @@ def test_cycle_limits_new_cpu_audits_without_losing_previous_progress(tmp_path, 
     monkeypatch.setattr(auto, 'verify_bundle', rows)
     assert auto.cycle()['counts']['train'] == 2
     assert auto.cycle()['counts']['train'] == 3
+
+
+def test_practice_discovery_batches_at_most_sixteen_conversations(tmp_path, monkeypatch):
+    monkeypatch.setattr(auto.vector.school, 'ROOT', tmp_path)
+    monkeypatch.setattr(auto.interior.school, 'ROOT', tmp_path/'other')
+    for index in range(19):
+        path = tmp_path/'practice-fixture'/f'case-{index:03d}'; path.mkdir(parents=True)
+        (path/'experience.json').write_text('{}')
+    groups = auto.sources()
+    assert [kind for kind, _ in groups] == ['vector_batch', 'vector_batch']
+    assert [len(paths) for _, paths in groups] == [16, 3]
+    assert len(set(path for _, paths in groups for path in paths)) == 19
+    # An alphabetically earlier new series must not reshuffle completed groups
+    # and invalidate their processor audits.
+    other = tmp_path/'practice-earlier'/'case-000'; other.mkdir(parents=True)
+    (other/'experience.json').write_text('{}')
+    assert auto.sources()[1:] == groups

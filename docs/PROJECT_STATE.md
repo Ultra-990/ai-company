@@ -1,5 +1,21 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — naprawy odbierane bez oceny każdej odpowiedzi
+
+[Kontrolowane ćwiczenia SVG](organization-os/VECTOR_CONTROLLED_PRACTICE.md):
+lokalny model przygotował usterki i naprawy w osobnych wywołaniach.
+Z 72 zaplanowanych przypadków 69 dokładnie odtworzyło zaakceptowane źródło;
+dwa zatrzymał eksport PDF, jeden kontrola zasobów przed naprawą. Wszystkie
+69 wyników niezależnie odtworzono i porównano bajt po bajcie, bez ręcznego
+poprawiania produktów. To ćwiczenia trzech wzorców, nie 69 nowych projektów.
+
+Harmonogram rozpoznaje te doświadczenia i audytuje do 16 rozmów razem.
+Cały obecny zbiór multimodalny: **71 unikatowych przykładów**, każdy z
+rzeczywistymi pikselami i maską odpowiedzi sprawdzoną na CPU. Zapisano
+osobną migawkę końcowego odbioru. Brak treningu wag oraz nowych odpowiedzi
+validation/test. Wymaganie nauki bez asystenta pozostaje celem dalszej pracy.
+Pełne `.venv/bin/pytest -q`: **1602 passed, 21 skipped**, 81,99 s.
+
 ## Aktualizacja 21.09.2026 — harmonogram danych i naprawione pełne testy
 
 [Automatyczne przygotowanie danych](organization-os/LEARNING_AUTOPILOT.md)

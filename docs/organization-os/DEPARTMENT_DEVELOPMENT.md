@@ -5,6 +5,14 @@ i doprowadzić wszystkie działy do użytecznego działania. Wygląd menu pozost
 osobnym, późniejszym zadaniem. Lokalny model tworzy realizacje; asystent
 rozwija infrastrukturę i sprawdza rezultaty.
 
+Właściciel doprecyzował, że docelowy system ma kontynuować naukę i rozwój
+bez kontroli asystenta prowadzącego. Oznacza to więcej niż harmonogram:
+wybór nowych ćwiczeń na podstawie niepowodzeń, sprawdzone dane, trening,
+oddzielny sprawdzian, zatrzymanie regresji i przywrócenie poprzedniej wersji.
+Automatyczna deklaracja sukcesu modelu nie spełnia tego wymagania.
+Deterministycznie sprawdzane umiejętności można odbierać przez testy;
+wiarygodna samodzielna ocena stylu i treści pozostaje otwartą częścią prac.
+
 Odczyt obecnego kodu potwierdza dwanaście profili działów, przydział ról
 i cztery etapy zlecenia. Obsługa lokalnej inferencji istnieje osobno od
 kolejki symulacyjnej. Przydział roli lub przycisk w panelu nie dowodzi

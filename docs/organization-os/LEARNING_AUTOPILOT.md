@@ -13,6 +13,12 @@ Zmiana lub wycofanie oceny usuwa przykład z bieżącej liczby gotowych danych.
 Blokada plikowa zapobiega jednoczesnym cyklom; do dwóch nowych audytów CPU
 w cyklu ogranicza obciążenie. Poprawne, niezmienione audyty są używane ponownie.
 
+Rozszerzenie: [kontrolowane usterki SVG](VECTOR_CONTROLLED_PRACTICE.md)
+pozwalają odbierać lokalne naprawy przez dokładne odtworzenie wcześniej
+niezależnie zaakceptowanego źródła. Każda naprawa zachowuje jawne pochodzenie
+syntetycznej usterki. Harmonogram zbiera te rozmowy w grupy do 16 przykładów
+na audyt CPU, nadal sprawdzając osobno każdą odpowiedź, źródło i ocenę.
+
 `vector_learning_records.py` eksportuje dokładną ocenioną odpowiedź narzędzia
 lokalnego modelu i rzeczywisty PNG wzorca. Wspólny audyt sprawdza hash,
 oryginalną rozmowę, maskowanie instrukcji i obecność pikseli. Kopie obrazów

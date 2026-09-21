@@ -36,15 +36,31 @@ def save(path, value):
 
 def sources():
     """Only explicit independent review artifacts; no client/production DB scan."""
-    return [('vector', path) for path in sorted(vector.school.ROOT.glob('patch-*/experience.json'))] + [
+    vector_paths = sorted(vector.school.ROOT.glob('patch-*/experience.json'))
+    # One processor load audits up to sixteen separate conversations. Source
+    # verification still happens for every example on every cycle.
+    practice_batches = []
+    for series in sorted(vector.school.ROOT.glob('practice-*')):
+        paths = sorted(series.glob('case-*/experience.json'))
+        practice_batches.extend(('vector_batch', tuple(paths[i:i+16])) for i in range(0, len(paths), 16))
+    return [('vector', path) for path in vector_paths] + practice_batches + [
         ('interior', path) for path in sorted(interior.school.ROOT.glob('inspect-*/teacher-judgments.json'))]
 
 
 def collect(kind, path):
+    if kind == 'vector_batch':
+        if not isinstance(path, tuple) or not 1 <= len(path) <= 16:
+            raise ValueError('Bounded vector practice batch required')
+        rows = []
+        for item in path:
+            accepted, _ = collect('vector', item)
+            if not accepted: raise ValueError('Every batched practice must be an approved train example')
+            rows.extend(accepted)
+        return rows, lambda: vector.export(list(path))
     if kind == 'vector':
         archived = vector.read(path)
         report = Path(archived['source']['report']); review = Path(archived['review']['path'])
-        if archived != vector.patch.experience(report, review):
+        if archived != vector.approved_experience(report, review):
             raise ValueError('Archived experience changed')
         if archived['split'] != 'train': return [], None
         rows, _ = vector.collect(report, review)
@@ -98,7 +114,7 @@ def cycle():
     discovered = sources()
     if len(discovered) > 500: raise ValueError('Review intake limit reached; split the collection explicitly')
     for kind, path in discovered:
-        key = kind+':'+str(path)
+        key = kind+':'+('|'.join(map(str, path)) if isinstance(path, tuple) else str(path))
         try:
             rows, export = collect(kind, path)
             if not rows:

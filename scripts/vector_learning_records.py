@@ -19,8 +19,18 @@ def read(path):
     return json.loads(school.checked(path).read_text(), object_pairs_hook=unique_object)
 
 
+def approved_experience(report_path, judgments_path):
+    schema = read(report_path).get('schema')
+    if schema == 'vector-attribute-lesson.v1':
+        return patch.experience(report_path, judgments_path)
+    if schema == 'vector-controlled-practice.v1':
+        from scripts.vector_practice import experience
+        return experience(report_path, judgments_path)
+    raise ValueError('Unknown reviewed vector lesson')
+
+
 def collect(report_path, judgments_path):
-    experience = patch.experience(report_path, judgments_path)
+    experience = approved_experience(report_path, judgments_path)
     if experience['split'] != 'train':
         raise ValueError('Only predeclared train families may enter the training candidates')
     image = experience['images'][0]
@@ -30,12 +40,14 @@ def collect(report_path, judgments_path):
     row.update(version='company-vision-candidate.v1', usage='development_only',
                images=[{'id': image['id'], 'file': image_file, 'sha256': image['sha256']}],
                review={'status': 'approved_for_synthetic_learning',
-                       'reviewer': 'assistant_direct_visual_review',
+                       'reviewer': experience['review'].get('reviewer', 'assistant_direct_visual_review'),
                        'notes': experience['review']['notes'],
                        'judgments': str(judgments_path),
                        'judgments_sha256': school.checksum(school.checked(judgments_path))},
                source={'report': str(report_path), 'report_sha256': school.checksum(school.checked(report_path)),
                        'kind': 'synthetic', 'client_data': False, 'commercial_rights_assessed': False})
+    if 'defect_origin' in experience['source']:
+        row['source']['defect_origin'] = experience['source']['defect_origin']
     return [row], {image_file: school.checked(Path(image['path']))}
 
 
@@ -46,7 +58,7 @@ def export(experience_paths):
     for path in experience_paths:
         archived = read(path)
         report = Path(archived['source']['report']); review = Path(archived['review']['path'])
-        if archived != patch.experience(report, review):
+        if archived != approved_experience(report, review):
             raise ValueError('Archived experience differs from the reviewed local model conversation')
         accepted, assets = collect(report, review)
         rows.extend(accepted); images.update(assets)

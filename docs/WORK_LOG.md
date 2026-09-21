@@ -1,5 +1,69 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — 69 lokalnych napraw z automatycznym sprawdzeniem
+
+- Zastany worktree był czysty po 5b76468. Poprzedni etap był postępem:
+  uruchomiony harmonogram danych, kontrola pikseli i naprawiony pełny pytest.
+  Sprawdzono rzeczywisty kod kolektora, źródła i ograniczenia danych/trenera.
+- Właściciel podkreślił docelową naukę bez asystenta. Wymaganie zapisano
+  w DEPARTMENT_DEVELOPMENT. Nowe ćwiczenia sprawdzają dokładne odtworzenie
+  uprzednio niezależnie odebranego źródła; nie używają samooceny modelu.
+- vector_practice: lokalny Qwen tworzy celową usterkę jednego atrybutu,
+  a osobne wywołanie modelu naprawia ją z obrazu i pomiarów. Nie dostaje
+  oryginalnego SVG ani odpowiedzi twórcy usterki. Wszystkie operacje są
+  dosłownie stosowane; źródła produktów i odpowiedzi nie są ręcznie poprawiane.
+  Zamrożone 24 przypadki na rodzinę: font-size/x/y ośmiu istniejących linii.
+- Zapisano dokładne odpowiedzi, żądania, model/digest, SVG, PNG i PDF,
+  osobno stan oraz jawne pochodzenie deliberate_local_model_perturbation.
+  Odbiór wymaga rzeczywistych identycznych bajtów SVG i replayu. Dodano
+  kontrolę odrzucającą podmienione CRLF mimo zgodności tekstu po normalizacji.
+  Dane historyczne zachowują tożsamość wykonawcy po przyszłej zmianie modelu.
+- Pierwsze trzy ćwiczenia practice-ozs6lhxv zaliczone. Następna próba
+  zatrzymana przed utworzeniem serii przez active_containers. Odczyt
+  docker ps później potwierdził pustą listę; nie zatrzymywano procesów.
+  Wznowiono dopiero po ponownej kontroli zasobów.
+- Garden practice-nfe2_t8x, indeksy 3–23: 20 napraw przyjętych,
+  indeks19 odrzucony podczas eksportu celowej usterki do PDF. Łącznie
+  garden23/24. Restaurant practice-bzqh442s:24/24. Vinyl practice-8c94ql57:
+  22/24; indeks8 błąd eksportu PDF, indeks23 active_containers po utworzeniu
+  usterki, przed renderem i naprawą. Ponowny późniejszy odczyt kontenerów
+  był pusty. Przyczyn pojawiania się krótkotrwałych kontenerów nie ustalono.
+- Łącznie72przypadki,141wywołań,680,194s etapów,69dokładnych napraw.
+  Trzy pozostałe nie wywołały modelu naprawiającego. Niezależny końcowy
+  audyt ponownie sprawdził każdą zaakceptowaną operację, bajty oraz PNG/PDF.
+  Prywatna ocena controlled-practice-001-assessment.json, SHA-256
+  cfa598365226424d81b00098afe22186a2f11acf6f9d0934433be289fd9969a1.
+- Uwaga o pochodzeniu kodu: początkowy skrypt pobierał hash pliku z dysku
+  przy każdym przypadku. Podczas pierwszej serii zmieniono raportowanie
+  i historyczne sprawdzanie tożsamości, więc część raportów garden wskazuje
+  wersję na dysku, a nie wcześniej załadowany kod. Rozbieżność zachowano
+  i jawnie opisano w prywatnej ocenie; nie zmieniano starych raportów.
+  Kolejne serie przechwytują kod/hash raz przy starcie procesu i zapisują
+  implementation.py. Wszystkie69wyników ponownie zweryfikowano aktualnym
+  niezależnym replayem; dane modelu nie zostały zastąpione.
+- Kolektor rozpoznaje nowy typ doświadczenia i uczciwie zapisuje ocenę
+  exact_replay_of_independently_reviewed_reference, zamiast udawać osobny
+  przegląd wzrokowy. Rodzina train i ocena oryginalnego wzorca są wymagane.
+  Harmonogram sam wykrył dane: rzeczywisty cykl systemd o05:14:31CEST
+  zakończył się kodem0, następny raport wskazał25przykładów i brak błędów.
+- Przygotowano grupy do16rozmów na jedno załadowanie procesora, nadal
+  maksymalnie dwa nowe audyty na cykl. Grupy są stabilne w obrębie serii:
+  dodanie wcześniejszej alfabetycznie serii nie unieważnia zakończonych grup.
+  Zmiana sposobu grupowania wymagała jednorazowego odtworzenia audytów;
+  przejściowy spadek licznika oznaczał oczekiwanie na audyt, nie utratę danych.
+- Testy kierunkowe112passed; pełny zestaw po grupowaniu1601passed,
+  21skipped w84,94s. Końcowa kontrola po zaostrzeniu zgodności bajtów:
+  **1602 passed, 21 skipped w81,99s**.
+- Po przetworzeniu oczekujących grup stan intake wskazuje71unikatowych
+  przykładów:69nowych kontrolowanych napraw oraz dwa wcześniejsze rekordy.
+  Ponownie sprawdzono wszystkie paczki, hash każdego raportu CPU oraz
+  obecność rzeczywistych pikseli i maski odpowiedzi. Zakres1552–2449tokenów,
+  brak CUDA i treningu. Migawka controlled-practice-001-intake.json ma
+  SHA-256 4f9a90dc21644abdfb63892734182c0a9294fd96df3951511542d618ddaad18a.
+- To dane do wąskiej umiejętności narzędziowej, nie69nowych projektów,
+  naturalny wskaźnik błędów lub poprawa wag. Brak treningu i odpowiedzi
+  z validation/test. Progi200/25/50 i brak automatycznego wdrażania utrzymane.
+
 ## 2026-09-21 — automatyczny odbiór danych i zgłoszone 23 błędy pytest
 
 - Poprzedni etap zakończony commitem 6b20471 był postępem: zamrożone rodziny,
