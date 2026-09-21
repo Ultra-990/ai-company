@@ -1,5 +1,16 @@
 # Stan projektu AI Company
 
+## Aktualizacja 21.09.2026 — odtwarzanie ulotki przez model
+
+[Szkoła wektorowa](organization-os/VECTOR_SCHOOL.md): Qwen stworzył wzorzec
+i cztery odtworzenia z PNG, bez ręcznej naprawy SVG przez asystenta.
+Teksty8/8 poprawne, lecz **0/4 realizacji odebranych**: różnice typografii,
+zasłanianie podtytułu i regresje przy kolejnych poprawkach. Edytowalny SVG
+i eksport A5 PDF działają; ostatni PDF ma osadzone fonty i brak rastrów.
+66 testów zaliczonych. To ćwiczenie przez feedback, bez treningu wag,
+eksportu SFT lub gotowości do druku. Dalsza nauka wymaga precyzyjnych zmian
+bez psucia poprawnych elementów. Oryginalna ulotka klienta nadal niedostarczona.
+
 ## Aktualizacja 21.09.2026 — wynik sprawdzianu wizyjnego
 
 Na trzech nowych obrazach miejsca do czytania porównano bazę i adapter

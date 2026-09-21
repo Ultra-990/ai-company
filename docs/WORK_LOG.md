@@ -1,5 +1,48 @@
 # Dziennik budowy AI Company
 
+## 2026-09-21 — modelowe odtworzenia ulotki i eksport wektorowy
+
+- Po wyjaśnieniu granicy autorstwa podjęto nową praktyczną pracę: lokalny
+  model tworzy syntetyczny wzorzec, potem odtwarza go z PNG. Asystent
+  przygotował kontrakt, runner, feedback i niezależne kontrole; nie naprawiał
+  modelowego SVG. Wzorzec nie jest oryginalną ulotką Ping od klienta.
+- Dodano vector_school_contract/vector_school/render_school_svg i testy:
+  tylko statyczny ograniczony SVG, bez rastrów, skryptów, obcego HTML,
+  deklaracji/zasobów. Odrzucanie zamiast sanitizacji. Zachowane surowe
+  odpowiedzi, wyodrębnione źródła, wejścia, obrazy, PDF i SHA-256. Zmiana
+  modelowego SVG lub pliku źródłowego blokuje dalszą próbę.
+- Własny headless Chrome bez pulpitu, GPU i wyłączania sandboxu. CSP,
+  blokada żądań renderera, osobny profil, tylko stały kod pomiarowy CDP.
+  PDF A5: jedna strona, zachowane słowa, fonty osadzone, brak rastrów.
+  Potwierdzono rzeczywiste fonty Liberation Serif/Sans; brak preflightu
+  drukarni i zgodności z niepodanymi wymaganiami klienta.
+- Pierwszy preflight zatrzymał PermissionError lokalnego socketu w sandboxie,
+  przed inferencją. Ponowiono z formalną eskalacją. Kontrole potem wykazały
+  wolne zasoby i brak obcych kontenerów; nie zatrzymywano cudzych usług.
+- source-xf_vocnb: modelowy wzorzec16,874s,8tekstów+6figur. Obejrzany jako
+  materiał ćwiczeniowy, z ograniczeniem kontrastu podtytułu przy pierścieniu;
+  nie jest odebranym projektem. Bez ręcznych zmian źródła lub renderu.
+- Cztery modelowe rekonstrukcje: vcfusjdd8,242s, ur8u8a9v7,930s,
+  456pyqiw7,883s, 4ma9o3817,945s. Każda8/8tekstów dokładnych, lecz0/4
+  pełnych zaliczeń. Błąd RGB0,07522→0,04743→0,03780→0,04731;
+  pola tekstowe w tolerancji6/8→6/8→6/8→2/8. Nie wybierano ostatniej
+  wersji jako lepszej tylko dlatego, że jest nowsza.
+- Pierwsza poprawka korzystała z własnego kodu, kolejne z obrazu+feedbacku.
+  Uwagi nauczyciela wiązane hashem dokładnego poprzednika. Po zauważeniu
+  zasłoniętych liter dodano test centrów znaków; wykrył sześć przykrytych
+  znaków. Kolejność warstw została poprawiona przez model, ale przepisywanie
+  całości powodowało regresje typografii. Nie wydłużano limitu ponad trzy
+  poprawki ani nie zmieniano progów odbioru, aby uzyskać zaliczenie.
+- Obejrzano pięć PNG, zapisano teacher-assessment.json w katalogu wzorca,
+  SHA14a018bb5c26930dd8f626f2651c3adfca58fee8b98bdf7f88f336b10483223d.
+  0odpowiedzi zatwierdzonych do treningu; brak treningu wag, promocji,
+  zmian UI/liveDB/routingu. Następna potrzeba: modelowe precyzyjne poprawki
+  z kontrolą regresji i szerszy zbiór, nie deklarowanie gotowości usługi.
+- Testy etapami54/55/57/61passed, końcowo66passed/1,44s. Rzeczywiste
+  eksporty zweryfikowano w istniejącym Chrome153.0.8010.52 i Poppler.
+  Własne przeglądarki zakończone; końcowo790MiB GPU,2% obciążenia.
+  Dokumentacja i katalog celów zaktualizowane, surowe prace pozostają prywatne.
+
 ## 2026-09-21 — niezależna rodzina wizji i porównanie adaptera
 
 - Kontynuacja celu: nowa rodzina cottage-reading-room-001 zarezerwowana
