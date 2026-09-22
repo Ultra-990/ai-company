@@ -1,5 +1,21 @@
 # Stan projektu AI Company
 
+## Aktualizacja 22.09.2026 — dwie poprawki z obrazu i automatyczny intake
+
+[Lokalny model otrzymuje rzeczywisty PNG i poprawia własny wynik](organization-os/PRODUCT_VISUAL_REVISIONS.md).
+Przyjęto ograniczoną naprawę zakrętki z ochroną korpusu i napisu oraz osobną
+poprawę kompozycji infografiki. Pierwszy układ odrzucono mimo zaliczonych
+pomiarów; usunięcie starych współrzędnych z kolejnego żądania dało lepszy wynik.
+Wszystkie rysunki i wartości poprawek pochodzą z odpowiedzi lokalnego modelu.
+
+Harmonogram zebrał dwie pozytywnie ocenione rozmowy, sprawdził rzeczywiste
+piksele i maskowanie odpowiedzi na CPU. **73 train, pięć rodzin, sześć obrazów**;
+validation/test w intake nadal 0/0. Ponowny cykl bez duplikatów; odczyt systemd
+potwierdził późniejsze automatyczne wykonanie, kod 0. Odrzucony układ pominięty.
+Nie trenowano wag i nie wdrażano adaptera. Poprawki są oddzielne; pełna seria
+i jakość pięciu usług nadal niezatwierdzone.
+Pełne `.venv/bin/pytest -q`: **1684 passed, 21 skipped**, 83,89 s.
+
 ## Aktualizacja 22.09.2026 — cztery infografiki i wznowienie nieudanego etapu
 
 [Szkoła infografik produktowych](organization-os/PRODUCT_INFOGRAPHIC_SCHOOL.md)

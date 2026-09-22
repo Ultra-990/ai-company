@@ -25,6 +25,14 @@ oryginalną rozmowę, maskowanie instrukcji i obecność pikseli. Kopie obrazów
 muszą pozostawać w paczce; symlinki i wyjścia poza katalog są odrzucane.
 Nowy eksport nie zmienia historycznego doświadczenia ani raportu wykonania.
 
+Od 22.09.2026 harmonogram zbiera też [wizyjne poprawki produktu](PRODUCT_VISUAL_REVISIONS.md).
+Przyjęte są dwie niezależnie ocenione rozmowy: strukturalna naprawa zakrętki
+i przeprojektowanie układu infografiki. Odrzucona próba pozostaje pominięta.
+Dokładne odpowiedzi, wejściowe PNG i maskowanie sprawdzono na CPU; stan to
+73 train, pięć rodzin i sześć różnych obrazów. Kolejny cykl nie zduplikował
+rekordów. Odczyt systemd potwierdził późniejsze automatyczne wykonanie bez błędów.
+Przyjęcie dotyczy wskazanych poprawek, nie jakości całego produktu lub usługi.
+
 Rzeczywista próba wektorowa: 2166 tokenów, 2132 zamaskowane, 34 nadzorowane,
 468 tokenów obrazu, tensor pikseli 1872×1536. Usunięcie obrazu jest odrzucane.
 Nie ładowano wag i nie inicjalizowano CUDA. Pierwsza próba ujawniła import

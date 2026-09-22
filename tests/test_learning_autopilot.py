@@ -68,6 +68,7 @@ def test_cycle_limits_new_cpu_audits_without_losing_previous_progress(tmp_path, 
 def test_practice_discovery_batches_at_most_sixteen_conversations(tmp_path, monkeypatch):
     monkeypatch.setattr(auto.vector.school, 'ROOT', tmp_path)
     monkeypatch.setattr(auto.interior.school, 'ROOT', tmp_path/'other')
+    monkeypatch.setattr(auto.product, 'ROOT', tmp_path/'products')
     for index in range(19):
         path = tmp_path/'practice-fixture'/f'case-{index:03d}'; path.mkdir(parents=True)
         (path/'experience.json').write_text('{}')
@@ -80,3 +81,13 @@ def test_practice_discovery_batches_at_most_sixteen_conversations(tmp_path, monk
     other = tmp_path/'practice-earlier'/'case-000'; other.mkdir(parents=True)
     (other/'experience.json').write_text('{}')
     assert auto.sources()[1:] == groups
+
+
+def test_product_intake_discovers_reviews_and_skips_rejected_layouts(tmp_path, monkeypatch):
+    monkeypatch.setattr(auto.vector.school, 'ROOT', tmp_path/'vectors')
+    monkeypatch.setattr(auto.interior.school, 'ROOT', tmp_path/'interiors')
+    monkeypatch.setattr(auto.product, 'ROOT', tmp_path)
+    folder = tmp_path/'visual-revision-fixture'; folder.mkdir()
+    review = folder/'learning-review.json'; review.write_text('{"decision":"needs_visual_revision"}')
+    assert auto.sources() == [('product', review)]
+    assert auto.collect('product', review) == ([], None)

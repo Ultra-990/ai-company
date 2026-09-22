@@ -1,5 +1,55 @@
 # Dziennik budowy AI Company
 
+## 2026-09-22 — wizyjne poprawki modelu i dwa nowe sprawdzone doświadczenia
+
+- Poprzedni etap był postępem: e659d6c opublikowany, worktree czysty,
+  cztery infografiki technicznie ukończone i niezależnie odrzucone wizualnie.
+  Kolejny krok wykorzystał rzeczywisty obraz błędu zamiast samych pomiarów.
+- Dodano ograniczony etap local_vision: jeden PNG, kontekst 8192, odpowiedź
+  do 2400 tokenów. Model zwraca zastąpienie grupy zakrętki lub pełną scenę
+  panelu. Narzędzie nie zmienia współrzędnych za model. Korpus/napis albo
+  cały produkt i dokładne fakty są chronione zależnie od zadania.
+- visual-revision-ydy0u4z7: jedna odpowiedź, 5,283 s. Model zastąpił 17
+  kształtów zakrętki trzema własnymi. Obraz przed/po obejrzany; krótsza
+  zamknięta zakrętka jest przyjęta jako celowana poprawka. Geometria trzech
+  elementów korpusu i tekst niezmienione. Nie jest to odbiór zdjęcia produktu.
+- visual-revision-cjpgxaw9: dwie odpowiedzi, 14,84 s. Pierwsza miała kolizję
+  z tekstem, druga usunęła kolizję, lecz zachowała złą kompozycję. Odrzucono
+  wizualnie i nie przyjęto do danych treningowych mimo poprawnej geometrii.
+- Dla paneli usunięto stare współrzędne z żądania, zachowując obraz, fakty,
+  styl i pomiary produktu. visual-revision-payf0fd4: jedna odpowiedź, 7,321 s,
+  poprawiony rozkład treści i mniej pustej przestrzeni. Niezależnie przyjęto
+  ten zakres. Stara zakrętka pozostała zgodnie z ochroną oryginalnego produktu;
+  nie złożono korekt w nowy pakiet ani nie zatwierdzono całej infografiki.
+- Odtwarzanie starej rozmowy wykryło zmianę kolejności kluczy serializacji
+  po dodaniu wersji żądania. Przywrócono dokładną kolejność wersji 1,
+  dodano test zgodności; wszystkie trzy raporty ponownie uwierzytelniono.
+  Nie zmieniano oryginalnych odpowiedzi lub raportów, kopie kodu pozostają
+  zapisane przed każdą próbą. Sprawdzono faktyczne SVG, pomiary i PDF.
+- Oceny pozytywne learning-review.json SHA-256:
+  bc8cf8b94323d7138bd4c13f6fcdd895e1562d9479d46fafffaef95a396fd544 (zakrętka),
+  c0ab80dc37dd86e8e9e46f52c2d305cdf1a1348f1556d2f3242fbe9280a95042 (układ).
+- Dodano kolektor product-visual-revision-v1 i odkrywanie ocen w harmonogramie.
+  Wymagany niezależny pozytywny odbiór dokładnej poprawki, powiązany z raportem
+  i PNG. Kolektor odtwarza prompt/odpowiedź/operację i eksportuje rzeczywisty
+  wejściowy obraz błędu. Audytor dopuszcza nowy prywatny katalog i kolektor,
+  zachowując wymaganie maskowania instrukcji i obecności obrazu.
+- Rzeczywisty cykl przyjął dwa rekordy. Zakrętka: 2358 tokenów, 2198 maskowanych,
+  160 nadzorowanych, 475 tokenów obrazu. Układ: 1732/1198/534, 361 obrazu.
+  Oba audyty potwierdziły piksele i odrzuciły usunięcie obrazu, bez wag i CUDA.
+  Audyty SHA-256: 3f513651509eb9dc539d2cae44003ae875c37e8fdc09f03dc59e2f6ca63ee0ba
+  oraz a3eabc64ec0c1e8d8368f752817f3530feb89deac7768442858e8c9965bb6cc9.
+- Stan zbioru 73 rozmowy, pięć rodzin, sześć różnych obrazów; 0/0 validation/test
+  w tym intake. Drugi ręczny cykl użył istniejących audytów bez duplikowania.
+  Odrzucona korekta pominięta jako no_approved_train_records; brak błędów.
+- Odczyt systemd początkowo zablokował sandbox; ponowiono odczyt z eskalacją.
+  Usługa wykonała się automatycznie 16:04:01–16:04:08 CEST, ExecMainStatus=0.
+  Późniejszy stan 14:09:16 UTC nadal wskazywał 73 rekordy i brak błędów.
+  Nie restartowano usług, nie ruszano pulpitu ani cudzych procesów.
+- Testy kierunkowe: 22 passed, potem 41 passed. Po teście wersjonowania
+  i końcowej kontroli powiązań pełny zestaw: 1684 passed, 21 skipped, 83,89 s.
+  Brak treningu wag, zmiany routingu, dowodu transferu lub pełnej autonomii.
+
 ## 2026-09-22 — rzeczywista seria infografik i odrzucenie jakości wizualnej
 
 - Poprzednia tura była postępem: commit 401307c opublikowany, worktree czysty,

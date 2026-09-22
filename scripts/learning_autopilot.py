@@ -17,6 +17,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts import interior_learning_records as interior
 from scripts import vector_learning_records as vector
+from scripts import product_visual_revision as product
 from scripts.check_vision_training_inputs import verify_bundle
 from scripts.prepare_training_data import MINIMUMS, unique_object
 
@@ -44,7 +45,8 @@ def sources():
         paths = sorted(series.glob('case-*/experience.json'))
         practice_batches.extend(('vector_batch', tuple(paths[i:i+16])) for i in range(0, len(paths), 16))
     return [('vector', path) for path in vector_paths] + practice_batches + [
-        ('interior', path) for path in sorted(interior.school.ROOT.glob('inspect-*/teacher-judgments.json'))]
+        ('interior', path) for path in sorted(interior.school.ROOT.glob('inspect-*/teacher-judgments.json'))] + [
+        ('product', path) for path in sorted(product.ROOT.glob('visual-revision-*/learning-review.json'))]
 
 
 def collect(kind, path):
@@ -68,6 +70,11 @@ def collect(kind, path):
     if kind == 'interior':
         rows, _ = interior.collect(path.parent/'report.json', path)
         return rows, lambda: interior.export(path.parent/'report.json', path)
+    if kind == 'product':
+        review = product.read(path)
+        if review.get('decision') == 'needs_visual_revision': return [], None
+        rows, _ = product.collect(path.parent/'report.json', path)
+        return rows, lambda: product.export(path.parent/'report.json', path)
     raise ValueError('Unknown collector')
 
 

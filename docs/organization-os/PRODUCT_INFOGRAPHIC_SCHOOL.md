@@ -108,5 +108,10 @@ modelu ani nie zmienia wyniku technicznego w zatwierdzenie jakości.
 Brak eksportu treningowego, aktualizacji wag, wdrożenia lub publikacji oferty.
 Wymagania pełnej usługi i samodzielnego odbioru estetyki nadal niespełnione.
 
+Dalszy etap: [poprawki z rzeczywistym PNG](PRODUCT_VISUAL_REVISIONS.md)
+dały dwie niezależnie przyjęte korekty częściowe i dwa sprawdzone wejścia
+do uczenia. Nie zmienia to odbioru oryginalnej serii; nie złożono z nich
+nowego, zatwierdzonego pakietu czterech grafik.
+
 Testy infrastruktury: pełne `.venv/bin/pytest -q` — **1674 passed, 21 skipped**,
 84,24 s. Testy nie zastępują negatywnego odbioru wizualnego powyżej.

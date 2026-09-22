@@ -13,7 +13,7 @@ from scripts.qwen_qlora_smoke import ROOT,MODEL,REVISION
 
 SNAPSHOT=ROOT/'hf-cache/hub/models--unsloth--Qwen3.8-27B-unsloth-bnb-4bit/snapshots'/REVISION
 REPO=Path(__file__).resolve().parents[1]
-BUNDLE_ROOTS=(ROOT.parent/'interior-school',ROOT.parent/'vector-school')
+BUNDLE_ROOTS=(ROOT.parent/'interior-school',ROOT.parent/'vector-school',ROOT.parent/'product-infographic-school')
 
 
 def bundle_file(bundle, name, max_bytes=4*1024*1024):
@@ -90,6 +90,8 @@ def verify_bundle(bundle):
         from scripts import interior_learning_records as records
     elif collector=='vector-attribute-v1':
         from scripts import vector_learning_records as records
+    elif collector=='product-visual-revision-v1':
+        from scripts import product_visual_revision as records
     else:raise ValueError('Unknown approved-conversation collector')
     payload=bundle_file(bundle,'records.jsonl').read_bytes()
     if (manifest.get('schema')!='vision-candidate-bundle.v1'
