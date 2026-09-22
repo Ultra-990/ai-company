@@ -46,8 +46,9 @@
       "deliverables": ["Logo concepts and selected editable mark", "Business card design", "Coherent color/type/style guidelines", "Export package"],
       "required_inputs": ["Restaurant name and concept", "Audience and desired personality", "Visual references", "Approved contact details", "Printer requirements"],
       "checks": ["Identity matches the brief", "Logo works small and in monochrome", "Consistent typography and colors", "Actual editable vector source", "Business-card content accuracy and print preflight"],
-      "evidence_stage": "target_recorded_no_job_specific_trial",
-      "limitations": ["Restaurant brief not supplied", "Originality and final visual quality require independent assessment"]
+      "evidence_stage": "synthetic_development_pilot",
+      "limitations": ["Only one synthetic restaurant brief tested; no real client brief or printer requirements", "Technical package verified; professional visual quality and originality not demonstrated", "Teacher visual review still required; no weight training or autonomous aesthetic acceptance in this pilot"],
+      "evidence_document": "docs/organization-os/RESTAURANT_BRAND_SCHOOL.md"
     }
   ]
 }

@@ -1,5 +1,26 @@
 # Stan projektu AI Company
 
+## Aktualizacja 22.09.2026 — lokalny pakiet restauracji i wymaganie autonomii
+
+[Szkoła identyfikacji restauracji](organization-os/RESTAURANT_BRAND_SCHOOL.md)
+przeprowadziła pełne syntetyczne ćwiczenie: dwa koncepty logo, wybór modelu,
+wizytówka, zasady stylu i pakiet SVG/PNG/PDF/ZIP. Ostatni przebieg: pięć
+odpowiedzi lokalnego Qwen, 33,496 s. Niezależnie odtworzono źródła z odpowiedzi,
+sprawdzono sześć PDF i 21 plików ZIP oraz obejrzano podglądy.
+
+Próba zalicza wymagania techniczne z ograniczeniami estetyki i zasad stylu.
+Wcześniejsze błędne wersje zachowane, bez ręcznych napraw produktów.
+Nie eksportowano danych do treningu i nie zmieniano wag w tym etapie.
+Ocena wizualna nadal wymagała asystenta; brak dowodu gotowości usługi.
+
+[Warunki pełnej autonomii](organization-os/LEARNING_AUTOPILOT.md) obejmują
+rzeczywiste kolejne cykle bez asystenta, odrzucanie gorszych kandydatów,
+wznowienie po przerwaniu i sprawdzony rollback. Obecny timer nadal zbiera
+dane; aktualny stan to 71 train / 0 validation / 0 test w tym intake.
+
+Pełne testy: **1660 passed, 21 skipped**, 84,21 s. Po końcowej poprawce
+nazwy zmiennej profilu Chrome: **122 passed**, 5,67 s w testach kierunkowych.
+
 ## Aktualizacja 21.09.2026 — trening 71 przykładów i porównanie adaptera
 
 [Trener zbioru obraz–tekst](organization-os/VISION_CORPUS_TRAINING.md)

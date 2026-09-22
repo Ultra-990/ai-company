@@ -38,8 +38,46 @@ To liczby nowego zbioru multimodalnego, nie suma wszystkich historycznych
 zbiorów tekstowych i zestawów egzaminacyjnych.
 
 Próg 200 train / 25 validation / 50 test pozostaje niezmieniony. Potrzebne
-są szersze dane, rejestr oddzielnych sprawdzianów oraz trener całego zbioru
-z porównaniem bazy i adaptera. Osobna ocena musi poprzedzać wdrożenie.
+są szersze dane i rejestr oddzielnych sprawdzianów.
+[Trener zbioru](VISION_CORPUS_TRAINING.md) wykonał już ręcznie uruchomioną
+próbę z porównaniem bazy i adaptera; nie wykazała poprawy. Harmonogram
+nie uruchamia tego trenera. Osobna ocena musi poprzedzać wdrożenie.
+
+## Wymaganie docelowe: nauka bez asystenta
+
+Właściciel ponownie potwierdził 22.09.2026, że system ma rozwijać modele
+bez dalszej kontroli asystenta prowadzącego. To wymaganie odbioru projektu,
+nie opis obecnej funkcjonalności. Ręczna ocena każdego nowego przykładu
+lub zgoda asystenta na każdy trening nie mogą być docelową zależnością.
+
+Pełny cykl ma sam zbierać doświadczenia z pracy lokalnych modeli, odrzucać
+niepotwierdzone wyniki, budować wersjonowane zbiory, planować ograniczony
+trening przy dostępnych zasobach i porównywać kandydata z używaną wersją.
+Odbiór danych i wag musi opierać się na dowodach niezależnych od deklaracji
+uczącego się modelu. W zadaniach wizualnych same poprawne pliki i geometria
+nie wystarczą do automatycznej oceny jakości projektu.
+
+Warunki dopuszczenia pełnej automatyzacji:
+
+- Oddzielne rodziny treningowe, walidacyjne i testowe; ukryte odpowiedzi
+  testowe nie wracają do danych ani pętli poprawek. Testy trzeba odnawiać,
+  aby kolejne próby nie dopasowywały się stale do jednego egzaminu.
+- Wdrożenie tylko po wykazanej poprawie i braku istotnej regresji według
+  wcześniej ustalonych kryteriów; odrzucenie słabszej lub równorzędnej wersji.
+- Zachowanie poprzednich wag, kontrola po wdrożeniu i przetestowany powrót
+  do poprzedniej wersji. Brak zasobów lub przerwanie procesu nie uszkadza
+  działającego modelu ani nie uruchamia równoległych treningów.
+- Powtarzalny zapis pochodzenia danych, zmian wag, kosztu, wyników i decyzji;
+  limity czasu, miejsca na dysku i liczby prób bez nowych wartościowych danych.
+
+Odbiór autonomii wymaga rzeczywistej próby kilku kolejnych cykli bez udziału
+asystenta, obejmującej odrzucenie kandydata, wznowienie po przerwaniu oraz
+wdrożenie lepszej wersji i kontrolowany rollback. Symulowane testy samego
+harmonogramu nie dowodzą samodzielnej nauki. Osiągnięcie tej automatyzacji
+nie jest automatycznie dowodem jakości porównywalnej z asystentem we
+wszystkich pięciu usługach — to osobny sprawdzian.
+
+## Stan i uruchamianie
 
 Prywatny stan: `ai-company-workspaces/learning-autopilot/state.json`.
 Właściciel może odczytać ograniczone podsumowanie przez

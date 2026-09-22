@@ -1,5 +1,45 @@
 # Dziennik budowy AI Company
 
+## 2026-09-22 — pełne ćwiczenie restauracji lokalnego modelu
+
+- Rozszerzono naukę z drobnych napraw SVG na cały syntetyczny brief Juniper
+  Table: plan, dwa logo, wybór konceptu, wizytówka, wersja jednokolorowa,
+  mały podgląd oraz pakiet eksportów. Wszystkie wartości kreatywne pochodzą
+  z odpowiedzi lokalnego modelu; kompilator wykonuje dosłowną serializację,
+  powtórzenie logo i jawne przekształcenie koloru wybranego przez model.
+- Dodano osobne profile statycznego SVG, rzeczywiste rozmiary PDF i PNG,
+  pomiary przekształconego tekstu oraz kolizji symbolu z napisem. Maksymalnie
+  dwie poprawki etapu wracają do modelu z zachowaną odpowiedzią i dowodami.
+  Nie uruchamiano wygenerowanego kodu ani automatyzacji pulpitu.
+- Nieudane próby identity-4ujpds6h, identity-ndg8pfdk, identity-gkvq41lo:
+  nazwy kolorów zamiast HEX, ucięte opisy i sprzeczny font. Pełny pakiet
+  identity-lqrcvf6m wymagał poprawek: ucięte napisy, symbol nachodzący na
+  nazwę, kontakty poza marginesem. Obejrzano i zachowano wyniki. Doprecyzowano
+  kontrakt i feedback, bez ręcznej zmiany któregokolwiek produktu.
+- identity-_u6wyy68: pięć wywołań Qwen, 33,496 s, bez poprawek w tym
+  przebiegu. Audyt potwierdził 71 hashy, dosłowne źródła z odpowiedzi, sześć
+  PDF z osadzonymi fontami i bez rastrów oraz 21 zgodnych plików ZIP.
+  Obejrzano oba logo, kartę, wersję monochromatyczną i małą. Teksty czytelne;
+  ograniczenia: podstawowa estetyka, ogólny symbol alternatywny, brak diagramu
+  pola ochronnego i minimalnego rozmiaru w instrukcji marki. Odbiór tylko
+  technicznego ćwiczenia, nie profesjonalnej usługi lub gotowości do druku.
+- Prywatny independent-audit.json SHA-256:
+  20d96a4542e059ece46675fd4fc4b038e15fdae0202fe583fcb434724dc766e8.
+  Oryginalny raport niezmieniony. Kod główny zgodny z hashem sprzed startu;
+  jego kopię i bieżące zależności zachowano przed końcowym przeglądem.
+  Błędny odczyt nazwy style-guide.md skorygowano na istniejący brand-guide.md.
+- Przegląd wykrył przesłanianie nazwy profilu SVG ścieżką Chrome; rozdzielono
+  zmienne. Wcześniej powodowało dodatkowy pomiar kształtów także dla ulotki,
+  bez zmiany jej grafiki. Testy kierunkowe po poprawce: 122 passed, 5,67 s.
+- Wynik wcześniej uruchomionego pełnego pytest był niedostępny po skróceniu
+  kontekstu. Potwierdzono brak działającego procesu i powtórzono testy:
+  1660 passed, 21 skipped, 84,21 s. Końcowa poprawka profilu sprawdzona
+  osobno wskazanym zestawem kierunkowym.
+- Utrwalono ponowione wymaganie właściciela: docelowa nauka bez asystenta,
+  z niezależnymi kryteriami danych i wag, odrzuceniem gorszego kandydata,
+  wznowieniem i rollbackiem. Aktualny intake nadal 71/0/0; harmonogram nie
+  uruchamia treningu wag. W tym etapie brak treningu, eksportu SFT i promocji.
+
 ## 2026-09-21 — rzeczywisty trening zbioru i brak poprawy na walidacji
 
 - Poprzedni etap był postępem: po fabc44c worktree czysty, zamrożony egzamin
