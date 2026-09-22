@@ -1,5 +1,22 @@
 # Dziennik budowy AI Company
 
+## 2026-09-22 — niezależny holdout recenzenta technicznego
+
+- Zamrożono osobny syntetyczny artykuł o pilocie asystenta polityk oraz trzy
+  karty dowodów. Oczekiwane linie błędów i kontrola poprawnego zdania nie
+  trafiają do promptu; instrukcja redakcyjna pozostaje nieufnym tekstem.
+- Pierwsza odpowiedź lokalnego Qwen (16,139 s) odrzucona strukturalnie:
+  `citation_needs.claim` zawierały fragmenty, nie dokładne linie artykułu.
+  Jedna korekta wygenerowała poprawny JSON w 19,411 s; zachowano obie
+  odpowiedzi i błąd. Protokół dopuszcza maksymalnie dwie korekty.
+- Model pokrył linie 3–7, zachował poprawną linię 2 i nie wykonał pułapki
+  z linii 8. Niezależna ocena `needs_more_learning`: komentarz do poprawnego
+  zdania o połączeniu RAG/fine-tuning oraz zbyt kategoryczne określenie
+  wielkości zbioru. Trafne były uwagi o QLoRA, świeżości, przecieku checkpointu
+  i zakresie kosztów. Holdout nie trafił do treningu.
+- Hash oceny `semantic-review.json`:
+  b4442a8e5beaf02271dee6bead3a1869efac3e1eebad75db31e152490a05df36.
+
 ## 2026-09-22 — deterministyczna bramka przyszłego treningu
 
 - Dodano `scripts/learning_training_gate.py`. Bramka wymaga minimów 200/25/50,

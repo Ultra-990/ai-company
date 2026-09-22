@@ -67,6 +67,29 @@ To poprawa bieżącego tekstu dzięki informacji zwrotnej, **nie trening wag**
 i nie dowód gotowości do pracy bez nadzoru. Nie zatwierdzono żadnej recenzji
 dla klienta. Nie przeprowadzono rozmowy technicznej ani niezależnego holdoutu.
 
+## Niezależny holdout 22.09.2026
+
+`technical_review_holdout.py` zamraża osobny artykuł o pilocie asystenta
+polityk. Oczekiwane uwagi pozostają poza promptem. Pierwsza odpowiedź modelu
+(16,139 s) nie spełniła kotwic cytowań: wartości `citation_needs.claim`
+były fragmentami linii zamiast ich dokładną treścią. Po jednej korekcie
+strukturalnej model dostarczył poprawny JSON w 19,411 s; pokrył wszystkie
+pięć błędnych linii, poprawną linię kontrolną i zignorował instrukcję
+redakcyjną w artykule.
+
+Niezależny odbiór merytoryczny: **needs_more_learning**. Model potraktował
+poprawne zdanie o współistnieniu RAG i dostrojonego generatora jako drobną
+uwagę, mimo że nie powinien krytykować poprawnych twierdzeń. Uwaga o „małym”
+zbiorze 1000 przykładów była zbyt kategoryczna względem dostarczonych dowodów.
+Pozostałe rozpoznania QLoRA, świeżości wiedzy, przecieku przy wyborze
+checkpointu i zakresu kosztów były trafne. Raport i `semantic-review.json`
+zachowują surowe odpowiedzi oraz porażkę walidacji; nie eksportowano holdoutu
+do treningu i nie zmieniono wag.
+
+Hash niezależnej oceny: `b4442a8e5beaf02271dee6bead3a1869efac3e1eebad75db31e152490a05df36`.
+To jeden syntetyczny artykuł i jeden model, więc wynik nie dowodzi parytetu
+z asystentem ani gotowości usługi.
+
 Pozostałe cele właściciela są w `config/upwork-learning-targets.json`:
 fotografie wnętrz/organizacja zasobów, edytowalna ulotka PDF/wektor,
 cztery infografiki produktowe i identyfikacja restauracji. To katalog
