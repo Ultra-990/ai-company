@@ -37,8 +37,9 @@
       "deliverables": ["Four coherent infographics", "Editable source assets", "Exported images"],
       "required_inputs": ["Product photos", "Verified dimensions, features and benefits", "Brand assets", "Target marketplace and category", "Intended image placements"],
       "checks": ["Product appearance preserved", "No invented specifications or unsupported claims", "Four distinct communication goals", "Readable at intended display sizes", "Current platform requirements verified for the actual placement"],
-      "evidence_stage": "target_recorded_no_job_specific_trial",
-      "limitations": ["No product supplied", "No claim of demonstrated Amazon portfolio or conversion uplift"]
+      "evidence_stage": "synthetic_development_pilot",
+      "limitations": ["One synthetic illustrated product; no real product photographs supplied", "Four images passed technical checks; independent visual review requires revision, 0/4 commercially ready", "No training gain, Amazon listing approval, demonstrated portfolio or conversion uplift"],
+      "evidence_document": "docs/organization-os/PRODUCT_INFOGRAPHIC_SCHOOL.md"
     },
     {
       "id": "restaurant-brand-identity",

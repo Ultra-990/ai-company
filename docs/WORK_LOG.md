@@ -1,5 +1,56 @@
 # Dziennik budowy AI Company
 
+## 2026-09-22 — rzeczywista seria infografik i odrzucenie jakości wizualnej
+
+- Poprzednia tura była postępem: commit 401307c opublikowany, worktree czysty,
+  pełne ćwiczenie restauracji istnieje. Sprawdzono cele usług: grafiki
+  produktowe nadal nie miały próby odpowiadającej zakresowi ogłoszenia.
+- Dodano zamrożony syntetyczny brief FIELD 600, cztery cele komunikacyjne,
+  dokładny tekst dostawcy i jawnie nieznane cechy. Lokalny model tworzy
+  wszystkie rysunki, paletę, fonty, nagłówki i współrzędne. Wzorzec produktu
+  jest dosłownie powtarzany w czterech scenach, bez retuszu asystenta.
+- Rozszerzono statyczne profile SVG i pomiar grup. Kontrole wykrywają zmianę
+  specyfikacji, kolizję produktu z tekstem, marginesy i niewłaściwy rozmiar
+  napisów. Eksportuje się cztery SVG, duże i małe PNG, PDF, brief/styl/manifest
+  i ZIP. Nie wykonuje się kodu modelu ani automatyzacji pulpitu.
+- Przejrzano aktualnie dostępny wpis pracownika Amazon o obrazach głównych
+  i dodatkowych; źródło i granice interpretacji zapisano w dokumentacji.
+  Ćwiczenie nie deklaruje zgodności kategorii, fotorealizmu lub wzrostu konwersji.
+- Pierwszy start zablokował sandbox: PermissionError przy lokalnym połączeniu
+  do Ollamy. Ponowiono właściwym mechanizmem eskalacji; bez zmiany środowiska.
+  Wszystkie rzeczywiste próby poprzedziła kontrola braku kontenerów i wolnego
+  GPU (ponad 31 GiB); ComfyUI nie nasłuchiwało. Nie ruszano cudzych procesów.
+- series-o12zcg1h: 5 wywołań, 46,652 s, porażka na grafice pojemności:
+  powtórzona nazwa, zmienione fakty, zbyt małe napisy. Wzorzec wizualnie
+  zbyt prosty. Rozdzielono wyraźniej zadanie źródła i infografiki, podając
+  do rozmieszczenia pomierzone granice produktu zamiast całego kodu źródła.
+- series-e451m0qr: 12 wywołań, 107,751 s. Model sam poprawił wystający
+  element wzorca, liczby z błędnym prefiksem # i kolizję nagłówka. Czwartego
+  panelu nie ukończył w limicie: nachodzące napisy i dolny margines.
+  Wszystkie surowe odpowiedzi i błędy zachowane; bez ręcznych napraw SVG.
+- Dodano jedno ograniczone wznowienie po błędzie modelu. Sprawdza poprzednie
+  hashe i model, zachowuje ukończone odpowiedzi, ponawia ich walidację oraz
+  pomiary, a ostatnią porażkę odsyła do autora. Wyklucza nieskończone rundy
+  oraz traktowanie awarii eksportu jako zadania do poprawy przez model.
+- series-yih19fc7: 19,06 s, dwie NOWE odpowiedzi, dziewięć odziedziczonych.
+  Cztery sceny ukończone technicznie. Osobne --verify odtworzyło SVG z surowych
+  odpowiedzi, sprawdziło pięć głównych PDF, wymiary PNG, 19 plików ZIP oraz
+  pochodzenie odziedziczonych wyników. Łącznie 19 nowych wywołań w trzech
+  przebiegach; kopie odpowiedzi nie są nowymi przykładami ani inferencją.
+- Obejrzano rzeczywisty wzorzec oraz cztery małe podglądy. Odbiór niezależny:
+  needs_visual_revision, 0/4 gotowych komercyjnie. Niewiarygodna zakrętka,
+  nieprecyzyjny nagłówek pojemności, przypadkowe dekoracje i nierówna hierarchia.
+  Uwagi do wszystkich paneli i całej serii zachowano prywatnie jako
+  independent-review.json, SHA-256
+  fbdbb9bfbe9f4ccdce738ec0be619666c44c0888589cf0af118d5b37ca2fffff.
+  Nie zmieniono oryginalnego raportu i nie przyjęto grafiki do treningu.
+- Testy początkowe: 135 passed, 6,07 s. Po rozdzieleniu promptów: 13 passed;
+  po dodaniu wznowienia: 14 passed. Wykonano rzeczywistą pozytywną próbę
+  wznowienia oraz osobną weryfikację gotowego pakietu bez wywołań modelu.
+  Pełne `.venv/bin/pytest -q`: 1674 passed, 21 skipped, 84,24 s.
+- Brak treningu wag, eksportu SFT, zmiany routingu i publikacji oferty.
+  Cel jakości pięciu usług i samodzielnej nauki pozostaje niespełniony.
+
 ## 2026-09-22 — pełne ćwiczenie restauracji lokalnego modelu
 
 - Rozszerzono naukę z drobnych napraw SVG na cały syntetyczny brief Juniper

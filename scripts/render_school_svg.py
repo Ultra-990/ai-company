@@ -190,10 +190,14 @@ async def render(source, output, *, purpose='deliverable', profile='leaflet', pn
                     if 'exceptionDetails' in measured: raise RuntimeError('Text measurement failed')
                     layout = measured['result']['value']
                     shape_layout = None
+                    group_layout = None
                     if profile != 'leaflet':
                         shapes = await call('Runtime.evaluate', {'expression': "[...document.querySelectorAll('svg rect,svg circle,svg ellipse,svg line,svg path')].map(el=>{const b=el.getBoundingClientRect();return {tag:el.localName,bbox:[b.x,b.y,b.width,b.height]};})", 'returnByValue': True}, session)
                         if 'exceptionDetails' in shapes: raise RuntimeError('Shape measurement failed')
                         shape_layout = shapes['result']['value']
+                        groups = await call('Runtime.evaluate', {'expression': "[...document.querySelectorAll('svg>g')].map(el=>{const b=el.getBoundingClientRect();return {bbox:[b.x,b.y,b.width,b.height],child_count:el.children.length};})", 'returnByValue': True}, session)
+                        if 'exceptionDetails' in groups: raise RuntimeError('Group measurement failed')
+                        group_layout = groups['result']['value']
                     if [item['text'] for item in layout] != validated['texts']:
                         raise ValueError('Rendered text differs from parsed source')
                     screenshot = await call('Page.captureScreenshot', {'format': 'png', 'captureBeyondViewport': False}, session)
@@ -211,6 +215,7 @@ async def render(source, output, *, purpose='deliverable', profile='leaflet', pn
                               'render_purpose': purpose,
                               'desktop_used': False, 'sandbox_disabled': False, 'external_page_loaded': False}
                     if shape_layout is not None: result['shape_layout'] = shape_layout
+                    if group_layout is not None: result['group_layout'] = group_layout
         finally:
             stop_owned_chrome(process)
         result['own_browser_stopped'] = process.poll() is not None

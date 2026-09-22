@@ -15,6 +15,10 @@ PROFILES = {
                    'elements': (2, 24), 'fonts': (20, 120), 'margin': 18, 'groups': False},
     'brand_card': {'width': 850, 'height': 550, 'size_mm': (85, 55), 'texts': (4, 7),
                    'elements': (6, 64), 'fonts': (20, 120), 'margin': 35, 'groups': True},
+    'product_source': {'width': 600, 'height': 800, 'size_mm': (60, 80), 'texts': (1, 1),
+                       'elements': (4, 25), 'fonts': (24, 80), 'margin': 24, 'groups': False},
+    'product_infographic': {'width': 1500, 'height': 1500, 'size_mm': (150, 150), 'texts': (4, 4),
+                            'elements': (8, 64), 'fonts': (24, 130), 'margin': 50, 'groups': True},
 }
 NS = '{http://www.w3.org/2000/svg}'
 SCHEMA = {'type': 'object', 'additionalProperties': False, 'required': ['svg'],

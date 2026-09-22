@@ -1,5 +1,21 @@
 # Stan projektu AI Company
 
+## Aktualizacja 22.09.2026 — cztery infografiki i wznowienie nieudanego etapu
+
+[Szkoła infografik produktowych](organization-os/PRODUCT_INFOGRAPHIC_SCHOOL.md)
+wykonała serię dla jednego fikcyjnego produktu. Lokalny model tworzy wzorzec,
+nagłówki i układy; narzędzie powtarza produkt bez zmian, zachowuje tekst
+dostawcy i eksportuje edytowalne SVG, PNG, PDF oraz ZIP.
+
+Dwa przebiegi ujawniły błędy tekstu i geometrii. Ograniczone wznowienie
+zachowało ukończone etapy i po dwóch nowych odpowiedziach ukończyło serię.
+Niezależne odtworzenie źródeł, pięć PDF i 19 plików ZIP sprawdzone.
+**Technicznie kompletna seria; wizualnie 0/4 grafik gotowych komercyjnie.**
+Wzorzec i wszystkie małe podglądy obejrzano; zapisano konkretne uwagi.
+Brak danych treningowych z tej odrzuconej serii, treningu wag lub wdrożenia.
+To ilustracja syntetyczna, bez zdjęć rzeczywistego produktu i zgody platformy.
+Pełne `.venv/bin/pytest -q`: **1674 passed, 21 skipped**, 84,24 s.
+
 ## Aktualizacja 22.09.2026 — lokalny pakiet restauracji i wymaganie autonomii
 
 [Szkoła identyfikacji restauracji](organization-os/RESTAURANT_BRAND_SCHOOL.md)
