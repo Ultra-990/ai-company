@@ -15,6 +15,10 @@ potwierdził późniejsze automatyczne wykonanie, kod 0. Odrzucony układ pomini
 Nie trenowano wag i nie wdrażano adaptera. Poprawki są oddzielne; pełna seria
 i jakość pięciu usług nadal niezatwierdzone.
 Pełne `.venv/bin/pytest -q`: **1684 passed, 21 skipped**, 83,89 s.
+Dodano deterministyczną bramkę przyszłego treningu. Aktualny snapshot zwraca
+`eligible: false` i `continue_reviewed_intake`: 73/0/0 rekordów, brak osobnych
+walidacji/testu, porównania bazowego modelu z adapterem i rollbacku. Bramka
+nie uruchamia procesu ani GPU.
 
 ## Aktualizacja 22.09.2026 — cztery infografiki i wznowienie nieudanego etapu
 

@@ -71,3 +71,6 @@ nie 73 projekty. Automatyczne treningi i wdrażanie lepszych wag nie są podłą
 Pełne testy: **1684 passed, 21 skipped**, 83,89 s. Gotowość pięciu usług,
 samodzielny odbiór estetyki i poprawa na niezależnych zadaniach po treningu
 pozostają niepotwierdzone.
+
+Nowa bramka treningu zapisuje ten stan jako `continue_reviewed_intake`.
+Żaden z tych przykładów nie uruchomił aktualizacji wag.

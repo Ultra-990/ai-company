@@ -20,6 +20,7 @@ from scripts import vector_learning_records as vector
 from scripts import product_visual_revision as product
 from scripts.check_vision_training_inputs import verify_bundle
 from scripts.prepare_training_data import MINIMUMS, unique_object
+from scripts.learning_training_gate import decision as training_decision
 
 REPO = Path(__file__).resolve().parents[1]
 ROOT = Path('/home/marcin/ai-company-workspaces/learning-autopilot')
@@ -154,6 +155,14 @@ def cycle():
                                     'corpus trainer with matched baseline/adapter evaluation'],
               'limitation': 'Automatic intake and CPU input audits only. Counts cover this multimodal intake, '
                             'not every historical text dataset or evaluation suite. No automatic self-approval.'}
+    report['training_requirements'] = {
+        'independently_reviewed_train': counts['train'] >= MINIMUMS['train'] and not errors,
+        'registered_validation': counts['validation'] >= MINIMUMS['validation'],
+        'registered_test': counts['test'] >= MINIMUMS['test'],
+        'matched_baseline_evaluation': False,
+        'rollback_plan': False,
+    }
+    report['training_gate'] = training_decision(report)
     save(ROOT/'state.json', report)
     return report
 
