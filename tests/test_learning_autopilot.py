@@ -51,7 +51,47 @@ def test_duplicate_experiences_are_not_counted_twice(tmp_path, monkeypatch):
     monkeypatch.setattr(auto, 'sources', lambda: [('vector', Path('/one')), ('vector', Path('/two'))])
     result = auto.cycle()
     assert result['counts']['train'] == 1
-    assert 'Duplicate' in result['errors'][0]['detail']
+    assert result['errors'] == []
+    assert result['skipped'][0]['reason'] == 'duplicate_already_intaken'
+
+
+def test_mixed_replayed_batch_keeps_only_new_exact_records(tmp_path, monkeypatch):
+    fixture(tmp_path, monkeypatch)
+    rows = {'/one': [{'id': 'one', 'family': 'fixture-family'}],
+            '/mixed': [{'id': 'one', 'family': 'fixture-family'},
+                       {'id': 'two', 'family': 'fixture-family'}]}
+    monkeypatch.setattr(auto, 'collect', lambda kind, path:
+                        (rows[str(path)], lambda path=path: path))
+    monkeypatch.setattr(auto, 'verify_bundle', lambda path: rows[str(path)])
+    monkeypatch.setattr(auto, 'sources', lambda: [('vector', Path('/one')),
+                                                   ('vector', Path('/mixed'))])
+    result = auto.cycle()
+    assert result['counts']['train'] == 2
+    assert result['errors'] == []
+    assert result['skipped'][-1] == {'source': 'vector:/mixed',
+                                      'reason': 'duplicate_rows_removed', 'count': 1}
+
+
+def test_replay_with_only_private_report_path_change_is_equivalent():
+    left = {'id': 'one', 'source': {'report': '/a', 'report_sha256': 'a', 'kind': 'synthetic'},
+            'messages': ['same']}
+    right = {'id': 'one', 'source': {'report': '/b', 'report_sha256': 'b', 'kind': 'synthetic'},
+             'messages': ['same']}
+    assert auto.equivalent_experience(left, right)
+    right['messages'] = ['changed']
+    assert not auto.equivalent_experience(left, right)
+
+
+def test_complete_replayed_batch_is_skipped_without_poisoning_snapshot(tmp_path, monkeypatch):
+    fixture(tmp_path, monkeypatch)
+    first = auto.cycle()
+    assert first['counts']['train'] == 1
+    monkeypatch.setattr(auto, 'sources', lambda: [
+        ('vector', Path('/one')), ('vector', Path('/one-replay'))])
+    result = auto.cycle()
+    assert result['counts']['train'] == 1
+    assert result['errors'] == []
+    assert result['skipped'][-1]['reason'] == 'duplicate_already_intaken'
 
 
 def test_cycle_limits_new_cpu_audits_without_losing_previous_progress(tmp_path, monkeypatch):

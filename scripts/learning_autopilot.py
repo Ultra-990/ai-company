@@ -112,6 +112,20 @@ def cached_valid(entry, expected):
     except (OSError, ValueError, KeyError, TypeError): return False
 
 
+def equivalent_experience(left, right):
+    """Compare content while allowing a replay to have a new private report path."""
+    def canonical(row):
+        value = json.loads(json.dumps(row))
+        source = value.get('source')
+        if isinstance(source, dict):
+            source = dict(source)
+            source.pop('report', None)
+            source.pop('report_sha256', None)
+            value['source'] = source
+        return value
+    return canonical(left) == canonical(right)
+
+
 def cycle():
     previous = {}
     if (ROOT/'state.json').exists():
@@ -127,19 +141,34 @@ def cycle():
             rows, export = collect(kind, path)
             if not rows:
                 skipped.append({'source': key, 'reason': 'no_approved_train_records'}); continue
-            if any(row['id'] in accepted for row in rows):
-                raise ValueError('Duplicate approved example; not counted twice')
+            source_rows = rows
+            duplicate_rows = [row for row in rows if row['id'] in accepted]
+            if duplicate_rows:
+                # A replayed batch may overlap only part of a larger batch.
+                # Exact records are harmless and are removed before intake;
+                # an ID with changed content remains a hard provenance error.
+                if any(not equivalent_experience(accepted[row['id']], row)
+                       for row in duplicate_rows):
+                    raise ValueError('Duplicate approved example changed; not counted twice')
+                new_rows = [row for row in rows if row['id'] not in accepted]
+                if not new_rows:
+                    skipped.append({'source': key, 'reason': 'duplicate_already_intaken'})
+                    continue
+                skipped.append({'source': key, 'reason': 'duplicate_rows_removed',
+                                'count': len(duplicate_rows)})
+            else:
+                new_rows = rows
             entry = cache.get(key, {})
-            if not cached_valid(entry, rows):
+            if not cached_valid(entry, source_rows):
                 if audits_started >= 2:
                     skipped.append({'source': key, 'reason': 'next_cycle_cpu_audit_limit'}); continue
                 audits_started += 1
                 bundle = export()
-                if verify_bundle(bundle) != rows: raise ValueError('Export differs from approved input')
+                if verify_bundle(bundle) != source_rows: raise ValueError('Export differs from approved input')
                 entry = {'bundle': str(bundle), 'audit': audit(bundle)}
-                if not cached_valid(entry, rows): raise ValueError('Audit does not bind this exact bundle')
+                if not cached_valid(entry, source_rows): raise ValueError('Audit does not bind this exact bundle')
             entries[key] = entry
-            accepted.update({row['id']: row for row in rows})
+            accepted.update({row['id']: row for row in new_rows})
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.TimeoutExpired) as exc:
             errors.append({'source': key, 'error_type': type(exc).__name__, 'detail': str(exc)[:240]})
     counts = {'train': len(accepted), 'validation': 0, 'test': 0}

@@ -1,5 +1,17 @@
 # Dziennik budowy AI Company
 
+## 2026-09-22 — nowe próby SVG i bezpieczna deduplikacja intake
+
+- Lokalny model wykonał sześć nowych kontrolowanych napraw SVG na wcześniej
+  zaakceptowanym wzorcu: cztery odtworzenia dokładne, jedna próba odrzucona
+  i jedna powtórzona treść. Do intake dodano tylko nowy rekord; stan wzrósł
+  z 73 do 74 train. Nie trenowano wag.
+- Intake porównuje teraz pełny rekord, ignorując wyłącznie zmienną ścieżkę
+  i hash prywatnego raportu. Replay jest pomijany, mieszana partia zachowuje
+  nowe rekordy, a zmiana treści przy tym samym ID nadal blokuje cykl.
+- Testy deduplikacji i bramki: 14 passed. Rzeczywisty audyt zakończył się
+  bez błędów: 74 train / 0 validation / 0 test; bramka nadal odmawia treningu.
+
 ## 2026-09-22 — niezależny holdout recenzenta technicznego
 
 - Zamrożono osobny syntetyczny artykuł o pilocie asystenta polityk oraz trzy
