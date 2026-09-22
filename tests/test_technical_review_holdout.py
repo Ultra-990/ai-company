@@ -10,8 +10,8 @@ def test_holdout_expectations_are_not_in_model_request():
 
 def test_holdout_has_distinct_reserved_family_and_correct_line_contract():
     assert holdout.ARTICLE.splitlines()[2].startswith('Because')
-    assert holdout.EXPECTED == {3, 4, 5, 6, 7}
-    assert holdout.CONTROLS == {2}
+    assert holdout.EXPECTED == {3, 4, 5, 6}
+    assert holdout.CONTROLS == {2, 7}
 
 
 def test_correction_protocol_is_bounded_and_keeps_first_answer():

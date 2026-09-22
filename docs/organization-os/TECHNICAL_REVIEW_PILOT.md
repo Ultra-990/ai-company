@@ -71,22 +71,21 @@ dla klienta. Nie przeprowadzono rozmowy technicznej ani niezależnego holdoutu.
 
 `technical_review_holdout.py` zamraża osobny artykuł o pilocie asystenta
 polityk. Oczekiwane uwagi pozostają poza promptem. Pierwsza odpowiedź modelu
-(16,139 s) nie spełniła kotwic cytowań: wartości `citation_needs.claim`
-były fragmentami linii zamiast ich dokładną treścią. Po jednej korekcie
-strukturalnej model dostarczył poprawny JSON w 19,411 s; pokrył wszystkie
-pięć błędnych linii, poprawną linię kontrolną i zignorował instrukcję
-redakcyjną w artykule.
+nie spełniła kotwic cytowań: wartości `citation_needs.claim` były fragmentami
+linii zamiast ich dokładną treścią. Po jednej korekcie strukturalnej model
+dostarczył poprawny JSON; pokrył wszystkie cztery błędne linie i zignorował
+instrukcję redakcyjną w artykule.
 
 Niezależny odbiór merytoryczny: **needs_more_learning**. Model potraktował
 poprawne zdanie o współistnieniu RAG i dostrojonego generatora jako drobną
 uwagę, mimo że nie powinien krytykować poprawnych twierdzeń. Uwaga o „małym”
 zbiorze 1000 przykładów była zbyt kategoryczna względem dostarczonych dowodów.
 Pozostałe rozpoznania QLoRA, świeżości wiedzy, przecieku przy wyborze
-checkpointu i zakresu kosztów były trafne. Raport i `semantic-review.json`
-zachowują surowe odpowiedzi oraz porażkę walidacji; nie eksportowano holdoutu
-do treningu i nie zmieniono wag.
+checkpointu i zakresu kosztów były trafne. Raport i prywatna ocena zachowują
+surowe odpowiedzi oraz porażkę walidacji; nie eksportowano holdoutu do treningu
+i nie zmieniono wag.
 
-Hash niezależnej oceny: `b4442a8e5beaf02271dee6bead3a1869efac3e1eebad75db31e152490a05df36`.
+Hash niezależnej oceny: `90caa3e3232034ff393f48fd7113d0873153925a4723dd0b3adf61de90d12370`.
 To jeden syntetyczny artykuł i jeden model, więc wynik nie dowodzi parytetu
 z asystentem ani gotowości usługi.
 

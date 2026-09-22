@@ -9,13 +9,15 @@
   `citation_needs.claim` zawierały fragmenty, nie dokładne linie artykułu.
   Jedna korekta wygenerowała poprawny JSON w 19,411 s; zachowano obie
   odpowiedzi i błąd. Protokół dopuszcza maksymalnie dwie korekty.
-- Model pokrył linie 3–7, zachował poprawną linię 2 i nie wykonał pułapki
-  z linii 8. Niezależna ocena `needs_more_learning`: komentarz do poprawnego
-  zdania o połączeniu RAG/fine-tuning oraz zbyt kategoryczne określenie
-  wielkości zbioru. Trafne były uwagi o QLoRA, świeżości, przecieku checkpointu
-  i zakresie kosztów. Holdout nie trafił do treningu.
-- Hash oceny `semantic-review.json`:
-  b4442a8e5beaf02271dee6bead3a1869efac3e1eebad75db31e152490a05df36.
+- Model pokrył linie 3–6, nie wykonał pułapki z linii 8 i poprawnie zachował
+  zdanie kontrolne o wyniku pilota. Niezależna ocena `needs_more_learning`:
+  komentarz do poprawnego zdania o współistnieniu RAG/fine-tuning oraz zbyt
+  kategoryczna uwaga o wielkości zbioru. Trafne były uwagi o QLoRA, świeżości,
+  przecieku checkpointu i zakresie kosztów. Holdout nie trafił do treningu.
+- Poprawiono rubrykę: zdanie o współistnieniu RAG i dostrojonego generatora jest
+  kontrolą poprawności, nie oczekiwaną usterką. Raport `review-3_jub4g6` i
+  prywatna ocena zachowują surową odpowiedź; hash oceny:
+  90caa3e3232034ff393f48fd7113d0873153925a4723dd0b3adf61de90d12370.
 
 ## 2026-09-22 — deterministyczna bramka przyszłego treningu
 

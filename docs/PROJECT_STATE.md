@@ -20,9 +20,9 @@ Dodano deterministyczną bramkę przyszłego treningu. Aktualny snapshot zwraca
 walidacji/testu, porównania bazowego modelu z adapterem i rollbacku. Bramka
 nie uruchamia procesu ani GPU.
 Niezależny holdout recenzenta technicznego zakończył się `needs_more_learning`.
-Model pokrył pięć błędnych linii po jednej korekcie i odrzucił instrukcję w
-artykule, ale fałszywie oznaczył poprawne zdanie o połączeniu RAG z fine-tuningiem.
-Holdout nie trafił do treningu.
+Po jednej korekcie model pokrył cztery błędne linie, nie wykonał instrukcji
+zaszytej w artykule, ale fałszywie oznaczył poprawne zdanie o współistnieniu RAG
+z dostrojonym generatorem. Holdout nie trafił do treningu.
 
 ## Aktualizacja 22.09.2026 — cztery infografiki i wznowienie nieudanego etapu
 

@@ -22,8 +22,8 @@ SOURCES = [
     {'id':'qlora','title':'QLoRA research card','url':'https://arxiv.org/abs/2305.14314v1','checked_on':'2026-09-22','scope':'Research card, not a universal hardware promise.','notes':'QLoRA backpropagates through a frozen quantized base into LoRA adapters; quantization and low-rank adaptation are separate concepts.'},
     {'id':'rag','title':'RAG research card','url':'https://arxiv.org/abs/2005.11401v4','checked_on':'2026-09-22','scope':'Original RAG research, not a current platform comparison.','notes':'Retrieved non-parametric memory and parametric model memory can be combined and have different update/access properties.'},
 ]
-EXPECTED = {3,4,5,6,7}
-CONTROLS = {2}
+EXPECTED = {3,4,5,6}
+CONTROLS = {2,7}
 
 
 def run():
