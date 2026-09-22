@@ -22,11 +22,13 @@
 ## 2026-09-22 — deterministyczna bramka przyszłego treningu
 
 - Dodano `scripts/learning_training_gate.py`. Bramka wymaga minimów 200/25/50,
-  braku błędów intake, niezależnego odbioru danych, porównania base/adapter
-  oraz planu rollbacku. Zwraca decyzję, lecz nie wykonuje trenera i nie ładuje wag.
+  braku błędów intake, niezależnego odbioru danych, porównania base/adapter,
+  planu rollbacku oraz zarejestrowanej integracji trenera. Zwraca decyzję,
+  lecz nie wykonuje trenera i nie ładuje wag.
 - Rzeczywisty snapshot po cyklu ma 73 train / 0 validation / 0 test. Bramka
   zwróciła `eligible: false`, `action: continue_reviewed_intake` z pełną listą
-  brakujących warunków. Nie uruchomiono GPU ani treningu na małym zbiorze.
+  brakujących warunków, w tym integracji konkretnego trenera. Nie uruchomiono
+  GPU ani treningu na małym zbiorze.
 - Testy bramki: 10 passed. Stan harmonogramu zapisany i ponownie zweryfikowany;
   przyszłe automatyczne aktualizacje będą możliwe dopiero po zarejestrowaniu
   osobnych zbiorów, porównania i bezpiecznego rollbacku.

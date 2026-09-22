@@ -10,7 +10,8 @@ import json
 from scripts.prepare_training_data import MINIMUMS, unique_object
 
 REQUIRED = ('independently_reviewed_train', 'registered_validation',
-            'registered_test', 'matched_baseline_evaluation', 'rollback_plan')
+            'registered_test', 'matched_baseline_evaluation', 'rollback_plan',
+            'trainer_integration')
 
 
 def decision(state):

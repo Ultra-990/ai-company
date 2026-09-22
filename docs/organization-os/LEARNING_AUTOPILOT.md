@@ -109,10 +109,11 @@ nie włączano linger ani dodatkowej usługi systemowej.
 podstawie migawki intake. Nie ładuje wag, nie uruchamia procesu i nie promuje
 adaptera. Przyszłe wywołanie trenera będzie możliwe dopiero po jednoczesnym
 spełnieniu minimów 200 train / 25 validation / 50 test, braku błędów intake,
-niezależnym odbiorze danych, porównaniu base/adapter oraz zapisanym planie
-rollbacku. Brak któregokolwiek dowodu oznacza `continue_reviewed_intake`.
+niezależnym odbiorze danych, porównaniu base/adapter, zapisanym planie
+rollbacku i zarejestrowanej integracji konkretnego trenera z polityką zasobów.
+Brak któregokolwiek dowodu oznacza `continue_reviewed_intake`.
 
 Po cyklu 22.09.2026 bramka zwróciła `eligible: false`: 73/0/0 rekordów,
-brak porównania i rollbacku. To celowo blokuje automatyczny trening na małym
+brak porównania, rollbacku i integracji trenera. To celowo blokuje automatyczny trening na małym
 zbiorze. Sama bramka jest infrastrukturą przyszłej autonomii, nie dowodem,
 że autonomiczne aktualizacje wag już działają.

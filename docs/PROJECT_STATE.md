@@ -17,7 +17,8 @@ i jakość pięciu usług nadal niezatwierdzone.
 Pełne `.venv/bin/pytest -q`: **1684 passed, 21 skipped**, 83,89 s.
 Dodano deterministyczną bramkę przyszłego treningu. Aktualny snapshot zwraca
 `eligible: false` i `continue_reviewed_intake`: 73/0/0 rekordów, brak osobnych
-walidacji/testu, porównania bazowego modelu z adapterem i rollbacku. Bramka
+walidacji/testu, porównania bazowego modelu z adapterem, rollbacku i integracji
+trenera. Bramka
 nie uruchamia procesu ani GPU.
 Niezależny holdout recenzenta technicznego zakończył się `needs_more_learning`.
 Po jednej korekcie model pokrył cztery błędne linie, nie wykonał instrukcji

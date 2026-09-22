@@ -161,6 +161,7 @@ def cycle():
         'registered_test': counts['test'] >= MINIMUMS['test'],
         'matched_baseline_evaluation': False,
         'rollback_plan': False,
+        'trainer_integration': False,
     }
     report['training_gate'] = training_decision(report)
     save(ROOT/'state.json', report)
