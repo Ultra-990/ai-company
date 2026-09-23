@@ -33,6 +33,12 @@ Use a bold top headline, an off-center record illustration, a wide horizontal
 accent block through the middle, and a compact bottom information area. Select
 cream, dark ink and brick red; choose a clear sans-serif hierarchy. Keep all
 eight text lines separate from the illustration and from one another.'''},
+    'bookbinding-fair-train-v1': {'family': 'bookbinding-fair-001', 'data_split': 'train',
+        'brief': COMMON + '''Topic: a fictional bookbinding and paper craft fair.
+Use a tall centered title block, a low horizontal information band, and one
+simple geometric stitched-book symbol in the upper right. Select parchment,
+charcoal and deep teal with one rust accent. Keep the title separate from the
+symbol and all event details inside the lower band; use a calm editorial grid.''',},
     'science-evening-validation-v1': {'family': 'science-evening-001', 'data_split': 'validation',
         'brief': COMMON + '''Topic: a fictional community astronomy demonstration evening.
 Use a two-column information area below a large open header, blue-gray and white

@@ -19,6 +19,14 @@
   Deduplikacja przyjęła pięć nowych rekordów; pozostałe były replayem już
   istniejących treści. Stan intake wynosi 79 train, bez błędów.
 
+## 2026-09-23 — próba nowej rodziny treningowej
+
+- Dodano zamrożoną curriculum `bookbinding-fair-train-v1`, aby rozszerzyć
+  różnorodność danych poza trzy istniejące wzorce.
+- Lokalny model dwukrotnie przygotował własny wzorzec, lecz powtórzył błąd
+  kontrastu i marginesu tytułu. Obie odpowiedzi zachowano prywatnie i nie
+  przyjęto ich do danych. Nie poprawiano SVG ręcznie i nie zmieniono licznika.
+
 ## 2026-09-22 — niezależny holdout recenzenta technicznego
 
 - Zamrożono osobny syntetyczny artykuł o pilocie asystenta polityk oraz trzy
