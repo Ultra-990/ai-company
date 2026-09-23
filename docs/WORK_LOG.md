@@ -4510,3 +4510,18 @@ projektami, zadaniami i źródłami do pobrania.
 - Bez inferencji, treningu, publikacji, wydatków, nowych kontenerów,
   zmian usług Vast.ai/Docker, restartu hosta lub ingerencji w dysk Windows.
   Dalsze podłączenie modelu/runnera wymaga uzgodnionych zasobów.
+
+### 2026-09-23 — dalszy intake i bezpieczny handoff trenera
+
+Lokalny model wygenerował poprawione źródła wektorowe dla rodzin bookbinding i
+garden-workshop. Niezależny przegląd odrzucił jedno źródło testowe travel-club,
+ponieważ kolejne poprawki nadal nie mieściły dwóch linii w sidebarze. Z dwóch
+zaakceptowanych źródeł wykonano 29 nowych prób; 28 przywróceń było dokładnych,
+a odrzucone odpowiedzi nie trafiły do danych. Autopilot ponownie sprawdził
+pochodzenie i hashe; stan wzrósł do 118 train, 0 validation, 0 test.
+
+Dodano `learning_trainer_runner.py`, który wiąże przyszłe uruchomienie trenera
+z deterministyczną bramką, zapisuje hashe wejść i wykonuje pracę wyłącznie w
+prywatnym katalogu. Nie ma automatycznej promocji adaptera ani zmiany routingu.
+Testy runnera i autopilota: 16 passed. Bramka nadal odmawia treningu z powodu
+braku wymaganych walidacji, testów, porównania jakości i planu rollbacku.

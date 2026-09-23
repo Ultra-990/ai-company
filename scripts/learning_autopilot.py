@@ -21,6 +21,7 @@ from scripts import product_visual_revision as product
 from scripts.check_vision_training_inputs import verify_bundle
 from scripts.prepare_training_data import MINIMUMS, unique_object
 from scripts.learning_training_gate import decision as training_decision
+from scripts.learning_trainer_runner import integration_status
 
 REPO = Path(__file__).resolve().parents[1]
 ROOT = Path('/home/marcin/ai-company-workspaces/learning-autopilot')
@@ -190,7 +191,7 @@ def cycle():
         'registered_test': counts['test'] >= MINIMUMS['test'],
         'matched_baseline_evaluation': False,
         'rollback_plan': False,
-        'trainer_integration': False,
+        'trainer_integration': integration_status().get('ready') is True,
     }
     report['training_gate'] = training_decision(report)
     save(ROOT/'state.json', report)

@@ -113,7 +113,15 @@ niezależnym odbiorze danych, porównaniu base/adapter, zapisanym planie
 rollbacku i zarejestrowanej integracji konkretnego trenera z polityką zasobów.
 Brak któregokolwiek dowodu oznacza `continue_reviewed_intake`.
 
-Po cyklu 23.09.2026 bramka zwróciła `eligible: false`: 84/0/0 rekordów,
-brak porównania, rollbacku i integracji trenera. To celowo blokuje automatyczny trening na małym
+Po cyklu 23.09.2026 bramka zwróciła `eligible: false`: 118/0/0 rekordów,
+brak porównania, rollbacku i planu rollbacku. Integracja trenera jest już
+zarejestrowana, ale pozostałe warunki nadal celowo blokują automatyczny trening na małym
 zbiorze. Sama bramka jest infrastrukturą przyszłej autonomii, nie dowodem,
 że autonomiczne aktualizacje wag już działają.
+
+Runner `scripts/learning_trainer_runner.py` jest zarejestrowanym,
+odizolowanym przekazaniem do `train_vision_corpus.py`. Najpierw odczytuje tę
+samą bramkę, zapisuje hashe stanu i egzaminu, a dopiero po pełnej kwalifikacji
+może uruchomić trenera w prywatnym katalogu. Runner nie ma ścieżki promocji
+adaptera ani zmiany routingu; wynik słabszy lub równy pozostaje kandydatem do
+odrzucenia. Test planowania potwierdza odmowę na bieżącym stanie 118/0/0.
