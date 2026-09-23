@@ -25,7 +25,9 @@
   różnorodność danych poza trzy istniejące wzorce.
 - Lokalny model dwukrotnie przygotował własny wzorzec, lecz powtórzył błąd
   kontrastu i marginesu tytułu. Obie odpowiedzi zachowano prywatnie i nie
-  przyjęto ich do danych. Nie poprawiano SVG ręcznie i nie zmieniono licznika.
+  przyjęto ich do danych. Alternatywny kontrakt sceny ujawnił dodatkowo
+  kolizję dwóch dolnych linii i również został odrzucony po korekcie. Nie
+  poprawiano SVG ręcznie i nie zmieniono licznika.
 
 ## 2026-09-22 — niezależny holdout recenzenta technicznego
 
