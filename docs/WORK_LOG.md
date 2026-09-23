@@ -4525,3 +4525,8 @@ z deterministyczną bramką, zapisuje hashe wejść i wykonuje pracę wyłączni
 prywatnym katalogu. Nie ma automatycznej promocji adaptera ani zmiany routingu.
 Testy runnera i autopilota: 16 passed. Bramka nadal odmawia treningu z powodu
 braku wymaganych walidacji, testów, porównania jakości i planu rollbacku.
+
+Po tym wpisie wykonano jeszcze dwie serie po sześć prób na zaakceptowanych
+źródłach; wszystkie dwanaście odtworzeń przeszło dokładnie, a autopilot podniósł
+stan do 130 train. Nadal nie uruchomiono treningu wag, ponieważ validation i
+test pozostają puste.

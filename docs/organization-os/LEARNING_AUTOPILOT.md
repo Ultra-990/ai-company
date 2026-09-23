@@ -113,7 +113,7 @@ niezależnym odbiorze danych, porównaniu base/adapter, zapisanym planie
 rollbacku i zarejestrowanej integracji konkretnego trenera z polityką zasobów.
 Brak któregokolwiek dowodu oznacza `continue_reviewed_intake`.
 
-Po cyklu 23.09.2026 bramka zwróciła `eligible: false`: 118/0/0 rekordów,
+Po cyklu 23.09.2026 bramka zwróciła `eligible: false`: 130/0/0 rekordów,
 brak porównania, rollbacku i planu rollbacku. Integracja trenera jest już
 zarejestrowana, ale pozostałe warunki nadal celowo blokują automatyczny trening na małym
 zbiorze. Sama bramka jest infrastrukturą przyszłej autonomii, nie dowodem,
