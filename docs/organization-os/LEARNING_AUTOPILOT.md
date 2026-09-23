@@ -29,7 +29,7 @@ Od 22.09.2026 harmonogram zbiera też [wizyjne poprawki produktu](PRODUCT_VISUAL
 Przyjęte są dwie niezależnie ocenione rozmowy: strukturalna naprawa zakrętki
 i przeprojektowanie układu infografiki. Odrzucona próba pozostaje pominięta.
 Dokładne odpowiedzi, wejściowe PNG i maskowanie sprawdzono na CPU; stan to
-82 train, pięć rodzin i sześć różnych obrazów. Kolejny cykl nie zduplikował
+84 train, pięć rodzin i sześć różnych obrazów. Kolejny cykl nie zduplikował
 rekordów. Odczyt systemd potwierdził późniejsze automatyczne wykonanie bez błędów.
 Przyjęcie dotyczy wskazanych poprawek, nie jakości całego produktu lub usługi.
 
@@ -113,7 +113,7 @@ niezależnym odbiorze danych, porównaniu base/adapter, zapisanym planie
 rollbacku i zarejestrowanej integracji konkretnego trenera z polityką zasobów.
 Brak któregokolwiek dowodu oznacza `continue_reviewed_intake`.
 
-Po cyklu 23.09.2026 bramka zwróciła `eligible: false`: 82/0/0 rekordów,
+Po cyklu 23.09.2026 bramka zwróciła `eligible: false`: 84/0/0 rekordów,
 brak porównania, rollbacku i integracji trenera. To celowo blokuje automatyczny trening na małym
 zbiorze. Sama bramka jest infrastrukturą przyszłej autonomii, nie dowodem,
 że autonomiczne aktualizacje wag już działają.

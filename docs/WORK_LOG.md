@@ -10,7 +10,7 @@
   i hash prywatnego raportu. Replay jest pomijany, mieszana partia zachowuje
   nowe rekordy, a zmiana treści przy tym samym ID nadal blokuje cykl.
 - Testy deduplikacji i bramki: 14 passed. Rzeczywisty audyt zakończył się
-  bez błędów: 79 train / 0 validation / 0 test; bramka nadal odmawia treningu.
+  bez błędów: 84 train / 0 validation / 0 test; bramka nadal odmawia treningu.
 
 ## 2026-09-22 — dodatkowe rodziny SVG
 
