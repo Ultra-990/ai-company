@@ -1,5 +1,13 @@
 # Stan projektu AI Company
 
+## Aktualizacja 23.09.2026 — badanie adaptera na 84 rekordach
+
+Izolowany eksperyment QLoRA wytrenował adapter na 84 unikalnych rekordach
+obraz–tekst i wykonał 21 aktualizacji. Na zamrożonym egzaminie walidacyjnym
+wynik bazy i adaptera był identyczny: 23/24 napraw atrybutów oraz 0/1 pełnych
+odtworzeń. Adapter nie został wdrożony, a aktywne wagi i routing pozostały bez
+zmian. To wynik `needs_more_learning`, nie dowód jakości pięciu usług.
+
 ## Aktualizacja 22.09.2026 — dwie poprawki z obrazu i automatyczny intake
 
 [Lokalny model otrzymuje rzeczywisty PNG i poprawia własny wynik](organization-os/PRODUCT_VISUAL_REVISIONS.md).

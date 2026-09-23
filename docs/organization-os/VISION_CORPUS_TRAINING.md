@@ -20,6 +20,19 @@ Niezależnie odtworzono 50 odpowiedzi i sprawdzono 50 rzeczywistych PDF.
 `0e83a4857b3ee4f5db9f6ce59ce26eed7d66bcc82850f967ecfb77c76821ac5e`.
 Wszystkie te artefakty pozostają w prywatnym katalogu próby.
 
+## Powtórzony eksperyment — 23.09.2026
+
+Po naprawie deduplikacji trenera wykonano osobny przebieg na **84 unikalnych
+rekordach** z aktualnego intake. Adapter wykonał 21 aktualizacji, zapisał wagi
+badawcze i wygenerował 50 odpowiedzi walidacyjnych w parach base/adapter.
+Niezależne porównanie dało bazie i adapterowi ten sam wynik: **23/24** dla
+napraw atrybutów oraz **0/1** dla pełnego odtworzenia. Decyzja pozostaje
+`needs_more_learning`; adapter nie został wdrożony ani podłączony do routingu.
+
+Raport, porównanie i prywatna ocena są zachowane w katalogu
+`vision-corpus-sft-agmpiqnv`; hash oceny to
+`89378b1059d7b9fbd4e860f20b4c88c7664213a814dfee3be89af6d15fdc7836`.
+
 W obu fazach nagłówek naprawiono do 45 zamiast 46. Pełne odtworzenia mają
 identyczne bajty odpowiedzi i identyczne PNG: tekst 8/8 poprawny, lecz błąd
 geometrii nagłówka 12,168 i podtytułu 28,906 przekracza limit 12. Obraz obejrzano

@@ -1,5 +1,15 @@
 # Dziennik budowy AI Company
 
+## 2026-09-23 — rzeczywisty eksperyment adaptera obraz–tekst
+
+- Trener QLoRA przeprowadził 21 aktualizacji na 84 unikalnych rekordach po
+  naprawie deduplikacji między paczkami. Wykonał 50 sparowanych odpowiedzi
+  walidacyjnych base/adapter na tym samym egzaminie.
+- Wynik obu wersji był identyczny: 23/24 napraw atrybutów i 0/1 pełnych
+  odtworzeń. Adapter pozostaje `RESEARCH-NOT-FOR-PRODUCTION`; nie zmieniono
+  aktywnych wag ani routingu. Prywatna ocena SHA-256:
+  `89378b1059d7b9fbd4e860f20b4c88c7664213a814dfee3be89af6d15fdc7836`.
+
 ## 2026-09-22 — nowe próby SVG i bezpieczna deduplikacja intake
 
 - Lokalny model wykonał sześć nowych kontrolowanych napraw SVG na wcześniej

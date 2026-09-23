@@ -53,13 +53,23 @@ def prepare(state_path, exam_path):
     state_bytes = state_path.read_bytes()
     state = json.loads(state_bytes, object_pairs_hook=unique_object)
     if state.get('schema') != 'learning-autopilot.v1': raise ValueError('Recognized intake snapshot required')
-    entries, ids, families, images = [], set(), set(), set()
+    entries, ids, seen_rows, families, images = [], set(), {}, set(), set()
     for key, cached in sorted(state['entries'].items()):
         bundle = Path(cached['bundle']); rows = verify_bundle(bundle)
         if not intake.cached_valid(cached, rows): raise ValueError('Current independent review and CPU audit required')
+        local_ids = set()
         for row in rows:
-            if row['id'] in ids or row['split'] != 'train': raise ValueError('Distinct train-only records required')
+            if row['split'] != 'train': raise ValueError('Distinct train-only records required')
+            if row['id'] in local_ids:
+                raise ValueError('Duplicate record within one training bundle')
+            local_ids.add(row['id'])
+            if row['id'] in ids:
+                previous = seen_rows[row['id']]
+                if not intake.equivalent_experience(previous, row):
+                    raise ValueError('Duplicate record changed across training bundles')
+                continue
             ids.add(row['id']); families.add(row['family']); images.update(i['sha256'] for i in row['images'])
+            seen_rows[row['id']] = row
             entries.append({'bundle': str(bundle), 'row': row, 'records_sha256': digest(bundle/'records.jsonl'),
                             'manifest_sha256': digest(bundle/'manifest.json'), 'audit': cached['audit']})
     steps = schedule(len(entries)); exam, _, _ = load_exam(exam_path)

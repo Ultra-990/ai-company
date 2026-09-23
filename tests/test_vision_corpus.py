@@ -48,6 +48,24 @@ def test_corpus_rejects_repeats_leakage_and_unreviewed_inputs(tmp_path, monkeypa
     with pytest.raises(ValueError): corpus.prepare(state, exam)
 
 
+def test_corpus_skips_equivalent_rows_replayed_in_a_separate_bundle(tmp_path, monkeypatch):
+    state, exam = prepared_fixture(tmp_path, monkeypatch)
+    from scripts import check_vision_training_inputs as inputs
+    from scripts import learning_autopilot as intake
+    first = {'id': 'same', 'family': 'fixture-train', 'split': 'train', 'images': [{'sha256': 'a'*64}]}
+    second = dict(first); second['source'] = {'report': '/new-private-report', 'report_sha256': 'b'*64}
+    unique = {'id': 'new', 'family': 'fixture-train', 'split': 'train', 'images': [{'sha256': 'a'*64}]}
+    second_bundle = tmp_path/'bundle2'; second_bundle.mkdir()
+    (second_bundle/'records.jsonl').write_text('fixture'); (second_bundle/'manifest.json').write_text('{}')
+    monkeypatch.setattr(inputs, 'verify_bundle', lambda p: [first, unique] if Path(p).name == 'bundle2' else [first])
+    monkeypatch.setattr(intake, 'cached_valid', lambda entry, expected: True)
+    data = json.loads(state.read_text()); second_entry = dict(data['entries']['fixture'])
+    second_entry['bundle'] = str(second_bundle); data['entries']['second'] = second_entry; state.write_text(json.dumps(data))
+    result = corpus.prepare(state, exam)
+    assert len(result['entries']) == 2
+    assert {entry['row']['id'] for entry in result['entries']} == {'same', 'new'}
+
+
 def test_preflight_collects_all_verified_records_without_starting_training(tmp_path, monkeypatch):
     state, exam = prepared_fixture(tmp_path, monkeypatch)
     result = corpus.prepare(state, exam)
