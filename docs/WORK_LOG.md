@@ -4717,3 +4717,14 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   adapter również `23/24` i `0/1`. Nie ma poprawy ani podstaw do promocji.
 - Poprawka assessora zapobiega kolizji z częściowymi katalogami po przerwanym
   renderze, zachowując wcześniejsze dowody i hashe.
+
+## 2026-09-24 — zaakceptowana rewizja panelu capacity
+
+- Lokalny model wykonał panel `capacity` po niezależnym feedbacku. Usunął
+  sugestię zalecanej hydratacji i dekoracyjne koło, zachował dokładne linie
+  dostawcy oraz oddzielił produkt od tekstu. Po jednej bounded korekcie panel
+  został niezależnie zaakceptowany jako syntetyczny rekord nauki; układ jest
+  celowo prosty i nie stanowi zgody na publikację w Amazon.
+- Autopilot ponownie zweryfikował pochodzenie i stan wzrósł do
+  `train=214`, `validation=25`, `test=50`. Rekord nie został jeszcze użyty
+  w nowym treningu wag.
