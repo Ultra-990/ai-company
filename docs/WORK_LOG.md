@@ -4792,3 +4792,13 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Trener w trybie planowania potwierdził `records=3`, `updates=1`,
   `training_started=false`. Nie uruchomiono brand-only wag bez osobnego
   holdoutu brandingu; wspólny adapter pozostaje odrzucony po regresji.
+
+## 2026-09-24 — brand holdout
+
+- Dodano `scripts/run_brand_holdout.py`, który generuje osobną rodzinę
+  walidacyjną `cedar-salt-brand-holdout-001` przez lokalny model. Pierwsza
+  próba została odrzucona, bo dekoracja przecinała ostatni adres; po wzmocnieniu
+  kontraktu druga próba przeszła strukturalny assessor i niezależny ogląd.
+- Holdout ma pełny pakiet SVG/PDF/PNG, `independent_visual_acceptance=true`,
+  ale `matched_baseline=false` i pozostaje walidacją prywatną. Jest gotowy do
+  użycia przez przyszły brand-only evaluator.

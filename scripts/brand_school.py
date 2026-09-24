@@ -168,6 +168,11 @@ no overlap of their bounding boxes. Leave enough room below the card's last line
 All numbers are STRINGS. Use only literal palette colors or none, the planned
 font families, weights400/700 and explicit text x,y,font-size,font-family,font-weight,fill.
 Logo font-size20..120; card text size at least28, with no overlap. SVG y is baseline.
+For the 850x550 card keep every text baseline at y<=480 (the last contact line
+must be at least 35px above the bottom edge); use roughly 330, 390, 435 and 480
+for the four centered lines unless a different safe spacing is clearly needed.
+Keep every decorative shape completely outside every text bounding box; never draw
+rules, arcs, dots or borders through a word or across its baseline.
 Account for actual text width. For the 600x360 logo reserve the upper symbol area
 for y=30..235 and put the wordmark baseline at y=315 or lower; never let any
 symbol or line enter the wordmark's measured bounding box. Keep at least 24px
