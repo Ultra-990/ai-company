@@ -20,7 +20,7 @@ from scripts.check_vision_training_inputs import REPO, SNAPSHOT, VisionResponseC
 from scripts.train_vision_input_pilot import full_vision_names
 
 PLAN = REPO/'config/vision-corpus-research-001.json'
-SETTINGS = {'max_length': 4096, 'epochs': 1, 'minimum_records': 2, 'maximum_records': 128,
+SETTINGS = {'max_length': 4096, 'epochs': 1, 'minimum_records': 2, 'maximum_records': 256,
             'gradient_accumulation': 4, 'rank': 4, 'alpha': 8, 'learning_rate': 1e-5,
             'seed': 3407, 'batch_size': 1, 'vision_layers_frozen': True, 'optimizer': 'torch_adamw'}
 

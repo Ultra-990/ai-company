@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts import interior_learning_records as interior
 from scripts import vector_learning_records as vector
 from scripts import product_visual_revision as product
+from scripts import vector_exam as reserved_exam
 from scripts.check_vision_training_inputs import verify_bundle
 from scripts.prepare_training_data import MINIMUMS, unique_object
 from scripts.learning_training_gate import decision as training_decision
@@ -49,6 +50,28 @@ def sources():
     return [('vector', path) for path in vector_paths] + practice_batches + [
         ('interior', path) for path in sorted(interior.school.ROOT.glob('inspect-*/teacher-judgments.json'))] + [
         ('product', path) for path in sorted(product.ROOT.glob('visual-revision-*/learning-review.json'))]
+
+
+def reserved_counts():
+    """Validate frozen validation/test exams without importing their answers."""
+    counts = {'validation': 0, 'test': 0}
+    entries, errors = [], []
+    reserved_root = ROOT.parent / 'vector-school'
+    for path in sorted(reserved_root.glob('exam-*/report.json')):
+        if path.parent.name.startswith('exam-answer-'):
+            continue
+        try:
+            definition, _, _ = reserved_exam.load_exam(path)
+            split = definition.get('data_split')
+            if split not in counts or len(definition.get('cases', [])) != 25:
+                raise ValueError('Reserved exam must contain 25 cases in validation/test split')
+            counts[split] += 25
+            entries.append({'path': str(path), 'sha256': digest(path), 'split': split,
+                            'family': definition['family'], 'cases': 25})
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            errors.append({'path': str(path), 'error_type': type(exc).__name__,
+                           'detail': str(exc)[:240]})
+    return counts, entries, errors
 
 
 def collect(kind, path):
@@ -172,12 +195,15 @@ def cycle():
             accepted.update({row['id']: row for row in new_rows})
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.TimeoutExpired) as exc:
             errors.append({'source': key, 'error_type': type(exc).__name__, 'detail': str(exc)[:240]})
-    counts = {'train': len(accepted), 'validation': 0, 'test': 0}
+    reserved, reserved_entries, reserved_errors = reserved_counts()
+    counts = {'train': len(accepted), **reserved}
+    errors.extend({'source': 'reserved_exam:'+item['path'], **{k: v for k, v in item.items() if k != 'path'}}
+                  for item in reserved_errors)
     report = {'schema': 'learning-autopilot.v1', 'checked_at': datetime.now(timezone.utc).isoformat(),
               'phase': 'collecting_reviewed_data', 'counts': counts,
               'families': sorted({row['family'] for row in accepted.values()}),
               'minimums': MINIMUMS, 'missing': {key: max(0, value-counts[key]) for key, value in MINIMUMS.items()},
-              'entries': entries, 'skipped': skipped, 'errors': errors,
+              'entries': entries, 'reserved_exams': reserved_entries, 'skipped': skipped, 'errors': errors,
               'training_started': False, 'automatic_weight_training_available': False,
               'model_promotion_enabled': False, 'production_changed': False,
               'next_requirements': ['broader independently reviewed training data',

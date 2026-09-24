@@ -4530,3 +4530,18 @@ Po tym wpisie wykonano jeszcze dwie serie po sześć prób na zaakceptowanych
 źródłach; wszystkie dwanaście odtworzeń przeszło dokładnie, a autopilot podniósł
 stan do 130 train. Nadal nie uruchomiono treningu wag, ponieważ validation i
 test pozostają puste.
+
+### 2026-09-24 — rejestracja odseparowanych sprawdzianów
+
+Lokalny model poprawił nowy testowy brief travel-club po informacji o braku
+tekstu w sidebarze. Render przeszedł niezależną inspekcję, a zamrożony egzamin
+ma 25/25 przygotowanych przypadków. Drugi testowy materiał night-market wymagał
+dwóch korekt: kontrastu nagłówka i odsunięcia latarni od tekstu; po trzeciej
+odpowiedzi modelu przeszedł inspekcję i dostał osobny egzamin 25/25. Autopilot
+rejestruje teraz 130 train, 25 validation i 50 test; odpowiedzi egzaminów nie są
+źródłem treningu.
+
+Wykryto i usunięto niespójność protokołu: trener miał limit 128 rekordów, choć
+bramka wymaga 200. Limit protokołu badawczego podniesiono do 256, a testy
+potwierdzają zachowanie harmonogramu. Bramka nadal odmawia treningu z powodu
+braku 70 rekordów train, porównania base/adapter i planu rollbacku.

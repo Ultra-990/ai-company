@@ -12,7 +12,7 @@ def test_schedule_covers_every_record_once_and_keeps_short_last_group():
     assert len(groups) == 18 and len(groups[-1]) == 3
     assert sorted(i for group in groups for i in group) == list(range(71))
     assert groups == corpus.schedule(71)
-    for invalid in (0, 1, 129, True):
+    for invalid in (0, 1, 257, True):
         with pytest.raises(ValueError): corpus.schedule(invalid)
     plan = corpus.load_protocol()
     assert plan['automatic_promotion'] is False and plan['production_data_gate_changed'] is False

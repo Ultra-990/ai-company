@@ -7,7 +7,7 @@
     "max_length": 4096,
     "epochs": 1,
     "minimum_records": 2,
-    "maximum_records": 128,
+    "maximum_records": 256,
     "gradient_accumulation": 4,
     "rank": 4,
     "alpha": 8,

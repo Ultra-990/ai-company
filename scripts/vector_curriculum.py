@@ -50,6 +50,24 @@ Use a narrow sidebar with two short information lines, a large main column for
 the remaining six lines, and a small geometric route diagram made from straight
 lines and circles. Use pale blue, deep charcoal and one orange accent. Avoid
 other curriculum layouts; make a coherent editorial composition.'''},
+    'travel-club-test-v2': {'family': 'travel-club-v2-001', 'data_split': 'test',
+        'brief': COMMON + '''Topic: a fictional rail travel club's illustrated talk.
+Use a dark sidebar exactly 172 units wide on the left and a pale main column on
+the right. Put exactly two short information lines, each no more than 24
+characters, inside the sidebar at x=20 with baselines near y=700 and y=735;
+use a high-contrast light or orange fill. Put the other six text lines in the
+main column at x>=200. Include a small geometric route diagram in the sidebar
+above those lines, made from straight lines and circles. Use pale blue, deep
+charcoal and one orange accent. Do not let any text cross the sidebar boundary
+or overlap another line.'''},
+    'night-market-test-v1': {'family': 'night-market-001', 'data_split': 'test',
+        'brief': COMMON + '''Topic: a fictional evening makers market.
+Use a deep indigo full-page background with a warm cream inset panel, a bold
+cream headline at the top, six short event lines in a clear left-aligned stack,
+and one small geometric lantern symbol in the upper right. Use cream, indigo,
+muted coral and one warm gold accent. Keep all eight text lines readable,
+separate, inside the inset panel, and away from the symbol; use a calm modern
+market-poster composition.'''},
 }
 
 
