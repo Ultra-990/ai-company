@@ -59,9 +59,10 @@ def verify_review_record(row):
         raise ValueError('Independent acceptance evidence changed')
 
 
-def load_protocol():
+def load_protocol(plan_path=PLAN):
     original,_,_,roles=base.load_protocol()
-    plan=json.loads(PLAN.read_text())
+    plan_path=Path(plan_path)
+    plan=json.loads(plan_path.read_text())
     training=original['training']|{'max_length':4096,'max_steps':18}
     reviewer={'sha256':REVIEWER_CHECKSUM,'case_count':3,'max_new_tokens':1700,
               'max_time_seconds_per_case':150,'max_context':4096,'do_sample':False}
@@ -75,11 +76,14 @@ def load_protocol():
     if sha256(private.read_bytes()).hexdigest()!=plan['reviewer_dataset']['sha256']:
         raise ValueError('Changed reviewed dataset')
     rows,gate=load_batches([base.REPO/x['path'] for x in original['datasets']]+[private])
-    if len(rows)!=17 or plan['records']!=17 or gate['sha256']!=plan['combined_sha256']:
+    reviewer_records=plan.get('reviewer_records', 3)
+    if type(reviewer_records) is not int or reviewer_records < 1:
+        raise ValueError('Reviewer record count required')
+    if len(rows)!=plan['records'] or len(rows) != 14 + reviewer_records or gate['sha256']!=plan['combined_sha256']:
         raise ValueError('Dataset count/hash changed')
     if any(r['split']!='train' or r['review']['status']!='approved' or not r['source']['privacy_checked'] for r in rows):
         raise ValueError('Only approved training records permitted')
-    for row in rows[-3:]:verify_review_record(row)
+    for row in rows[-reviewer_records:]:verify_review_record(row)
     exam=load_reviewer_suite()
     if len(exam['cases'])!=3:raise ValueError('Exam case count changed')
     return plan,rows,gate,roles,exam
@@ -121,7 +125,8 @@ def service_evaluator(exam,settings):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--run',action='store_true')
-    args=parser.parse_args();plan,rows,gate,roles,exam=load_protocol()
+    parser.add_argument('--plan',type=Path,default=PLAN)
+    args=parser.parse_args();plan,rows,gate,roles,exam=load_protocol(args.plan)
     if not args.run:
         print(json.dumps({'training_started':False,'records':len(rows),'service_probes':len(exam['cases']),
                           'max_length':plan['training']['max_length'],'production_ready':False}));return 0
@@ -131,7 +136,7 @@ def main():
         raise ValueError('Linux non-symlink workspace required')
     out=Path(tempfile.mkdtemp(prefix='reviewer-sft-',dir=base.ROOT))
     report={'schema':'reviewer-sft-pilot.v1','status':'running','stage':'preflight','protocol':plan,
-            'protocol_sha256':sha256(PLAN.read_bytes()).hexdigest(),'versions':base.versions(),
+            'protocol_sha256':sha256(args.plan.read_bytes()).hexdigest(),'versions':base.versions(),
             'dataset_gate':gate,'weights_trained':False,'adapter_saved':False,'production_ready':False,
             'production_routing_changed':False,'baseline':[],'after':[],
             'comparison_runtime':'Same pinned HF bnb4 base, fresh adapter disabled before/enabled after; identical greedy prompts and budgets.'}

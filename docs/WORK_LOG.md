@@ -4564,3 +4564,9 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Lokalny model wygenerował sześć syntetycznych recenzji artykułów o dostrajaniu LLM. Pięć przeszło kontrakt strukturalny; jedna odpowiedź o danych syntetycznych wymaga dalszej rewizji.
 - Niezależny feedback wskazał konkretne braki: statystyczna istotność i leakage testu, mechanika QLoRA i pamięć aktywacji, arytmetyka kosztów, świeżość RAG oraz nieudowodnione twierdzenia bezpieczeństwa platform. Lokalny model wykonał rewizję pięciu odpowiedzi; wszystkie zachowały poprawne kotwice linii i zalecenia techniczne.
 - Kandydaci nadal nie są automatycznie zaakceptowani ani eksportowani do wag. Potrzebny jest osobny semantyczny odbiór oraz tekstowy tor treningowy; nie mieszam tych danych z multimodalnym trenerem SVG.
+
+## 2026-09-24 — tekstowy adapter recenzenta bez poprawy kontraktu
+
+- Z pięciu zrewidowanych odpowiedzi technicznych utworzono wersjonowaną partię z niezależnymi dowodami semantycznej akceptacji. Nowy protokół `config/qwen-sft-pilot-003.json` obejmuje 19 rekordów i trzy zamrożone sondy recenzenta.
+- Lokalny QLoRA wykonał 18 aktualizacji i zapisał prywatny adapter. Sonda ogólna pozostała `11/12` przed i po treningu. W trzech sondach recenzenta wynik strukturalny wyniósł `0/3` przed i `0/3` po: odpowiedzi zawierały ogrodzenie Markdown mimo wymogu czystego JSON. Semantyczne uwagi były w większości trafne, ale kontrakt dostawy jest niespełniony.
+- Adapter nie został wdrożony. Ten wynik kieruje dalszą naukę na ścisłe formaty wyjściowe i pełne scenariusze usług; nie jest dowodem jakości porównywalnej z asystentem.
