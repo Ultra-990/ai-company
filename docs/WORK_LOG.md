@@ -4678,3 +4678,16 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - To nowy negatywny dowód dla curriculum rekonstrukcji: potrzebne są przykłady
   uczące całej geometrii i transferu pikseli, a nie dalsze iteracje na jednym
   źle generalizującym wzorcu.
+
+## 2026-09-24 — nowa rodzina bookbinding i częściowa, lecz odrzucona poprawa
+
+- Lokalny model wygenerował nowy treningowy wzorzec `bookbinding-fair-001`.
+  Niezależny przegląd zaakceptował go jako prostą, kompletną ulotkę z ośmioma
+  tekstami, niższą sekcją informacyjną i symbolem książki.
+- Pierwsza rekonstrukcja nie przeszła: maksymalny błąd tekstu 42,2, różnica
+  średnich pikseli 0,1323. Po bounded feedbacku model poprawił nagłówek do
+  błędu 13,8, ale data i linia demonstracji pozostały przesunięte; błąd pikseli
+  nadal wyniósł 0,1294 wobec limitu 0,045.
+- Żaden wynik rekonstrukcji nie został zaakceptowany ani wyeksportowany.
+  Przykład potwierdza częściową reakcję modelu na feedback, lecz nadal nie
+  spełnia kontraktu pełnego odtworzenia.
