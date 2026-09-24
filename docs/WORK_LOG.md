@@ -4819,3 +4819,8 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 
 - Dodano drugi zaakceptowany pakiet treningowy `identity-kue8g0jf`; intake wzrósł do `221/25/50`, a snapshot brand-only do sześciu rekordów i dwóch aktualizacji.
 - Ponowny trening `vision-corpus-sft-ktnnpywz` nadal dał base `0/3` i adapter `0/3` na `cedar-salt-brand-holdout-001`. Problem nie wynika wyłącznie z małej liczby przykładów; obecny multimodalny format odpowiedzi HF nie odwzorowuje kontraktu sceny brandingu. Adapter odrzucony.
+
+## 2026-09-24 — rozszerzenie brand-only do dziewięciu rekordów
+
+- Próba `identity-uv6hbi5_` została odrzucona wizualnie, bo dekoracyjna kreska przecinała tagline. Próba `identity-7wtdd1nj` przeszła ogląd i została dodana jako pozytywny rekord.
+- Autopilot osiągnął `train=224`, a snapshot brand-only ma dziewięć rekordów i trzy aktualizacje. Wadliwy kandydat pozostał poza treningiem; kolejny eksperyment jest gotowy do uruchomienia na tym zbiorze.
