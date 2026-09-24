@@ -15,6 +15,7 @@ from app.services.application_profile import (messages_for, parse_sources, SOURC
 from app.services.workspace_packages import create_package
 from app.services import upwork_scope
 from app.services import multifile_generation
+from app.services.model_routing import route_for_packet, executable
 
 
 def enabled_config():
@@ -43,6 +44,13 @@ def audit(session, run, operation):
 
 
 def execution_config(session,task_id,packet_id,profile,config):
+    packet = read_packet(session, task_id, packet_id)['packet']
+    route = route_for_packet(packet)
+    if not executable(route):
+        # Experimental adapters are recorded for evaluation but cannot enter
+        # the Ollama runtime until an independent promotion changes the route.
+        raise ValueError('Wybrany adapter nie ma jeszcze zgody na wykonanie produkcyjne.')
+    config = config | {'route_key': route.service_key}
     if profile=='text' and read_packet(session,task_id,packet_id)['packet'].get('result_contract')==upwork_scope.CONTRACT:
         return config | {'num_predict':min(1536,config['num_predict']),
                          'scope_decoder':'json-schema.v1'}

@@ -4839,3 +4839,8 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 
 - Dodano drugą rodzinę holdout `maple-ember-brand-holdout-001`; lokalny model wygenerował pakiet zaakceptowany wizualnie. Text-only adapter `brand-text-sft-1f0a_7s5` przeniósł się na nowy brief: base `0/3`, adapter `3/3`.
 - Porównanie zapisano jako `maple-comparison.json` z hashami odpowiedzi i egzaminu. To nadal dowód syntetyczny, bez baseline'u asystenta i bez zgody produkcyjnej.
+
+## 2026-09-24 — bezpieczny routing adapterów
+
+- Dodano deklaratywny `app/services/model_routing.py` i testy routingu. Domyślne zadania nadal korzystają z ograniczonego Ollama; wytrenowany adapter brandingu jest opisany jako eksperymentalny, ale `enabled=false`, więc nie może zostać przypadkowo użyty przez wykonanie lokalne.
+- `local_inference.execution_config` zapisuje wybraną trasę i odrzuca niepromowane adaptery. Sam opis trasy nie zmienia konfiguracji produkcyjnej ani nie jest dowodem gotowości usługi.
