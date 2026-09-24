@@ -4728,3 +4728,14 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Autopilot ponownie zweryfikował pochodzenie i stan wzrósł do
   `train=214`, `validation=25`, `test=50`. Rekord nie został jeszcze użyty
   w nowym treningu wag.
+
+## 2026-09-24 — odrzucony materials i zaakceptowany care
+
+- Panel `materials` przeszedł walidację techniczną, ale niezależny ogląd
+  odrzucił go: etykiety nie wskazywały części produktu, a dekoracyjne punkty
+  nie budowały relacji materiał–element. Nie wyeksportowano go do nauki.
+- Panel `care` po jednej bounded korekcie otrzymał niezależną akceptację:
+  zachowuje dokładne linie „Hand wash only” i „Air dry before storage”, ma
+  czytelną hierarchię i oddzielony produkt. To nadal syntetyczna akceptacja
+  targeted-learning, bez zgody komercyjnej.
+- Autopilot potwierdził `train=215`, `validation=25`, `test=50`.
