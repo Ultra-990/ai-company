@@ -26,6 +26,8 @@ from scripts.learning_trainer_runner import integration_status
 
 REPO = Path(__file__).resolve().parents[1]
 ROOT = Path('/home/marcin/ai-company-workspaces/learning-autopilot')
+ROLLBACK_PLAN = REPO / 'config' / 'learning-rollback-plan-v1.json'
+BASELINE_COMPARISONS = tuple(Path('/home/marcin/ai-company-workspaces/qwen-training').glob('vision-corpus-sft-*/comparison.json'))
 
 
 def digest(path):
@@ -77,6 +79,41 @@ def reserved_counts():
             errors.append({'path': str(path), 'error_type': type(exc).__name__,
                            'detail': str(exc)[:240]})
     return counts, entries, errors
+
+
+def baseline_evidence(reserved_entries):
+    """Find an independent matched base/adapter comparison for this exam."""
+    validation = [item for item in reserved_entries if item['split'] == 'validation']
+    if not validation:
+        return {'ready': False, 'reason': 'validation_exam_missing'}
+    exam_sha = validation[0]['sha256']
+    for path in BASELINE_COMPARISONS:
+        try:
+            report = json.loads(path.read_text(), object_pairs_hook=unique_object)
+            totals = report.get('totals', {})
+            if (report.get('schema') == 'vision-corpus-comparison.v1'
+                    and report.get('exam_sha256') == exam_sha
+                    and set(totals) == {'base', 'adapter'}
+                    and report.get('automatic_promotion') is False
+                    and report.get('production_ready') is False):
+                return {'ready': True, 'path': str(path), 'sha256': digest(path),
+                        'exam_sha256': exam_sha, 'totals': totals}
+        except (OSError, ValueError, TypeError, KeyError):
+            continue
+    return {'ready': False, 'reason': 'matched_baseline_comparison_missing', 'exam_sha256': exam_sha}
+
+
+def rollback_evidence():
+    try:
+        plan = json.loads(ROLLBACK_PLAN.read_text(), object_pairs_hook=unique_object)
+        required = {'schema', 'previous_version_preserved', 'promotion_atomic',
+                    'post_promotion_check', 'automatic_revert_on_regression'}
+        if (set(plan) == required and plan['schema'] == 'learning-rollback-plan.v1'
+                and all(plan[key] is True for key in required - {'schema'})):
+            return {'ready': True, 'path': str(ROLLBACK_PLAN), 'sha256': digest(ROLLBACK_PLAN)}
+    except (OSError, ValueError, TypeError, KeyError):
+        pass
+    return {'ready': False, 'reason': 'rollback_plan_missing'}
 
 
 def collect(kind, path):
@@ -214,6 +251,8 @@ def cycle():
             else:
                 errors.append({'source': key, 'error_type': type(exc).__name__, 'detail': detail})
     reserved, reserved_entries, reserved_errors = reserved_counts()
+    baseline = baseline_evidence(reserved_entries)
+    rollback = rollback_evidence()
     counts = {'train': len(accepted), **reserved}
     errors.extend({'source': 'reserved_exam:'+item['path'], **{k: v for k, v in item.items() if k != 'path'}}
                   for item in reserved_errors)
@@ -222,6 +261,7 @@ def cycle():
               'families': sorted({row['family'] for row in accepted.values()}),
               'minimums': MINIMUMS, 'missing': {key: max(0, value-counts[key]) for key, value in MINIMUMS.items()},
               'entries': entries, 'reserved_exams': reserved_entries,
+              'baseline_evaluation': baseline, 'rollback_plan': rollback,
               'rejected_audits': rejected_audits, 'skipped': skipped, 'errors': errors,
               'training_started': False, 'automatic_weight_training_available': False,
               'model_promotion_enabled': False, 'production_changed': False,
@@ -234,10 +274,14 @@ def cycle():
         'independently_reviewed_train': counts['train'] >= MINIMUMS['train'] and not errors,
         'registered_validation': counts['validation'] >= MINIMUMS['validation'],
         'registered_test': counts['test'] >= MINIMUMS['test'],
-        'matched_baseline_evaluation': False,
-        'rollback_plan': False,
+        'matched_baseline_evaluation': baseline.get('ready') is True,
+        'rollback_plan': rollback.get('ready') is True,
         'trainer_integration': integration_status().get('ready') is True,
     }
+    required = report['training_requirements']
+    report['phase'] = ('ready_for_training'
+                       if all(required.values()) and not errors else 'collecting_reviewed_data')
+    report['automatic_weight_training_available'] = report['phase'] == 'ready_for_training'
     report['training_gate'] = training_decision(report)
     save(ROOT/'state.json', report)
     return report

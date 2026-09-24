@@ -4551,3 +4551,10 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Dodano `production_quality_gate()` do kontraktu SVG. Każdy modelowy wynik przeznaczony do dalszego obiegu musi przejść walidację SVG, render, kontrolę granic/kolizji/kontrastu oraz kontrolę PDF; wynik z usterką jest odrzucany.
 - `vector_school.py` zapisuje wynik tej bramki i oznacza źródło jako `reference_rejected`, jeśli layout zawiera problem. Dodano test regresyjny, że treningowa usterka nie może przejść jako deliverable.
 - Jedna iteracja intake po poprawce: `train=187`, `validation=25`, `test=50`; do minimalnego progu treningowego brakuje 13 przykładów. Trening wag nadal nie został uruchomiony, bo brakuje niezależnej oceny baseline/adaptera i planu rollbacku.
+
+## 2026-09-24 — pełny korpus i odrzucony brak poprawy adaptera
+
+- Intake domknięto do `train=200`, `validation=25`, `test=50`. Dodano jawne sprawdzanie wcześniejszego, niezależnego porównania base/adapter na tym samym zamrożonym egzaminie oraz wersjonowany plan rollbacku. Bramka zmieniła stan na `ready_for_training`; to nadal nie włącza promocji.
+- Izolowany trener uruchomiono po przejściu preflightu (pierwsza próba bez dostępu do lokalnego endpointu Ollamy została zatrzymana przed ładowaniem wag). Druga próba wykonała 50 aktualizacji na 200 rekordach i 50 parowanych odpowiedzi walidacyjnych.
+- Prywatny raport: `/home/marcin/ai-company-workspaces/qwen-training/vision-corpus-sft-28b8nwk9`; porównanie SHA-256 `86170a2974499490df98dd697c0660bc1d88560ac24248cf927794c6210f8b3f`. Wynik: base `23/24` napraw atrybutów i `0/1` pełnej rekonstrukcji; adapter identycznie `23/24` i `0/1`. Adapter pozostaje kandydatem badawczym, bez promocji i routingu.
+- Wniosek: powtarzanie napraw pojedynczych atrybutów nie poprawia pełnej rekonstrukcji. Następne dane muszą obejmować kompletne odtworzenia i zadania odpowiadające pięciu usługom, a nie tylko kolejne kontrolowane usterki.

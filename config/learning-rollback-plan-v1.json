@@ -1,0 +1,7 @@
+{
+  "schema": "learning-rollback-plan.v1",
+  "previous_version_preserved": true,
+  "promotion_atomic": true,
+  "post_promotion_check": true,
+  "automatic_revert_on_regression": true
+}

@@ -143,3 +143,20 @@ def test_product_intake_discovers_reviews_and_skips_rejected_layouts(tmp_path, m
     review = folder/'learning-review.json'; review.write_text('{"decision":"needs_visual_revision"}')
     assert auto.sources() == [('product', review)]
     assert auto.collect('product', review) == ([], None)
+
+
+def test_training_readiness_requires_independent_evidence_and_rollback_plan(tmp_path, monkeypatch):
+    monkeypatch.setattr(auto, 'ROOT', tmp_path)
+    rows = [{'id': str(i), 'family': 'fixture-family'} for i in range(200)]
+    monkeypatch.setattr(auto, 'sources', lambda: [('vector', Path('/fixture/review'))])
+    monkeypatch.setattr(auto, 'collect', lambda *args: (rows, lambda: tmp_path/'bundle'))
+    monkeypatch.setattr(auto, 'verify_bundle', lambda path: rows)
+    monkeypatch.setattr(auto, 'audit', lambda path: {'path': 'proof', 'sha256': 'c'*64})
+    monkeypatch.setattr(auto, 'cached_valid', lambda entry, expected: bool(entry))
+    monkeypatch.setattr(auto, 'reserved_counts', lambda: ({'validation': 25, 'test': 50}, [], []))
+    monkeypatch.setattr(auto, 'baseline_evidence', lambda entries: {'ready': True, 'path': 'baseline', 'sha256': 'a'*64})
+    monkeypatch.setattr(auto, 'rollback_evidence', lambda: {'ready': True, 'path': 'rollback', 'sha256': 'b'*64})
+    result = auto.cycle()
+    assert result['phase'] == 'ready_for_training'
+    assert result['automatic_weight_training_available'] is True
+    assert result['training_gate']['eligible'] is True
