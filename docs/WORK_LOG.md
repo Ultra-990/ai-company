@@ -4558,3 +4558,9 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Izolowany trener uruchomiono po przejściu preflightu (pierwsza próba bez dostępu do lokalnego endpointu Ollamy została zatrzymana przed ładowaniem wag). Druga próba wykonała 50 aktualizacji na 200 rekordach i 50 parowanych odpowiedzi walidacyjnych.
 - Prywatny raport: `/home/marcin/ai-company-workspaces/qwen-training/vision-corpus-sft-28b8nwk9`; porównanie SHA-256 `86170a2974499490df98dd697c0660bc1d88560ac24248cf927794c6210f8b3f`. Wynik: base `23/24` napraw atrybutów i `0/1` pełnej rekonstrukcji; adapter identycznie `23/24` i `0/1`. Adapter pozostaje kandydatem badawczym, bez promocji i routingu.
 - Wniosek: powtarzanie napraw pojedynczych atrybutów nie poprawia pełnej rekonstrukcji. Następne dane muszą obejmować kompletne odtworzenia i zadania odpowiadające pięciu usługom, a nie tylko kolejne kontrolowane usterki.
+
+## 2026-09-24 — pierwsza seria recenzji technicznych Upwork
+
+- Lokalny model wygenerował sześć syntetycznych recenzji artykułów o dostrajaniu LLM. Pięć przeszło kontrakt strukturalny; jedna odpowiedź o danych syntetycznych wymaga dalszej rewizji.
+- Niezależny feedback wskazał konkretne braki: statystyczna istotność i leakage testu, mechanika QLoRA i pamięć aktywacji, arytmetyka kosztów, świeżość RAG oraz nieudowodnione twierdzenia bezpieczeństwa platform. Lokalny model wykonał rewizję pięciu odpowiedzi; wszystkie zachowały poprawne kotwice linii i zalecenia techniczne.
+- Kandydaci nadal nie są automatycznie zaakceptowani ani eksportowani do wag. Potrzebny jest osobny semantyczny odbiór oraz tekstowy tor treningowy; nie mieszam tych danych z multimodalnym trenerem SVG.
