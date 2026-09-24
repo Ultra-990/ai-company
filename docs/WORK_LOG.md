@@ -4605,3 +4605,31 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   odrzucono pin za nieuzasadnione liczenie talerzy i detail za twierdzenie o
   świeżości ziół. Autopilot potwierdził `train=201`, `validation=25`, `test=50`;
   nie uruchomiono kolejnego treningu bez większej, zróżnicowanej partii.
+
+## 2026-09-24 — rozszerzenie małego eksperymentu multimodalnego
+
+- Po audycie danych połączono dwa niezależnie zatwierdzone rekordy obraz–tekst
+  w prywatną paczkę `vision-candidates-2record-20260924`. Hasz manifestu
+  `records.jsonl` to `cb0110573d7c7f8376ea2905ccdb25bd74b24870a1652731c4d6a5d1648a4566`.
+- Protokół `config/vision-sft-input-pilot-001.json` został jawnie zwiększony
+  do dwóch rekordów i sześciu aktualizacji. Trener sprawdza teraz każdą maskę
+  etykiet osobno, wykonuje naprzemienne aktualizacje obu obrazów i zapisuje
+  osobne hashe wejść; nie może po cichu wrócić do jednego rekordu.
+- To nadal mały eksperyment integracyjny, bez twierdzenia o generalizacji.
+  Następnym krokiem jest uruchomienie go i ponowne porównanie adaptera na tym
+  samym, zarezerwowanym egzaminie `cottage-reading-eval-v1`.
+
+## 2026-09-24 — drugi adapter wnętrz bez poprawy holdoutu
+
+- Zmieniono trener multimodalny tak, aby nie używał po cichu tylko pierwszego
+  rekordu. Po sprawdzeniu masek i hashy wykonał sześć aktualizacji naprzemiennie
+  na dwóch zatwierdzonych obrazach; raport prywatny:
+  `/home/marcin/ai-company-workspaces/qwen-training/vision-input-sft-73svkr8x`.
+- Pierwsza próba po zmianie została zatrzymana przed aktualizacją przez błąd
+  CPU/GPU w nowej ścieżce batchy. Poprawiono przenoszenie każdego batcha na
+  urządzenie, testy regresyjne przeszły, a druga próba zakończyła się sześcioma
+  aktualizacjami i zmienionymi parametrami adaptera.
+- Na tym samym zaślepionym holdoucie wynik pozostał bez poprawy: baza `3/3`,
+  `15/15`; nowy adapter `2/3`, `10/15`. Jeden przypadek nadal zwraca schemat
+  JSON zamiast obserwacji. `parity_proven=false`; adapter pozostaje prywatny,
+  bez promocji i bez kwalifikacji usługi.

@@ -131,9 +131,11 @@ raport, wejście, dokładną odpowiedź i obraz po hashach; nie ufa rekomendacji
 (łącznie z uwagami), konfigurację i pochodzenie. Wszystkie warianty tego renderu
 mają tę samą rodzinę i pozostają w `train`; nie można eksportować ich jako test.
 
-Rzeczywisty zapis `vision-candidates-fyodznnk` zawiera jeden zatwierdzony
-syntetyczny rekord `company-vision-candidate.v1`. SHA `records.jsonl`:
-`5533273410e47ca63d78dcef8375d59536ca8f4f13cbdc2f2f82407325176be3`.
+Pierwsza paczka `vision-candidates-fyodznnk` zawierała jeden zatwierdzony
+syntetyczny rekord. Po osobnej ocenie kolejnego renderu dopuszczono wyłącznie
+hero, a pin i detail odrzucono za nieuzasadnione liczenie oraz twierdzenie o
+świeżości. Bieżący prywatny eksperyment wskazuje paczkę
+`vision-candidates-2record-20260924` (2 rekordy, SHA `cb0110573d7c7f8376ea2905ccdb25bd74b24870a1652731c4d6a5d1648a4566`).
 Format jest celowo odrębny od tekstowego SFT — nie wolno zgubić obrazu,
 zostawiając sam opis. Wagi nadal nie zostały na nim wytrenowane. Manifest
 ma `ready_for_trainer=false`: potrzebny audyt procesora i masek multimodalnych,

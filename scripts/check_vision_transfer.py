@@ -59,7 +59,7 @@ def load_exam(source):
     if train_images.intersection(c['sha256'] for c in cases):raise ValueError('Training image leaked into exam')
     return {'schema':'vision-transfer-protocol.v1','usage':'evaluation_only','family':render['family'],
         'render_report':str(source),'render_sha256':sha256(source.read_bytes()).hexdigest(),
-        'model':MODEL,'revision':REVISION,'adapter_sha256':ADAPTER_SHA,
+        'model':MODEL,'revision':REVISION,'adapter_run':str(ADAPTER_RUN),'adapter_sha256':ADAPTER_SHA,
         'cases':cases,'system':inspection_instruction('grounded-concise-v1'),
         'user':'Inspect this generated interior candidate. Describe only what you can see; do not infer a real property or client.',
         'max_new_tokens':1100,'max_time_per_case':90,'context':4096,'do_sample':False,'criteria':CRITERIA,
@@ -84,7 +84,10 @@ def evaluate(out,protocol,report,persist):
     from bitsandbytes.nn import Linear4bit
     quant=[m for m in base.modules() if isinstance(m,Linear4bit)]
     if len(quant)!=352 or any(getattr(m.weight,'quant_state',None) is None for m in quant):raise RuntimeError('Incomplete quantization state')
-    model=PeftModel.from_pretrained(base,str(ADAPTER),is_trainable=False)
+    adapter_run=Path(protocol['adapter_run']);adapter=adapter_run/'adapter-INPUT-RESEARCH-NOT-FOR-PRODUCTION'
+    adapter_sha=protocol['adapter_sha256']
+    if sha256((adapter/'adapter_model.safetensors').read_bytes()).hexdigest()!=adapter_sha:raise ValueError('Adapter changed')
+    model=PeftModel.from_pretrained(base,str(adapter),is_trainable=False)
     FastModel.for_inference(model)
     report['quantized_layers_verified']=len(quant)
     for phase in ('base','adapter'):
@@ -172,7 +175,8 @@ def worker(out,checksum):
     raw=(out/'protocol.json').read_bytes()
     if sha256(raw).hexdigest()!=checksum:raise ValueError('Protocol changed')
     protocol=json.loads(raw)
-    if sha256((ADAPTER/'adapter_model.safetensors').read_bytes()).hexdigest()!=ADAPTER_SHA:raise ValueError('Adapter changed')
+    adapter=Path(protocol['adapter_run'])/'adapter-INPUT-RESEARCH-NOT-FOR-PRODUCTION'
+    if sha256((adapter/'adapter_model.safetensors').read_bytes()).hexdigest()!=protocol['adapter_sha256']:raise ValueError('Adapter changed')
     report={'schema':'vision-transfer.v1','status':'running','protocol':protocol,'protocol_sha256':checksum,
             'results':[],'versions':versions(),'training_started':False,'production_ready':False}
     start=time.monotonic()
@@ -190,9 +194,14 @@ def worker(out,checksum):
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('source',type=Path)
     parser.add_argument('--run',action='store_true');parser.add_argument('--finalize',action='store_true')
-    parser.add_argument('--worker-sha',help=argparse.SUPPRESS);args=parser.parse_args()
+    parser.add_argument('--worker-sha',help=argparse.SUPPRESS);parser.add_argument('--adapter-run',type=Path,help='Private adapter run to evaluate')
+    args=parser.parse_args()
     if args.finalize:print(json.dumps(finalize(args.source)['totals']));return 0
     if args.worker_sha:return worker(args.source,args.worker_sha)
+    global ADAPTER_RUN,ADAPTER,ADAPTER_SHA
+    if args.adapter_run:
+        ADAPTER_RUN=args.adapter_run;ADAPTER=ADAPTER_RUN/'adapter-INPUT-RESEARCH-NOT-FOR-PRODUCTION'
+        ADAPTER_SHA=sha256((ADAPTER/'adapter_model.safetensors').read_bytes()).hexdigest()
     protocol=load_exam(args.source)
     if not args.run:print(json.dumps({'reserved_cases':3,'generation_started':False}));return 0
     from scripts.compare_local_models import check_idle

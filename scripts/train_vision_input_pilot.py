@@ -1,4 +1,4 @@
-"""Three opt-in multimodal adapter updates; no quality claim, routing or promotion."""
+"""Bounded multimodal adapter updates; no quality claim, routing or promotion."""
 import argparse
 from contextlib import contextmanager
 from hashlib import sha256
@@ -18,7 +18,7 @@ from scripts.qwen_qlora_smoke import ROOT,MODEL,REVISION,configure,preflight,ver
 from scripts.check_vision_training_inputs import SNAPSHOT,REPO,VisionResponseCollator,feature
 
 PLAN=REPO/'config/vision-sft-input-pilot-001.json'
-SETTINGS={'max_length':4096,'max_steps':3,'rank':4,'alpha':8,'learning_rate':1e-5,
+SETTINGS={'max_length':4096,'max_steps':6,'rank':4,'alpha':8,'learning_rate':1e-5,
           'seed':3407,'batch_size':1,'vision_layers_frozen':True,'optimizer':'torch_adamw'}
 
 
@@ -40,7 +40,7 @@ def full_vision_names(registry):
 def load_protocol():
     plan=json.loads(PLAN.read_text())
     if (plan['schema']!='vision-input-training-research.v1' or plan['model']!=MODEL
-            or plan['revision']!=REVISION or plan['training']!=SETTINGS or plan['records']!=1
+            or plan['revision']!=REVISION or plan['training']!=SETTINGS or plan['records']!=2
             or plan['deadline_seconds']!=900 or plan['production_ready'] is not False
             or plan['automatic_promotion'] is not False or plan['held_out_quality_measured'] is not False):
         raise ValueError('New limits require a new explicit research protocol')
@@ -85,14 +85,18 @@ def train(out,plan,rows,report,persist):
     FastModel.for_training(model)
     processor.tokenizer.padding_side='right'
     collator=VisionResponseCollator(processor,4096)
-    batch=collator([feature(rows[0],Path(plan['bundle']))])
-    labels=batch['labels'];ids=batch['input_ids'];n=int((labels[0]==-100).sum())
-    if not torch.all(labels[0,:n]==-100) or not torch.equal(labels[:,n:],ids[:,n:]):raise RuntimeError('Actual training labels differ')
-    report['training_input']={'tokens':ids.shape[1],'supervised_tokens':int((labels!=-100).sum()),
-        'masked_tokens':n,'image_grid_thw':batch['image_grid_thw'].tolist(),
-        'pixel_values_shape':list(batch['pixel_values'].shape),'completion_mask_verified':True,
-        'input_ids_sha256':sha256(ids.numpy().tobytes()).hexdigest(),
-        'labels_sha256':sha256(labels.numpy().tobytes()).hexdigest()}
+    if len(rows)!=plan['records']:raise ValueError('Training row count differs from pinned protocol')
+    batches=[];training_inputs=[]
+    for row in rows:
+        batch=collator([feature(row,Path(plan['bundle']))])
+        labels=batch['labels'];ids=batch['input_ids'];n=int((labels[0]==-100).sum())
+        if not torch.all(labels[0,:n]==-100) or not torch.equal(labels[:,n:],ids[:,n:]):raise RuntimeError('Actual training labels differ')
+        training_inputs.append({'tokens':ids.shape[1],'supervised_tokens':int((labels!=-100).sum()),
+            'masked_tokens':n,'image_grid_thw':batch['image_grid_thw'].tolist(),
+            'pixel_values_shape':list(batch['pixel_values'].shape),'input_ids_sha256':sha256(ids.numpy().tobytes()).hexdigest(),
+            'labels_sha256':sha256(labels.numpy().tobytes()).hexdigest()})
+        batches.append(batch)
+    report['training_inputs']=training_inputs
     # Count actual calls to the model's visual module: a pixel tensor in a manifest is insufficient.
     visual=next((m for name,m in model.named_modules() if name.endswith('.visual')),None)
     if visual is None:raise RuntimeError('Could not locate visual module for instrumentation')
@@ -102,7 +106,8 @@ def train(out,plan,rows,report,persist):
     optimizer=torch.optim.AdamW([p for n,p in parameters],lr=1e-5)
     report.update(stage='training',steps=0,losses=[]);persist()
     try:
-        for step in range(3):
+        for step in range(plan['training']['max_steps']):
+            batch={k:v.to('cuda') for k,v in batches[step % len(batches)].items()}
             optimizer.zero_grad(set_to_none=True)
             with torch.autocast(device_type='cuda',dtype=torch.bfloat16):
                 output=model(**batch);loss=output.loss
@@ -137,7 +142,7 @@ def worker(out,input_sha):
         'protocol':plan,'protocol_sha256':sha256(PLAN.read_bytes()).hexdigest(),'input_sha256':input_sha,
         'resources_checked':payload['resources'],'versions':versions(),
         'weights_trained':False,'adapter_saved':False,'production_ready':False,'automatic_promotion':False,
-        'held_out_quality_measured':False,'limitation':'Three steps on one approved training image; validates plumbing, not generalization or service readiness.'}
+        'held_out_quality_measured':False,'limitation':'Six bounded updates over two independently approved training images; validates a small multimodal adapter experiment, not generalization or service readiness.'}
     started=time.monotonic()
     def persist():
         report['elapsed_seconds']=round(time.monotonic()-started,3)
@@ -161,9 +166,9 @@ def main():
     if args.worker:return worker(args.worker,args.input_sha)
     from scripts.check_vision_training_inputs import verify_bundle
     plan=load_protocol();bundle=Path(plan['bundle']);rows=verify_bundle(bundle)
-    if len(rows)!=1 or sha256((bundle/'records.jsonl').read_bytes()).hexdigest()!=plan['records_sha256']:
+    if len(rows)!=plan['records'] or sha256((bundle/'records.jsonl').read_bytes()).hexdigest()!=plan['records_sha256']:
         raise ValueError('Pinned reviewed record changed')
-    if not args.run:print(json.dumps({'records':1,'training_started':False,'protocol':plan}));return 0
+    if not args.run:print(json.dumps({'records':plan['records'],'training_started':False,'protocol':plan}));return 0
     from scripts.compare_local_models import check_idle
     resources=check_idle()
     out=Path(tempfile.mkdtemp(prefix='vision-input-sft-',dir=ROOT))
