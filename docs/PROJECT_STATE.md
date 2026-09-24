@@ -1,5 +1,18 @@
 # Stan projektu AI Company
 
+## Aktualizacja 24.09.2026 — korpus 200 i drugi pełny pomiar adaptera
+
+Automatyczny intake osiągnął `200 train / 25 validation / 50 test` i przeszedł
+bramkę danych, porównania oraz rollbacku. Izolowany QLoRA wykonał 50 aktualizacji
+na 200 rekordach i wygenerował 50 par base/adapter. Wynik obu wersji pozostał
+identyczny: **23/24** napraw atrybutów oraz **0/1** pełnej rekonstrukcji.
+Adapter nie został wdrożony. Wniosek jest negatywny dla obecnego składu danych:
+więcej kontrolowanych napraw nie przeniosło się na pełne projekty.
+
+Kolejny etap wymaga pełnych rekonstrukcji i osobnych prób dla pięciu usług zleceń
+Upwork. System ma bramkę odrzucającą wadliwe wyniki, lecz nie ma jeszcze dowodu
+porównywalności z asystentem ani gotowości komercyjnej.
+
 ## Aktualizacja 23.09.2026 — badanie adaptera na 84 rekordach
 
 Izolowany eksperyment QLoRA wytrenował adapter na 84 unikalnych rekordach
