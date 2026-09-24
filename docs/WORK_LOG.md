@@ -4633,3 +4633,15 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   `15/15`; nowy adapter `2/3`, `10/15`. Jeden przypadek nadal zwraca schemat
   JSON zamiast obserwacji. `parity_proven=false`; adapter pozostaje prywatny,
   bez promocji i bez kwalifikacji usługi.
+
+## 2026-09-24 — zaakceptowana modelowa rewizja elementu infografiki
+
+- Na podstawie niezależnej oceny serii FIELD 600 uruchomiono lokalny model z
+  chronionym obrazem i komentarzem dotyczącym niewiarygodnej zakrętki. Model
+  sam zwrócił geometrię zamkniętej zakrętki; ciało butelki i napis pozostały
+  chronione i nie były poprawiane przez asystenta.
+- Odbiór przed/po zatwierdził tę jedną rewizję jako syntetyczny rekord nauki:
+  `visual-revision-1lc28wiu`, paczka `vision-candidates-8no40do6`. Nie jest to
+  aprobata komercyjna ani dowód gotowości czterech paneli.
+- Autopilot sprawdził pochodzenie i zwiększył stan do `train=202`,
+  `validation=25`, `test=50`. Rekord nie został jeszcze użyty do treningu wag.
