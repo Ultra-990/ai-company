@@ -4651,3 +4651,17 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   dokładne linie dostawcy. Niezależny odbiór zaakceptował wynik jako drugi
   syntetyczny rekord rewizji (`visual-revision-gw62d_ql`); autopilot potwierdził
   `train=203`, `validation=25`, `test=50`.
+
+## 2026-09-24 — pełny eksperyment korpusowy bez poprawy wektora
+
+- Uruchomiono prywatny trener korpusowy na wszystkich 203 zatwierdzonych
+  rekordach, w tym na dwóch nowych rewizjach infografik. Wykonał 51 grup
+  aktualizacji, przeszedł audyt masek i 203 rzeczywiste przejścia wizualne.
+- Dopasowana walidacja na zamrożonym egzaminie wektorowym zawierała 50
+  odpowiedzi (25 base, 25 adapter). Wynik pozostał identyczny: atrybuty
+  `23/24` dla base i adaptera, pełna rekonstrukcja `0/1` dla obu.
+- Raport prywatny `vision-corpus-sft-mbn5utct/comparison.json`, SHA raportu
+  treningowego `5044951c1213837d5e4bdad81689ba53c952c04deec97c75ec9ef575668efe5d`.
+  Adapter nie został promowany; eksperyment potwierdza brak transferu jakości
+  mimo większego, mieszanego korpusu i kieruje dalszą naukę na pełne zadania
+  rekonstrukcji zamiast kolejnych napraw pojedynczych atrybutów.
