@@ -4570,3 +4570,9 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Z pięciu zrewidowanych odpowiedzi technicznych utworzono wersjonowaną partię z niezależnymi dowodami semantycznej akceptacji. Nowy protokół `config/qwen-sft-pilot-003.json` obejmuje 19 rekordów i trzy zamrożone sondy recenzenta.
 - Lokalny QLoRA wykonał 18 aktualizacji i zapisał prywatny adapter. Sonda ogólna pozostała `11/12` przed i po treningu. W trzech sondach recenzenta wynik strukturalny wyniósł `0/3` przed i `0/3` po: odpowiedzi zawierały ogrodzenie Markdown mimo wymogu czystego JSON. Semantyczne uwagi były w większości trafne, ale kontrakt dostawy jest niespełniony.
 - Adapter nie został wdrożony. Ten wynik kieruje dalszą naukę na ścisłe formaty wyjściowe i pełne scenariusze usług; nie jest dowodem jakości porównywalnej z asystentem.
+
+## 2026-09-24 — wspólny kontrakt kwalifikacji pięciu usług
+
+- Dodano `scripts/upwork_qualification.py` i testy macierzy kwalifikacyjnej. Kontrakt obejmuje: recenzję techniczną LLM, obrazy wnętrz/Pinterest, rekonstrukcję ulotki wektorowej, infografiki Amazon oraz branding restauracji.
+- Każda usługa wymaga własnego wyniku lokalnego modelu, kontroli technicznych, niezależnej oceny, egzaminu holdout i dopasowanego porównania z bazą. Brak któregokolwiek dowodu oznacza brak kwalifikacji.
+- Aktualna macierz zwraca `0/5`; system nie pozwala wyprowadzić twierdzenia o parytecie z pojedynczych pilotów.
