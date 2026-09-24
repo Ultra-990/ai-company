@@ -52,7 +52,8 @@ def prepare(state_path, exam_path):
     from scripts.prepare_training_data import unique_object
     state_bytes = state_path.read_bytes()
     state = json.loads(state_bytes, object_pairs_hook=unique_object)
-    if state.get('schema') != 'learning-autopilot.v1': raise ValueError('Recognized intake snapshot required')
+    if state.get('schema') not in {'learning-autopilot.v1', 'learning-autopilot-group.v1'}:
+        raise ValueError('Recognized intake snapshot required')
     entries, ids, seen_rows, families, images = [], set(), {}, set(), set()
     for key, cached in sorted(state['entries'].items()):
         bundle = Path(cached['bundle']); rows = verify_bundle(bundle)

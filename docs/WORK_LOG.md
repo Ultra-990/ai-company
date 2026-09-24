@@ -4782,3 +4782,13 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   assessor wykazał base `16/24` atrybutów i `0/1` rekonstrukcji, adapter `0/24`
   i `0/1`. To regresja po dodaniu zadań brandingu; adapter nie został
   wypromowany ani podłączony do produkcji.
+
+## 2026-09-24 — izolowane grupy treningowe
+
+- Dodano `scripts/make_training_group_snapshot.py` oraz obsługę snapshotu grupy
+  w trenerze. Snapshot `brand-group-state.json` zawiera wyłącznie trzy rekordy
+  rodziny `juniper-table-identity-001`, przy zachowaniu tych samych zamrożonych
+  examów walidacyjnych/testowych i dowodu rollbacku.
+- Trener w trybie planowania potwierdził `records=3`, `updates=1`,
+  `training_started=false`. Nie uruchomiono brand-only wag bez osobnego
+  holdoutu brandingu; wspólny adapter pozostaje odrzucony po regresji.
