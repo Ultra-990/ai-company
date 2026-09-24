@@ -4759,3 +4759,7 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   edytowalnych SVG/PDF/PNG oraz przewodnik marki. Pakiet jest oznaczony jako
   `pending_independent_visual_review`; nie został wyeksportowany do treningu,
   wdrożony ani uznany za gotowy komercyjnie.
+- Dodano `scripts/assess_brand_package.py`, który niezależnie od generatora
+  sprawdza manifest, komplet sześciu formatów, parsowanie SVG i brak rasterów/
+  skryptów. Dla tego pakietu wszystkie kontrole strukturalne przeszły, ale
+  assessor nadal raportuje brak niezależnej akceptacji wizualnej i baseline'u.
