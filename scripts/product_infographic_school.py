@@ -141,6 +141,11 @@ def intersects(a, b):
 def quality_issues(measured, *, panel=False):
     profile = 'product_infographic' if panel else 'product_source'
     issues = layout_issues(measured['layout'], profile=profile)
+    for issue in issues:
+        if issue.get('kind') == 'text_margin_or_bounds':
+            issue['required'] = 'every text bbox must stay inside the 50-unit panel margin'
+        elif issue.get('kind') == 'text_overlap':
+            issue['required'] = 'text bboxes must remain non-overlapping'
     if panel:
         groups = measured['group_layout']
         if len(groups) != 1: return issues+[{'kind': 'exactly_one_product_required'}]

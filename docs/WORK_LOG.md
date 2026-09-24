@@ -4867,3 +4867,7 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Kontrakt panelu oraz niezależny błąd pomiarowy przekazują teraz jawnie
   warunek `width>=120` obok wysokości, marginesów i rozdzielenia od tekstu.
   Testy produktu i korekt: `23 passed`.
+- Kolejna świeża seria przeszła przez produkt, pojemność i wymiary, lecz
+  zatrzymała się na nagłówku materiałów poza marginesem. Raporty błędów
+  tekstowych zawierają teraz jawny wymóg marginesu 50 jednostek; seria
+  pozostała odrzucona i nie weszła do zbioru.
