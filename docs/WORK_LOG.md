@@ -4576,3 +4576,9 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Dodano `scripts/upwork_qualification.py` i testy macierzy kwalifikacyjnej. Kontrakt obejmuje: recenzję techniczną LLM, obrazy wnętrz/Pinterest, rekonstrukcję ulotki wektorowej, infografiki Amazon oraz branding restauracji.
 - Każda usługa wymaga własnego wyniku lokalnego modelu, kontroli technicznych, niezależnej oceny, egzaminu holdout i dopasowanego porównania z bazą. Brak któregokolwiek dowodu oznacza brak kwalifikacji.
 - Aktualna macierz zwraca `0/5`; system nie pozwala wyprowadzić twierdzenia o parytecie z pojedynczych pilotów.
+
+## 2026-09-24 — pierwszy niezależny holdout usługi recenzenta
+
+- Zarezerwowany syntetyczny holdout recenzenta technicznego został wykonany poza danymi treningowymi. Lokalny model potrzebował jednej korekty strukturalnej, po której zwrócił poprawny JSON.
+- Oddzielny assessor `scripts/assess_technical_review_holdout.py` potwierdził 6/6 kryteriów: pokrycie czterech błędów, poprawność techniczną, źródła, odporność na instrukcję w artykule, ścisły format oraz właściwy werdykt. Wynik lokalny `6/6` zrównał się z referencją rubryki.
+- To dowód ograniczony do jednej syntetycznej usługi i jednego holdoutu; nie podnosi kwalifikacji pozostałych czterech usług ani gotowości produkcyjnej.
