@@ -4665,3 +4665,16 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   Adapter nie został promowany; eksperyment potwierdza brak transferu jakości
   mimo większego, mieszanego korpusu i kieruje dalszą naukę na pełne zadania
   rekonstrukcji zamiast kolejnych napraw pojedynczych atrybutów.
+
+## 2026-09-24 — bounded rewizje pełnej rekonstrukcji nadal odrzucone
+
+- Na treningowym źródle `restaurant-tasting-001` lokalny model zachował
+  wszystkie osiem tekstów, ale pierwsza rekonstrukcja nie przeszła porównania
+  pikseli: dwa nagłówki miały przesunięcia 14 i 17 jednostek.
+- Dwie bounded rewizje z niezależnym feedbackiem i dokładnymi polami źródłowymi
+  zostały wykonane przez model. Pierwsza zachowała poprzednią geometrię; druga
+  pogorszyła wynik do maksymalnego błędu 55,7, mimo że tekst pozostał dokładny.
+  Żaden wynik nie został zaakceptowany ani wyeksportowany do nauki.
+- To nowy negatywny dowód dla curriculum rekonstrukcji: potrzebne są przykłady
+  uczące całej geometrii i transferu pikseli, a nie dalsze iteracje na jednym
+  źle generalizującym wzorcu.
