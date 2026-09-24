@@ -90,6 +90,8 @@ def verify_bundle(bundle):
         from scripts import interior_learning_records as records
     elif collector=='vector-attribute-v1':
         from scripts import vector_learning_records as records
+    elif collector=='vector-reconstruction-v1':
+        from scripts import vector_reconstruction_records as records
     elif collector=='product-visual-revision-v1':
         from scripts import product_visual_revision as records
     else:raise ValueError('Unknown approved-conversation collector')

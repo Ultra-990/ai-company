@@ -17,6 +17,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts import interior_learning_records as interior
 from scripts import vector_learning_records as vector
+from scripts import vector_reconstruction_records as reconstruction
 from scripts import product_visual_revision as product
 from scripts import vector_exam as reserved_exam
 from scripts.check_vision_training_inputs import verify_bundle
@@ -54,7 +55,21 @@ def sources():
     for series in sorted(vector.school.ROOT.glob('practice-*')):
         paths = sorted(series.glob('case-*/experience.json'))
         practice_batches.extend(('vector_batch', tuple(paths[i:i+16])) for i in range(0, len(paths), 16))
+    reconstruction_pairs = []
+    for report in sorted(vector.school.ROOT.glob('source-*/report.json')):
+        review = report.parent/'reference-review.json'
+        try:
+            report_data = json.loads(report.read_text())
+            review_data = json.loads(review.read_text())
+            if (review.is_file() and report_data.get('status') == 'reference_ready'
+                    and report_data.get('role') == 'source' and report_data.get('data_split') == 'train'
+                    and review_data.get('schema') == 'vector-reference-review.v1'
+                    and review_data.get('decision') == 'usable_synthetic_training_reference'):
+                reconstruction_pairs.append((report, review))
+        except (OSError, ValueError, TypeError):
+            continue
     return [('vector', path) for path in vector_paths] + practice_batches + [
+        ('vector_reconstruction', pair) for pair in reconstruction_pairs] + [
         ('interior', path) for path in sorted(interior.school.ROOT.glob('inspect-*/teacher-judgments.json'))] + [
         ('product', path) for path in sorted(product.ROOT.glob('visual-revision-*/learning-review.json'))]
 
@@ -134,6 +149,11 @@ def collect(kind, path):
         if archived['split'] != 'train': return [], None
         rows, _ = vector.collect(report, review)
         return rows, lambda: vector.export([path])
+    if kind == 'vector_reconstruction':
+        if not isinstance(path, tuple) or len(path) != 2:
+            raise ValueError('Reconstruction report/review pair required')
+        rows, _ = reconstruction.collect(path[0], path[1])
+        return rows, lambda: reconstruction.export([path])
     if kind == 'interior':
         rows, _ = interior.collect(path.parent/'report.json', path)
         return rows, lambda: interior.export(path.parent/'report.json', path)

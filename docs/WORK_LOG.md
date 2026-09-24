@@ -4691,3 +4691,17 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Żaden wynik rekonstrukcji nie został zaakceptowany ani wyeksportowany.
   Przykład potwierdza częściową reakcję modelu na feedback, lecz nadal nie
   spełnia kontraktu pełnego odtworzenia.
+
+## 2026-09-24 — osobny kolektor danych pełnej rekonstrukcji
+
+- Dodano `scripts/vector_reconstruction_records.py`. Kolektor wiąże obraz,
+  dokładny SVG i rozmowę „image → editable SVG” wyłącznie wtedy, gdy źródło
+  pochodzi z lokalnego modelu, ma trainowy split i niezależną pozytywną ocenę.
+  Nie akceptuje odpowiedzi rekonstrukcyjnych ani nie poprawia grafiki.
+- Autopilot rozpoznaje teraz tylko poprawnie zatwierdzone pary źródło/ocena;
+  stare lub odrzucone referencje są pomijane bez tworzenia błędów intake.
+  Aktualny stan wzrósł do `train=207`, `validation=25`, `test=50`, a nowy
+  kolektor przeszedł audyt obrazu i maski procesora.
+- Testy kierunkowe szkoły, autopilota, egzaminu i audytu multimodalnego:
+  `119 passed`. Rekordy pozostają kandydatami treningowymi; wag jeszcze nie
+  aktualizowano.
