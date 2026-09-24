@@ -4802,3 +4802,5 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Holdout ma pełny pakiet SVG/PDF/PNG, `independent_visual_acceptance=true`,
   ale `matched_baseline=false` i pozostaje walidacją prywatną. Jest gotowy do
   użycia przez przyszły brand-only evaluator.
+
+- Wzmocniono kontrakt o zakaz dekoracji przecinających tekst. Holdout `identity-ova6f6j7` przeszedł assessor strukturalny i niezależny ogląd; wcześniejszy `identity-68e_e09_` pozostaje negatywnym przypadkiem walidacyjnym.
