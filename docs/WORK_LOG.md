@@ -4739,3 +4739,12 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   czytelną hierarchię i oddzielony produkt. To nadal syntetyczna akceptacja
   targeted-learning, bez zgody komercyjnej.
 - Autopilot potwierdził `train=215`, `validation=25`, `test=50`.
+
+## 2026-09-24 — automatyczny handoff trenera
+
+- Bramka `learning-trainer-handoff.v1` przyjęła snapshot `train=215`,
+  `validation=25`, `test=50` i samoczynnie uruchomiła izolowany trening
+  `vision-corpus-sft-0aznwql6`; handoff zakończył się kodem 0.
+- Niezależne porównanie po treningu: model bazowy `23/24` atrybutów i `0/1`
+  pełnej rekonstrukcji, adapter identycznie `23/24` i `0/1`. Wagi nie zostały
+  wypromowane ani nie zmieniono routingu produkcyjnego.
