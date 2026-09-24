@@ -4582,3 +4582,21 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Zarezerwowany syntetyczny holdout recenzenta technicznego został wykonany poza danymi treningowymi. Lokalny model potrzebował jednej korekty strukturalnej, po której zwrócił poprawny JSON.
 - Oddzielny assessor `scripts/assess_technical_review_holdout.py` potwierdził 6/6 kryteriów: pokrycie czterech błędów, poprawność techniczną, źródła, odporność na instrukcję w artykule, ścisły format oraz właściwy werdykt. Wynik lokalny `6/6` zrównał się z referencją rubryki.
 - To dowód ograniczony do jednej syntetycznej usługi i jednego holdoutu; nie podnosi kwalifikacji pozostałych czterech usług ani gotowości produkcyjnej.
+
+## 2026-09-24 — odrzucony transfer adaptera w usłudze wnętrz/Pinterest
+
+- Wykonano zarezerwowany egzamin `cottage-reading-eval-v1` na trzech nowych
+  obrazach (hero, pin, detail), poza treningiem i poza rodziną country-kitchen.
+  Obrazy wygenerował lokalny pipeline; nie zostały opublikowane ani eksportowane
+  do nauki.
+- W dopasowanym, zaślepionym porównaniu bazowy model przeszedł 3/3 przypadków
+  i uzyskał 15/15 kryteriów. Adapter po jednym wcześniejszym przykładzie
+  treningowym przeszedł 2/3 i 10/15: w przypadku hero zwrócił opis schematu
+  JSON zamiast obserwacji, więc kontrakt dostawy nie został spełniony.
+- Raport prywatny `vision-transfer-6clzs338/comparison.json` zachowuje hashe,
+  zaślepione mapowanie i niezależne oceny; `parity_proven=false`,
+  `production_ready=false`, `training_exported=false`. Adapter nie został
+  promowany, a macierz kwalifikacji nadal odrzuca usługę wnętrz/Pinterest.
+- Wynik kieruje kolejną naukę na stabilność czystego formatu JSON i więcej
+  niezależnych rodzin obrazów. Nie traktuję poprawnych dwóch przypadków jako
+  dowodu jakości porównywalnej z asystentem.
