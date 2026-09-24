@@ -4824,3 +4824,8 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 
 - Próba `identity-uv6hbi5_` została odrzucona wizualnie, bo dekoracyjna kreska przecinała tagline. Próba `identity-7wtdd1nj` przeszła ogląd i została dodana jako pozytywny rekord.
 - Autopilot osiągnął `train=224`, a snapshot brand-only ma dziewięć rekordów i trzy aktualizacje. Wadliwy kandydat pozostał poza treningiem; kolejny eksperyment jest gotowy do uruchomienia na tym zbiorze.
+
+## 2026-09-24 — dziewięć rekordów brand-only nadal bez poprawy
+
+- Trening `vision-corpus-sft-r22gnkjj` na dziewięciu rekordach brandingu ponownie dał base `0/3` i adapter `0/3` na holdoucie Cedar & Salt.
+- Powtarzanie rund nie poprawia formatu odpowiedzi; dowód wskazuje na potrzebę osobnego text-to-SVG/JSON toru brandingu zamiast dalszego zwiększania tego multimodalnego adaptera.
