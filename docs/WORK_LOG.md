@@ -4645,3 +4645,9 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   aprobata komercyjna ani dowód gotowości czterech paneli.
 - Autopilot sprawdził pochodzenie i zwiększył stan do `train=202`,
   `validation=25`, `test=50`. Rekord nie został jeszcze użyty do treningu wag.
+
+- Wykonano także panel `dimensions`. Po jednej bounded korekcie lokalny model
+  ułożył czytelny diagram z prowadnicami wysokości i średnicy oraz zachował
+  dokładne linie dostawcy. Niezależny odbiór zaakceptował wynik jako drugi
+  syntetyczny rekord rewizji (`visual-revision-gw62d_ql`); autopilot potwierdził
+  `train=203`, `validation=25`, `test=50`.
