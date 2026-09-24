@@ -4804,3 +4804,8 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   użycia przez przyszły brand-only evaluator.
 
 - Wzmocniono kontrakt o zakaz dekoracji przecinających tekst. Holdout `identity-ova6f6j7` przeszedł assessor strukturalny i niezależny ogląd; wcześniejszy `identity-68e_e09_` pozostaje negatywnym przypadkiem walidacyjnym.
+
+## 2026-09-24 — brand holdout scorer
+
+- Dodano `scripts/brand_exam.py`, który ocenia logo i wizytówkę na rodzinie holdout bez użycia odpowiedzi treningowych. Odpowiedzi lokalnego modelu dla `identity-ova6f6j7` przeszły 3/3 przypadki: tekst, kompilacja SVG i render bez zmierzonych defektów.
+- Scorer jest gotowy do podłączenia do brand-only adaptera; obecny wynik dotyczy modelu generującego pakiet holdout i nie jest jeszcze porównaniem base/adapter.
