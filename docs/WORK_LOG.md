@@ -4814,3 +4814,8 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 
 - Podłączono `restaurant-brand-exam.v1` do trenera i scorera. Brand-only trening `vision-corpus-sft-osacnlug` wykonał jeden krok na trzech rekordach, bez użycia wspólnego adaptera.
 - Niezależny wynik holdoutu `cedar-salt-brand-holdout-001`: base `0/3`, adapter `0/3`. Odpowiedzi obu wariantów nie spełniły kontraktu sceny brandingu (format JSON/scene mismatch), więc nie ma poprawy ani promocji.
+
+## 2026-09-24 — sześć rekordów brand-only bez poprawy
+
+- Dodano drugi zaakceptowany pakiet treningowy `identity-kue8g0jf`; intake wzrósł do `221/25/50`, a snapshot brand-only do sześciu rekordów i dwóch aktualizacji.
+- Ponowny trening `vision-corpus-sft-ktnnpywz` nadal dał base `0/3` i adapter `0/3` na `cedar-salt-brand-holdout-001`. Problem nie wynika wyłącznie z małej liczby przykładów; obecny multimodalny format odpowiedzi HF nie odwzorowuje kontraktu sceny brandingu. Adapter odrzucony.
