@@ -4600,3 +4600,8 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Wynik kieruje kolejną naukę na stabilność czystego formatu JSON i więcej
   niezależnych rodzin obrazów. Nie traktuję poprawnych dwóch przypadków jako
   dowodu jakości porównywalnej z asystentem.
+- Po tym wyniku ponownie przejrzano wcześniejszy pakiet country-kitchen.
+  Do prywatnego zbioru dopuszczono tylko jeden dodatkowy, poprawny opis hero;
+  odrzucono pin za nieuzasadnione liczenie talerzy i detail za twierdzenie o
+  świeżości ziół. Autopilot potwierdził `train=201`, `validation=25`, `test=50`;
+  nie uruchomiono kolejnego treningu bez większej, zróżnicowanej partii.
