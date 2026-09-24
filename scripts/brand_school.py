@@ -168,7 +168,10 @@ no overlap of their bounding boxes. Leave enough room below the card's last line
 All numbers are STRINGS. Use only literal palette colors or none, the planned
 font families, weights400/700 and explicit text x,y,font-size,font-family,font-weight,fill.
 Logo font-size20..120; card text size at least28, with no overlap. SVG y is baseline.
-Account for actual text width. Paths must be short and simple; no groups, scripts,
+Account for actual text width. For the 600x360 logo reserve the upper symbol area
+for y=30..235 and put the wordmark baseline at y=315 or lower; never let any
+symbol or line enter the wordmark's measured bounding box. Keep at least 24px
+vertical clearance between symbol geometry and the wordmark. Paths must be short and simple; no groups, scripts,
 images, external resources, rotations, gradients or CSS in your scene. Shape fields
 are rect:x,y,width,height,fill; circle:cx,cy,r,fill; ellipse:cx,cy,rx,ry,fill;
 line:x1,y1,x2,y2,stroke,stroke-width; path:d,fill,stroke,stroke-width.

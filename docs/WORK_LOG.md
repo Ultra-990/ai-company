@@ -4748,3 +4748,14 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Niezależne porównanie po treningu: model bazowy `23/24` atrybutów i `0/1`
   pełnej rekonstrukcji, adapter identycznie `23/24` i `0/1`. Wagi nie zostały
   wypromowane ani nie zmieniono routingu produkcyjnego.
+
+## 2026-09-24 — pierwsza przechodząca próba brandingu restauracji
+
+- Dwie pierwsze próby lokalnego modelu zostały odrzucone przez kontrakt layoutu:
+  dolna linia wizytówki wychodziła poza margines, a symbol logo nachodził na
+  wordmark. Wzmocniono instrukcję modelu o jawne strefy geometrii i minimalny
+  odstęp 24 px; testy kontraktu nadal przechodzą (`12 passed`).
+- Kolejna próba `identity-7o14b3_r` wygenerowała kompletny pakiet sześciu
+  edytowalnych SVG/PDF/PNG oraz przewodnik marki. Pakiet jest oznaczony jako
+  `pending_independent_visual_review`; nie został wyeksportowany do treningu,
+  wdrożony ani uznany za gotowy komercyjnie.
