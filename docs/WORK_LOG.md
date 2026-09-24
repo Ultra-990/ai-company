@@ -4834,3 +4834,8 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 
 - Dodano `scripts/train_brand_text_pilot.py`, wykorzystujący istniejący tekstowy QLoRA runner, oraz `scripts/score_brand_text_pilot.py`. Dane brandingu są trenowane bez obrazów, jako text-to-SVG/JSON.
 - Pilot `brand-text-sft-1f0a_7s5` wykonał 20 kroków na dziewięciu rekordach. Niezależny holdout Cedar & Salt: base `0/3`, text-only adapter `3/3` (oba logo i wizytówka). Adapter nie jest promowany; wynik nie dowodzi jeszcze parytetu z asystentem ani gotowości komercyjnej.
+
+## 2026-09-24 — cross-family text adapter validation
+
+- Dodano drugą rodzinę holdout `maple-ember-brand-holdout-001`; lokalny model wygenerował pakiet zaakceptowany wizualnie. Text-only adapter `brand-text-sft-1f0a_7s5` przeniósł się na nowy brief: base `0/3`, adapter `3/3`.
+- Porównanie zapisano jako `maple-comparison.json` z hashami odpowiedzi i egzaminu. To nadal dowód syntetyczny, bez baseline'u asystenta i bez zgody produkcyjnej.
