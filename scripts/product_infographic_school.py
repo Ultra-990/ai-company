@@ -146,7 +146,8 @@ def quality_issues(measured, *, panel=False):
         if len(groups) != 1: return issues+[{'kind': 'exactly_one_product_required'}]
         box = groups[0]['bbox']; x, y, w, h = box
         if x < 50 or y < 50 or x+w > 1450 or y+h > 1450 or w < 120 or h < 350:
-            issues.append({'kind': 'product_bounds_or_size', 'bbox': box})
+            issues.append({'kind': 'product_bounds_or_size', 'bbox': box,
+                           'required': 'x,y>=50; right,bottom<=1450; width>=120; height>=350'})
         for line in measured['layout'][1:]:
             if intersects(box, line['bbox']): issues.append({'kind': 'product_overlaps_copy', 'text': line['text']})
     else:
@@ -177,7 +178,7 @@ Font-size44..130, each text line has text-anchor explicitly. Choose product_plac
 x,y,scale (.1..1.5). The compiler inserts ALL original product artwork unchanged
 after background shapes and before text, with only your translate/scale. Do not
 draw another bottle or add product features. Keep the full product within a
-50-unit margin, visibly at least350 units tall, and its bounding box separate
+50-unit margin, visibly at least 120 units wide and 350 units tall, and its bounding box separate
 from the three infographic lines. Never overlap text lines. Keep the series
 coherent but use a purposeful layout for each different communication goal.'''
 

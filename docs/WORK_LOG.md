@@ -4858,3 +4858,12 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Macierz kwalifikacji zaktualizowano: Amazon ma teraz potwierdzone
   `local_model_output`, `product_fidelity_checks` i `four_panel_package`;
   pełna akceptacja wizualna i matched baseline pozostają celowo niezaliczone.
+
+## 2026-09-25 — wzmocnienie kontraktu rozmiaru Amazon
+
+- Świeża seria `series-i34m__ve` i jej jedna dozwolona korekta ujawniły,
+  że model nadal wybierał produkt o szerokości 112 px. Próba została
+  zatrzymana po limicie korekt; nie zapisano jej jako pozytywnego przykładu.
+- Kontrakt panelu oraz niezależny błąd pomiarowy przekazują teraz jawnie
+  warunek `width>=120` obok wysokości, marginesów i rozdzielenia od tekstu.
+  Testy produktu i korekt: `23 passed`.
