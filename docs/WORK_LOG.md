@@ -4855,3 +4855,6 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Poprawka `visual-revision-x1z29_23` została zaakceptowana jako jeden
   syntetyczny rekord multimodalny. Autopilot po zebraniu rekordu raportuje
   `train=225`, `validation=25`, `test=50`; adapter nie został wypromowany.
+- Macierz kwalifikacji zaktualizowano: Amazon ma teraz potwierdzone
+  `local_model_output`, `product_fidelity_checks` i `four_panel_package`;
+  pełna akceptacja wizualna i matched baseline pozostają celowo niezaliczone.
