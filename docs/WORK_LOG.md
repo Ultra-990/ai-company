@@ -4844,3 +4844,4 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 
 - Dodano deklaratywny `app/services/model_routing.py` i testy routingu. Domyślne zadania nadal korzystają z ograniczonego Ollama; wytrenowany adapter brandingu jest opisany jako eksperymentalny, ale `enabled=false`, więc nie może zostać przypadkowo użyty przez wykonanie lokalne.
 - `local_inference.execution_config` zapisuje wybraną trasę i odrzuca niepromowane adaptery. Sam opis trasy nie zmienia konfiguracji produkcyjnej ani nie jest dowodem gotowości usługi.
+- Pełny zestaw repozytorium po zmianie: `1707 passed, 21 skipped`.
