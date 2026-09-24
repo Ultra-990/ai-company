@@ -30,6 +30,10 @@ def make(package, output):
 
 
 def score(raw, case, out):
+    raw = raw.strip()
+    if raw.startswith('```'):
+        lines = raw.splitlines()
+        raw = '\n'.join(lines[1:-1]).strip() if len(lines) >= 3 else raw
     request=case['request']; data=json.loads(request['user']); brief=data['brief']; plan=data['plan']
     old=brand_school.BRIEF; brand_school.BRIEF=brief
     try:

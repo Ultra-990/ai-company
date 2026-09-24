@@ -73,19 +73,34 @@ def prepare(state_path, exam_path):
             seen_rows[row['id']] = row
             entries.append({'bundle': str(bundle), 'row': row, 'records_sha256': digest(bundle/'records.jsonl'),
                             'manifest_sha256': digest(bundle/'manifest.json'), 'audit': cached['audit']})
-    steps = schedule(len(entries)); exam, _, _ = load_exam(exam_path)
-    if exam['data_split'] != 'validation': raise ValueError('Research comparison uses validation, not final test data')
-    requests = []
-    for case in exam['cases']:
-        request_path = exam_path.parent/f"case-{case['id']:02d}"/'request.json'
-        request = json.loads(request_path.read_text(), object_pairs_hook=unique_object)
-        if exam['family'] in families or request['image']['sha256'] in images:
-            raise ValueError('Training family or image leaked into validation')
-        requests.append({'id': case['id'], 'kind': case['kind'], 'request': request,
-                         'request_sha256': school.checksum(request_path)})
+    steps = schedule(len(entries))
+    raw_exam = json.loads(exam_path.read_text(), object_pairs_hook=unique_object)
+    if raw_exam.get('schema') == 'restaurant-brand-exam.v1':
+        exam = raw_exam; requests = []
+        if exam.get('data_split') != 'validation': raise ValueError('Brand exam must be validation split')
+        for case in exam['cases']:
+            request = case['request']; image = Path(case['image_path'])
+            if exam['family'] in families or digest(image) in images:
+                raise ValueError('Training family or image leaked into validation')
+            request = dict(request); request['image'] = {'path': str(image), 'sha256': digest(image)}
+            requests.append({'id': case['id'], 'kind': case['kind'], 'request': request,
+                             'request_sha256': sha256(json.dumps(request, sort_keys=True).encode()).hexdigest()})
+        exam_schema = 'restaurant-brand-exam.v1'
+    else:
+        exam, _, _ = load_exam(exam_path)
+        if exam['data_split'] != 'validation': raise ValueError('Research comparison uses validation, not final test data')
+        requests = []
+        for case in exam['cases']:
+            request_path = exam_path.parent/f"case-{case['id']:02d}"/'request.json'
+            request = json.loads(request_path.read_text(), object_pairs_hook=unique_object)
+            if exam['family'] in families or request['image']['sha256'] in images:
+                raise ValueError('Training family or image leaked into validation')
+            requests.append({'id': case['id'], 'kind': case['kind'], 'request': request,
+                             'request_sha256': school.checksum(request_path)})
+        exam_schema = exam.get('schema')
     return {'protocol': load_protocol(), 'state_sha256': sha256(state_bytes).hexdigest(), 'entries': entries, 'schedule': steps,
             'families': sorted(families), 'exam': str(exam_path), 'exam_sha256': digest(exam_path),
-            'validation': requests, 'training_started': False}
+            'exam_schema': exam_schema, 'validation': requests, 'training_started': False}
 
 
 def train(out, data, report, persist):
@@ -176,7 +191,11 @@ def evaluate(model, processor, data, report, persist):
                 {'type': 'text', 'text': request['user']}, {'type': 'image'}]}]
             prompt = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, enable_thinking=False)
             inputs = processor(text=prompt, images=[pixels], return_tensors='pt', add_special_tokens=False, truncation=False)
-            n = inputs['input_ids'].shape[1]; limit = 400 if case['kind'] == 'attribute_restoration' else 2400
+            n = inputs['input_ids'].shape[1]
+            if data.get('exam_schema') == 'restaurant-brand-exam.v1':
+                limit = 900
+            else:
+                limit = 400 if case['kind'] == 'attribute_restoration' else 2400
             if n+limit > 4096: raise ValueError('Validation context overflow')
             start = time.monotonic()
             with (model.disable_adapter() if phase == 'base' else nullcontext()), torch.inference_mode():
@@ -228,11 +247,16 @@ def assess(out):
         raise ValueError('Adapter changed')
     path = Path(data['exam'])
     if digest(path) != data['exam_sha256']: raise ValueError('Frozen exam changed')
-    definition, source, measured = exam.load_exam(path)
-    expected = {(phase, i) for phase in ('base', 'adapter') for i in range(25)}
+    if data.get('exam_schema') == 'restaurant-brand-exam.v1':
+        from scripts import brand_exam
+        definition = json.loads(path.read_text())
+        source = measured = None
+    else:
+        definition, source, measured = exam.load_exam(path)
+    expected = {(phase, i) for phase in ('base', 'adapter') for i in range(len(definition['cases']))}
     responses = {(r['phase'], r['id']): r for r in report['results']}
-    if len(report['results']) != 50 or set(responses) != expected: raise ValueError('Complete matched response set required')
-    for i in range(25):
+    if len(report['results']) != len(expected) or set(responses) != expected: raise ValueError('Complete matched response set required')
+    for i in range(len(definition['cases'])):
         for key in ('input_ids_sha256', 'pixel_values_sha256', 'prompt_sha256'):
             if responses['base', i][key] != responses['adapter', i][key]: raise ValueError('Unmatched candidate inputs')
     scores = []
@@ -249,15 +273,22 @@ def assess(out):
             result = {'phase': phase, 'id': entry['id'], 'kind': entry['kind'], 'response_sha256': response['response_sha256']}
             try:
                 if not response['stop_token_seen']: raise ValueError('Incomplete candidate response')
-                result.update(exam.score(response['content'], entry, folder, source, measured,
-                    Path(data['validation'][entry['id']]['request']['image']['path']), output))
+                if data.get('exam_schema') == 'restaurant-brand-exam.v1':
+                    result.update(brand_exam.score(response['content'], entry, output))
+                else:
+                    result.update(exam.score(response['content'], entry, folder, source, measured,
+                        Path(data['validation'][entry['id']]['request']['image']['path']), output))
             except ValueError as exc: result.update(passed=False, error=str(exc)[:240])
             result['artifacts'] = {p.name: digest(p) for p in output.iterdir() if p.is_file()}
             scores.append(result)
+    if data.get('exam_schema') == 'restaurant-brand-exam.v1':
+        totals = {phase: {'brand_scene': sum(r['passed'] for r in scores if r['phase'] == phase)}
+                  for phase in ('base', 'adapter')}
+    else:
+        totals = {phase: {kind: sum(r['passed'] for r in scores if r['phase'] == phase and r['kind'] == kind)
+                          for kind in ('attribute_restoration', 'whole_recreation')} for phase in ('base', 'adapter')}
     result = {'schema': 'vision-corpus-comparison.v1', 'training_report_sha256': digest(out/'report.json'),
-        'exam_sha256': data['exam_sha256'], 'scores': scores, 'totals': {
-            phase: {kind: sum(r['passed'] for r in scores if r['phase'] == phase and r['kind'] == kind)
-                    for kind in ('attribute_restoration', 'whole_recreation')} for phase in ('base', 'adapter')},
+        'exam_sha256': data['exam_sha256'], 'scores': scores, 'totals': totals,
         'training_exported': False, 'automatic_promotion': False, 'production_ready': False,
         'limitation': 'One validation family; no final test or five-service qualification. HF base and adapter share inputs and decoding; not directly comparable to grammar-constrained Ollama.'}
     (out/'comparison.json').write_text(json.dumps(result, indent=2)); return result

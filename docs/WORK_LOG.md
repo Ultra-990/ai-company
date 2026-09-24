@@ -4809,3 +4809,8 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 
 - Dodano `scripts/brand_exam.py`, który ocenia logo i wizytówkę na rodzinie holdout bez użycia odpowiedzi treningowych. Odpowiedzi lokalnego modelu dla `identity-ova6f6j7` przeszły 3/3 przypadki: tekst, kompilacja SVG i render bez zmierzonych defektów.
 - Scorer jest gotowy do podłączenia do brand-only adaptera; obecny wynik dotyczy modelu generującego pakiet holdout i nie jest jeszcze porównaniem base/adapter.
+
+## 2026-09-24 — pierwszy brand-only base/adapter holdout
+
+- Podłączono `restaurant-brand-exam.v1` do trenera i scorera. Brand-only trening `vision-corpus-sft-osacnlug` wykonał jeden krok na trzech rekordach, bez użycia wspólnego adaptera.
+- Niezależny wynik holdoutu `cedar-salt-brand-holdout-001`: base `0/3`, adapter `0/3`. Odpowiedzi obu wariantów nie spełniły kontraktu sceny brandingu (format JSON/scene mismatch), więc nie ma poprawy ani promocji.
