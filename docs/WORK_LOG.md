@@ -4772,3 +4772,13 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   błędem eksportu PDF/tekstu i nie zostały zaakceptowane.
 - Autopilot po odfiltrowaniu odrzuconych prób zachował bezpieczny stan
   `train=215`, `validation=25`, `test=50`; nie dodano wadliwych rekordów.
+
+## 2026-09-24 — collector brandingu i regresja wspólnego adaptera
+
+- Dodano `scripts/brand_learning_records.py` oraz integrację z autopilotem i
+  audytem multimodalnych wejść. Pakiet `identity-7o14b3_r` dostarczył trzy
+  pozytywne syntetyczne rozmowy, zwiększając intake do `218/25/50`.
+- Automatyczny handoff uruchomił trening `vision-corpus-sft-7_m6ad79`. Niezależny
+  assessor wykazał base `16/24` atrybutów i `0/1` rekonstrukcji, adapter `0/24`
+  i `0/1`. To regresja po dodaniu zadań brandingu; adapter nie został
+  wypromowany ani podłączony do produkcji.

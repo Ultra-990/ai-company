@@ -19,6 +19,7 @@ from scripts import interior_learning_records as interior
 from scripts import vector_learning_records as vector
 from scripts import vector_reconstruction_records as reconstruction
 from scripts import product_visual_revision as product
+from scripts import brand_learning_records as brand
 from scripts import vector_exam as reserved_exam
 from scripts.check_vision_training_inputs import verify_bundle
 from scripts.prepare_training_data import MINIMUMS, unique_object
@@ -71,7 +72,9 @@ def sources():
     return [('vector', path) for path in vector_paths] + practice_batches + [
         ('vector_reconstruction', pair) for pair in reconstruction_pairs] + [
         ('interior', path) for path in sorted(interior.school.ROOT.glob('inspect-*/teacher-judgments.json'))] + [
-        ('product', path) for path in sorted(product.ROOT.glob('visual-revision-*/learning-review.json'))]
+        ('product', path) for path in sorted(product.ROOT.glob('visual-revision-*/learning-review.json'))] + [
+        ('brand', (path, path.parent/'independent-review.json')) for path in sorted(brand.ROOT.glob('identity-*/report.json'))
+        if (path.parent/'independent-review.json').is_file()]
 
 
 def reserved_counts():
@@ -162,6 +165,11 @@ def collect(kind, path):
         if review.get('decision') == 'needs_visual_revision': return [], None
         rows, _ = product.collect(path.parent/'report.json', path)
         return rows, lambda: product.export(path.parent/'report.json', path)
+    if kind == 'brand':
+        if not isinstance(path, tuple) or len(path) != 2:
+            raise ValueError('Brand report/review pair required')
+        rows, _ = brand.collect(path[0].parent, path[1])
+        return rows, lambda: brand.export(path[0].parent, path[1])
     raise ValueError('Unknown collector')
 
 

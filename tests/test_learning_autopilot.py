@@ -121,6 +121,7 @@ def test_practice_discovery_batches_at_most_sixteen_conversations(tmp_path, monk
     monkeypatch.setattr(auto.vector.school, 'ROOT', tmp_path)
     monkeypatch.setattr(auto.interior.school, 'ROOT', tmp_path/'other')
     monkeypatch.setattr(auto.product, 'ROOT', tmp_path/'products')
+    monkeypatch.setattr(auto.brand, 'ROOT', tmp_path/'brands')
     for index in range(19):
         path = tmp_path/'practice-fixture'/f'case-{index:03d}'; path.mkdir(parents=True)
         (path/'experience.json').write_text('{}')
@@ -139,6 +140,7 @@ def test_product_intake_discovers_reviews_and_skips_rejected_layouts(tmp_path, m
     monkeypatch.setattr(auto.vector.school, 'ROOT', tmp_path/'vectors')
     monkeypatch.setattr(auto.interior.school, 'ROOT', tmp_path/'interiors')
     monkeypatch.setattr(auto.product, 'ROOT', tmp_path)
+    monkeypatch.setattr(auto.brand, 'ROOT', tmp_path/'brands')
     folder = tmp_path/'visual-revision-fixture'; folder.mkdir()
     review = folder/'learning-review.json'; review.write_text('{"decision":"needs_visual_revision"}')
     assert auto.sources() == [('product', review)]
