@@ -239,7 +239,12 @@ def assess(out):
         for entry in definition['cases']:
             folder = path.parent/f"case-{entry['id']:02d}"; response = responses[phase, entry['id']]
             if sha256(response['content'].encode()).hexdigest() != response['response_sha256']: raise ValueError('Response changed')
-            output = out/f"score-{phase}-{entry['id']:02d}"; output.mkdir()
+            output = out/f"score-{phase}-{entry['id']:02d}"
+            if output.exists():
+                suffix = 1
+                while (out/f"score-{phase}-{entry['id']:02d}-retry{suffix}").exists(): suffix += 1
+                output = out/f"score-{phase}-{entry['id']:02d}-retry{suffix}"
+            output.mkdir()
             result = {'phase': phase, 'id': entry['id'], 'kind': entry['kind'], 'response_sha256': response['response_sha256']}
             try:
                 if not response['stop_token_seen']: raise ValueError('Incomplete candidate response')

@@ -4705,3 +4705,15 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Testy kierunkowe szkoły, autopilota, egzaminu i audytu multimodalnego:
   `119 passed`. Rekordy pozostają kandydatami treningowymi; wag jeszcze nie
   aktualizowano.
+
+## 2026-09-24 — korpus rekonstrukcyjny nie poprawił walidacji
+
+- Świeży adapter na 207 rekordach wykonał 53 grupy aktualizacji i pełne 50
+  odpowiedzi walidacyjnych. Pierwszy assessor został przerwany przez chwilowy
+  stan `active_containers` przed renderowaniem większości odpowiedzi; nie
+  potraktowano tego jako wyniku modelu.
+- Assessor dostał bounded retry z nowymi katalogami dowodowymi i po ponowieniu
+  odtworzył wszystkie wyniki: base `23/24` atrybutów i `0/1` rekonstrukcji,
+  adapter również `23/24` i `0/1`. Nie ma poprawy ani podstaw do promocji.
+- Poprawka assessora zapobiega kolizji z częściowymi katalogami po przerwanym
+  renderze, zachowując wcześniejsze dowody i hashe.
