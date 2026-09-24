@@ -176,6 +176,23 @@ def layout_issues(layout, *, profile='leaflet'):
     return issues
 
 
+def production_quality_gate(layout, *, profile='leaflet'):
+    """Return the release gate for a model-authored layout.
+
+    Training exercises may intentionally contain a displaced line, but a
+    deliverable must have no bounds, overlap, occlusion, or contrast findings.
+    Keeping this decision separate makes it impossible to mistake a successful
+    repair lesson for a clean production result.
+    """
+    issues = layout_issues(layout, profile=profile)
+    return {
+        'passed': not issues,
+        'accepted_as_deliverable': not issues,
+        'issues': issues,
+        'training_faults_allowed': False,
+    }
+
+
 def compare(reference, candidate, reference_png, candidate_png):
     from PIL import Image, ImageChops, ImageStat
     expected = {item['text']: item['bbox'] for item in reference}

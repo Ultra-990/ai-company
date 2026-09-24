@@ -68,6 +68,15 @@ def test_text_bounds_and_overlap_have_concrete_findings():
     assert {x['kind'] for x in issues} == {'text_margin_or_bounds', 'text_overlap'}
 
 
+def test_production_quality_gate_rejects_training_style_faults():
+    clean = contract.production_quality_gate(layout())
+    assert clean['passed'] and clean['accepted_as_deliverable']
+    broken = layout(); broken[0]['bbox'][0] = -10
+    gate = contract.production_quality_gate(broken)
+    assert not gate['passed'] and not gate['accepted_as_deliverable']
+    assert gate['training_faults_allowed'] is False
+
+
 def test_hidden_text_cannot_pass_from_dom_copy_alone(tmp_path):
     first, second = tmp_path/'one.png', tmp_path/'two.png'
     for path in (first, second): Image.new('RGB', (592, 840), 'white').save(path)

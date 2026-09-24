@@ -32,6 +32,11 @@ def digest(path):
     return sha256(path.read_bytes()).hexdigest()
 
 
+def rows_fingerprint(rows):
+    payload = json.dumps(rows, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
+    return sha256(payload).hexdigest()
+
+
 def save(path, value):
     temporary = path.with_suffix('.tmp')
     temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2))
@@ -155,12 +160,14 @@ def cycle():
     if (ROOT/'state.json').exists():
         previous = json.loads((ROOT/'state.json').read_text(), object_pairs_hook=unique_object)
     cache = previous.get('entries', {})
+    rejected_audits = previous.get('rejected_audits', {})
     entries, errors, skipped, accepted = {}, [], [], {}
     audits_started = 0
     discovered = sources()
     if len(discovered) > 500: raise ValueError('Review intake limit reached; split the collection explicitly')
     for kind, path in discovered:
         key = kind+':'+('|'.join(map(str, path)) if isinstance(path, tuple) else str(path))
+        source_rows = None
         try:
             rows, export = collect(kind, path)
             if not rows:
@@ -182,6 +189,11 @@ def cycle():
                                 'count': len(duplicate_rows)})
             else:
                 new_rows = rows
+            rejected = rejected_audits.get(key)
+            if (rejected and rejected.get('rows_sha256') == rows_fingerprint(source_rows)):
+                skipped.append({'source': key, 'reason': 'automatic_audit_rejected_cached',
+                                'detail': rejected.get('detail', 'CPU input audit rejected')})
+                continue
             entry = cache.get(key, {})
             if not cached_valid(entry, source_rows):
                 if audits_started >= 2:
@@ -194,7 +206,13 @@ def cycle():
             entries[key] = entry
             accepted.update({row['id']: row for row in new_rows})
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.TimeoutExpired) as exc:
-            errors.append({'source': key, 'error_type': type(exc).__name__, 'detail': str(exc)[:240]})
+            detail = str(exc)[:240]
+            if isinstance(exc, RuntimeError) and detail.startswith('CPU input audit failed;'):
+                if source_rows is not None:
+                    rejected_audits[key] = {'rows_sha256': rows_fingerprint(source_rows), 'detail': detail}
+                skipped.append({'source': key, 'reason': 'automatic_audit_rejected', 'detail': detail})
+            else:
+                errors.append({'source': key, 'error_type': type(exc).__name__, 'detail': detail})
     reserved, reserved_entries, reserved_errors = reserved_counts()
     counts = {'train': len(accepted), **reserved}
     errors.extend({'source': 'reserved_exam:'+item['path'], **{k: v for k, v in item.items() if k != 'path'}}
@@ -203,7 +221,8 @@ def cycle():
               'phase': 'collecting_reviewed_data', 'counts': counts,
               'families': sorted({row['family'] for row in accepted.values()}),
               'minimums': MINIMUMS, 'missing': {key: max(0, value-counts[key]) for key, value in MINIMUMS.items()},
-              'entries': entries, 'reserved_exams': reserved_entries, 'skipped': skipped, 'errors': errors,
+              'entries': entries, 'reserved_exams': reserved_entries,
+              'rejected_audits': rejected_audits, 'skipped': skipped, 'errors': errors,
               'training_started': False, 'automatic_weight_training_available': False,
               'model_promotion_enabled': False, 'production_changed': False,
               'next_requirements': ['broader independently reviewed training data',

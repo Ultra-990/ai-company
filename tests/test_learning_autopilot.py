@@ -46,6 +46,18 @@ def test_cpu_audit_failure_does_not_count_an_export_as_usable_data(tmp_path, mon
     assert result['counts']['train'] == 0 and len(result['errors']) == 1
 
 
+def test_automatic_input_audit_rejection_is_skipped_without_poisoning_cycle(tmp_path, monkeypatch):
+    fixture(tmp_path, monkeypatch)
+    monkeypatch.setattr(auto, 'audit', lambda path: (_ for _ in ()).throw(
+        RuntimeError('CPU input audit failed; inspect private automatic-audit.log')))
+    result = auto.cycle()
+    assert result['counts']['train'] == 0 and result['errors'] == []
+    assert result['skipped'][0]['reason'] == 'automatic_audit_rejected'
+    second = auto.cycle()
+    assert second['errors'] == []
+    assert second['skipped'][0]['reason'] == 'automatic_audit_rejected_cached'
+
+
 def test_duplicate_experiences_are_not_counted_twice(tmp_path, monkeypatch):
     fixture(tmp_path, monkeypatch)
     monkeypatch.setattr(auto, 'sources', lambda: [('vector', Path('/one')), ('vector', Path('/two'))])

@@ -4545,3 +4545,9 @@ Wykryto i usunięto niespójność protokołu: trener miał limit 128 rekordów,
 bramka wymaga 200. Limit protokołu badawczego podniesiono do 256, a testy
 potwierdzają zachowanie harmonogramu. Bramka nadal odmawia treningu z powodu
 braku 70 rekordów train, porównania base/adapter i planu rollbacku.
+## 2026-09-24 — separate fault-training from fault-free delivery
+
+- Potwierdzono, że `scripts/vector_practice.py` tworzy usterkę wyłącznie jako kontrolowane ćwiczenie naprawy. Ćwiczenie ma jawne flagi `commercial_delivery_approved=false` i `production_changed=false`; nie jest wynikiem klienta ani automatyczną poprawką produkcji.
+- Dodano `production_quality_gate()` do kontraktu SVG. Każdy modelowy wynik przeznaczony do dalszego obiegu musi przejść walidację SVG, render, kontrolę granic/kolizji/kontrastu oraz kontrolę PDF; wynik z usterką jest odrzucany.
+- `vector_school.py` zapisuje wynik tej bramki i oznacza źródło jako `reference_rejected`, jeśli layout zawiera problem. Dodano test regresyjny, że treningowa usterka nie może przejść jako deliverable.
+- Jedna iteracja intake po poprawce: `train=187`, `validation=25`, `test=50`; do minimalnego progu treningowego brakuje 13 przykładów. Trening wag nadal nie został uruchomiony, bo brakuje niezależnej oceny baseline/adaptera i planu rollbacku.

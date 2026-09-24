@@ -20,7 +20,8 @@ from scripts.compare_local_models import check_idle
 from scripts.prepare_training_data import unique_object
 from scripts.render_school_svg import render
 from scripts.vector_school_contract import (SCHEMA, RULES, SOURCE_BRIEF, RECREATE_BRIEF,
-                                            THRESHOLDS, parse_response, compare, layout_issues)
+                                            THRESHOLDS, parse_response, compare, layout_issues,
+                                            production_quality_gate)
 from scripts.vector_curriculum import CURRICULA, LEGACY, metadata, require_learning
 
 ROOT = Path('/home/marcin/ai-company-workspaces/vector-school')
@@ -221,6 +222,7 @@ def run(source_path=None, previous_path=None, feedback_path=None, curriculum=LEG
         report['artifact_sha256'] = {name: checksum(out/name) for name in
                                     ('request.json', 'response.json', 'artwork.svg', 'preview.png', 'preview.pdf', 'render.json')}
         report['layout_issues'] = layout_issues(rendering['layout'])
+        report['production_quality_gate'] = production_quality_gate(rendering['layout'])
         if source:
             # Recheck bindings after inference, rather than trusting earlier reads.
             require_checksum(source_path, report['source_sha256'])
@@ -229,7 +231,7 @@ def run(source_path=None, previous_path=None, feedback_path=None, curriculum=LEG
             report['comparison'] = compare(original['layout'], rendering['layout'], source_path.parent/'preview.png', out/'preview.png')
             report['status'] = ('pending_independent_visual_review' if report['comparison']['mechanical_checks_passed'] else 'needs_revision')
         else:
-            report['status'] = 'reference_ready' if not report['layout_issues'] else 'reference_rejected'
+            report['status'] = 'reference_ready' if report['production_quality_gate']['passed'] else 'reference_rejected'
         return out, report
     except Exception as exc:
         report.update(status='failed', error_type=type(exc).__name__, error=str(exc)[:400])
