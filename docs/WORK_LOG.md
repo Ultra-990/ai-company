@@ -4763,3 +4763,12 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   sprawdza manifest, komplet sześciu formatów, parsowanie SVG i brak rasterów/
   skryptów. Dla tego pakietu wszystkie kontrole strukturalne przeszły, ale
   assessor nadal raportuje brak niezależnej akceptacji wizualnej i baseline'u.
+
+## 2026-09-24 — kolejne próby panelu materials
+
+- Lokalny model wygenerował rewizję z liniami prowadzącymi, ale niezależny ogląd
+  wykazał, że kończyły się przed produktem. Kolejna próba dostała dokładny
+  feedback o punktach końcowych, lecz trzy bounded odpowiedzi zakończyły się
+  błędem eksportu PDF/tekstu i nie zostały zaakceptowane.
+- Autopilot po odfiltrowaniu odrzuconych prób zachował bezpieczny stan
+  `train=215`, `validation=25`, `test=50`; nie dodano wadliwych rekordów.
