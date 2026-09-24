@@ -73,6 +73,11 @@ def load_protocol():
 
 
 def compare(before,after,expected):
+    if expected == 0:
+        return {'complete': not before and not after,
+                'before': {'expected': 0, 'attempted': 0, 'assessed': 0, 'passed': 0, 'complete': True, 'decision_pass_rate': None},
+                'after': {'expected': 0, 'attempted': 0, 'assessed': 0, 'passed': 0, 'complete': True, 'decision_pass_rate': None},
+                'improved_cases': [], 'regressed_cases': [], 'production_ready': False, 'expertise_proven': False}
     b={case['id']:case for case in before};a={case['id']:case for case in after}
     complete=(len(before)==len(after)==len(b)==len(a)==expected and b.keys()==a.keys()
               and all(c['status'] in ('passed','wrong_decision','invalid_output') for c in before+after))
@@ -95,7 +100,7 @@ def evaluate(model,tokenizer,suite,settings,disable_adapter,out,persist):
         prompt=tokenizer.apply_chat_template(messages_for(suite,case),tokenize=False,
                                              add_generation_prompt=True,enable_thinking=False)
         encoded=tokenizer(prompt,add_special_tokens=False,return_tensors='pt')
-        if encoded['input_ids'].shape[1]+settings['max_new_tokens']>2048:
+        if encoded['input_ids'].shape[1]+settings['max_new_tokens']>settings.get('max_length', 2048):
             raise ValueError('Regression exceeds fixed context')
         started=time.monotonic()
         with (model.disable_adapter() if disable_adapter else nullcontext()), torch.inference_mode():

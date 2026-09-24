@@ -4829,3 +4829,8 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 
 - Trening `vision-corpus-sft-r22gnkjj` na dziewięciu rekordach brandingu ponownie dał base `0/3` i adapter `0/3` na holdoucie Cedar & Salt.
 - Powtarzanie rund nie poprawia formatu odpowiedzi; dowód wskazuje na potrzebę osobnego text-to-SVG/JSON toru brandingu zamiast dalszego zwiększania tego multimodalnego adaptera.
+
+## 2026-09-24 — text-only brand adapter gain
+
+- Dodano `scripts/train_brand_text_pilot.py`, wykorzystujący istniejący tekstowy QLoRA runner, oraz `scripts/score_brand_text_pilot.py`. Dane brandingu są trenowane bez obrazów, jako text-to-SVG/JSON.
+- Pilot `brand-text-sft-1f0a_7s5` wykonał 20 kroków na dziewięciu rekordach. Niezależny holdout Cedar & Salt: base `0/3`, text-only adapter `3/3` (oba logo i wizytówka). Adapter nie jest promowany; wynik nie dowodzi jeszcze parytetu z asystentem ani gotowości komercyjnej.
