@@ -4871,3 +4871,13 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   zatrzymała się na nagłówku materiałów poza marginesem. Raporty błędów
   tekstowych zawierają teraz jawny wymóg marginesu 50 jednostek; seria
   pozostała odrzucona i nie weszła do zbioru.
+
+## 2026-09-25 — przerwa po korekcie tekstu Amazon
+
+- Seria `series-gwyx0xku` wykazała przekroczenie dolnego marginesu przez drugą
+  linię panelu pojemności i nachodzenie nagłówka na produkt. Jedna korekta
+  nadal przekraczała margines, więc seria została odrzucona.
+- Instrukcja generowania paneli wymaga teraz jawnie bboxów tekstu w zakresie
+  `50..1450` oraz rezerwy 100 jednostek pod najniższą linią. Testy: `23 passed`.
+- Cel został wstrzymany na prośbę użytkownika; żadne adaptery nie zostały
+  wypromowane ani podłączone do produkcji.

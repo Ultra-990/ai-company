@@ -179,7 +179,9 @@ floor, extra props or dimension labels. Label uses heading_font.
 PANEL: 1500x1500, 1..12 background/decorative shapes and EXACTLY THREE texts:
 your headline <=28 characters with no numbers, followed by the two exact supplier
 lines in their supplied order. Heading font for headline, body font for facts.
-Font-size44..130, each text line has text-anchor explicitly. Choose product_placement
+        Font-size44..130, each text line has text-anchor explicitly. Keep every rendered
+        text bounding box within x/y 50..1450; reserve at least 100 units below the
+        lowest line before choosing its baseline. Choose product_placement
 x,y,scale (.1..1.5). The compiler inserts ALL original product artwork unchanged
 after background shapes and before text, with only your translate/scale. Do not
 draw another bottle or add product features. Keep the full product within a
