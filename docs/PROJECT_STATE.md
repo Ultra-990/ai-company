@@ -1,5 +1,22 @@
 # Stan projektu AI Company
 
+## Aktualizacja 28.09.2026 — aktywny cel samodzielnego wykonania zleceń
+
+Właściciel polecił kontynuować do osiągnięcia samodzielnej pracy. Kryteria
+pełnych zleceń i korekt zapisano w
+[AUTONOMOUS_WORK.md](organization-os/AUTONOMOUS_WORK.md). Cel pozostaje aktywny.
+
+Rozszerzony kontrakt położenia usuwa ograniczenie zbyt małego produktu,
+zachowując dosłowne odpowiedzi i oryginalny rysunek. Badawczy profil Qwena
+z rozumowaniem, po jednym wznowieniu przerwanej generacji, ukończył cztery
+panele z dużym czytelnym produktem. Niezależny przegląd nadal odrzucił
+komunikację wymiarów i niepotwierdzoną sugestię trwałości. Nie zatwierdzono
+całej usługi ani nie zmieniono aktywnego routingu czy wag.
+
+Następny etap: mierzone powiązanie linii wymiarowych z krawędziami produktu
+i opisów materiałów z korpusem/zakrętką oraz kontrola niepotwierdzonych
+nagłówków. Potem osobne pełne briefy kwalifikacyjne, bez doraźnych podpowiedzi.
+
 ## Aktualizacja 28.09.2026 — rozdzielone instrukcje i sprawdzian nowych briefów
 
 Generator domyślnie rozdziela instrukcje rysunku produktu od kompozycji

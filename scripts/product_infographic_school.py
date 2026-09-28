@@ -46,7 +46,15 @@ PANELS = {
     'care': ['Hand wash only', 'Air dry before storage'],
 }
 SOURCE_FIDELITY_CONTRACT = 'bottle-visible-parts.v4'
-PANEL_FIDELITY_CONTRACT = 'text-background-samples.v1'
+PANEL_FIDELITY_CONTRACT = 'text-and-lines.v2'
+LEGACY_PLACEMENT = 'canvas-transform.v1'
+PLACEMENT_CONTRACT = 'extended-transform.v2'
+
+
+def panel_profile(placement_contract):
+    if placement_contract not in (LEGACY_PLACEMENT, PLACEMENT_CONTRACT):
+        raise ValueError('Unknown product placement contract')
+    return 'product_infographic_v2' if placement_contract == PLACEMENT_CONTRACT else 'product_infographic'
 
 
 class Style(BaseModel):
@@ -95,7 +103,7 @@ def schema(kind, style):
     return value
 
 
-def compile_scene(raw, style, *, panel=None, product=None):
+def compile_scene(raw, style, *, panel=None, product=None, placement_contract=LEGACY_PLACEMENT):
     value = parse(raw)
     expected = {'shapes', 'texts'} | ({'product_placement'} if panel else set())
     if not isinstance(value, dict) or set(value) != expected: raise ValueError('Exact product scene fields required')
@@ -103,7 +111,7 @@ def compile_scene(raw, style, *, panel=None, product=None):
         raise ValueError('Bounded explicit model shapes required')
     if not isinstance(value['texts'], list) or len(value['texts']) != (3 if panel else 1):
         raise ValueError('One product label or three infographic lines required')
-    profile = 'product_infographic' if panel else 'product_source'; spec = PROFILES[profile]
+    profile = panel_profile(placement_contract) if panel else 'product_source'; spec = PROFILES[profile]
     root = ET.Element('svg', {'xmlns': NS[1:-1], 'width': str(spec['width']), 'height': str(spec['height']),
                               'viewBox': f"0 0 {spec['width']} {spec['height']}"})
     brand.append_nodes(root, value['shapes'])
@@ -112,8 +120,10 @@ def compile_scene(raw, style, *, panel=None, product=None):
         validate_svg(product, profile='product_source')
         pos = value['product_placement']
         if (not isinstance(pos, dict) or set(pos) != {'x', 'y', 'scale'}
-                or any(not isinstance(v, str) or not re.fullmatch(r'\d{1,4}(?:\.\d{1,4})?', v) for v in pos.values())):
-            raise ValueError('Exact model-chosen placement required: x, y, scale are unsigned decimal strings; no # prefix. Only colors use #RRGGBB.')
+                or any(not isinstance(v, str) or not re.fullmatch(
+                    (r'-?' if placement_contract == PLACEMENT_CONTRACT and k != 'scale' else '')+r'\d{1,4}(?:\.\d{1,4})?', v)
+                       for k, v in pos.items())):
+            raise ValueError('Exact model-chosen placement required: plain decimal strings, no # prefix; signed x/y only under extended-transform.v2. Only colors use #RRGGBB.')
         group = ET.SubElement(root, 'g', {'transform': f"translate({pos['x']} {pos['y']}) scale({pos['scale']})"})
         for node in ET.fromstring(product):
             node = deepcopy(node); node.tag = node.tag.removeprefix(NS); group.append(node)
@@ -141,7 +151,23 @@ def intersects(a, b):
     return min(a[0]+a[2], b[0]+b[2]) > max(a[0], b[0]) and min(a[1]+a[3], b[1]+b[3]) > max(a[1], b[1])
 
 
-def quality_issues(measured, *, panel=False, panel_contrast=False):
+def segment_intersects_box(start, end, box, stroke_width=0):
+    """Clip the actual line segment, not its possibly misleading bounding box."""
+    x, y, w, h = box; pad = max(0, stroke_width)/2
+    lower = (x-pad, y-pad); upper = (x+w+pad, y+h+pad)
+    first, last = 0.0, 1.0
+    for axis in (0, 1):
+        delta = end[axis]-start[axis]
+        if delta == 0:
+            if not lower[axis] <= start[axis] <= upper[axis]: return False
+            continue
+        a = (lower[axis]-start[axis])/delta; b = (upper[axis]-start[axis])/delta
+        first = max(first, min(a, b)); last = min(last, max(a, b))
+        if first > last: return False
+    return True
+
+
+def quality_issues(measured, *, panel=False, panel_contrast=False, placement_contract=LEGACY_PLACEMENT, line_check=False):
     profile = 'product_infographic' if panel else 'product_source'
     issues = layout_issues(measured['layout'], profile=profile)
     for issue in issues:
@@ -150,6 +176,18 @@ def quality_issues(measured, *, panel=False, panel_contrast=False):
         elif issue.get('kind') == 'text_overlap':
             issue['required'] = 'text bboxes must remain non-overlapping'
     if panel:
+        if line_check:
+            segments = measured.get('panel_line_segments')
+            if not isinstance(segments, list):
+                issues.append({'kind': 'missing_panel_line_measurement'})
+            else:
+                for line in measured['layout'][1:]:
+                    for segment in segments:
+                        if segment_intersects_box(segment['start'], segment['end'], line['bbox'], segment['stroke_width']):
+                            issues.append({'kind': 'panel_line_crosses_text', 'text': line['text'],
+                                           'line_index': segment['index'], 'text_bbox': line['bbox'],
+                                           'start': segment['start'], 'end': segment['end'],
+                                           'required': 'keep the complete stroked line outside this text box; choose your own corrected decoration or leader'})
         if panel_contrast:
             samples = measured.get('label_background_samples')
             expected_text = [line['text'] for line in measured['layout'][1:]]
@@ -164,9 +202,10 @@ def quality_issues(measured, *, panel=False, panel_contrast=False):
         groups = measured['group_layout']
         if len(groups) != 1: return issues+[{'kind': 'exactly_one_product_required'}]
         box = groups[0]['bbox']; x, y, w, h = box
-        if x < 50 or y < 50 or x+w > 1450 or y+h > 1450 or w < 120 or h < 350:
+        minimum_width, minimum_height = (240, 720) if placement_contract == PLACEMENT_CONTRACT else (120, 350)
+        if x < 50 or y < 50 or x+w > 1450 or y+h > 1450 or w < minimum_width or h < minimum_height:
             issues.append({'kind': 'product_bounds_or_size', 'bbox': box,
-                           'required': 'x,y>=50; right,bottom<=1450; width>=120; height>=350'})
+                           'required': f'x,y>=50; right,bottom<=1450; width>={minimum_width}; height>={minimum_height}'})
         for line in measured['layout'][1:]:
             if intersects(box, line['bbox']):
                 issues.append({'kind': 'product_overlaps_copy', 'text': line['text'],
@@ -263,12 +302,17 @@ from the three infographic lines. Never overlap text lines. Keep the series
 coherent but use a purposeful layout for each different communication goal.'''
 
 
-def stage_rules(stage, *, focused=False):
+def stage_rules(stage, *, focused=False, placement_contract=LEGACY_PLACEMENT):
     if stage not in ('source', *PANELS):
         raise ValueError('Known product stage required')
+    rules = SCENE_RULES
+    panel_profile(placement_contract)
+    if placement_contract == PLACEMENT_CONTRACT:
+        rules = (rules.replace('x,y,scale (.1..1.5)', 'x,y,scale (.1..4); x/y may be negative down to -3200')
+                 .replace('120 units wide and 350 units tall', '240 units wide and 720 units tall'))
     if not focused:
-        return SCENE_RULES
-    common, remaining = SCENE_RULES.split('SOURCE: ', 1)
+        return rules
+    common, remaining = rules.split('SOURCE: ', 1)
     source_rules, panel_rules = remaining.split('PANEL: ', 1)
     if stage == 'source':
         return common+'SOURCE: '+source_rules+'''Only the source contract applies to this call.
@@ -278,24 +322,34 @@ height/width and check it against the supplier dimensions before answering.
 Make cap and shoulders connect to the body. Check that the complete printed
 name fits its actual colored background, not only the canvas. No decorative
 label frame or bars. You choose the geometry and typography; return only JSON.'''
-    return common+'PANEL: '+panel_rules
+    return common+'PANEL: '+panel_rules+('''
+The original source canvas origin is preserved. For reference bbox [L,T,W,H],
+the visible product bbox after placement is [x+L*scale,y+T*scale,W*scale,H*scale].
+Negative x/y can compensate for empty space in the source. Use the measured
+visible product bbox, not its blank 600x800 canvas, when composing the panel.
+Make the product and two facts the primary content. Decorative frames, rings
+and floating rules must not dominate or intersect copy. For dimensions, relate
+the height/diameter information to the actual product edges; for materials,
+identify the body/lid on the drawing. You choose all shapes and coordinates.'''
+        if placement_contract == PLACEMENT_CONTRACT else '')
 
 
-def checked_scene(out, stage, style, panel=None, product=None):
+def checked_scene(out, stage, style, panel=None, product=None, *, placement_contract=LEGACY_PLACEMENT):
     attempt = 0
     def validate(raw):
         nonlocal attempt
-        svg = compile_scene(raw, style, panel=panel, product=product)
+        svg = compile_scene(raw, style, panel=panel, product=product, placement_contract=placement_contract)
         folder = out/(stage+'-layout-'+str(attempt)); attempt += 1; folder.mkdir()
         (folder/'artwork.svg').write_text(svg)
         school.check_idle()
         try:
-            measured = asyncio.run(render(svg, folder, profile='product_infographic' if panel else 'product_source',
+            measured = asyncio.run(render(svg, folder, profile=panel_profile(placement_contract) if panel else 'product_source',
                                           png_scale=.4 if panel else 1))
         except ValueError as exc:
             raise feedback.SceneFailure(str(exc), folder) from exc
         school.save(folder/'render.json', measured)
-        issues = quality_issues(measured, panel=bool(panel), panel_contrast=bool(panel))
+        issues = quality_issues(measured, panel=bool(panel), panel_contrast=bool(panel),
+                               placement_contract=placement_contract, line_check=bool(panel))
         if not panel:
             issues += source_fidelity_issues(measured, label_check=True, label_bounds=True, style=style)
         if issues: raise feedback.SceneFailure('Correct your own measured layout: '+json.dumps(issues), folder, measured)
@@ -344,7 +398,15 @@ def resume_input(path):
                 or school.checksum(artifact) != digest): raise ValueError('Prior trial evidence changed')
     failed = stages[len(completed)]
     feedbacks = sorted(path.glob(failed+'*-feedback.json'))
-    if not feedbacks: raise ValueError('No model validation failure to continue')
+    if not feedbacks:
+        request_path = path/(failed+'-request.json')
+        if (report.get('error_type') == 'ModelFailure' and report.get('error') == 'truncated_output'
+                and request_path.name in report['artifacts'] and request_path.is_file()
+                and not (path/(failed+'-response.json')).exists()):
+            return report, failed, {'incomplete_generation': True, 'request_sha256': school.checksum(request_path),
+                'instruction': 'The previous generation exhausted its output limit before a complete answer. '
+                               'No partial answer was accepted. Return a complete concise scene within this request budget.'}
+        raise ValueError('No model validation failure to continue')
     feedback = parse(feedbacks[-1].read_text()); last = feedback['stage']
     response = parse((path/(last+'-response.json')).read_text())
     if (school.checksum(path/(last+'-response.json')) != feedback['response_sha256']
@@ -367,8 +429,10 @@ def verify(out):
     if fidelity_contract not in (None, 'bottle-proportions.v1', 'bottle-proportions-label.v2', 'bottle-proportions-label.v3', SOURCE_FIDELITY_CONTRACT):
         raise ValueError('Unknown source fidelity contract')
     panel_contract = report.get('panel_fidelity_contract')
-    if panel_contract not in (None, PANEL_FIDELITY_CONTRACT):
+    if panel_contract not in (None, 'text-background-samples.v1', PANEL_FIDELITY_CONTRACT):
         raise ValueError('Unknown panel fidelity contract')
+    placement_contract = report.get('placement_contract', LEGACY_PLACEMENT)
+    panel_render_profile = panel_profile(placement_contract)
     for name, digest in report['artifacts'].items():
         path = out/name
         if path.is_symlink() or not path.resolve().is_relative_to(out.resolve()) or school.checksum(path) != digest:
@@ -388,12 +452,14 @@ def verify(out):
     source = compile_scene(accepted_raw(out, 'source'), style)
     checks = {}
     for name in ['source', *PANELS]:
-        svg = source if name == 'source' else compile_scene(accepted_raw(out, name), style, panel=name, product=source)
+        svg = source if name == 'source' else compile_scene(accepted_raw(out, name), style, panel=name, product=source,
+                                                          placement_contract=placement_contract)
         folder = out/name
         if (folder/'artwork.svg').read_text() != svg: raise ValueError('Output differs from raw local model response')
-        profile = 'product_source' if name == 'source' else 'product_infographic'
+        profile = 'product_source' if name == 'source' else panel_render_profile
         measured = parse((folder/'render.json').read_text())
-        if quality_issues(measured, panel=name != 'source', panel_contrast=bool(panel_contract)):
+        if quality_issues(measured, panel=name != 'source', panel_contrast=bool(panel_contract), placement_contract=placement_contract,
+                          line_check=panel_contract == PANEL_FIDELITY_CONTRACT):
             raise ValueError('Unresolved measured layout defect')
         if name == 'source' and fidelity_contract and source_fidelity_issues(
                 measured, label_check=fidelity_contract != 'bottle-proportions.v1',
@@ -427,6 +493,18 @@ def verify(out):
         if report['inherited_stages'] != previous['stages']: raise ValueError('Inherited stages changed')
         for name in report['inherited_response_files']:
             if (out/name).read_bytes() != (Path(parent['directory'])/name).read_bytes(): raise ValueError('Inherited response changed')
+    if report.get('recomposed_from'):
+        parent = report['recomposed_from']; original = Path(parent['directory'])
+        if school.checksum(original/'report.json') != parent['report_sha256']:
+            raise ValueError('Source package report changed')
+        original_report = parse((original/'report.json').read_text())
+        if original_report.get('recomposed_from'):
+            raise ValueError('Nested source-package reuse is not supported')
+        verify(original)
+        if report['inherited_stages'] != ['style', 'source']:
+            raise ValueError('Only style and source may be reused for recomposition')
+        for name in report['inherited_response_files']:
+            if (out/name).read_bytes() != (original/name).read_bytes(): raise ValueError('Reused source answer changed')
     return {'schema': 'product-infographic-verification.v1', 'report_sha256': school.checksum(out/'report.json'),
             'checks': checks, 'model_calls': len(responses), 'zip_files': len(names), 'verified': True,
             'source_fidelity_contract': fidelity_contract,
@@ -457,12 +535,13 @@ def audit_source(package, *, include_panels=False):
     if include_panels:
         report['panels'] = {}
         report['panel_contract'] = PANEL_FIDELITY_CONTRACT
+        placement_contract = parse((package/'report.json').read_text()).get('placement_contract', LEGACY_PLACEMENT)
         for panel in PANELS:
             folder = out/panel; folder.mkdir()
             panel_source = (package/panel/'artwork.svg').read_text()
-            measured_panel = asyncio.run(render(panel_source, folder, profile='product_infographic', png_scale=.4))
+            measured_panel = asyncio.run(render(panel_source, folder, profile=panel_profile(placement_contract), png_scale=.4))
             school.save(folder/'render.json', measured_panel)
-            defects = quality_issues(measured_panel, panel=True, panel_contrast=True)
+            defects = quality_issues(measured_panel, panel=True, panel_contrast=True, placement_contract=placement_contract, line_check=True)
             report['panels'][panel] = {'issues': defects, 'measured_checks_passed': not defects}
         report['measured_checks_passed'] = not issues and all(p['measured_checks_passed'] for p in report['panels'].values())
         report['artifacts'] = {str(p.relative_to(out)): school.checksum(p) for p in out.rglob('*') if p.is_file()}
@@ -470,17 +549,38 @@ def audit_source(package, *, include_panels=False):
     return out, report
 
 
-def run(resume=None, *, visual_feedback=False, focused_stages=True):
+def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None):
     ROOT.mkdir(exist_ok=True)
     if any(p.is_symlink() for p in (ROOT, *ROOT.parents)): raise ValueError('Private Linux workspace required')
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='series-', dir=ROOT))
     config = configuration() | {'num_ctx': 8192, 'num_predict': 4096, 'num_thread': 4, 'timeout_seconds': 180}
+    if sampling_profile is not None:
+        if sampling_profile not in ('bounded-default.v1', 'qwen-general-trial.v1', 'qwen-deliberate-trial.v1'):
+            raise ValueError('Known bounded Qwen sampling profile required')
+        config['sampling_profile'] = sampling_profile
+        config['think'] = sampling_profile == 'qwen-deliberate-trial.v1'
+        if config['think']:
+            config.update(num_ctx=16384, num_predict=8192)
     previous = None; failed_stage = None; correction = None; inherited = []
+    placement_contract = PLACEMENT_CONTRACT
+    if resume is not None and recompose is not None:
+        raise ValueError('Choose continuation or source reuse')
     if resume is not None:
         resume = Path(resume); previous, failed_stage, correction = resume_input(resume)
+        placement_contract = previous.get('placement_contract', LEGACY_PLACEMENT)
+    elif recompose is not None:
+        recompose = Path(recompose)
+        verify(recompose)
+        original_report = parse((recompose/'report.json').read_text())
+        if original_report.get('recomposed_from'):
+            raise ValueError('Choose the original source package, not a nested recomposition')
+        previous = original_report | {'stages': ['style', 'source']}
+    panel_render_profile = panel_profile(placement_contract)
+    if previous is not None:
         if (previous['model'], previous['digest']) != (config['model'], config['digest']): raise ValueError('Continuation must keep the pinned local author')
+        parent_directory = resume if resume is not None else recompose
         for stage in previous['stages']:
-            for path in resume.glob(stage+'*-*.json'):
+            for path in parent_directory.glob(stage+'*-*.json'):
                 if path.name.endswith(('-request.json', '-response.json', '-feedback.json')):
                     shutil.copyfile(path, out/path.name)
                     if path.name.endswith('-response.json'): inherited.append(path.name)
@@ -490,16 +590,20 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True):
     report = {'schema': 'product-infographic-school.v1', 'status': 'running', 'brief': BRIEF, 'supplier_copy': PANELS,
               'source_fidelity_contract': SOURCE_FIDELITY_CONTRACT,
               'panel_fidelity_contract': PANEL_FIDELITY_CONTRACT,
+              'placement_contract': placement_contract,
               'correction_contract': feedback.CONTRACT if visual_feedback else 'legacy-text.v1',
               'instruction_contract': 'focused-stages.v1' if focused_stages else 'combined-stages.v1',
               'model': config['model'], 'digest': config['digest'], 'config': config, 'resources_before': resources,
               'training_started': False, 'training_exported': False, 'production_changed': False,
               'amazon_listing_approved': False, 'stages': [],
               'implementation_sha256': {p.name: school.checksum(p) for p in implementation.iterdir()}}
-    if previous is not None:
+    if resume is not None:
         report.update(resume_round=1, resumed_from={'directory': str(resume), 'report_sha256': school.checksum(resume/'report.json')},
                       inherited_stages=previous['stages'], inherited_response_files=sorted(inherited))
         school.save(out/'continuation-feedback.json', {'stage': failed_stage, **correction})
+    elif recompose is not None:
+        report.update(recomposed_from={'directory': str(recompose), 'report_sha256': school.checksum(recompose/'report.json')},
+                      inherited_stages=['style', 'source'], inherited_response_files=sorted(inherited))
     school.save(out/'report.json', report); started = time.monotonic(); print(json.dumps({'output': str(out)}), flush=True)
     def produce(stage, system, user, output_schema, validator):
         if previous is not None and stage in previous['stages']:
@@ -518,23 +622,23 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True):
         school.save(out/'product-reference.json', reference)
         assets = {'source': product}; headlines = []
         for panel, facts in PANELS.items():
-            assets[panel] = produce(panel, SYSTEM+'\n'+stage_rules(panel, focused=focused_stages), json.dumps({'brief': BRIEF, 'style': style,
+            assets[panel] = produce(panel, SYSTEM+'\n'+stage_rules(panel, focused=focused_stages, placement_contract=placement_contract), json.dumps({'brief': BRIEF, 'style': style,
                 'product_reference': reference, 'communication_goal': panel, 'supplier_lines': facts, 'previous_headlines': headlines,
                 'task': 'ACTIVE STAGE: PANEL ONLY, 1500x1500. Design a complete infographic around the inserted product. Do not output a product drawing or repeat its printed name. Your texts are a NEW nonnumeric purpose-specific headline and the TWO EXACT supplier lines. Choose background/decorative shapes and product placement, not additional product shapes.'}),
-                schema('panel', style), checked_scene(out, panel, style, panel, product))
-            headlines.append(validate_svg(assets[panel], profile='product_infographic')['texts'][1])
+                schema('panel', style), checked_scene(out, panel, style, panel, product, placement_contract=placement_contract))
+            headlines.append(validate_svg(assets[panel], profile=panel_render_profile)['texts'][1])
             report['stages'].append(panel)
         if len(set(headlines)) != 4: raise ValueError('Four distinct communication headlines required')
         delivery = out/'delivery'; delivery.mkdir()
         for name, svg in assets.items():
             folder = out/name; folder.mkdir(); (folder/'artwork.svg').write_text(svg)
-            profile = 'product_source' if name == 'source' else 'product_infographic'
+            profile = 'product_source' if name == 'source' else panel_render_profile
             school.check_idle(); measured = asyncio.run(render(svg, folder, profile=profile)); school.save(folder/'render.json', measured)
-            if quality_issues(measured, panel=name != 'source', panel_contrast=True): raise ValueError('Final render differs from accepted geometry')
+            if quality_issues(measured, panel=name != 'source', panel_contrast=True, placement_contract=placement_contract, line_check=True): raise ValueError('Final render differs from accepted geometry')
             if name == 'source': continue
             small = folder/'small'; small.mkdir(); school.check_idle()
             preview = asyncio.run(render(svg, small, profile=profile, png_scale=.4)); school.save(small/'render.json', preview)
-            if quality_issues(preview, panel=True, panel_contrast=True): raise ValueError('Small preview geometry failed')
+            if quality_issues(preview, panel=True, panel_contrast=True, placement_contract=placement_contract, line_check=True): raise ValueError('Small preview geometry failed')
             for filename, target in [('artwork.svg', name+'.svg'), ('preview.png', name+'.png'), ('preview.pdf', name+'.pdf'), ('small/preview.png', name+'-small.png')]:
                 shutil.copyfile(folder/filename, delivery/target)
         school.save(delivery/'style.json', style)
@@ -568,12 +672,19 @@ if __name__ == '__main__':
     parser.add_argument('--visual-feedback', action='store_true', help='Give the model its latest rejected preview and complete measured feedback')
     parser.add_argument('--focused-stages', action=argparse.BooleanOptionalAction, default=True,
                         help='Separate source and panel instructions (default); disable only for comparison')
+    parser.add_argument('--sampling-profile', choices=('bounded-default.v1', 'qwen-general-trial.v1', 'qwen-deliberate-trial.v1'),
+                        help='Use a named bounded experimental profile without changing live routing')
     actions.add_argument('--compare-feedback', action='store_true', help='Paired bounded comparison on three preserved development failures')
     actions.add_argument('--source-exam', action='store_true', help='Paired source generation on three frozen new briefs; no training')
     actions.add_argument('--audit-source-exam', type=Path, help='Recheck passed exam sources without changing their original scores')
     actions.add_argument('--audit-package', type=Path, help='Re-render a historical package under current source and panel checks')
+    actions.add_argument('--recompose', type=Path, help='Reuse verified local style/source and generate new panels under the current placement contract')
     args = parser.parse_args()
-    if args.audit_package:
+    if args.recompose:
+        _, result = run(recompose=args.recompose, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages,
+                        sampling_profile=args.sampling_profile)
+        raise SystemExit(int(result['status'] == 'failed'))
+    elif args.audit_package:
         out, result = audit_source(args.audit_package, include_panels=True)
         print(json.dumps({'report': str(out/'report.json'), 'issues': result['issues'], 'panels': result['panels']}))
         raise SystemExit(int(not result['measured_checks_passed']))
@@ -587,9 +698,10 @@ if __name__ == '__main__':
         from scripts.product_feedback_comparison import run as compare_feedback
         _, result = compare_feedback(); raise SystemExit(int(result['status'] == 'failed'))
     elif args.run:
-        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages); raise SystemExit(int(result['status'] == 'failed'))
+        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages, sampling_profile=args.sampling_profile); raise SystemExit(int(result['status'] == 'failed'))
     elif args.resume:
-        _, result = run(args.resume, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages); raise SystemExit(int(result['status'] == 'failed'))
+        _, result = run(args.resume, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages,
+                        sampling_profile=args.sampling_profile); raise SystemExit(int(result['status'] == 'failed'))
     elif args.verify: print(json.dumps(verify(args.verify)))
     elif args.audit_source:
         out, result = audit_source(args.audit_source)

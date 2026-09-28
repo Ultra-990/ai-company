@@ -17,6 +17,8 @@ SAMPLING_PROFILES = {
     'bounded-default.v1': {'temperature': 0.2},
     'qwen-general-trial.v1': {'temperature': 0.7, 'top_p': 0.8, 'top_k': 20,
                             'min_p': 0.0, 'presence_penalty': 1.5, 'repeat_penalty': 1.0},
+    'qwen-deliberate-trial.v1': {'temperature': 0.6, 'top_p': 0.95, 'top_k': 20,
+                               'min_p': 0.0, 'presence_penalty': 0.0, 'repeat_penalty': 1.0},
 }
 
 
@@ -30,6 +32,10 @@ def generation_options(config):
 
 def thinking_mode(config):
     """Explicit model-specific setting; no arbitrary prompt-controlled options."""
+    if config.get('sampling_profile') == 'qwen-deliberate-trial.v1':
+        if config.get('model') != 'qwen3.8:27b' or config.get('think', True) is not True:
+            raise ValueError('invalid_generation_profile')
+        return True
     if config.get('model') == 'gpt-oss:20b':
         value = config.get('think', 'low')
         if value not in ('low', 'medium', 'high'):

@@ -95,10 +95,22 @@ def test_prompt_history_survives_changes_to_live_generator(tmp_path, monkeypatch
     assert revision.request(tmp_path, tmp_path/'review', 'care')[0] == snapshots[3]
 
 
-@pytest.mark.parametrize('version', [0, 4, True, 2.0, '2'])
+@pytest.mark.parametrize('version', [0, 5, True, 2.0, '2'])
 def test_unknown_prompt_versions_cannot_fall_back_to_current(tmp_path, version):
     with pytest.raises(ValueError, match='Known revision request version'):
         revision.request(tmp_path, tmp_path/'review', 'care', version=version)
+
+
+def test_extended_source_package_requires_versioned_revision_rules(tmp_path, monkeypatch):
+    image = tmp_path/'fixture.png'; image.write_bytes(b'fixture')
+    monkeypatch.setattr(revision, 'evidence', lambda *args: (
+        {'placement_contract': revision.product.PLACEMENT_CONTRACT}, style(), scene(), 'fixture', image, ['Improve scale.']))
+    monkeypatch.setattr(revision, 'read', lambda p: {'visible_bbox': [10, 20, 100, 350]})
+    prompt, inputs = revision.request(tmp_path, tmp_path/'review', 'care', version=4)
+    assert '(.1..4)' in prompt['user'] and '240 units wide' in prompt['user']
+    assert inputs[-1] == revision.product.PLACEMENT_CONTRACT
+    with pytest.raises(ValueError, match='version 4'):
+        revision.request(tmp_path, tmp_path/'review', 'care', version=3)
 
 
 @pytest.mark.parametrize('tamper', ['prompt', 'answer', 'artwork'])

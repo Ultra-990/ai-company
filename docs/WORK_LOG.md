@@ -5034,3 +5034,39 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   i materiałów z częściami oraz krótka linia przecinająca napis care.
   Zapisano negatywną ocenę całego pakietu; bez akceptacji komercyjnej,
   bez nowego rekordu treningowego i bez promocji adaptera.
+
+## 2026-09-28 — aktywny cel samodzielnej pracy
+
+- Właściciel polecił kontynuować aż do samodzielnej pracy. Zapisano kryteria
+  pełnych, osobnych zleceń i prób korekt w `AUTONOMOUS_WORK.md`; sama macierz
+  booleans oraz testy infrastruktury nie kończą tego celu.
+- Rozszerzono wersjonowane transformacje produktu: skala do 4, przesunięcia
+  od -3200, minimum widocznego produktu 240×720 przy zachowanych marginesach.
+  Oryginalne kształty oraz modelowe wartości transformacji pozostają dosłowne.
+  Profil SVG v2 nie rozszerza uprawnień SVG w profilach historycznych.
+- Dodano ponowną kompozycję czterech paneli z uwierzytelnionym wcześniejszym
+  źródłem/stylami, bez ponownego generowania butelki. Rewizje nowych pakietów
+  otrzymały wersję żądania 4; rekonstrukcje historycznych wersji pozostają
+  niezmienione. Testy kierunkowe kolejno: 147, 69, 70 i 165 passed.
+- `series-roqiyz4u` powtórzyła identyczny wadliwy panel capacity w trzech
+  odpowiedziach. Jedno wznowienie z `qwen-general-trial.v1`
+  (`series-ajrd8od3`) poprawiło capacity i dimensions, lecz zatrzymało się
+  na utracie ostatniej cyfry nazwy produktu w PDF panelu materials.
+- Lokalny `ollama show` potwierdził architekturę qwen35, Q4_K_M i obsługę
+  thinking. Odczyt początkowo zablokowała izolacja sieciowa; odczyt hosta
+  zakończył się poprawnie. Żadnej zmiany zainstalowanych wag ani sterowników.
+- Eksperymentalne rozumowanie (`series-mrhhse0p`) zaliczyło capacity od razu,
+  lecz dimensions wyczerpało limit wyjścia 4096. Dodano jawny, bounded profil
+  badawczy 16384/8192 i wznowienie takiej przerwy bez wymyślania odpowiedzi.
+  Jedno wznowienie `series-r1434d3w` ukończyło wszystkie cztery panele.
+- Niezależny ogląd ostatniej serii potwierdził większy, czytelny produkt,
+  ale nadal brak powiązania wymiarów i materiałów z konkretnymi częściami;
+  nagłówek materiałów sugeruje niepotwierdzoną trwałość. To nie jest jeszcze
+  zatwierdzony kompletny produkt ani dowód samodzielności.
+- Rozszerzono pomiar kolizji dekoracji: początkowy audyt
+  `source-audit-ca_tc9ux` nie wykrył cienkich prostokątów udających kreski.
+  Po dodaniu ich do pomiaru `source-audit-pa_67jta` wykrył obie kolizje
+  z napisami care w wcześniejszej `series-vzqzmqtv`. Oryginały zachowano.
+- Pełna regresja: **1764 passed, 21 skipped**, 85,65 s. Ponowny intake
+  zachował **225/25/50** bez błędów; historyczne rewizje nadal się uwierzytelniają.
+  Brak nowego treningu, promocji adaptera lub akceptacji całego pakietu.

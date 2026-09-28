@@ -44,6 +44,56 @@ def test_product_reused_exactly_without_repainting_or_geometry_changes():
     with pytest.raises(ValueError): validate_svg(result, profile='leaflet')
 
 
+def test_extended_placement_preserves_model_transform_and_every_original_node():
+    original = source(); value = panel_scene()
+    value['product_placement'] = {'x': '-460', 'y': '-720', 'scale': '2.5'}
+    with pytest.raises(ValueError): product.compile_scene(json.dumps(value), style(), panel='capacity', product=original)
+    svg = product.compile_scene(json.dumps(value), style(), panel='capacity', product=original,
+                                placement_contract=product.PLACEMENT_CONTRACT)
+    group = ET.fromstring(svg).find(NS+'g')
+    assert group.attrib['transform'] == 'translate(-460 -720) scale(2.5)'
+    assert [ET.tostring(n) for n in group] == [ET.tostring(n) for n in ET.fromstring(original)]
+    validate_svg(svg, profile='product_infographic_v2')
+    with pytest.raises(ValueError): validate_svg(svg, profile='product_infographic')
+    for key, bad in [('x', '-3201'), ('y', '-9999'), ('scale', '4.1'), ('scale', '-1')]:
+        changed = json.loads(json.dumps(value)); changed['product_placement'][key] = bad
+        with pytest.raises(ValueError):
+            product.compile_scene(json.dumps(changed), style(), panel='capacity', product=original,
+                                  placement_contract=product.PLACEMENT_CONTRACT)
+
+
+def test_extended_placement_requires_prominent_product_and_retains_page_bounds():
+    measured = {'layout': [], 'group_layout': [{'bbox': [100, 300, 200, 600]}]}
+    assert product.quality_issues(measured, panel=True) == []
+    assert product.quality_issues(measured, panel=True, placement_contract=product.PLACEMENT_CONTRACT)[0]['kind'] == 'product_bounds_or_size'
+    measured['group_layout'][0]['bbox'] = [100, 300, 300, 1000]
+    assert product.quality_issues(measured, panel=True, placement_contract=product.PLACEMENT_CONTRACT) == []
+    measured['group_layout'][0]['bbox'][0] = -1
+    assert product.quality_issues(measured, panel=True, placement_contract=product.PLACEMENT_CONTRACT)
+
+
+@pytest.mark.parametrize('start,end,stroke,expected', [
+    ([0, 50], [100, 50], 2, True),
+    ([50, 0], [50, 100], 2, True),
+    ([0, 0], [100, 100], 2, True),
+    ([0, 90], [30, 0], 2, False),
+    ([0, 38], [100, 38], 6, True),
+    ([0, 38], [100, 38], 1, False),
+])
+def test_actual_stroked_segment_collision_includes_horizontal_and_vertical_lines(start, end, stroke, expected):
+    assert product.segment_intersects_box(start, end, [40, 40, 20, 20], stroke) is expected
+
+
+def test_panel_line_crossing_text_is_rejected_only_by_new_declared_check():
+    measured = {'layout': [{'text': 'label', 'bbox': [100, 300, 100, 30]},
+                           {'text': 'Headline', 'bbox': [600, 100, 250, 60]}],
+                'group_layout': [{'bbox': [100, 300, 300, 1000]}],
+                'panel_line_segments': [{'index': 0, 'start': [500, 130], 'end': [900, 130], 'stroke_width': 2}]}
+    assert product.quality_issues(measured, panel=True) == []
+    issues = product.quality_issues(measured, panel=True, line_check=True)
+    assert issues[0]['kind'] == 'panel_line_crosses_text' and issues[0]['text'] == 'Headline'
+
+
 @pytest.mark.parametrize('fault', ['invented_capacity', 'negated_fact', 'extra_claim', 'changed_font', 'tiny_text', 'wrong_palette', 'extra_product_transform', 'missing_anchor'])
 def test_unfaithful_or_unsupported_scene_is_rejected_without_repair(fault):
     value = panel_scene()
@@ -201,6 +251,26 @@ def test_focused_stage_instructions_exclude_the_other_stage_contract():
     assert product.stage_rules('source') == product.SCENE_RULES
     with pytest.raises(ValueError, match='Known product stage'):
         product.stage_rules('unknown', focused=True)
+
+
+def test_truncated_generation_can_resume_once_without_inventing_a_model_answer(tmp_path, monkeypatch):
+    monkeypatch.setattr(product, 'ROOT', tmp_path)
+    out = tmp_path/'trial'; out.mkdir()
+    request = out/'capacity-request.json'; request.write_text('{"user":"fixture brief"}')
+    report = {'schema': 'product-infographic-school.v1', 'status': 'failed',
+              'brief': product.BRIEF, 'supplier_copy': product.PANELS, 'stages': ['style', 'source'],
+              'error_type': 'ModelFailure', 'error': 'truncated_output',
+              'artifacts': {request.name: product.school.checksum(request)}}
+    (out/'report.json').write_text(json.dumps(report))
+    _, stage, feedback = product.resume_input(out)
+    assert stage == 'capacity' and feedback['incomplete_generation'] is True
+    assert 'previous_answer' not in feedback
+    request.write_text('{"user":"changed"}')
+    with pytest.raises(ValueError, match='evidence changed'): product.resume_input(out)
+    report['artifacts'][request.name] = product.school.checksum(request)
+    report['resume_round'] = 1
+    (out/'report.json').write_text(json.dumps(report))
+    with pytest.raises(ValueError, match='Only one bounded'): product.resume_input(out)
 
 
 def test_continuation_requires_unchanged_failure_and_cannot_repeat_forever(tmp_path, monkeypatch):

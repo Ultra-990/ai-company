@@ -71,8 +71,8 @@ def output_schema(part, style):
     return {'type': 'object', 'additionalProperties': False, 'required': ['cap_shapes'], 'properties': {'cap_shapes': shapes}}
 
 
-def apply_answer(raw, part, style, source_scene, source):
-    if part != 'cap': return product.compile_scene(raw, style, panel=part, product=source)
+def apply_answer(raw, part, style, source_scene, source, placement_contract=product.LEGACY_PLACEMENT):
+    if part != 'cap': return product.compile_scene(raw, style, panel=part, product=source, placement_contract=placement_contract)
     value = product.parse(raw)
     if (not isinstance(value, dict) or set(value) != {'cap_shapes'} or not isinstance(value['cap_shapes'], list)
             or not 1 <= len(value['cap_shapes']) <= 5): raise ValueError('One to five explicit replacement cap shapes required')
@@ -120,27 +120,42 @@ draw another bottle or add product features. Keep the full product within a
 50-unit margin, visibly at least 120 units wide and 350 units tall, and its bounding box separate
 from the three infographic lines. Never overlap text lines. Keep the series
 coherent but use a purposeful layout for each different communication goal.'''
-REQUEST_VERSION = 3
+EXTENDED_PANEL_RULES = CURRENT_PANEL_RULES.replace('x,y,scale (.1..1.5)',
+    'x,y,scale (.1..4); signed x/y may be as low as -3200').replace(
+    '120 units wide and 350 units tall', '240 units wide and 720 units tall')+'''
+Placement preserves the source canvas origin. A measured bbox [L,T,W,H]
+becomes [x+L*scale,y+T*scale,W*scale,H*scale]. Use negative x/y when needed
+to compensate for blank source space. Make the product and approved facts
+primary content, not decorative rings or frames. Relate dimensions to real
+product edges and material labels to body/lid. Keep all decoration clear of text.'''
+REQUEST_VERSION = 4
 
 
 def request(package, review_path, part, version=REQUEST_VERSION):
-    if type(version) is not int or version not in (1, 2, 3): raise ValueError('Known revision request version required')
-    _, style, source_scene, source, image, comments = evidence(package, review_path, part)
+    if type(version) is not int or version not in (1, 2, 3, 4): raise ValueError('Known revision request version required')
+    package_report, style, source_scene, source, image, comments = evidence(package, review_path, part)
+    placement_contract = package_report.get('placement_contract', product.LEGACY_PLACEMENT)
+    product.panel_profile(placement_contract)
+    if version < 4 and placement_contract != product.LEGACY_PLACEMENT:
+        raise ValueError('Extended placement requires revision request version 4')
     data = {'brief': product.BRIEF, 'style': style, 'independent_comments': comments}
     if part == 'cap':
         data.update(original_scene=source_scene, replace_shape_indices=cap_indices(source_scene, style),
             task='Replace only the cap group with a convincing CLOSED screw cap in the same color. Inspect its attachment and proportions relative to the body in the PNG. Avoid exposed-looking stacks or floating shapes. The tool preserves every other shape and the entire label unchanged. You choose all geometry; return cap_shapes, 1..5 shapes. Canvas600x800, margin24.')
     else:
         if version == 1: data['original_scene'] = product.parse(product.accepted_raw(package, part))
+        rules = (LEGACY_PANEL_RULES if version < 3 else
+                 EXTENDED_PANEL_RULES if placement_contract == product.PLACEMENT_CONTRACT else CURRENT_PANEL_RULES)
         data.update(supplier_lines=product.PANELS[part],
             product_reference=read(package/'product-reference.json'),
-            task='Recompose this infographic to address the visual comments, not merely to pass bounds. Use all the page purposefully. Keep the original product unchanged, both supplier lines exact, and a concise headline. Return a complete panel scene. '+(LEGACY_PANEL_RULES if version < 3 else CURRENT_PANEL_RULES))
+            task='Recompose this infographic to address the visual comments, not merely to pass bounds. Use all the page purposefully. Keep the original product unchanged, both supplier lines exact, and a concise headline. Return a complete panel scene. '+rules)
     return {'system': SYSTEM, 'user': json.dumps(data), 'image_source': str(image), 'image_sha256': school.checksum(image),
-            'format': output_schema(part, style)}, (style, source_scene, source)
+            'format': output_schema(part, style)}, (style, source_scene, source, placement_contract)
 
 
 def run(package, review_path, part):
     initial, inputs = request(package, review_path, part)
+    placement_contract = inputs[-1]
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='visual-revision-', dir=ROOT))
     config = configuration() | {'num_ctx': 8192, 'num_predict': 2400, 'num_thread': 4, 'timeout_seconds': 180, 'format': initial['format']}
     code = out/'implementation'; code.mkdir()
@@ -167,9 +182,9 @@ def run(package, review_path, part):
             try:
                 svg = apply_answer(answer['content'], part, *inputs)
                 (folder/'artwork.svg').write_text(svg); school.check_idle()
-                measured = asyncio.run(render(svg, folder, profile='product_source' if part == 'cap' else 'product_infographic'))
+                measured = asyncio.run(render(svg, folder, profile='product_source' if part == 'cap' else product.panel_profile(placement_contract)))
                 school.save(folder/'render.json', measured)
-                issues = product.quality_issues(measured, panel=part != 'cap')
+                issues = product.quality_issues(measured, panel=part != 'cap', placement_contract=placement_contract)
                 if issues: raise ValueError('Measured defects: '+json.dumps(issues))
             except ValueError as exc:
                 feedback = {'error': str(exc)[:700], 'response_sha256': school.checksum(folder/'response.json'),
@@ -223,8 +238,8 @@ def authenticate(report_path):
     svg = apply_answer(response['content'], report['part'], *inputs)
     if (folder/'artwork.svg').read_text() != svg: raise ValueError('Revision differs from the model tool response')
     measured = read(folder/'render.json')
-    if product.quality_issues(measured, panel=report['part'] != 'cap'): raise ValueError('Unresolved measured defects')
-    profile = 'product_source' if report['part'] == 'cap' else 'product_infographic'
+    if product.quality_issues(measured, panel=report['part'] != 'cap', placement_contract=inputs[-1]): raise ValueError('Unresolved measured defects')
+    profile = 'product_source' if report['part'] == 'cap' else product.panel_profile(inputs[-1])
     pdf_checks(folder/'preview.pdf', validate_svg(svg, profile=profile)['texts'], size_mm=product.PROFILES[profile]['size_mm'])
     return report, folder, prompt, response
 

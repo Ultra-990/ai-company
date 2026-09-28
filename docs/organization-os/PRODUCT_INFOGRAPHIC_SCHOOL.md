@@ -181,3 +181,35 @@ każdego znaku wykrywa też zanik dolnych fragmentów liter na granicy tła.
 kontrolami do osobnego katalogu. W rzeczywistym pakiecie `series-zcwfe822`
 wykryto w ten sposób nieczytelną dolną część drugiego zdania panelu care,
 choć wcześniejszy środkowy pomiar kontrastu oraz ekstrakcja PDF przechodziły.
+
+## Rozszerzona kompozycja i rozumowanie — 28.09.2026
+
+Nowe serie używają `extended-transform.v2`: model może wybrać skalę do 4
+i przesunięcia x/y od -3200. Wcześniejsze granice 1,5 i dodatnie przesunięcia
+utrudniały powiększenie produktów narysowanych z dużym pustym marginesem.
+Wszystkie wartości transformacji nadal pochodzą dosłownie z odpowiedzi
+modelu; kompilator nie przestawia kształtów. Pełny widoczny produkt musi
+zmieścić się w marginesach panelu i mieć minimum 240×720 jednostek.
+Starsze serie oraz wznowienia zachowują własny kontrakt położenia.
+
+`--recompose KATALOG` weryfikuje ukończony pakiet, kopiuje jego oryginalne
+odpowiedzi stylu i źródła, a następnie zleca modelowi nowe cztery panele.
+Nie kopiuje poprzednich kompozycji jako nowych odpowiedzi. Raport podaje
+pochodzenie oraz liczbę nowych wywołań; weryfikator sprawdza oryginał.
+Rewizje obrazowe nowych pakietów mają zamrożony `request_version=4`.
+Wersje 1–3 zachowują stare instrukcje i interpretację współrzędnych.
+
+`--sampling-profile` wybiera jawny profil badawczy bez zmiany aktywnego
+routingu. `qwen-general-trial.v1` zmienia próbkowanie, a
+`qwen-deliberate-trial.v1` dodatkowo włącza obsługiwane przez lokalny model
+rozumowanie. Ten drugi ma 16384 kontekstu, 8192 tokenów wyjścia, 4 wątki
+i 180 s limitu pojedynczego wywołania. Transport zachowuje wyłącznie końcową
+odpowiedź, a nie pośredni tok rozumowania. Domyślny profil pozostaje bez zmian.
+Generację przerwaną przez limit wyjścia można wznowić jeden raz, po kontroli
+zasobów i hashy żądania; nie tworzy się fikcyjnej częściowej odpowiedzi.
+
+Kontrakt panelu `text-and-lines.v2` sprawdza także przecięcie tekstów przez
+rzeczywiste odcinki ze stroke oraz cienkie prostokąty użyte jako kreski.
+Kontrola obejmuje poziome/pionowe odcinki o zerowej szerokości/wysokości
+geometrycznej, a nie tylko dodatnie pola prostokątów. Nie ocenia jeszcze
+znaczenia wszystkich linii wymiarowych ani poprawności wskazania materiału.

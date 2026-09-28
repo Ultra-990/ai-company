@@ -20,6 +20,8 @@ PROFILES = {
     'product_infographic': {'width': 1500, 'height': 1500, 'size_mm': (150, 150), 'texts': (4, 4),
                             'elements': (8, 64), 'fonts': (24, 130), 'margin': 50, 'groups': True},
 }
+PROFILES['product_infographic_v2'] = dict(PROFILES['product_infographic'],
+                                        translation_min=-3200, scale_max=4)
 NS = '{http://www.w3.org/2000/svg}'
 SCHEMA = {'type': 'object', 'additionalProperties': False, 'required': ['svg'],
           'properties': {'svg': {'type': 'string', 'minLength': 100, 'maxLength': 18000}}}
@@ -104,8 +106,10 @@ def validate_svg(source, *, profile='leaflet'):
             transform = node.attrib.get('transform', '')
             match = re.fullmatch(r'translate\(('+number+r') ('+number+r')\) scale\(('+number+r')\)', transform)
             if (node not in list(root) or set(node.attrib) != {'transform'} or not match
-                    or not 0 <= float(match[1]) <= width or not 0 <= float(match[2]) <= height
-                    or not .1 <= float(match[3]) <= 1.5 or (node.text or '').strip() or (node.tail or '').strip()):
+                    or not spec.get('translation_min', 0) <= float(match[1]) <= width
+                    or not spec.get('translation_min', 0) <= float(match[2]) <= height
+                    or not .1 <= float(match[3]) <= spec.get('scale_max', 1.5)
+                    or (node.text or '').strip() or (node.tail or '').strip()):
                 raise ValueError('One-level bounded logo placement required')
             continue
         if node.tag != NS + tag or tag not in ATTRS or len(node):

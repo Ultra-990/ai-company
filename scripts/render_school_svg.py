@@ -136,6 +136,16 @@ if(front===el)visible++;
 return {index,fill:getComputedStyle(el).fill,visible_samples:visible,tested_samples:25};
 });})()'''
 
+PANEL_LINE_MEASURE = r'''(()=>{
+return [...document.querySelectorAll('svg>line,svg>rect')].flatMap((n,index)=>{
+const paint=getComputedStyle(n);
+if(n.localName==='line')return paint.stroke==='none'||parseFloat(paint.strokeWidth)<=0?[]:
+[{index,kind:'line',start:[n.x1.baseVal.value,n.y1.baseVal.value],end:[n.x2.baseVal.value,n.y2.baseVal.value],stroke_width:parseFloat(paint.strokeWidth)}];
+const x=n.x.baseVal.value,y=n.y.baseVal.value,w=n.width.baseVal.value,h=n.height.baseVal.value;
+if(paint.fill==='none'||Math.min(w,h)<=0||Math.min(w,h)>16||Math.max(w,h)<3*Math.min(w,h))return [];
+return [{index,kind:'rectangle_bar',start:w>=h?[x,y+h/2]:[x+w/2,y],end:w>=h?[x+w,y+h/2]:[x+w/2,y+h],stroke_width:Math.min(w,h)}];
+});})()'''
+
 
 def pdf_checks(path, texts, *, size_mm=(148, 210)):
     env = {'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8'}
@@ -232,10 +242,15 @@ async def render(source, output, *, purpose='deliverable', profile='leaflet', pn
                     if 'exceptionDetails' in measured: raise RuntimeError('Text measurement failed')
                     layout = measured['result']['value']
                     label_background_samples = None
-                    if profile in ('product_source', 'product_infographic'):
+                    if profile in ('product_source', 'product_infographic', 'product_infographic_v2'):
                         samples = await call('Runtime.evaluate', {'expression': SOURCE_LABEL_MEASURE, 'returnByValue': True}, session)
                         if 'exceptionDetails' in samples: raise RuntimeError('Label contrast measurement failed')
                         label_background_samples = samples['result']['value']
+                    panel_lines = None
+                    if profile in ('product_infographic', 'product_infographic_v2'):
+                        lines = await call('Runtime.evaluate', {'expression': PANEL_LINE_MEASURE, 'returnByValue': True}, session)
+                        if 'exceptionDetails' in lines: raise RuntimeError('Panel line measurement failed')
+                        panel_lines = lines['result']['value']
                     if profile == 'product_source':
                         parts = await call('Runtime.evaluate', {'expression': SOURCE_PART_MEASURE, 'returnByValue': True}, session)
                         if 'exceptionDetails' in parts: raise RuntimeError('Product part visibility measurement failed')
@@ -268,6 +283,7 @@ async def render(source, output, *, purpose='deliverable', profile='leaflet', pn
                     if shape_layout is not None: result['shape_layout'] = shape_layout
                     if label_background_samples is not None: result['label_background_samples'] = label_background_samples
                     if profile == 'product_source': result['source_shape_visibility'] = source_shape_visibility
+                    if panel_lines is not None: result['panel_line_segments'] = panel_lines
                     if group_layout is not None: result['group_layout'] = group_layout
         finally:
             stop_owned_chrome(process)

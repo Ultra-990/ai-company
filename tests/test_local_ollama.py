@@ -84,9 +84,19 @@ def test_default_qwen_thinking_unchanged():
     assert adapter.thinking_mode(CONFIG) is False
 
 
-def test_gpt_oss_transport_sends_low_and_returns_only_final_content(monkeypatch):
+def test_deliberate_qwen_requires_explicit_named_profile_and_correct_model():
+    assert adapter.thinking_mode(CONFIG | {'sampling_profile': 'qwen-deliberate-trial.v1'}) is True
+    for extra in ({'think': True}, {'sampling_profile': 'qwen-deliberate-trial.v1', 'think': False},
+                  {'sampling_profile': 'qwen-deliberate-trial.v1', 'model': 'gpt-oss:20b'}):
+        with pytest.raises(ValueError, match='invalid_generation_profile'):
+            adapter.thinking_mode(CONFIG | extra)
+
+
+@pytest.mark.parametrize('settings,expected', [({'model':'gpt-oss:20b', 'think':'low'}, 'low'),
+    ({'model':'qwen3.8:27b', 'sampling_profile':'qwen-deliberate-trial.v1'}, True)])
+def test_reasoning_transport_returns_only_final_content(monkeypatch, settings, expected):
     calls = []
-    config = CONFIG | {'model':'gpt-oss:20b', 'think':'low'}
+    config = CONFIG | settings
     chunks = iter([
         {'message':{'thinking':'Private intermediate trace'}, 'done':False},
         {'message':{'content':'Final answer'}, 'done':True, 'done_reason':'stop'},
@@ -103,5 +113,5 @@ def test_gpt_oss_transport_sends_low_and_returns_only_final_content(monkeypatch)
         def close(self): pass
     monkeypatch.setattr('http.client.HTTPConnection', Connection)
     result = adapter.transport({'config':config, 'messages':[]})
-    assert json.loads(calls[1][1]['body'])['think'] == 'low'
+    assert json.loads(calls[1][1]['body'])['think'] == expected
     assert result['content'] == 'Final answer' and 'thinking' not in result
