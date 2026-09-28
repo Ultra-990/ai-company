@@ -137,10 +137,26 @@ return {index,fill:getComputedStyle(el).fill,visible_samples:visible,tested_samp
 });})()'''
 
 PANEL_LINE_MEASURE = r'''(()=>{
+const productPaint=point=>{
+const shape=document.elementsFromPoint(...point).find(n=>n.parentElement?.localName==='g'&&['rect','circle','ellipse','line','path'].includes(n.localName));
+return shape?getComputedStyle(shape).fill:null;
+};
+const visibleSamples=n=>{
+const rgb=value=>(value.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)||[]).slice(1).map(Number);
+const ink=rgb(getComputedStyle(n).stroke);let count=0;
+for(const t of [.1,.2,.3,.4,.5,.6,.7,.8,.9]){
+const x=n.x1.baseVal.value*(1-t)+n.x2.baseVal.value*t,y=n.y1.baseVal.value*(1-t)+n.y2.baseVal.value*t;
+const stack=document.elementsFromPoint(x,y);if(stack[0]!==n)continue;
+const under=stack.find(el=>el!==n&&['rect','circle','ellipse','line','path','text'].includes(el.localName));
+const background=under?rgb(getComputedStyle(under).fill):[255,255,255];
+if(ink.length===3&&background.length===3&&Math.max(...ink.map((v,i)=>Math.abs(v-background[i])))>=24)count++;
+}return count;
+};
 return [...document.querySelectorAll('svg>line,svg>rect')].flatMap((n,index)=>{
 const paint=getComputedStyle(n);
 if(n.localName==='line')return paint.stroke==='none'||parseFloat(paint.strokeWidth)<=0?[]:
-[{index,kind:'line',start:[n.x1.baseVal.value,n.y1.baseVal.value],end:[n.x2.baseVal.value,n.y2.baseVal.value],stroke_width:parseFloat(paint.strokeWidth)}];
+[{index,kind:'line',start:[n.x1.baseVal.value,n.y1.baseVal.value],end:[n.x2.baseVal.value,n.y2.baseVal.value],stroke_width:parseFloat(paint.strokeWidth),
+product_endpoint_fills:[[n.x1.baseVal.value,n.y1.baseVal.value],[n.x2.baseVal.value,n.y2.baseVal.value]].map(productPaint),visible_samples:visibleSamples(n)}];
 const x=n.x.baseVal.value,y=n.y.baseVal.value,w=n.width.baseVal.value,h=n.height.baseVal.value;
 if(paint.fill==='none'||Math.min(w,h)<=0||Math.min(w,h)>16||Math.max(w,h)<3*Math.min(w,h))return [];
 return [{index,kind:'rectangle_bar',start:w>=h?[x,y+h/2]:[x+w/2,y],end:w>=h?[x+w,y+h/2]:[x+w/2,y+h],stroke_width:Math.min(w,h)}];

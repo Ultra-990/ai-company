@@ -5070,3 +5070,45 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Pełna regresja: **1764 passed, 21 skipped**, 85,65 s. Ponowny intake
   zachował **225/25/50** bez błędów; historyczne rewizje nadal się uwierzytelniają.
   Brak nowego treningu, promocji adaptera lub akceptacji całego pakietu.
+
+## 2026-09-28 — znaczenie linii, poprawki modelu i odbiór całego pakietu
+
+- Dodano wersjonowaną kontrolę funkcjonalnych oznaczeń produktu: zgodność
+  linii wymiarowych z rzeczywistymi krawędziami, odległość właściwej etykiety,
+  połączenie opisu materiału z widoczną farbą korpusu/zakrętki oraz wybrane
+  niepotwierdzone obietnice nagłówków. Renderer mierzy końce i widoczność
+  linii; sam prostokąt części lub deklaracja modelu nie wystarcza.
+- Audyt `source-audit-k8dk8rkb` odtworzył błędy wymiarów i obietnicy trwałości
+  poprzedniej serii. Nowa `series-m0ybgdak` ukończyła cztery panele pod v1;
+  model sam poprawił kolizję napisu wymiaru oraz wadliwy łącznik materiału.
+  Ogląd nadal odrzucił krzyżujące się łączniki i nadmierną dekorację care.
+- Kontrakt v2 dodaje wykrywanie przecięć łączników. Osobny audyt
+  `source-audit-xddxrejs` wykrył konkretne przecięcie w nowej serii, zachowując
+  jej historyczny wynik v1. Próby w przeglądarce potwierdziły wybór faktycznie
+  widocznej części i odrzucenie linii w kolorze tła. Pierwszy start Chrome
+  zatrzymał sandbox; zatwierdzony test hosta zaliczył 14 przypadków.
+- Rewizja materiałów bez rozumowania (`visual-revision-7ysli_15`) zawiodła
+  w trzech próbach. Jawny badawczy profil obrazowy z rozumowaniem
+  16384/8192 (`visual-revision-nj3ghevs`) ukończył poprawkę po dwóch korektach.
+  Niezależny ogląd zatwierdził tę konkretną poprawkę do nauki. Standardowy
+  limit obrazu 2400 i routing produkcyjny pozostają bez zmian.
+- `visual-revision-9zv1y9an` usunęła koło z care, ale wprowadziła zbędną
+  miarkę. Zapisano negatywny ogląd, bez rekordu treningowego. Przyczyną
+  instrukcyjną było mieszanie wymagań paneli. Rewizja żądania v6 i instrukcje
+  generatora rozdzielają cele; historyczne v1–v5 odtwarzają dawne rozmowy.
+- `visual-revision-8i_3xqm4` zaliczyła care od razu; niezależny ogląd
+  zatwierdził czytelny produkt i instrukcje bez obcej miarki/koła. Drugi
+  przykład ma osobną zgodę do nauki syntetycznej, nie kwalifikację usługi.
+- Dodano składanie całego pakietu z literalnych, uwierzytelnionych źródeł
+  i niezależnie zatwierdzonych rewizji paneli. Narzędzie nie zmienia SVG,
+  nie akceptuje podmiany rysunku źródłowego ani rewizji innego pakietu;
+  ponownie renderuje podglądy/eksporty i wymaga osobnego odbioru całości.
+  Testy kierunkowe: 158 passed, 1 skipped oraz 84 passed, 1 skipped.
+- Złożony `reviewed-package-icalvv5r` przeszedł weryfikację pochodzenia,
+  geometrii, PDF i ZIP. Niezależny ogląd wszystkich czterech podglądów 600px
+  zatwierdził kompletny **syntetyczny pakiet rozwojowy**. Zachowano jawne
+  ograniczenia: znany brief, poprawki po ocenie asystenta, brak porównania
+  z bazą i brak kwalifikacji autonomii/komercyjnej publikacji.
+- Pełna regresja: **1786 passed, 22 skipped**, 86,08 s. Intake przyjął dwa
+  zatwierdzone przykłady i zachował historyczne rozmowy: **227/25/50**.
+  Trening wag nie został uruchomiony; aktywna kwalifikacja nadal 1/5.

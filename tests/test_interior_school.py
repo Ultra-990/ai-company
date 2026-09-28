@@ -44,6 +44,23 @@ def test_vision_only_accepts_one_bounded_png_not_url_or_file_path(monkeypatch):
     with pytest.raises(ValueError):vision.validate_payload(payload)
 
 
+def test_larger_vision_budget_requires_explicit_pinned_reasoning_profile(monkeypatch):
+    config={'model':'qwen3.8:27b','digest':'0'*64,'num_ctx':16384,'num_predict':8192,'num_thread':4,'timeout_seconds':180}
+    monkeypatch.setattr(vision,'configuration',lambda:config)
+    stream=io.BytesIO();Image.new('RGB',(128,128),'white').save(stream,format='PNG')
+    payload={'config':config,'messages':[{'role':'system','content':'Fixture'},
+        {'role':'user','content':'Inspect','images':[base64.b64encode(stream.getvalue()).decode()]}]}
+    with pytest.raises(ValueError,match='Vision limits'):vision.validate_payload(payload)
+    config['sampling_profile']='qwen-deliberate-trial.v1'
+    with pytest.raises(ValueError,match='Vision limits'):vision.validate_payload(payload)
+    config['think']=True
+    vision.validate_payload(payload)
+    config['num_predict']=8193
+    with pytest.raises(ValueError,match='Vision limits'):vision.validate_payload(payload)
+    config.update(num_predict=8192,model='different')
+    with pytest.raises(ValueError,match='Vision limits'):vision.validate_payload(payload)
+
+
 def test_source_stage_and_spreadsheet_formula_protection(tmp_path,monkeypatch):
     monkeypatch.setattr(school,'ROOT',tmp_path)
     path=tmp_path/'report.json';path.write_text(json.dumps({'schema':'interior-school.v1','status':'planned'}))

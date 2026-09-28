@@ -17,7 +17,11 @@ def validate_payload(payload):
     config=payload['config'];expected=configuration()
     if config['model']!=expected['model'] or config['digest']!=expected['digest']:
         raise ValueError('Pinned vision model required')
-    for key,low,high in [('num_ctx',2048,16384),('num_predict',32,2400),
+    deliberate = (config.get('sampling_profile') == 'qwen-deliberate-trial.v1'
+                  and config.get('think') is True and config['model'] == 'qwen3.8:27b')
+    # Explicit research profile only; the production/default image budget stays
+    # at 2400. Intermediate reasoning consumes the same bounded output budget.
+    for key,low,high in [('num_ctx',2048,16384),('num_predict',32,8192 if deliberate else 2400),
                          ('num_thread',1,6),('timeout_seconds',10,180)]:
         if type(config[key]) is not int or not low<=config[key]<=high:raise ValueError('Vision limits')
     messages=payload['messages']

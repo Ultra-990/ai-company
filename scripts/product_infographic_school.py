@@ -26,6 +26,7 @@ from scripts import brand_school as brand
 from scripts import vector_school as school
 from scripts import vector_structured_source as scene
 from scripts import product_model_feedback as feedback
+from scripts import product_callouts as callouts
 from scripts.prepare_training_data import unique_object
 from scripts.render_school_svg import render, pdf_checks
 from scripts.vector_school_contract import NS, PROFILES, validate_svg, layout_issues
@@ -334,7 +335,8 @@ identify the body/lid on the drawing. You choose all shapes and coordinates.'''
         if placement_contract == PLACEMENT_CONTRACT else '')
 
 
-def checked_scene(out, stage, style, panel=None, product=None, *, placement_contract=LEGACY_PLACEMENT):
+def checked_scene(out, stage, style, panel=None, product=None, *, placement_contract=LEGACY_PLACEMENT, annotation_contract=None):
+    callouts.validate_contract(annotation_contract)
     attempt = 0
     def validate(raw):
         nonlocal attempt
@@ -352,12 +354,14 @@ def checked_scene(out, stage, style, panel=None, product=None, *, placement_cont
                                placement_contract=placement_contract, line_check=bool(panel))
         if not panel:
             issues += source_fidelity_issues(measured, label_check=True, label_bounds=True, style=style)
+        elif annotation_contract:
+            issues += callouts.issues(measured, panel, style, contract=annotation_contract)
         if issues: raise feedback.SceneFailure('Correct your own measured layout: '+json.dumps(issues), folder, measured)
         return svg
     return validate
 
 
-def product_reference(out, product):
+def product_reference(out, product, *, style=None):
     """Expose measured placement data, not a scene to accidentally redraw."""
     folders = sorted(out.glob('source-layout-*'), key=lambda p: int(p.name.rsplit('-', 1)[1]))
     measured = parse((folders[-1]/'render.json').read_text())
@@ -365,10 +369,21 @@ def product_reference(out, product):
     left = min(b[0] for b in boxes); top = min(b[1] for b in boxes)
     right = max(b[0]+b[2] for b in boxes); bottom = max(b[1]+b[3] for b in boxes)
     from hashlib import sha256
-    return {'canvas': [600, 800], 'visible_bbox': [left, top, right-left, bottom-top],
+    reference = {'canvas': [600, 800], 'visible_bbox': [left, top, right-left, bottom-top],
             'printed_label_already_in_artwork': BRIEF['product_name'],
             'source_sha256': sha256(product.encode()).hexdigest(),
             'reuse': 'The tool inserts the complete reference unchanged. You only choose its x/y/scale.'}
+    if style is not None:
+        shapes = [node for node in ET.fromstring(product) if node.tag.removeprefix(NS) != 'text']
+        parts = {}
+        for part in ('body', 'cap'):
+            boxes = [entry['bbox'] for node, entry in zip(shapes, measured['shape_layout'], strict=True)
+                     if node.attrib.get('fill', '').lower() == style[part+'_color'].lower()]
+            if not boxes: raise ValueError('Missing measured product part: '+part)
+            x = min(b[0] for b in boxes); y = min(b[1] for b in boxes)
+            parts[part] = [x, y, max(b[0]+b[2] for b in boxes)-x, max(b[1]+b[3] for b in boxes)-y]
+        reference['part_bboxes'] = parts
+    return reference
 
 
 def accepted_raw(out, stage):
@@ -432,6 +447,8 @@ def verify(out):
     if panel_contract not in (None, 'text-background-samples.v1', PANEL_FIDELITY_CONTRACT):
         raise ValueError('Unknown panel fidelity contract')
     placement_contract = report.get('placement_contract', LEGACY_PLACEMENT)
+    annotation_contract = report.get('annotation_contract')
+    callouts.validate_contract(annotation_contract)
     panel_render_profile = panel_profile(placement_contract)
     for name, digest in report['artifacts'].items():
         path = out/name
@@ -461,6 +478,8 @@ def verify(out):
         if quality_issues(measured, panel=name != 'source', panel_contrast=bool(panel_contract), placement_contract=placement_contract,
                           line_check=panel_contract == PANEL_FIDELITY_CONTRACT):
             raise ValueError('Unresolved measured layout defect')
+        if name != 'source' and annotation_contract and callouts.issues(measured, name, style, contract=annotation_contract):
+            raise ValueError('Unresolved functional annotation defect')
         if name == 'source' and fidelity_contract and source_fidelity_issues(
                 measured, label_check=fidelity_contract != 'bottle-proportions.v1',
                 label_bounds=fidelity_contract in ('bottle-proportions-label.v3', SOURCE_FIDELITY_CONTRACT),
@@ -512,7 +531,7 @@ def verify(out):
             'visual_review_performed': False, 'training_exported': False, 'commercial_approval': False}
 
 
-def audit_source(package, *, include_panels=False):
+def audit_source(package, *, include_panels=False, functional_callouts=False):
     """Re-render a verified model source under today's fidelity checks.
 
     Write a separate audit, never replace historical measurements or reviews.
@@ -535,6 +554,7 @@ def audit_source(package, *, include_panels=False):
     if include_panels:
         report['panels'] = {}
         report['panel_contract'] = PANEL_FIDELITY_CONTRACT
+        report['annotation_contract'] = callouts.CONTRACT if functional_callouts else None
         placement_contract = parse((package/'report.json').read_text()).get('placement_contract', LEGACY_PLACEMENT)
         for panel in PANELS:
             folder = out/panel; folder.mkdir()
@@ -542,6 +562,7 @@ def audit_source(package, *, include_panels=False):
             measured_panel = asyncio.run(render(panel_source, folder, profile=panel_profile(placement_contract), png_scale=.4))
             school.save(folder/'render.json', measured_panel)
             defects = quality_issues(measured_panel, panel=True, panel_contrast=True, placement_contract=placement_contract, line_check=True)
+            if functional_callouts: defects += callouts.issues(measured_panel, panel, style)
             report['panels'][panel] = {'issues': defects, 'measured_checks_passed': not defects}
         report['measured_checks_passed'] = not issues and all(p['measured_checks_passed'] for p in report['panels'].values())
         report['artifacts'] = {str(p.relative_to(out)): school.checksum(p) for p in out.rglob('*') if p.is_file()}
@@ -549,7 +570,7 @@ def audit_source(package, *, include_panels=False):
     return out, report
 
 
-def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None):
+def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False):
     ROOT.mkdir(exist_ok=True)
     if any(p.is_symlink() for p in (ROOT, *ROOT.parents)): raise ValueError('Private Linux workspace required')
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='series-', dir=ROOT))
@@ -563,11 +584,18 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
             config.update(num_ctx=16384, num_predict=8192)
     previous = None; failed_stage = None; correction = None; inherited = []
     placement_contract = PLACEMENT_CONTRACT
+    annotation_contract = callouts.CONTRACT if functional_callouts else None
     if resume is not None and recompose is not None:
         raise ValueError('Choose continuation or source reuse')
     if resume is not None:
         resume = Path(resume); previous, failed_stage, correction = resume_input(resume)
         placement_contract = previous.get('placement_contract', LEGACY_PLACEMENT)
+        # Inherited finished panels must keep their original acceptance contract.
+        previous_annotations = previous.get('annotation_contract')
+        if functional_callouts and previous_annotations != callouts.CONTRACT:
+            raise ValueError('Recompose to introduce functional annotations; a resume preserves prior contracts')
+        annotation_contract = previous_annotations
+        callouts.validate_contract(annotation_contract)
     elif recompose is not None:
         recompose = Path(recompose)
         verify(recompose)
@@ -585,14 +613,16 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
                     shutil.copyfile(path, out/path.name)
                     if path.name.endswith('-response.json'): inherited.append(path.name)
     implementation = out/'implementation'; implementation.mkdir()
-    for name in ('product_infographic_school.py', 'product_model_feedback.py', 'brand_school.py', 'vector_school_contract.py', 'render_school_svg.py'):
+    for name in ('product_infographic_school.py', 'product_callouts.py', 'product_model_feedback.py', 'brand_school.py', 'vector_school_contract.py', 'render_school_svg.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
     report = {'schema': 'product-infographic-school.v1', 'status': 'running', 'brief': BRIEF, 'supplier_copy': PANELS,
               'source_fidelity_contract': SOURCE_FIDELITY_CONTRACT,
               'panel_fidelity_contract': PANEL_FIDELITY_CONTRACT,
               'placement_contract': placement_contract,
+              'annotation_contract': annotation_contract,
               'correction_contract': feedback.CONTRACT if visual_feedback else 'legacy-text.v1',
               'instruction_contract': 'focused-stages.v1' if focused_stages else 'combined-stages.v1',
+              'annotation_instruction_contract': 'purpose-specific-callouts.v1' if annotation_contract else None,
               'model': config['model'], 'digest': config['digest'], 'config': config, 'resources_before': resources,
               'training_started': False, 'training_exported': False, 'production_changed': False,
               'amazon_listing_approved': False, 'stages': [],
@@ -618,14 +648,15 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         product = produce('source', SYSTEM+'\n'+stage_rules('source', focused=focused_stages), json.dumps({'brief': BRIEF, 'style': style,
             'task': 'ACTIVE STAGE: SOURCE ONLY. Draw the synthetic reference product. The measured silhouette height/width must match 24/7 within 10%, including the cap and base. Make the silhouette recognizable as a cylindrical bottle: curved shoulders, a shaped screw cap and rounded base. A plain square-ended rectangle with a rectangular lid is insufficient. Keep the printed label legible and inside the body; do not add decorative blocks behind or under the name. You choose all actual geometry.'}), schema('source', style), checked_scene(out, 'source', style))
         report['stages'].append('source')
-        reference = product_reference(out, product)
+        reference = product_reference(out, product, style=style if annotation_contract else None)
         school.save(out/'product-reference.json', reference)
         assets = {'source': product}; headlines = []
         for panel, facts in PANELS.items():
-            assets[panel] = produce(panel, SYSTEM+'\n'+stage_rules(panel, focused=focused_stages, placement_contract=placement_contract), json.dumps({'brief': BRIEF, 'style': style,
+            assets[panel] = produce(panel, SYSTEM+'\n'+stage_rules(panel, focused=focused_stages, placement_contract=placement_contract)+
+                ('\n'+callouts.stage_rules(panel) if annotation_contract else ''), json.dumps({'brief': BRIEF, 'style': style,
                 'product_reference': reference, 'communication_goal': panel, 'supplier_lines': facts, 'previous_headlines': headlines,
                 'task': 'ACTIVE STAGE: PANEL ONLY, 1500x1500. Design a complete infographic around the inserted product. Do not output a product drawing or repeat its printed name. Your texts are a NEW nonnumeric purpose-specific headline and the TWO EXACT supplier lines. Choose background/decorative shapes and product placement, not additional product shapes.'}),
-                schema('panel', style), checked_scene(out, panel, style, panel, product, placement_contract=placement_contract))
+                schema('panel', style), checked_scene(out, panel, style, panel, product, placement_contract=placement_contract, annotation_contract=annotation_contract))
             headlines.append(validate_svg(assets[panel], profile=panel_render_profile)['texts'][1])
             report['stages'].append(panel)
         if len(set(headlines)) != 4: raise ValueError('Four distinct communication headlines required')
@@ -636,9 +667,11 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
             school.check_idle(); measured = asyncio.run(render(svg, folder, profile=profile)); school.save(folder/'render.json', measured)
             if quality_issues(measured, panel=name != 'source', panel_contrast=True, placement_contract=placement_contract, line_check=True): raise ValueError('Final render differs from accepted geometry')
             if name == 'source': continue
+            if annotation_contract and callouts.issues(measured, name, style, contract=annotation_contract): raise ValueError('Final functional annotation check failed')
             small = folder/'small'; small.mkdir(); school.check_idle()
             preview = asyncio.run(render(svg, small, profile=profile, png_scale=.4)); school.save(small/'render.json', preview)
             if quality_issues(preview, panel=True, panel_contrast=True, placement_contract=placement_contract, line_check=True): raise ValueError('Small preview geometry failed')
+            if annotation_contract and callouts.issues(preview, name, style, contract=annotation_contract): raise ValueError('Small preview functional annotation check failed')
             for filename, target in [('artwork.svg', name+'.svg'), ('preview.png', name+'.png'), ('preview.pdf', name+'.pdf'), ('small/preview.png', name+'-small.png')]:
                 shutil.copyfile(folder/filename, delivery/target)
         school.save(delivery/'style.json', style)
@@ -670,6 +703,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     actions = parser.add_mutually_exclusive_group(); actions.add_argument('--run', action='store_true'); actions.add_argument('--verify', type=Path); actions.add_argument('--resume', type=Path); actions.add_argument('--audit-source', type=Path)
     parser.add_argument('--visual-feedback', action='store_true', help='Give the model its latest rejected preview and complete measured feedback')
+    parser.add_argument('--functional-callouts', action='store_true', help='Experimental measured dimension/material annotations and bounded headline claim checks')
     parser.add_argument('--focused-stages', action=argparse.BooleanOptionalAction, default=True,
                         help='Separate source and panel instructions (default); disable only for comparison')
     parser.add_argument('--sampling-profile', choices=('bounded-default.v1', 'qwen-general-trial.v1', 'qwen-deliberate-trial.v1'),
@@ -679,13 +713,23 @@ if __name__ == '__main__':
     actions.add_argument('--audit-source-exam', type=Path, help='Recheck passed exam sources without changing their original scores')
     actions.add_argument('--audit-package', type=Path, help='Re-render a historical package under current source and panel checks')
     actions.add_argument('--recompose', type=Path, help='Reuse verified local style/source and generate new panels under the current placement contract')
+    actions.add_argument('--assemble-reviewed', type=Path, help='Assemble original package with independently approved local panel revisions')
+    actions.add_argument('--verify-assembled', type=Path, help='Verify a reviewed assembly without model calls')
+    parser.add_argument('--reviewed-revision', nargs=2, type=Path, action='append', metavar=('REPORT', 'JUDGMENT'), default=[])
     args = parser.parse_args()
-    if args.recompose:
+    if args.assemble_reviewed:
+        from scripts.product_revised_package import run as assemble
+        _, result = assemble(args.assemble_reviewed, args.reviewed_revision)
+        raise SystemExit(int(result['status'] == 'failed'))
+    elif args.verify_assembled:
+        from scripts.product_revised_package import verify as verify_assembled
+        print(json.dumps(verify_assembled(args.verify_assembled)))
+    elif args.recompose:
         _, result = run(recompose=args.recompose, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages,
-                        sampling_profile=args.sampling_profile)
+                        sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts)
         raise SystemExit(int(result['status'] == 'failed'))
     elif args.audit_package:
-        out, result = audit_source(args.audit_package, include_panels=True)
+        out, result = audit_source(args.audit_package, include_panels=True, functional_callouts=args.functional_callouts)
         print(json.dumps({'report': str(out/'report.json'), 'issues': result['issues'], 'panels': result['panels']}))
         raise SystemExit(int(not result['measured_checks_passed']))
     elif args.audit_source_exam:
@@ -698,10 +742,10 @@ if __name__ == '__main__':
         from scripts.product_feedback_comparison import run as compare_feedback
         _, result = compare_feedback(); raise SystemExit(int(result['status'] == 'failed'))
     elif args.run:
-        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages, sampling_profile=args.sampling_profile); raise SystemExit(int(result['status'] == 'failed'))
+        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages, sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts); raise SystemExit(int(result['status'] == 'failed'))
     elif args.resume:
         _, result = run(args.resume, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages,
-                        sampling_profile=args.sampling_profile); raise SystemExit(int(result['status'] == 'failed'))
+                        sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts); raise SystemExit(int(result['status'] == 'failed'))
     elif args.verify: print(json.dumps(verify(args.verify)))
     elif args.audit_source:
         out, result = audit_source(args.audit_source)

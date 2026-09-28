@@ -128,11 +128,36 @@ becomes [x+L*scale,y+T*scale,W*scale,H*scale]. Use negative x/y when needed
 to compensate for blank source space. Make the product and approved facts
 primary content, not decorative rings or frames. Relate dimensions to real
 product edges and material labels to body/lid. Keep all decoration clear of text.'''
-REQUEST_VERSION = 4
+FUNCTIONAL_PANEL_RULES = '''Measure actual product edges for dimensions; make material leaders touch
+the appropriate visible body/lid paint and approach the matching fact box.
+Leaders must not cross each other or any text. Choose label order, locations
+and routing to make associations unambiguous. Dimension lines span actual
+top/bottom or left/right within 12 units, outside the product by 20..180;
+their fact boxes are within 140 units. Material leader endpoints touch a
+visible part and end within 80 units of its fact; connected segments join
+within 6 units. Use visible line shapes, not decorative bars. Headlines must
+describe supplied facts only, without durability or other unsupported claims.'''
+SCOPED_FUNCTIONAL_RULES = {
+    'dimensions': '''ACTIVE PURPOSE: dimensions only. Use visible line shapes that span
+actual product top/bottom or left/right within 12 units, outside its edge by
+20..180; keep the corresponding fact box within 140 units. Make dimension
+labels and guides unambiguous. Choose all positions yourself.''',
+    'materials': '''ACTIVE PURPOSE: materials only. Each leader must join visible paint of
+the matching body/lid and approach its exact fact box within 80 units.
+Use visible line shapes; segment joins are within 6 units. Route leaders
+without crossings or text collisions. Choose all label positions yourself.''',
+    'care': '''ACTIVE PURPOSE: care instructions only. Use a restrained composition
+with the preserved product and the two care facts. Measurement brackets and
+material leaders belong to other panels and must be absent here.''',
+    'capacity': '''ACTIVE PURPOSE: capacity and included items only. Make those facts
+clear beside the preserved product. Measurement brackets and material
+leaders belong to other panels and must be absent here.''',
+}
+REQUEST_VERSION = 6
 
 
 def request(package, review_path, part, version=REQUEST_VERSION):
-    if type(version) is not int or version not in (1, 2, 3, 4): raise ValueError('Known revision request version required')
+    if type(version) is not int or version not in (1, 2, 3, 4, 5, 6): raise ValueError('Known revision request version required')
     package_report, style, source_scene, source, image, comments = evidence(package, review_path, part)
     placement_contract = package_report.get('placement_contract', product.LEGACY_PLACEMENT)
     product.panel_profile(placement_contract)
@@ -146,6 +171,10 @@ def request(package, review_path, part, version=REQUEST_VERSION):
         if version == 1: data['original_scene'] = product.parse(product.accepted_raw(package, part))
         rules = (LEGACY_PANEL_RULES if version < 3 else
                  EXTENDED_PANEL_RULES if placement_contract == product.PLACEMENT_CONTRACT else CURRENT_PANEL_RULES)
+        if version == 5: rules += '\n'+FUNCTIONAL_PANEL_RULES
+        if version >= 6:
+            rules = rules.replace('Relate dimensions to real\nproduct edges and material labels to body/lid. ', '')
+            rules += '\n'+SCOPED_FUNCTIONAL_RULES[part]+'\nHeadlines may describe only supplied facts, without unsupported claims.'
         data.update(supplier_lines=product.PANELS[part],
             product_reference=read(package/'product-reference.json'),
             task='Recompose this infographic to address the visual comments, not merely to pass bounds. Use all the page purposefully. Keep the original product unchanged, both supplier lines exact, and a concise headline. Return a complete panel scene. '+rules)
@@ -153,13 +182,27 @@ def request(package, review_path, part, version=REQUEST_VERSION):
             'format': output_schema(part, style)}, (style, source_scene, source, placement_contract)
 
 
-def run(package, review_path, part):
+def revision_issues(measured, part, style, placement_contract, version):
+    issues = product.quality_issues(measured, panel=part != 'cap', placement_contract=placement_contract,
+                                   panel_contrast=version >= 5 and part != 'cap', line_check=version >= 5 and part != 'cap')
+    if version >= 5:
+        if part == 'cap':
+            issues += product.source_fidelity_issues(measured, label_check=True, label_bounds=True, style=style)
+        else:
+            issues += product.callouts.issues(measured, part, style, contract='functional-callouts.v2')
+    return issues
+
+
+def run(package, review_path, part, *, sampling_profile=None):
     initial, inputs = request(package, review_path, part)
     placement_contract = inputs[-1]
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='visual-revision-', dir=ROOT))
     config = configuration() | {'num_ctx': 8192, 'num_predict': 2400, 'num_thread': 4, 'timeout_seconds': 180, 'format': initial['format']}
+    if sampling_profile is not None:
+        if sampling_profile != 'qwen-deliberate-trial.v1': raise ValueError('Known revision research profile required')
+        config.update(sampling_profile=sampling_profile, think=True, num_ctx=16384, num_predict=8192)
     code = out/'implementation'; code.mkdir()
-    for name in ('product_visual_revision.py', 'product_infographic_school.py', 'render_school_svg.py', 'vector_school_contract.py'):
+    for name in ('product_visual_revision.py', 'product_infographic_school.py', 'product_callouts.py', 'render_school_svg.py', 'vector_school_contract.py'):
         shutil.copyfile(Path(__file__).parent/name, code/name)
     report = {'schema': 'product-visual-revision.v1', 'request_version': REQUEST_VERSION, 'status': 'running', 'part': part,
         'package': str(package), 'package_sha256': school.checksum(package/'report.json'),
@@ -184,7 +227,7 @@ def run(package, review_path, part):
                 (folder/'artwork.svg').write_text(svg); school.check_idle()
                 measured = asyncio.run(render(svg, folder, profile='product_source' if part == 'cap' else product.panel_profile(placement_contract)))
                 school.save(folder/'render.json', measured)
-                issues = product.quality_issues(measured, panel=part != 'cap', placement_contract=placement_contract)
+                issues = revision_issues(measured, part, inputs[0], placement_contract, REQUEST_VERSION)
                 if issues: raise ValueError('Measured defects: '+json.dumps(issues))
             except ValueError as exc:
                 feedback = {'error': str(exc)[:700], 'response_sha256': school.checksum(folder/'response.json'),
@@ -238,7 +281,7 @@ def authenticate(report_path):
     svg = apply_answer(response['content'], report['part'], *inputs)
     if (folder/'artwork.svg').read_text() != svg: raise ValueError('Revision differs from the model tool response')
     measured = read(folder/'render.json')
-    if product.quality_issues(measured, panel=report['part'] != 'cap', placement_contract=inputs[-1]): raise ValueError('Unresolved measured defects')
+    if revision_issues(measured, report['part'], inputs[0], inputs[-1], report.get('request_version', 1)): raise ValueError('Unresolved measured defects')
     profile = 'product_source' if report['part'] == 'cap' else product.panel_profile(inputs[-1])
     pdf_checks(folder/'preview.pdf', validate_svg(svg, profile=profile)['texts'], size_mm=product.PROFILES[profile]['size_mm'])
     return report, folder, prompt, response
@@ -289,9 +332,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source', type=Path); parser.add_argument('review', type=Path)
     parser.add_argument('--part', choices=PARTS); parser.add_argument('--run', action='store_true'); parser.add_argument('--export', action='store_true')
+    parser.add_argument('--sampling-profile', choices=('qwen-deliberate-trial.v1',), help='Explicit bounded reasoning experiment; default routing unchanged')
     args = parser.parse_args()
     if args.run and args.part and not args.export:
-        _, result = run(args.source, args.review, args.part); raise SystemExit(int(result['status'] == 'failed'))
+        _, result = run(args.source, args.review, args.part, sampling_profile=args.sampling_profile); raise SystemExit(int(result['status'] == 'failed'))
     elif args.export and not args.run and not args.part: print(json.dumps({'output': str(export(args.source, args.review))}))
     elif not args.run and not args.export and not args.part: print(json.dumps({'approved': len(collect(args.source, args.review)[0])}))
     else: parser.error('Use package review --part PART --run, or report judgment [--export]')

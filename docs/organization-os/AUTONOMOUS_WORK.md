@@ -58,6 +58,14 @@ elementy sceny z pomierzonymi granicami produktu/części, bez narzucania
 gotowej kompozycji i bez ręcznego poprawiania współrzędnych. Znane błędy
 pozostają próbami rozwojowymi; nowe briefy końcowe trzeba zamrozić osobno.
 
+Kontrole funkcjonalnych oznaczeń zostały wdrożone eksperymentalnie
+(`--functional-callouts`). Mierzą faktyczną geometrię i widoczną farbę
+części; v2 wykrywa także przecięcia łączników. Rozumowanie poprawiło
+układ materiałów, a rozdzielenie instrukcji paneli usunęło obcą miarkę
+z care. Dwie zaakceptowane poprawki są danymi rozwojowymi. Składanie
+zatwierdzonych rewizji (`--assemble-reviewed`, `--reviewed-revision`)
+zachowuje literalne SVG i wymaga osobnego odbioru całej paczki.
+
 Istotne próby i wyniki zapisujemy w `docs/WORK_LOG.md`. Historyczna
 kwalifikacja przeglądu technicznego nie zostaje automatycznie zamieniona
 w potwierdzenie wszystkich kryteriów samodzielnego przebiegu powyżej.

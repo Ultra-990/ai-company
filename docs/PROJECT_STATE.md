@@ -17,6 +17,17 @@ Następny etap: mierzone powiązanie linii wymiarowych z krawędziami produktu
 i opisów materiałów z korpusem/zakrętką oraz kontrola niepotwierdzonych
 nagłówków. Potem osobne pełne briefy kwalifikacyjne, bez doraźnych podpowiedzi.
 
+Aktualizacja tego etapu: kontrole powiązań już działają. Nowa seria ma poprawne
+wymiary; osobne poprawki lokalnego modelu usunęły przecięcie łączników
+materiałów i rozpraszającą dekorację pielęgnacji. Obie poprawki uzyskały
+niezależną akceptację jako przykłady do nauki syntetycznej. Narzędzie składa
+je w komplet z zachowaniem dosłownych źródeł i sprawdza ponownie pliki.
+Cały złożony pakiet uzyskał niezależną akceptację syntetycznej pracy
+rozwojowej. Dane nauki: **227/25/50**; regresja **1786 passed, 22 skipped**.
+To nadal praca na znanym briefie, bez nowego treningu wag lub
+uznania modelu za samodzielny. Kolejny etap to osobne pełne briefy i próby
+korekt, zamrożone przed inferencją i wyłączone z nauki.
+
 ## Aktualizacja 28.09.2026 — rozdzielone instrukcje i sprawdzian nowych briefów
 
 Generator domyślnie rozdziela instrukcje rysunku produktu od kompozycji
