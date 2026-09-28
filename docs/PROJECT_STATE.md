@@ -1,5 +1,19 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — pełne nowe briefy ujawniły dalsze ograniczenia
+
+Zamrożone porównanie trzech nowych pełnych zleceń dało **0/3** zarówno
+dla profilu bazowego, jak i profilu z rozumowaniem. Model nie jest jeszcze
+samodzielny. Rozumowanie pozwalało dojść dalej, ale błędy obejmują ograniczenie
+miarek do typu SVG `line`, uciętą odpowiedź oraz nieprecyzyjny błąd strumienia.
+Trzeba usunąć potwierdzone ograniczenia narzędzi i obsłużyć niepełne odpowiedzi
+w ograniczonym budżecie, zachowując pierwotny wynik egzaminu poza nauką.
+
+Właściciel ustalił dalszą kolejność: gotowość modelu, rozwinięcie konkretnych
+umiejętności analizy/programowania/narzędzi, potem rozbudowa AI Company
+i nowy interfejs wykonywane przez model lokalny. Szczegóły panelu klienta
+i właściciela przekaże później.
+
 ## Aktualizacja 28.09.2026 — aktywny cel samodzielnego wykonania zleceń
 
 Właściciel polecił kontynuować do osiągnięcia samodzielnej pracy. Kryteria

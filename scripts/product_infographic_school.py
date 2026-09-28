@@ -46,6 +46,8 @@ PANELS = {
     'materials': ['Body: stainless steel', 'Lid: polypropylene'],
     'care': ['Hand wash only', 'Air dry before storage'],
 }
+DEFAULT_BRIEF = deepcopy(BRIEF)
+DEFAULT_PANELS = deepcopy(PANELS)
 SOURCE_FIDELITY_CONTRACT = 'bottle-visible-parts.v4'
 PANEL_FIDELITY_CONTRACT = 'text-and-lines.v2'
 LEGACY_PLACEMENT = 'canvas-transform.v1'
@@ -223,7 +225,8 @@ def quality_issues(measured, *, panel=False, panel_contrast=False, placement_con
 def source_fidelity_issues(measured, *, label_check=False, label_bounds=False, style=None):
     """Measured silhouette proportions, not a claim of aesthetic acceptance.
 
-    The synthetic supplier dimensions are 24 cm tall by 7 cm diameter.
+    The original synthetic supplier dimensions are 24 cm by 7 cm; frozen
+    held-out briefs may declare other physical dimensions explicitly.
     A 10% ratio tolerance permits stylization without a different silhouette.
     No coordinate or generated artwork is changed by this check.
     """
@@ -234,11 +237,13 @@ def source_fidelity_issues(measured, *, label_check=False, label_bounds=False, s
     width = max(b[0]+b[2] for b in boxes)-left
     height = max(b[1]+b[3] for b in boxes)-top
     ratio = height/width if width > 0 else 0
+    supplier_height, supplier_diameter = BRIEF.get('physical_dimensions_cm', [24, 7])
+    expected_ratio = supplier_height/supplier_diameter
     issues = []
-    if not (24/7)*.9 <= ratio <= (24/7)*1.1:
+    if not expected_ratio*.9 <= ratio <= expected_ratio*1.1:
         issues.append({'kind': 'source_proportions_differ_from_supplier', 'width': width,
                        'height': height, 'height_to_width': ratio,
-                       'required': 'silhouette height/width must be between 3.086 and 3.771 (24/7 within 10%); choose your own corrected geometry'})
+                       'required': f'silhouette height/width must be between {expected_ratio*.9:.3f} and {expected_ratio*1.1:.3f} ({supplier_height}/{supplier_diameter} within 10%); choose your own corrected geometry'})
     if label_bounds:
         lines = measured.get('layout', [])
         if len(lines) != 1:
@@ -438,6 +443,13 @@ def verify(out):
     if (any(p.is_symlink() for p in (out, *out.parents)) or not out.resolve().is_relative_to(ROOT.resolve())):
         raise ValueError('Private product-school package required')
     report = parse((out/'report.json').read_text())
+    if report.get('brief') != BRIEF:
+        # Only the code-frozen qualification catalog can select another brief;
+        # arbitrary report metadata cannot relax or replace the contract.
+        from scripts.product_full_exam import matching_case, exercise_context
+        case = matching_case(report)
+        if case is not None:
+            with exercise_context(case): return verify(out)
     if report['status'] != 'pending_independent_review' or report['brief'] != BRIEF or report['supplier_copy'] != PANELS:
         raise ValueError('Completed package and frozen brief required')
     fidelity_contract = report.get('source_fidelity_contract')
@@ -570,7 +582,7 @@ def audit_source(package, *, include_panels=False, functional_callouts=False):
     return out, report
 
 
-def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False):
+def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False):
     ROOT.mkdir(exist_ok=True)
     if any(p.is_symlink() for p in (ROOT, *ROOT.parents)): raise ValueError('Private Linux workspace required')
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='series-', dir=ROOT))
@@ -582,6 +594,8 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         config['think'] = sampling_profile == 'qwen-deliberate-trial.v1'
         if config['think']:
             config.update(num_ctx=16384, num_predict=8192)
+    if matched_exam_budget:
+        config.update(num_ctx=16384, num_predict=8192)
     previous = None; failed_stage = None; correction = None; inherited = []
     placement_contract = PLACEMENT_CONTRACT
     annotation_contract = callouts.CONTRACT if functional_callouts else None
@@ -645,8 +659,9 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         style = produce('style', SYSTEM, json.dumps({'brief': BRIEF, 'supplier_copy': PANELS})+
             '\nChoose five #RRGGBB literal colors (ink, paper, accent, blue body_color, dark cap_color) and heading/body fonts. Use a light background, legible dark text, and a restrained coherent palette.', Style.model_json_schema(), style_value)
         school.save(out/'style.json', style); report['stages'].append('style')
+        supplier_height, supplier_diameter = BRIEF.get('physical_dimensions_cm', [24, 7])
         product = produce('source', SYSTEM+'\n'+stage_rules('source', focused=focused_stages), json.dumps({'brief': BRIEF, 'style': style,
-            'task': 'ACTIVE STAGE: SOURCE ONLY. Draw the synthetic reference product. The measured silhouette height/width must match 24/7 within 10%, including the cap and base. Make the silhouette recognizable as a cylindrical bottle: curved shoulders, a shaped screw cap and rounded base. A plain square-ended rectangle with a rectangular lid is insufficient. Keep the printed label legible and inside the body; do not add decorative blocks behind or under the name. You choose all actual geometry.'}), schema('source', style), checked_scene(out, 'source', style))
+            'task': f'ACTIVE STAGE: SOURCE ONLY. Draw the synthetic reference product. The measured silhouette height/width must match {supplier_height}/{supplier_diameter} within 10%, including the cap and base. Make the silhouette recognizable as a cylindrical bottle: curved shoulders, a shaped screw cap and rounded base. A plain square-ended rectangle with a rectangular lid is insufficient. Keep the printed label legible and inside the body; do not add decorative blocks behind or under the name. You choose all actual geometry.'}), schema('source', style), checked_scene(out, 'source', style))
         report['stages'].append('source')
         reference = product_reference(out, product, style=style if annotation_contract else None)
         school.save(out/'product-reference.json', reference)
@@ -715,9 +730,14 @@ if __name__ == '__main__':
     actions.add_argument('--recompose', type=Path, help='Reuse verified local style/source and generate new panels under the current placement contract')
     actions.add_argument('--assemble-reviewed', type=Path, help='Assemble original package with independently approved local panel revisions')
     actions.add_argument('--verify-assembled', type=Path, help='Verify a reviewed assembly without model calls')
+    actions.add_argument('--full-exam', action='store_true', help='Frozen three-brief matched complete-package exam, excluded from training')
     parser.add_argument('--reviewed-revision', nargs=2, type=Path, action='append', metavar=('REPORT', 'JUDGMENT'), default=[])
     args = parser.parse_args()
-    if args.assemble_reviewed:
+    if args.full_exam:
+        from scripts.product_full_exam import run as full_exam
+        _, result = full_exam()
+        raise SystemExit(int(result['status'] == 'failed'))
+    elif args.assemble_reviewed:
         from scripts.product_revised_package import run as assemble
         _, result = assemble(args.assemble_reviewed, args.reviewed_revision)
         raise SystemExit(int(result['status'] == 'failed'))

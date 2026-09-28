@@ -5112,3 +5112,40 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Pełna regresja: **1786 passed, 22 skipped**, 86,08 s. Intake przyjął dwa
   zatwierdzone przykłady i zachował historyczne rozmowy: **227/25/50**.
   Trening wag nie został uruchomiony; aktywna kwalifikacja nadal 1/5.
+
+## 2026-09-28 — zamrożony sprawdzian pełnych infografik
+
+- Przygotowano trzy nowe syntetyczne briefy: BREEZE 400 (20×6 cm),
+  RIDGE 750 (22×8 cm) i TRAIL 900 (30×7,5 cm). Każdy wymaga pełnego źródła
+  i czterech paneli. Rodziny mają split `test`; nie trafiają do nauki.
+- Manifest zapisany przed pierwszą inferencją określa dwie wersje tego samego
+  przypiętego modelu: profil bazowy bez rozumowania oraz profil badawczy
+  z rozumowaniem. Wspólne limity: kontekst 16384, wyjście 8192, 180 s,
+  cztery wątki i maksymalnie trzy odpowiedzi na każdy z sześciu etapów.
+  Te same wymagania, kontrakty i automatyczne sprawdzanie; kolejność ramion
+  jest naprzemienna. Brak ręcznych korekt, podpowiedzi i wznowień w egzaminie.
+- Walidacja źródła korzysta z jawnych wymiarów zamrożonego briefu. Weryfikacja
+  może wybrać tylko dokładny rekord katalogu, nie dowolne dane raportu;
+  kontekst briefu zawsze przywraca wcześniejsze wartości. Testy: 62 passed.
+- Uruchomiono `full-exam-fnth59e_`; wynik i niezależny ogląd pozostają
+  do oceny po zakończeniu wszystkich sześciu przebiegów.
+- Zakończenie 29.09: **0/3 kompletnych pakietów w obu profilach**. Bazowy
+  kończył na źródle; profil z rozumowaniem dochodził do dimensions/materials.
+  BREEZE odrzucono za miarki z cienkich prostokątów, choć ogląd potwierdził
+  prawidłowe rozpiętości. RIDGE wyczerpał odpowiedź (`truncated_output`),
+  TRAIL zakończył się `invalid_stream`, który obecnie łączy kilka przyczyn.
+  Nie przypisano tego bez dowodu do GPU ani do konkretnego limitu strumienia.
+- Niezależny weryfikator potwierdził sześć osobnych wykonań, briefy, limity,
+  niezmienne implementacje i wynik. Testy weryfikatora oraz pełnego egzaminu:
+  11 passed; błędne wyniki, podmieniony kod, nierówne limity i odziedziczone
+  etapy są odrzucane. Zapisano osobny przegląd przyczyn niepowodzeń.
+  Egzamin pozostaje poza nauką; kwalifikacja nie wzrosła.
+
+## 2026-09-29 — dalsza kolejność prac wskazana przez właściciela
+
+- Po uzyskaniu gotowości modelu rozwijać jego umiejętności w kierunku
+  analizy, programowania, testowania i obsługi narzędzi asystenta; poziom
+  potwierdzać zadaniami, bez obietnicy automatycznej równoważności modeli.
+- Potem kontynuować rozbudowę AI Company przez model lokalny i zaprojektować
+  nowy interfejs. Szczegóły panelu klienta i właściciela zostaną przekazane
+  przez właściciela później. Zachować bieżący etap gotowości i autorstwo modelu.

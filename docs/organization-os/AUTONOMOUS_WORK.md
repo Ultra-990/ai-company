@@ -5,6 +5,20 @@ pracy. Przedmiotem oceny jest kompletna realizacja w zdefiniowanym zakresie,
 a nie sam poprawny JSON, liczba testów infrastruktury czy liczba rekordów SFT.
 Obowiązują reguły autorstwa lokalnych modeli z `AGENTS.md`.
 
+## Kolejność wskazana przez właściciela 29.09.2026
+
+Po potwierdzeniu gotowości modelu właściciel chce rozszerzyć jego umiejętności
+w kierunku możliwości asystenta prowadzącego: analiza wymagań, planowanie,
+programowanie, testowanie, diagnozowanie błędów i korzystanie z narzędzi.
+Każdą kompetencję trzeba sprawdzić na osobnych zadaniach; nie zakładamy
+automatycznie równego poziomu modeli ani nie obiecujemy go na podstawie SFT.
+
+Następnie lokalny model ma kontynuować rozbudowę AI Company i zaprojektować
+nowy interfejs. Asystent prowadzący rozwija narzędzia/naukę i niezależnie
+ocenia pracę, zachowując autorstwo modelu. Szczegółowe instrukcje panelu
+klienta i panelu właściciela właściciel przekaże po ukończeniu tych etapów.
+Obecne działania nadal dotyczą pierwszego etapu, czyli gotowości modelu.
+
 ## Kryterium zakończenia dla każdej usługi
 
 Pięć usług pozostaje zgodnych z `scripts/upwork_qualification.py`: przegląd
