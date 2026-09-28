@@ -23,6 +23,10 @@ def test_new_cases_are_frozen_nontraining_and_have_distinct_physical_ratios():
         old = exam.definition(case)
         assert old['brief']['qualification_exam'] == exam.LEGACY_VERSION
         assert exam.matching_case(old) == case
+    for case in exam.SECOND_CASES:
+        old = exam.definition(case)
+        assert old['brief']['qualification_exam'] == exam.SECOND_VERSION
+        assert exam.matching_case(old) == case
 
 
 def test_context_uses_case_dimensions_and_restores_globals_even_after_failure():
@@ -30,7 +34,7 @@ def test_context_uses_case_dimensions_and_restores_globals_even_after_failure():
     measured = {'shape_layout': [{'bbox': [100, 100, 100, 275]}]}
     assert exam.product.source_fidelity_issues(measured)
     with pytest.raises(RuntimeError):
-        with exam.exercise_context(exam.CASES[1]):
+        with exam.exercise_context(exam.CASES[0]):
             assert exam.product.source_fidelity_issues(measured) == []
             raise RuntimeError('fixture interruption')
     assert exam.product.BRIEF is original[0] and exam.product.PANELS is original[1]
@@ -63,6 +67,7 @@ def test_full_exam_freezes_before_calls_matches_budgets_and_preserves_failures(t
         assert kwargs['functional_callouts'] is True and kwargs['focused_stages'] is True
         assert kwargs['visual_feedback'] is False
         assert kwargs['recover_incomplete'] is True
+        assert kwargs['source_contour'] is True
         calls.append((exam.product.BRIEF['family'], kwargs['sampling_profile']))
         package = tmp_path/f'package-{len(calls)}'; package.mkdir()
         report = {'model': 'fixture', 'digest': 'f'*64, 'config': manifest['shared_budget'],

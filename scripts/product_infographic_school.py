@@ -54,6 +54,8 @@ SOURCE_INSTRUCTION_CONTRACT = 'explicit-source-fonts-and-shape-budget.v1'
 PANEL_FIDELITY_CONTRACT = 'text-and-lines.v2'
 LEGACY_PLACEMENT = 'canvas-transform.v1'
 PLACEMENT_CONTRACT = 'extended-transform.v2'
+LEGACY_COPY = 'ordered-supplier-facts.v1'
+COPY_CONTRACT = 'verbatim-supplier-facts.v2'
 
 
 def panel_profile(placement_contract):
@@ -108,7 +110,8 @@ def schema(kind, style):
     return value
 
 
-def compile_scene(raw, style, *, panel=None, product=None, placement_contract=LEGACY_PLACEMENT):
+def compile_scene(raw, style, *, panel=None, product=None, placement_contract=LEGACY_PLACEMENT, copy_contract=LEGACY_COPY):
+    if copy_contract not in (LEGACY_COPY, COPY_CONTRACT): raise ValueError('Unknown supplier copy contract')
     value = parse(raw)
     expected = {'shapes', 'texts'} | ({'product_placement'} if panel else set())
     if not isinstance(value, dict) or set(value) != expected: raise ValueError('Exact product scene fields required')
@@ -135,7 +138,8 @@ def compile_scene(raw, style, *, panel=None, product=None, placement_contract=LE
     brand.append_nodes(root, value['texts'], text=True)
     words = [entry['text'] for entry in value['texts']]
     if panel:
-        if words[1:] != PANELS[panel]: raise ValueError('Preserve both frozen supplier lines exactly and in order: '+json.dumps(PANELS[panel]))
+        if (words[1:] != PANELS[panel] if copy_contract == LEGACY_COPY else sorted(words[1:]) != sorted(PANELS[panel])):
+            raise ValueError('Preserve both frozen supplier lines exactly'+(' and in order' if copy_contract == LEGACY_COPY else ', each exactly once')+': '+json.dumps(PANELS[panel]))
         if not 5 <= len(words[0]) <= 28 or re.search(r'\d', words[0]): raise ValueError('One concise nonnumeric headline, 5..28 characters')
     elif words != [BRIEF['product_name']]: raise ValueError('Exact product name required')
     svg = ET.tostring(root, encoding='unicode'); validate_svg(svg, profile=profile)
@@ -312,10 +316,13 @@ from the three infographic lines. Never overlap text lines. Keep the series
 coherent but use a purposeful layout for each different communication goal.'''
 
 
-def stage_rules(stage, *, focused=False, placement_contract=LEGACY_PLACEMENT):
+def stage_rules(stage, *, focused=False, placement_contract=LEGACY_PLACEMENT, copy_contract=LEGACY_COPY):
     if stage not in ('source', *PANELS):
         raise ValueError('Known product stage required')
     rules = SCENE_RULES
+    if copy_contract not in (LEGACY_COPY, COPY_CONTRACT): raise ValueError('Unknown supplier copy contract')
+    if copy_contract == COPY_CONTRACT:
+        rules = rules.replace('lines in their supplied order.', 'lines, each exactly once in either array order. Keep the headline first.')
     panel_profile(placement_contract)
     if placement_contract == PLACEMENT_CONTRACT:
         rules = (rules.replace('x,y,scale (.1..1.5)', 'x,y,scale (.1..4); x/y may be negative down to -3200')
@@ -344,12 +351,12 @@ identify the body/lid on the drawing. You choose all shapes and coordinates.'''
         if placement_contract == PLACEMENT_CONTRACT else '')
 
 
-def checked_scene(out, stage, style, panel=None, product=None, *, placement_contract=LEGACY_PLACEMENT, annotation_contract=None, source_contour=False):
+def checked_scene(out, stage, style, panel=None, product=None, *, placement_contract=LEGACY_PLACEMENT, annotation_contract=None, source_contour=False, copy_contract=LEGACY_COPY):
     callouts.validate_contract(annotation_contract)
     attempt = 0
     def validate(raw):
         nonlocal attempt
-        svg = compile_scene(raw, style, panel=panel, product=product, placement_contract=placement_contract)
+        svg = compile_scene(raw, style, panel=panel, product=product, placement_contract=placement_contract, copy_contract=copy_contract)
         folder = out/(stage+'-layout-'+str(attempt)); attempt += 1; folder.mkdir()
         (folder/'artwork.svg').write_text(svg)
         school.check_idle()
@@ -467,6 +474,7 @@ def verify(out):
     if panel_contract not in (None, 'text-background-samples.v1', PANEL_FIDELITY_CONTRACT):
         raise ValueError('Unknown panel fidelity contract')
     placement_contract = report.get('placement_contract', LEGACY_PLACEMENT)
+    copy_contract = report.get('supplier_copy_contract', LEGACY_COPY)
     annotation_contract = report.get('annotation_contract')
     callouts.validate_contract(annotation_contract)
     if report.get('transport_recovery_contract') not in (None, 'bounded-incomplete-retry.v1'):
@@ -496,7 +504,7 @@ def verify(out):
     checks = {}
     for name in ['source', *PANELS]:
         svg = source if name == 'source' else compile_scene(accepted_raw(out, name), style, panel=name, product=source,
-                                                          placement_contract=placement_contract)
+                                                          placement_contract=placement_contract, copy_contract=copy_contract)
         folder = out/name
         if (folder/'artwork.svg').read_text() != svg: raise ValueError('Output differs from raw local model response')
         profile = 'product_source' if name == 'source' else panel_render_profile
@@ -618,6 +626,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         config.update(num_ctx=16384, num_predict=8192)
     previous = None; failed_stage = None; correction = None; inherited = []
     placement_contract = PLACEMENT_CONTRACT
+    copy_contract = COPY_CONTRACT
     annotation_contract = callouts.CONTRACT if functional_callouts else None
     if resume is not None and recompose is not None:
         raise ValueError('Choose continuation or source reuse')
@@ -627,6 +636,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
             raise ValueError('A resume preserves its source contour contract; start a fresh exercise')
         source_contour = previous.get('source_contour_contract') == silhouette.CONTRACT
         placement_contract = previous.get('placement_contract', LEGACY_PLACEMENT)
+        copy_contract = previous.get('supplier_copy_contract', LEGACY_COPY)
         # Inherited finished panels must keep their original acceptance contract.
         previous_annotations = previous.get('annotation_contract')
         if functional_callouts and previous_annotations != callouts.CONTRACT:
@@ -659,6 +669,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
               'source_contour_contract': silhouette.CONTRACT if source_contour else None,
               'panel_fidelity_contract': PANEL_FIDELITY_CONTRACT,
               'placement_contract': placement_contract,
+              'supplier_copy_contract': copy_contract,
               'annotation_contract': annotation_contract,
               'correction_contract': feedback.CONTRACT if visual_feedback else 'legacy-text.v1',
               'instruction_contract': 'focused-stages.v1' if focused_stages else 'combined-stages.v1',
@@ -695,11 +706,11 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         school.save(out/'product-reference.json', reference)
         assets = {'source': product}; headlines = []
         for panel, facts in PANELS.items():
-            assets[panel] = produce(panel, SYSTEM+'\n'+stage_rules(panel, focused=focused_stages, placement_contract=placement_contract)+
+            assets[panel] = produce(panel, SYSTEM+'\n'+stage_rules(panel, focused=focused_stages, placement_contract=placement_contract, copy_contract=copy_contract)+
                 ('\n'+callouts.stage_rules(panel) if annotation_contract else ''), json.dumps({'brief': BRIEF, 'style': style,
                 'product_reference': reference, 'communication_goal': panel, 'supplier_lines': facts, 'previous_headlines': headlines,
                 'task': 'ACTIVE STAGE: PANEL ONLY, 1500x1500. Design a complete infographic around the inserted product. Do not output a product drawing or repeat its printed name. Your texts are a NEW nonnumeric purpose-specific headline and the TWO EXACT supplier lines. Choose background/decorative shapes and product placement, not additional product shapes.'}),
-                schema('panel', style), checked_scene(out, panel, style, panel, product, placement_contract=placement_contract, annotation_contract=annotation_contract))
+                schema('panel', style), checked_scene(out, panel, style, panel, product, placement_contract=placement_contract, annotation_contract=annotation_contract, copy_contract=copy_contract))
             headlines.append(validate_svg(assets[panel], profile=panel_render_profile)['texts'][1])
             report['stages'].append(panel)
         if len(set(headlines)) != 4: raise ValueError('Four distinct communication headlines required')
@@ -768,9 +779,13 @@ if __name__ == '__main__':
     actions.add_argument('--full-exam', action='store_true', help='Frozen three-brief matched complete-package exam, excluded from training')
     actions.add_argument('--probe-failed-stream', type=Path, help='Replay one bound failed exam request for transport diagnostics only')
     actions.add_argument('--audit-failed-callouts', type=Path, help='Re-measure one rejected exam panel without changing its original score')
+    actions.add_argument('--audit-failed-copy', type=Path, help='Check a rejected fact-order response by literal rendering under the new semantic contract')
     parser.add_argument('--reviewed-revision', nargs=2, type=Path, action='append', metavar=('REPORT', 'JUDGMENT'), default=[])
     args = parser.parse_args()
-    if args.audit_failed_callouts:
+    if args.audit_failed_copy:
+        from scripts.product_copy_audit import run as copy_audit
+        copy_audit(args.audit_failed_copy)
+    elif args.audit_failed_callouts:
         from scripts.product_stream_probe import audit_callouts
         audit_callouts(args.audit_failed_callouts)
     elif args.probe_failed_stream:

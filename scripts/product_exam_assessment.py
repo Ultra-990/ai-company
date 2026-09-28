@@ -60,13 +60,15 @@ def assess(path):
             for name in ('product_infographic_school.py', 'product_callouts.py', 'brand_school.py',
                          'product_model_feedback.py', 'render_school_svg.py', 'vector_school_contract.py',
                          *(('product_silhouette.py',) if manifest['shared_controls'].get('source_instruction_contract') else ()),
-                         *(('local_ollama.py',) if version == exam.VERSION else ())):
+                         *(('local_ollama.py',) if version != exam.LEGACY_VERSION else ())):
                 if (revision.bounded(folder/'implementation'/name).read_bytes()
                         != revision.bounded(path/'implementation'/name).read_bytes()):
                     raise ValueError('Implementation changed during the frozen exam')
             controls = manifest['shared_controls']
             for field in ('source_instruction_contract', 'source_contour_contract'):
                 if package.get(field) != controls.get(field): raise ValueError('Case source controls changed')
+            if package.get('supplier_copy_contract', product.LEGACY_COPY) != controls.get('supplier_copy_contract', product.LEGACY_COPY):
+                raise ValueError('Case supplier copy contract changed')
             for field, control in (('source_fidelity_contract', 'source_contract'),
                                    ('panel_fidelity_contract', 'panel_contract'),
                                    ('placement_contract', 'placement_contract'),
@@ -74,7 +76,7 @@ def assess(path):
                 if package[field] != controls[control]: raise ValueError('Case acceptance contract changed')
             if package['instruction_contract'] != 'focused-stages.v1' or package['correction_contract'] != 'legacy-text.v1':
                 raise ValueError('Case instruction or feedback arm changed')
-            recovery = 'bounded-incomplete-retry.v1' if version == exam.VERSION else None
+            recovery = 'bounded-incomplete-retry.v1' if version != exam.LEGACY_VERSION else None
             if package.get('transport_recovery_contract') != recovery:
                 raise ValueError('Case incomplete-answer recovery contract changed')
             requests = sorted(folder.glob('*-request.json')); responses = sorted(folder.glob('*-response.json'))

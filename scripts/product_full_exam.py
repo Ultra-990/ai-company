@@ -15,18 +15,24 @@ import time
 from scripts import product_infographic_school as product
 
 LEGACY_VERSION = 'product-full-package-exam.v1'
-VERSION = 'product-full-package-exam.v2'
+SECOND_VERSION = 'product-full-package-exam.v2'
+VERSION = 'product-full-package-exam.v3'
 LEGACY_CASES = (
     {'id': 'breeze-400', 'name': 'BREEZE 400', 'capacity': 400, 'height': 20, 'diameter': 6},
     {'id': 'ridge-750', 'name': 'RIDGE 750', 'capacity': 750, 'height': 22, 'diameter': 8},
     {'id': 'trail-900', 'name': 'TRAIL 900', 'capacity': 900, 'height': 30, 'diameter': 7.5},
 )
-CASES = (
+SECOND_CASES = (
     {'id': 'cove-500', 'name': 'COVE 500', 'capacity': 500, 'height': 21, 'diameter': 7},
     {'id': 'mesa-750', 'name': 'MESA 750', 'capacity': 750, 'height': 23, 'diameter': 8.5},
     {'id': 'peak-900', 'name': 'PEAK 900', 'capacity': 900, 'height': 30, 'diameter': 7.5},
 )
-CATALOGS = {LEGACY_VERSION: LEGACY_CASES, VERSION: CASES}
+CASES = (
+    {'id': 'sage-350', 'name': 'SAGE 350', 'capacity': 350, 'height': 18, 'diameter': 6.5},
+    {'id': 'glen-650', 'name': 'GLEN 650', 'capacity': 650, 'height': 25, 'diameter': 7.5},
+    {'id': 'summit-1000', 'name': 'SUMMIT 1000', 'capacity': 1000, 'height': 32, 'diameter': 8},
+)
+CATALOGS = {LEGACY_VERSION: LEGACY_CASES, SECOND_VERSION: SECOND_CASES, VERSION: CASES}
 ARMS = {'baseline': 'bounded-default.v1', 'deliberate': 'qwen-deliberate-trial.v1'}
 
 
@@ -43,7 +49,7 @@ def definition(case):
 
 
 def matching_case(report):
-    for case in (*LEGACY_CASES, *CASES):
+    for case in (case for cases in CATALOGS.values() for case in cases):
         frozen = definition(case)
         if report.get('brief') == frozen['brief'] and report.get('supplier_copy') == frozen['supplier_copy']:
             return case
@@ -77,7 +83,8 @@ def run():
                                     'placement_contract': product.PLACEMENT_CONTRACT,
                                     'source_contract': product.SOURCE_FIDELITY_CONTRACT,
                                     'source_instruction_contract': product.SOURCE_INSTRUCTION_CONTRACT,
-                                    'source_contour_contract': None,
+                                    'source_contour_contract': product.silhouette.CONTRACT,
+                                    'supplier_copy_contract': product.COPY_CONTRACT,
                                     'panel_contract': product.PANEL_FIDELITY_CONTRACT,
                                     'annotation_contract': product.callouts.CONTRACT},
                 'training_export_allowed': False, 'manual_hints_allowed': False, 'manual_product_edits_allowed': False,
@@ -103,7 +110,8 @@ def run():
             with exercise_context(case):
                 for arm in order:
                     package, generated = product.run(sampling_profile=ARMS[arm], functional_callouts=True,
-                        focused_stages=True, visual_feedback=False, matched_exam_budget=True, recover_incomplete=True)
+                        focused_stages=True, visual_feedback=False, matched_exam_budget=True, recover_incomplete=True,
+                        source_contour=True)
                     actual = generated['config']
                     for key in ('num_ctx', 'num_predict', 'num_thread', 'timeout_seconds'):
                         if actual[key] != manifest['shared_budget'][key]: raise ValueError('Matched exam budget changed')

@@ -120,6 +120,17 @@ def test_out_of_frame_and_copy_over_product_are_measured_independently():
     assert product.quality_issues(measured)[0]['kind'] == 'source_shape_outside_margin'
 
 
+def test_new_copy_contract_preserves_both_facts_in_either_array_order_without_sorting_artwork():
+    value = panel_scene(); value['texts'][1:] = value['texts'][1:][::-1]
+    with pytest.raises(ValueError, match='and in order'):
+        product.compile_scene(json.dumps(value), style(), panel='capacity', product=source())
+    svg = product.compile_scene(json.dumps(value), style(), panel='capacity', product=source(), copy_contract=product.COPY_CONTRACT)
+    assert svg.index('Includes: 1 bottle with lid') < svg.index('Capacity: 600 ml')
+    value['texts'][2]['text'] = value['texts'][1]['text']
+    with pytest.raises(ValueError, match='each exactly once'):
+        product.compile_scene(json.dumps(value), style(), panel='capacity', product=source(), copy_contract=product.COPY_CONTRACT)
+
+
 @pytest.mark.parametrize('width,height,accepted', [(120, 635, False), (200, 200, False),
                                                   (140, 480, True), (175, 600, True), (0, 480, False)])
 def test_source_ratio_checks_real_silhouette_independent_of_canvas(width, height, accepted):

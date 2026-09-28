@@ -5,7 +5,8 @@ import re
 LEGACY_CONTRACT = 'functional-callouts.v1'
 LINE_CONTRACT = 'functional-callouts.v2'
 RECTANGLE_CONTRACT = 'functional-callouts.v3'
-CONTRACT = 'functional-callouts.v4'
+CONTACT_CONTRACT = 'functional-callouts.v4'
+CONTRACT = 'functional-callouts.v5'
 
 RULES = '''Functional annotations are independently measured, not inferred from
 their presence. Use actual line shapes for dimension markers and material
@@ -43,7 +44,7 @@ panels; do not introduce them here. Use restrained relevant decoration.'''
 
 
 def validate_contract(value):
-    if value not in (None, LEGACY_CONTRACT, LINE_CONTRACT, RECTANGLE_CONTRACT, CONTRACT):
+    if value not in (None, LEGACY_CONTRACT, LINE_CONTRACT, RECTANGLE_CONTRACT, CONTACT_CONTRACT, CONTRACT):
         raise ValueError('Unknown functional annotation contract')
 
 
@@ -124,7 +125,7 @@ def issues(measured, panel, style, *, contract=CONTRACT):
     if panel not in ('dimensions', 'materials'):
         return defects
     segments = measured.get('panel_line_segments', [])
-    kinds = ('line', 'rectangle_bar') if contract in (RECTANGLE_CONTRACT, CONTRACT) else ('line',)
+    kinds = ('line', 'rectangle_bar') if contract in (RECTANGLE_CONTRACT, CONTACT_CONTRACT, CONTRACT) else ('line',)
     lines = [line for line in segments if line.get('kind') in kinds
              and math.dist(line['start'], line['end']) >= 12
              and line.get('stroke_width', 0) > 0 and line.get('visible_samples', 0) > 0]
@@ -132,8 +133,15 @@ def issues(measured, panel, style, *, contract=CONTRACT):
         return defects+[{'kind': 'missing_annotation_geometry'}]
     left, top, width, height = measured['group_layout'][0]['bbox']
     right, bottom = left+width, top+height
+    facts = text[1:]
+    if contract == CONTRACT:
+        prefixes = ('Height:', 'Diameter:') if panel == 'dimensions' else ('Body:', 'Lid:')
+        ordered = [[fact for fact in facts if fact['text'].startswith(prefix)] for prefix in prefixes]
+        if any(len(matches) != 1 for matches in ordered):
+            return defects+[{'kind': 'missing_unique_supplier_fact_roles'}]
+        facts = [matches[0] for matches in ordered]
     if panel == 'dimensions':
-        for axis, fact in ((1, text[1]), (0, text[2])):
+        for axis, fact in ((1, facts[0]), (0, facts[1])):
             lo, hi = (top, bottom) if axis else (left, right)
             cross_lo, cross_hi = (left, right) if axis else (top, bottom)
             valid = False
@@ -158,15 +166,15 @@ def issues(measured, panel, style, *, contract=CONTRACT):
             return defects+[{'kind': 'missing_material_endpoint_measurement'}]
         if style['body_color'].lower() == style['cap_color'].lower():
             return defects+[{'kind': 'indistinguishable_material_parts'}]
-        if contract in (LINE_CONTRACT, RECTANGLE_CONTRACT, CONTRACT):
+        if contract in (LINE_CONTRACT, RECTANGLE_CONTRACT, CONTACT_CONTRACT, CONTRACT):
             for i, line in enumerate(lines):
                 for j, other in enumerate(lines[i+1:], i+1):
                     point = crossing_point(line, other)
                     if point:
                         defects.append({'kind': 'crossed_material_leaders', 'line_indices': [i, j],
                                         'intersection': point, 'required': 'route leaders without interior crossings'})
-        for part, fact in (('body', text[1]), ('cap', text[2])):
-            if not connected_to_fact(lines, paint(style[part+'_color']), fact['bbox'], allow_contact=contract == CONTRACT):
+        for part, fact in (('body', facts[0]), ('cap', facts[1])):
+            if not connected_to_fact(lines, paint(style[part+'_color']), fact['bbox'], allow_contact=contract in (CONTACT_CONTRACT, CONTRACT)):
                 defects.append({'kind': 'material_not_connected_to_part', 'fact': fact['text'],
                                 'part': part, 'fact_bbox': fact['bbox'],
                                 'required': 'connected leader from visible part paint to within 80 of fact; no text crossing'})

@@ -21,6 +21,18 @@ Pierwsza próba rozwojowa profilu bazowego po doprecyzowaniu typografii
 przeszła składnię, lecz nadal nie poprawiła proporcji i zbyt szerokiej etykiety.
 Nie jest to dowód poprawy modelu. Wagi, routing i odbiór komercyjny bez zmian.
 
+Kolejna próba z rozumowaniem poprawiła źródło i ukończyła pojemność/wymiary,
+ale zatrzymała się na materiałach: dwie ucięte odpowiedzi i jedna odmowa za
+odwróconą kolejność poprawnych faktów w JSON. Niezmieniona pełna odpowiedź
+przeszła osobny audyt po zniesieniu tego zbędnego wymogu reprezentacji.
+Nowy kontrakt nadal wymaga obu dokładnych faktów po jednym razie i wiąże
+oznaczenia z ich znaczeniem. Przygotowano v3: SAGE 350, GLEN 650,
+SUMMIT 1000, z jednakowymi pomiarami obrysu i faktów dla obu profili.
+
+Weryfikator korekt odtwarza rozmowy na podstawie związanych raportów
+narzędzi, wykrywa dodatkowe wskazówki i nie liczy ponowienia uciętej
+odpowiedzi jako naprawy projektu. Osobny ogląd jakości pozostaje wymagany.
+
 ## Aktualizacja 29.09.2026 — pełne nowe briefy ujawniły dalsze ograniczenia
 
 Zamrożone porównanie trzech nowych pełnych zleceń dało **0/3** zarówno

@@ -5219,3 +5219,35 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   **17 passed**, w tym kontakt 0,25, brak kontaktu przy 2 jednostkach,
   rozróżnianie części i historyczne kontrakty. Pełna regresja:
   **1837 passed, 22 skipped**, 87,20 s. Wagi i routing bez zmian.
+
+## 2026-09-29 — korekty bez dodatkowych wskazówek i kolejność faktów
+
+- `product_correction_evidence.py` sprawdza dokładną rekonstrukcję żądań
+  z poprzedniej odpowiedzi i związanego raportu narzędzia. Odrzuca zmiany
+  systemu/schematu, dopisane wskazówki, zmianę autora, brak hashy i dodatkowe
+  wywołania po akceptacji. Ponowienie transportu nie jest liczone jako
+  naprawa projektu. Dziewięć testów przeszło; rzeczywiste COVE potwierdziło
+  trzy łańcuchy korekt. Nie zmienia to negatywnego odbioru źródła/pakietu.
+- `series-rexcuo0k`: model z rozumowaniem sam poprawił źródło, wykonał
+  capacity/dimensions, lecz materiały zakończyły budżet: incomplete,
+  odmowa za kolejność faktów, incomplete. Rysunek źródłowy jest wyraźnie
+  lepszy, ale pełny pakiet nadal nie powstał.
+- Jedyna pełna odpowiedź materiałów miała oba dokładne fakty i poprawne
+  połączenia. Jej odmowa dotyczyła wyłącznie kolejności elementów tablicy.
+  `verbatim-supplier-facts.v2` dopuszcza oba porządki, bez sortowania lub
+  zmiany surowych wartości modelu. Kontrakt oznaczeń v5 rozpoznaje rolę
+  faktu po zatwierdzonym tekście; dawne kontrakty pozostają odtwarzalne.
+- `copy-order-audit-7nugoo9m` wyrenderował literalną odrzuconą odpowiedź:
+  bieżące pomiary bez usterek. Ogląd potwierdził czytelne dwa fakty i właściwe
+  połączenia. To audyt reprezentacji, nie ukończenie pakietu lub trening.
+- Pierwsze testy ujawniły trzy błędy w umiejscowieniu nowych funkcji testowych;
+  poprawiono plik testów. Wynik kierunkowy: **102 passed, 1 skipped**.
+- Przygotowano v3 na nowych rodzinach testowych: SAGE 350 (18×6,5 cm),
+  GLEN 650 (25×7,5 cm), SUMMIT 1000 (32×8 cm). Nowe testy ujawniły zbyt małe
+  zróżnicowanie pierwszej propozycji proporcji i zależność starej fixtury
+  od pozycji briefu. Zmieniono propozycję przed inferencją i poprawiono
+  fixturę; **85 passed, 1 skipped**. Oba historyczne egzaminy zweryfikowano
+  ponownie bez zmiany ich wyników. V3 ma wspólną kontrolę obrysu i kontrakt
+  faktów, te same limity prób, kontekstu, tokenów oraz czasu dla obu ramion.
+- Intake po pierwszej serii poprawek nadal **227/25/50**, bez nowych błędów
+  lub treningu wag. Nowe egzaminy i audyty pozostają poza nauką.

@@ -110,6 +110,14 @@ def test_subpixel_contact_is_new_version_only_and_cannot_override_wrong_or_ambig
     assert callouts.issues(data, 'materials', STYLE)
 
 
+@pytest.mark.parametrize('panel', ['dimensions', 'materials'])
+def test_fact_roles_follow_exact_copy_not_array_position_only_in_new_contract(panel):
+    data = measured(panel) if panel == 'dimensions' else material_data()
+    data['layout'][2:] = data['layout'][2:][::-1]
+    assert callouts.issues(data, panel, STYLE) == []
+    assert callouts.issues(data, panel, STYLE, contract=callouts.CONTACT_CONTRACT)
+
+
 @pytest.mark.parametrize('headline', ['Built From What Lasts', 'Leakproof assurance', 'Certified quality', 'Sustainable choice'])
 def test_unsubstantiated_headline_fails_even_with_exact_supplier_copy(headline):
     data = measured('capacity'); data['layout'][1]['text'] = headline
