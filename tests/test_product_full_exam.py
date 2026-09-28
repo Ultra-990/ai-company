@@ -19,6 +19,10 @@ def test_new_cases_are_frozen_nontraining_and_have_distinct_physical_ratios():
         changed = deepcopy(case); changed['supplier_copy']['capacity'][0] = 'Capacity: 1 ml'
         assert exam.matching_case(changed) is None
     assert len(ratios) == 3 and max(ratios)-min(ratios) > 1
+    for case in exam.LEGACY_CASES:
+        old = exam.definition(case)
+        assert old['brief']['qualification_exam'] == exam.LEGACY_VERSION
+        assert exam.matching_case(old) == case
 
 
 def test_context_uses_case_dimensions_and_restores_globals_even_after_failure():
@@ -58,6 +62,7 @@ def test_full_exam_freezes_before_calls_matches_budgets_and_preserves_failures(t
         assert len(manifest['cases']) == 3 and kwargs['matched_exam_budget'] is True
         assert kwargs['functional_callouts'] is True and kwargs['focused_stages'] is True
         assert kwargs['visual_feedback'] is False
+        assert kwargs['recover_incomplete'] is True
         calls.append((exam.product.BRIEF['family'], kwargs['sampling_profile']))
         package = tmp_path/f'package-{len(calls)}'; package.mkdir()
         report = {'model': 'fixture', 'digest': 'f'*64, 'config': manifest['shared_budget'],

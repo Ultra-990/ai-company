@@ -3,7 +3,8 @@ import math
 import re
 
 LEGACY_CONTRACT = 'functional-callouts.v1'
-CONTRACT = 'functional-callouts.v2'
+LINE_CONTRACT = 'functional-callouts.v2'
+CONTRACT = 'functional-callouts.v3'
 
 RULES = '''Functional annotations are independently measured, not inferred from
 their presence. Use actual line shapes for dimension markers and material
@@ -23,13 +24,14 @@ def stage_rules(panel):
     common = ('Headlines describe supplied facts only; no durability, thermal, leak, '
               'certification, environmental or warranty claims. You choose every coordinate.\n')
     if panel == 'dimensions':
-        return common+'''ACTIVE PURPOSE: dimensions. Use visible line shapes spanning the
+        return common+'''ACTIVE PURPOSE: dimensions. Use visible lines or thin rectangle bars spanning the
 actual top/bottom or full width within 12 units, outside the corresponding
 edge by 20..180. Keep the matching fact box within 140 units of its line.
 Use the measured product bbox and transform to calculate real edges.'''
     if panel == 'materials':
         return common+'''ACTIVE PURPOSE: materials. Connect each exact fact to visible
-paint of its body/lid with a line or connected chain (joins within 6 units).
+paint of its body/lid with visible lines or thin rectangle bars forming a
+connected chain (joins within 6 units).
 The opposite endpoint approaches the fact box within 80 units. Leaders
 must not cross each other or text. Use the measured source part boxes.'''
     if panel in ('capacity', 'care'):
@@ -40,7 +42,7 @@ panels; do not introduce them here. Use restrained relevant decoration.'''
 
 
 def validate_contract(value):
-    if value not in (None, LEGACY_CONTRACT, CONTRACT):
+    if value not in (None, LEGACY_CONTRACT, LINE_CONTRACT, CONTRACT):
         raise ValueError('Unknown functional annotation contract')
 
 
@@ -110,7 +112,8 @@ def issues(measured, panel, style, *, contract=CONTRACT):
     if panel not in ('dimensions', 'materials'):
         return defects
     segments = measured.get('panel_line_segments', [])
-    lines = [line for line in segments if line.get('kind') == 'line'
+    kinds = ('line', 'rectangle_bar') if contract == CONTRACT else ('line',)
+    lines = [line for line in segments if line.get('kind') in kinds
              and math.dist(line['start'], line['end']) >= 12
              and line.get('stroke_width', 0) > 0 and line.get('visible_samples', 0) > 0]
     if len(measured.get('group_layout', [])) != 1 or len(text) != 3:
@@ -143,7 +146,7 @@ def issues(measured, panel, style, *, contract=CONTRACT):
             return defects+[{'kind': 'missing_material_endpoint_measurement'}]
         if style['body_color'].lower() == style['cap_color'].lower():
             return defects+[{'kind': 'indistinguishable_material_parts'}]
-        if contract == CONTRACT:
+        if contract in (LINE_CONTRACT, CONTRACT):
             for i, line in enumerate(lines):
                 for j, other in enumerate(lines[i+1:], i+1):
                     point = crossing_point(line, other)

@@ -84,7 +84,7 @@ def test_prompt_history_survives_changes_to_live_generator(tmp_path, monkeypatch
     monkeypatch.setattr(revision, 'evidence', lambda *args: ({}, style(), scene(), 'fixture', image, ['Fixture review.']))
     monkeypatch.setattr(revision, 'read', lambda p: {'fixture': 'measured reference'})
     monkeypatch.setattr(revision.product, 'accepted_raw', lambda *args: '{}')
-    snapshots = {v: revision.request(tmp_path, tmp_path/'review', 'care', version=v)[0] for v in (1, 2, 3, 4, 5, 6)}
+    snapshots = {v: revision.request(tmp_path, tmp_path/'review', 'care', version=v)[0] for v in (1, 2, 3, 4, 5, 6, 7)}
     assert 'visibly at least350 units tall' in snapshots[2]['user']
     assert '120 units wide' not in snapshots[2]['user']
     assert '120 units wide' in snapshots[3]['user']
@@ -96,10 +96,10 @@ def test_prompt_history_survives_changes_to_live_generator(tmp_path, monkeypatch
     monkeypatch.setattr(revision.product, 'SCENE_RULES', 'PANEL: unrelated future contract')
     for v, before in snapshots.items():
         assert revision.request(tmp_path, tmp_path/'review', 'care', version=v)[0] == before
-    assert revision.request(tmp_path, tmp_path/'review', 'care')[0] == snapshots[6]
+    assert revision.request(tmp_path, tmp_path/'review', 'care')[0] == snapshots[7]
 
 
-@pytest.mark.parametrize('version', [0, 7, True, 2.0, '2'])
+@pytest.mark.parametrize('version', [0, 8, True, 2.0, '2'])
 def test_unknown_prompt_versions_cannot_fall_back_to_current(tmp_path, version):
     with pytest.raises(ValueError, match='Known revision request version'):
         revision.request(tmp_path, tmp_path/'review', 'care', version=version)

@@ -35,15 +35,23 @@ def test_dimensions_need_actual_span_and_nearby_correct_label():
     assert callouts.issues(bad, 'dimensions', STYLE)
 
 
-@pytest.mark.parametrize('fault', ['bar', 'invisible', 'inside', 'too_far', 'short_diameter'])
+@pytest.mark.parametrize('fault', ['invisible', 'inside', 'too_far', 'short_diameter'])
 def test_decorative_lines_do_not_prove_dimensions(fault):
     data = measured('dimensions'); line = data['panel_line_segments'][1]
-    if fault == 'bar': line['kind'] = 'rectangle_bar'
     if fault == 'invisible': line['visible_samples'] = 0
     if fault == 'inside': line['start'][1] = line['end'][1] = 900
     if fault == 'too_far': line['start'][1] = line['end'][1] = 1490
     if fault == 'short_diameter': line['end'][0] = 980
     assert callouts.issues(data, 'dimensions', STYLE)[0]['fact'] == 'Diameter: 7 cm'
+
+
+def test_visible_rectangle_dimensions_are_equivalent_only_under_new_contract():
+    data = measured('dimensions')
+    for line in data['panel_line_segments']: line['kind'] = 'rectangle_bar'
+    assert callouts.issues(data, 'dimensions', STYLE, contract=callouts.LINE_CONTRACT)
+    assert callouts.issues(data, 'dimensions', STYLE) == []
+    data['panel_line_segments'][0]['visible_samples'] = 0
+    assert callouts.issues(data, 'dimensions', STYLE)
 
 
 def material_data():
@@ -114,6 +122,8 @@ def test_browser_endpoints_use_frontmost_part_paint_and_detect_invisible_lines(t
     svg += '<rect x="0" y="0" width="1500" height="1500" fill="#FFFFFF"/>'
     for y, color in ((550, '#112233'), (650, '#112233'), (450, '#FFFFFF'), (400, '#112233')):
         svg += f'<line x1="350" y1="{y}" x2="550" y2="{y}" stroke="{color}" stroke-width="4"/>'
+    svg += '<rect x="350" y="578" width="200" height="4" fill="#112233"/>'
+    svg += '<rect x="350" y="478" width="200" height="4" fill="#FFFFFF"/>'
     svg += '<g transform="translate(0 0) scale(1)"><rect x="500" y="500" width="200" height="200" fill="#225588"/>'
     svg += '<rect x="500" y="500" width="200" height="100" fill="#112233"/>'
     svg += text('Fixture', 1000)+'</g>'+text('Probe one', 100)+text('Probe two', 200)+text('Probe three', 300)+'</svg>'
@@ -123,3 +133,6 @@ def test_browser_endpoints_use_frontmost_part_paint_and_detect_invisible_lines(t
     assert lines[1]['product_endpoint_fills'] == [None, callouts.paint(STYLE['body_color'])]
     assert lines[0]['visible_samples'] > 0 and lines[1]['visible_samples'] > 0
     assert lines[2]['visible_samples'] == 0 and lines[3]['visible_samples'] == 9
+    assert lines[4]['kind'] == 'rectangle_bar' and lines[4]['visible_samples'] > 0
+    assert lines[4]['product_endpoint_fills'] == [None, callouts.paint(STYLE['cap_color'])]
+    assert lines[5]['visible_samples'] == 0

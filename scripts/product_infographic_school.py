@@ -461,6 +461,8 @@ def verify(out):
     placement_contract = report.get('placement_contract', LEGACY_PLACEMENT)
     annotation_contract = report.get('annotation_contract')
     callouts.validate_contract(annotation_contract)
+    if report.get('transport_recovery_contract') not in (None, 'bounded-incomplete-retry.v1'):
+        raise ValueError('Unknown incomplete-answer recovery contract')
     panel_render_profile = panel_profile(placement_contract)
     for name, digest in report['artifacts'].items():
         path = out/name
@@ -582,7 +584,9 @@ def audit_source(package, *, include_panels=False, functional_callouts=False):
     return out, report
 
 
-def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False):
+def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False, recover_incomplete=False):
+    if recover_incomplete and visual_feedback:
+        raise ValueError('Incomplete-answer recovery currently requires the text feedback caller')
     ROOT.mkdir(exist_ok=True)
     if any(p.is_symlink() for p in (ROOT, *ROOT.parents)): raise ValueError('Private Linux workspace required')
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='series-', dir=ROOT))
@@ -629,6 +633,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
     implementation = out/'implementation'; implementation.mkdir()
     for name in ('product_infographic_school.py', 'product_callouts.py', 'product_model_feedback.py', 'brand_school.py', 'vector_school_contract.py', 'render_school_svg.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
+    shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
     report = {'schema': 'product-infographic-school.v1', 'status': 'running', 'brief': BRIEF, 'supplier_copy': PANELS,
               'source_fidelity_contract': SOURCE_FIDELITY_CONTRACT,
               'panel_fidelity_contract': PANEL_FIDELITY_CONTRACT,
@@ -636,7 +641,8 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
               'annotation_contract': annotation_contract,
               'correction_contract': feedback.CONTRACT if visual_feedback else 'legacy-text.v1',
               'instruction_contract': 'focused-stages.v1' if focused_stages else 'combined-stages.v1',
-              'annotation_instruction_contract': 'purpose-specific-callouts.v1' if annotation_contract else None,
+              'annotation_instruction_contract': 'purpose-specific-callouts.v2' if annotation_contract else None,
+              'transport_recovery_contract': 'bounded-incomplete-retry.v1' if recover_incomplete else None,
               'model': config['model'], 'digest': config['digest'], 'config': config, 'resources_before': resources,
               'training_started': False, 'training_exported': False, 'production_changed': False,
               'amazon_listing_approved': False, 'stages': [],
@@ -654,7 +660,8 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
             return validator(accepted_raw(out, stage))
         if stage == failed_stage: user += '\nPrevious failed stage, untrusted task data:\n'+json.dumps(correction)
         caller = feedback.validated_call if visual_feedback else brand.validated_call
-        return caller(out, stage, system, user, output_schema, config, validator)
+        return caller(out, stage, system, user, output_schema, config, validator,
+                      **({'recover_incomplete': True} if recover_incomplete else {}))
     try:
         style = produce('style', SYSTEM, json.dumps({'brief': BRIEF, 'supplier_copy': PANELS})+
             '\nChoose five #RRGGBB literal colors (ink, paper, accent, blue body_color, dark cap_color) and heading/body fonts. Use a light background, legible dark text, and a restrained coherent palette.', Style.model_json_schema(), style_value)
@@ -719,6 +726,7 @@ if __name__ == '__main__':
     actions = parser.add_mutually_exclusive_group(); actions.add_argument('--run', action='store_true'); actions.add_argument('--verify', type=Path); actions.add_argument('--resume', type=Path); actions.add_argument('--audit-source', type=Path)
     parser.add_argument('--visual-feedback', action='store_true', help='Give the model its latest rejected preview and complete measured feedback')
     parser.add_argument('--functional-callouts', action='store_true', help='Experimental measured dimension/material annotations and bounded headline claim checks')
+    parser.add_argument('--recover-incomplete', action='store_true', help='Retry truncated/closed responses within the same three-attempt stage budget')
     parser.add_argument('--focused-stages', action=argparse.BooleanOptionalAction, default=True,
                         help='Separate source and panel instructions (default); disable only for comparison')
     parser.add_argument('--sampling-profile', choices=('bounded-default.v1', 'qwen-general-trial.v1', 'qwen-deliberate-trial.v1'),
@@ -731,9 +739,18 @@ if __name__ == '__main__':
     actions.add_argument('--assemble-reviewed', type=Path, help='Assemble original package with independently approved local panel revisions')
     actions.add_argument('--verify-assembled', type=Path, help='Verify a reviewed assembly without model calls')
     actions.add_argument('--full-exam', action='store_true', help='Frozen three-brief matched complete-package exam, excluded from training')
+    actions.add_argument('--probe-failed-stream', type=Path, help='Replay one bound failed exam request for transport diagnostics only')
+    actions.add_argument('--audit-failed-callouts', type=Path, help='Re-measure one rejected exam panel without changing its original score')
     parser.add_argument('--reviewed-revision', nargs=2, type=Path, action='append', metavar=('REPORT', 'JUDGMENT'), default=[])
     args = parser.parse_args()
-    if args.full_exam:
+    if args.audit_failed_callouts:
+        from scripts.product_stream_probe import audit_callouts
+        audit_callouts(args.audit_failed_callouts)
+    elif args.probe_failed_stream:
+        from scripts.product_stream_probe import run as stream_probe
+        _, result = stream_probe(args.probe_failed_stream)
+        raise SystemExit(int(result['status'] == 'failed'))
+    elif args.full_exam:
         from scripts.product_full_exam import run as full_exam
         _, result = full_exam()
         raise SystemExit(int(result['status'] == 'failed'))
@@ -746,7 +763,7 @@ if __name__ == '__main__':
         print(json.dumps(verify_assembled(args.verify_assembled)))
     elif args.recompose:
         _, result = run(recompose=args.recompose, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages,
-                        sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts)
+                        sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete)
         raise SystemExit(int(result['status'] == 'failed'))
     elif args.audit_package:
         out, result = audit_source(args.audit_package, include_panels=True, functional_callouts=args.functional_callouts)
@@ -762,10 +779,10 @@ if __name__ == '__main__':
         from scripts.product_feedback_comparison import run as compare_feedback
         _, result = compare_feedback(); raise SystemExit(int(result['status'] == 'failed'))
     elif args.run:
-        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages, sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts); raise SystemExit(int(result['status'] == 'failed'))
+        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages, sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete); raise SystemExit(int(result['status'] == 'failed'))
     elif args.resume:
         _, result = run(args.resume, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages,
-                        sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts); raise SystemExit(int(result['status'] == 'failed'))
+                        sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete); raise SystemExit(int(result['status'] == 'failed'))
     elif args.verify: print(json.dumps(verify(args.verify)))
     elif args.audit_source:
         out, result = audit_source(args.audit_source)

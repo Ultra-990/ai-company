@@ -9,6 +9,7 @@ CONFIG_PATH = ROOT / 'config/local_inference.json'
 ENDPOINT = 'http://127.0.0.1:11434'
 
 ERROR_CODES={'model_inventory','model_changed','model_http_error','invalid_stream',
+             'incomplete_stream','stream_line_limit','stream_size_limit',
              'unsupported_model_output','invalid_text','output_limit','truncated_output','empty_output','invalid_generation_profile'}
 
 # Server-side named profiles, never arbitrary options supplied by task text.
@@ -133,6 +134,10 @@ def transport(payload):
     options=generation_options(config)
     schema=output_format(config)
     think=thinking_mode(config)
+    # Thinking chunks include repeated JSON envelopes even though they are not
+    # retained as output. The explicit long reasoning trial needs a separate
+    # bounded wire budget; the default profile retains its original 1 MiB cap.
+    stream_limit = (4 if config.get('sampling_profile') == 'qwen-deliberate-trial.v1' else 1)*1024*1024
     # No environment proxy, DNS, redirects, API key or arbitrary destination.
     start = time.monotonic()
     connection = http.client.HTTPConnection('127.0.0.1', 11434, timeout=config['timeout_seconds'])
@@ -159,9 +164,13 @@ def transport(payload):
             if time.monotonic()-start>config['timeout_seconds']:
                 raise TimeoutError('local_model_deadline')
             line=response.readline(65537);total_bytes+=len(line)
-            if not line or len(line)>65536 or total_bytes>1024*1024:
+            if not line: raise ValueError('incomplete_stream')
+            if len(line)>65536: raise ValueError('stream_line_limit')
+            if total_bytes>stream_limit: raise ValueError('stream_size_limit')
+            try: chunk=json.loads(line)
+            except (ValueError, UnicodeError) as exc: raise ValueError('invalid_stream') from exc
+            if not isinstance(chunk,dict) or not isinstance(chunk.get('message',{}),dict):
                 raise ValueError('invalid_stream')
-            chunk=json.loads(line)
             if chunk.get('error') or chunk.get('message',{}).get('tool_calls'):
                 raise ValueError('unsupported_model_output')
             content=chunk.get('message',{}).get('content','')
@@ -174,6 +183,7 @@ def transport(payload):
                 if not text or '\x00' in text:raise ValueError('empty_output')
                 return {'content':text,'model':config['model'],'digest':config['digest'],
                         'elapsed_seconds':round(time.monotonic()-start,3),
+                        'stream_bytes':total_bytes,
                         'eval_count':chunk.get('eval_count'), 'prompt_eval_count':chunk.get('prompt_eval_count'),
                         'done_reason':'stop'}
     finally:

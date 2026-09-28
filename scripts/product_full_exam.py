@@ -14,20 +14,28 @@ import time
 
 from scripts import product_infographic_school as product
 
-VERSION = 'product-full-package-exam.v1'
-CASES = (
+LEGACY_VERSION = 'product-full-package-exam.v1'
+VERSION = 'product-full-package-exam.v2'
+LEGACY_CASES = (
     {'id': 'breeze-400', 'name': 'BREEZE 400', 'capacity': 400, 'height': 20, 'diameter': 6},
     {'id': 'ridge-750', 'name': 'RIDGE 750', 'capacity': 750, 'height': 22, 'diameter': 8},
     {'id': 'trail-900', 'name': 'TRAIL 900', 'capacity': 900, 'height': 30, 'diameter': 7.5},
 )
+CASES = (
+    {'id': 'cove-500', 'name': 'COVE 500', 'capacity': 500, 'height': 21, 'diameter': 7},
+    {'id': 'mesa-750', 'name': 'MESA 750', 'capacity': 750, 'height': 23, 'diameter': 8.5},
+    {'id': 'peak-900', 'name': 'PEAK 900', 'capacity': 900, 'height': 30, 'diameter': 7.5},
+)
+CATALOGS = {LEGACY_VERSION: LEGACY_CASES, VERSION: CASES}
 ARMS = {'baseline': 'bounded-default.v1', 'deliberate': 'qwen-deliberate-trial.v1'}
 
 
 def definition(case):
-    if case not in CASES: raise ValueError('Code-frozen exam case required')
+    version = next((version for version, cases in CATALOGS.items() if case in cases), None)
+    if version is None: raise ValueError('Code-frozen exam case required')
     brief = deepcopy(product.DEFAULT_BRIEF)
     brief.update(product_name=case['name'], family='full-product-exam-'+case['id'], split='test',
-                 physical_dimensions_cm=[case['height'], case['diameter']], qualification_exam=VERSION)
+                 physical_dimensions_cm=[case['height'], case['diameter']], qualification_exam=version)
     panels = deepcopy(product.DEFAULT_PANELS)
     panels['capacity'][0] = f"Capacity: {case['capacity']} ml"
     panels['dimensions'] = [f"Height: {case['height']} cm", f"Diameter: {case['diameter']} cm"]
@@ -35,7 +43,7 @@ def definition(case):
 
 
 def matching_case(report):
-    for case in CASES:
+    for case in (*LEGACY_CASES, *CASES):
         frozen = definition(case)
         if report.get('brief') == frozen['brief'] and report.get('supplier_copy') == frozen['supplier_copy']:
             return case
@@ -61,7 +69,11 @@ def run():
                 'arms': ARMS, 'model': product.configuration()['model'], 'digest': product.configuration()['digest'],
                 'shared_budget': {'num_ctx': 16384, 'num_predict': 8192, 'num_thread': 4, 'timeout_seconds': 180,
                                   'max_calls_per_stage': 3, 'max_stages': 6},
+                'transport_limits': {'wire_bytes_by_arm': {'baseline': 1048576, 'deliberate': 4194304},
+                                     'final_answer_characters': 32000, 'stream_line_bytes': 65536,
+                                     'intermediate_reasoning_saved': False},
                 'shared_controls': {'focused_stages': True, 'functional_callouts': True, 'visual_feedback': False,
+                                    'recover_incomplete': True,
                                     'placement_contract': product.PLACEMENT_CONTRACT,
                                     'source_contract': product.SOURCE_FIDELITY_CONTRACT,
                                     'panel_contract': product.PANEL_FIDELITY_CONTRACT,
@@ -74,6 +86,7 @@ def run():
     for name in ('product_full_exam.py', 'product_infographic_school.py', 'product_callouts.py',
                  'product_model_feedback.py', 'brand_school.py', 'render_school_svg.py', 'vector_school_contract.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
+    shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
     report = {'schema': 'product-full-package-exam-result.v1', 'status': 'running', 'cases': [],
               'exam_sha256': product.school.checksum(out/'exam.json'), 'resources_before': resources,
               'training_started': False, 'training_exported': False, 'production_changed': False,
@@ -88,7 +101,7 @@ def run():
             with exercise_context(case):
                 for arm in order:
                     package, generated = product.run(sampling_profile=ARMS[arm], functional_callouts=True,
-                        focused_stages=True, visual_feedback=False, matched_exam_budget=True)
+                        focused_stages=True, visual_feedback=False, matched_exam_budget=True, recover_incomplete=True)
                     actual = generated['config']
                     for key in ('num_ctx', 'num_predict', 'num_thread', 'timeout_seconds'):
                         if actual[key] != manifest['shared_budget'][key]: raise ValueError('Matched exam budget changed')

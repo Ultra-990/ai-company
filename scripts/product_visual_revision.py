@@ -153,11 +153,11 @@ material leaders belong to other panels and must be absent here.''',
 clear beside the preserved product. Measurement brackets and material
 leaders belong to other panels and must be absent here.''',
 }
-REQUEST_VERSION = 6
+REQUEST_VERSION = 7
 
 
 def request(package, review_path, part, version=REQUEST_VERSION):
-    if type(version) is not int or version not in (1, 2, 3, 4, 5, 6): raise ValueError('Known revision request version required')
+    if type(version) is not int or version not in (1, 2, 3, 4, 5, 6, 7): raise ValueError('Known revision request version required')
     package_report, style, source_scene, source, image, comments = evidence(package, review_path, part)
     placement_contract = package_report.get('placement_contract', product.LEGACY_PLACEMENT)
     product.panel_profile(placement_contract)
@@ -175,6 +175,7 @@ def request(package, review_path, part, version=REQUEST_VERSION):
         if version >= 6:
             rules = rules.replace('Relate dimensions to real\nproduct edges and material labels to body/lid. ', '')
             rules += '\n'+SCOPED_FUNCTIONAL_RULES[part]+'\nHeadlines may describe only supplied facts, without unsupported claims.'
+        if version >= 7: rules = rules.replace('visible line shapes', 'visible line shapes or thin rectangle bars')
         data.update(supplier_lines=product.PANELS[part],
             product_reference=read(package/'product-reference.json'),
             task='Recompose this infographic to address the visual comments, not merely to pass bounds. Use all the page purposefully. Keep the original product unchanged, both supplier lines exact, and a concise headline. Return a complete panel scene. '+rules)
@@ -189,7 +190,7 @@ def revision_issues(measured, part, style, placement_contract, version):
         if part == 'cap':
             issues += product.source_fidelity_issues(measured, label_check=True, label_bounds=True, style=style)
         else:
-            issues += product.callouts.issues(measured, part, style, contract='functional-callouts.v2')
+            issues += product.callouts.issues(measured, part, style, contract='functional-callouts.v3' if version >= 7 else 'functional-callouts.v2')
     return issues
 
 

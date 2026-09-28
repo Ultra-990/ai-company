@@ -141,11 +141,11 @@ const productPaint=point=>{
 const shape=document.elementsFromPoint(...point).find(n=>n.parentElement?.localName==='g'&&['rect','circle','ellipse','line','path'].includes(n.localName));
 return shape?getComputedStyle(shape).fill:null;
 };
-const visibleSamples=n=>{
+const visibleSamples=(n,start,end,foreground)=>{
 const rgb=value=>(value.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)||[]).slice(1).map(Number);
-const ink=rgb(getComputedStyle(n).stroke);let count=0;
+const ink=rgb(foreground);let count=0;
 for(const t of [.1,.2,.3,.4,.5,.6,.7,.8,.9]){
-const x=n.x1.baseVal.value*(1-t)+n.x2.baseVal.value*t,y=n.y1.baseVal.value*(1-t)+n.y2.baseVal.value*t;
+const x=start[0]*(1-t)+end[0]*t,y=start[1]*(1-t)+end[1]*t;
 const stack=document.elementsFromPoint(x,y);if(stack[0]!==n)continue;
 const under=stack.find(el=>el!==n&&['rect','circle','ellipse','line','path','text'].includes(el.localName));
 const background=under?rgb(getComputedStyle(under).fill):[255,255,255];
@@ -156,10 +156,13 @@ return [...document.querySelectorAll('svg>line,svg>rect')].flatMap((n,index)=>{
 const paint=getComputedStyle(n);
 if(n.localName==='line')return paint.stroke==='none'||parseFloat(paint.strokeWidth)<=0?[]:
 [{index,kind:'line',start:[n.x1.baseVal.value,n.y1.baseVal.value],end:[n.x2.baseVal.value,n.y2.baseVal.value],stroke_width:parseFloat(paint.strokeWidth),
-product_endpoint_fills:[[n.x1.baseVal.value,n.y1.baseVal.value],[n.x2.baseVal.value,n.y2.baseVal.value]].map(productPaint),visible_samples:visibleSamples(n)}];
+product_endpoint_fills:[[n.x1.baseVal.value,n.y1.baseVal.value],[n.x2.baseVal.value,n.y2.baseVal.value]].map(productPaint),
+visible_samples:visibleSamples(n,[n.x1.baseVal.value,n.y1.baseVal.value],[n.x2.baseVal.value,n.y2.baseVal.value],paint.stroke)}];
 const x=n.x.baseVal.value,y=n.y.baseVal.value,w=n.width.baseVal.value,h=n.height.baseVal.value;
 if(paint.fill==='none'||Math.min(w,h)<=0||Math.min(w,h)>16||Math.max(w,h)<3*Math.min(w,h))return [];
-return [{index,kind:'rectangle_bar',start:w>=h?[x,y+h/2]:[x+w/2,y],end:w>=h?[x+w,y+h/2]:[x+w/2,y+h],stroke_width:Math.min(w,h)}];
+const start=w>=h?[x,y+h/2]:[x+w/2,y],end=w>=h?[x+w,y+h/2]:[x+w/2,y+h];
+return [{index,kind:'rectangle_bar',start,end,stroke_width:Math.min(w,h),product_endpoint_fills:[start,end].map(productPaint),
+visible_samples:visibleSamples(n,start,end,paint.fill)}];
 });})()'''
 
 

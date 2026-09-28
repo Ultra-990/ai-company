@@ -5149,3 +5149,37 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Potem kontynuować rozbudowę AI Company przez model lokalny i zaprojektować
   nowy interfejs. Szczegóły panelu klienta i właściciela zostaną przekazane
   przez właściciela później. Zachować bieżący etap gotowości i autorstwo modelu.
+
+## 2026-09-29 — poprawki ograniczeń ujawnionych przez pełny egzamin
+
+- Transport rozróżnia przedwczesny koniec, zbyt długą linię, przekroczenie
+  łącznego limitu i niepoprawny JSON. Badawczy profil Qwena z rozumowaniem
+  ma limit strumienia 4 MiB zamiast 1 MiB; limit finalnego tekstu 32000 znaków,
+  liczby tokenów, czasu i połączenie loopback pozostają zachowane. Przejściowe
+  rozumowanie jest odrzucane, zapisywana jest jedynie liczba bajtów.
+- `stream-probe-snklwbqv` ponowił dokładne wejście ostatniego przerwanego
+  zapytania i zakończył transport przy **954777 bajtach**. Nie przekroczył
+  dawnego limitu, więc nie dowodzi konkretnej przyczyny wcześniejszego
+  `invalid_stream`. Wynik egzaminu nie został zmieniony. Pierwszy preflight
+  sondy zgłosił `active_containers`; niczego nie zatrzymano. Kolejne odczyty
+  Dockera i checkpoint potwierdziły pusty stan przed wykonaniem próby.
+- Kontrakt oznaczeń v3 dopuszcza widoczne cienkie prostokąty z identycznymi
+  kontrolami rozpiętości, połączeń i kolizji. Przeglądarkowy test obejmuje
+  widoczne/ukryte linie i prostokąty: **16 passed**. Osobny
+  `callout-audit-gt90ga2u` potwierdził, że niezmieniony odrzucony panel BREEZE
+  ma prawidłową geometrię: dwie odmowy v2 → zero usterek v3. Cały historyczny
+  pakiet nadal nie jest ukończony ani zaliczony.
+- Opcjonalne `--recover-incomplete` ponawia `truncated_output` lub
+  `incomplete_stream` w ramach dotychczasowych trzech prób etapu. Zapisuje
+  hash nieukończonego żądania i kod błędu bez wymyślania częściowej odpowiedzi;
+  nie ponawia zmiany modelu ani przekroczenia ograniczeń strumienia.
+- Przygotowano egzamin v2 na nowych COVE 500, MESA 750 i PEAK 900. Oba
+  ramiona otrzymują ten sam kontrakt v3 i obsługę niepełnej odpowiedzi.
+  Katalog v1 oraz jego wynik pozostają odtwarzalne. Nowe pakiety zapisują
+  także implementację transportu. Testy kierunkowe: **128 passed, 1 skipped**;
+  osiem dodatkowych testów ograniczeń sondy również przeszło.
+- Pełna regresja przed nowym pomiarem: **1810 passed, 22 skipped**, 86,97 s;
+  osiem testów sondy dodanych po rozpoczęciu zbierania pełnej regresji
+  uruchomiono osobno. Limit bajtów protokołu różni się między profilami
+  (1/4 MiB, jawnie w manifeście); limity czasu, kontekstu, tokenów i finalnego
+  tekstu są wspólne. To uwzględnia dodatkowe koperty JSON rozumowania.

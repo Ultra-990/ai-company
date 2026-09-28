@@ -107,3 +107,35 @@ def test_logo_collision_and_small_print_are_not_hidden_by_valid_svg():
     assert brand.quality_issues(measured, 'brand_card')[0]['kind'] == 'print_text_too_small'
     with pytest.raises(ValueError): brand.selected_value('{"selected":"b","reason":"An unfinished explanation, "}')
     assert 'text-anchor' in brand.scene_schema('logo', plan())['properties']['texts']['items']['properties']['attributes']['required']
+@pytest.mark.parametrize('code', ['truncated_output', 'incomplete_stream'])
+def test_incomplete_response_retry_preserves_evidence_without_fabricating_answer(tmp_path, monkeypatch, code):
+    from app.services.local_ollama import ModelFailure
+    calls = []
+    def call(out, stage, system, user, schema, config):
+        calls.append((stage, user))
+        brand.school.save(out/(stage+'-request.json'), {'user': user})
+        if len(calls) == 1: raise ModelFailure(code)
+        return 'complete'
+    monkeypatch.setattr(brand, 'call', call)
+    assert brand.validated_call(tmp_path, 'source', 'system', 'original', {}, {}, lambda raw: raw,
+                                recover_incomplete=True) == 'complete'
+    assert len(calls) == 2 and 'No partial answer was accepted' in calls[1][1]
+    assert not list(tmp_path.glob('*-response.json'))
+    failure = json.loads((tmp_path/'source-incomplete.json').read_text())
+    assert failure['request_sha256'] == brand.school.checksum(tmp_path/'source-request.json')
+    assert failure['error'] == code and failure['partial_response_saved'] is False
+
+
+@pytest.mark.parametrize('recover,code,attempts', [(False, 'truncated_output', 1),
+    (True, 'truncated_output', 3), (True, 'model_changed', 1), (True, 'stream_size_limit', 1)])
+def test_recovery_never_exceeds_stage_budget_or_retries_integrity_failure(tmp_path, monkeypatch, recover, code, attempts):
+    from app.services.local_ollama import ModelFailure
+    calls = []
+    def call(out, stage, system, user, schema, config):
+        calls.append(stage); brand.school.save(out/(stage+'-request.json'), {'user': user})
+        raise ModelFailure(code)
+    monkeypatch.setattr(brand, 'call', call)
+    with pytest.raises(ModelFailure, match=code):
+        brand.validated_call(tmp_path, 'source', 'system', 'original', {}, {}, lambda raw: raw,
+                             recover_incomplete=recover)
+    assert len(calls) == attempts

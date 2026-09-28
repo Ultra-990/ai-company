@@ -21,7 +21,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Annotated, Literal
-from app.services.local_ollama import configuration, OllamaProvider
+from app.services.local_ollama import configuration, OllamaProvider, ModelFailure
 from scripts import vector_structured_source as scene
 from scripts import vector_school as school
 from scripts.vector_school_contract import PROFILES, ATTRS, NS, validate_svg, layout_issues
@@ -196,11 +196,24 @@ def call(out, name, system, user, schema, config):
     return result['content']
 
 
-def validated_call(out, name, system, user, schema, config, validator):
+def validated_call(out, name, system, user, schema, config, validator, *, recover_incomplete=False):
     original = user
     for attempt in range(3):
         stage = name if attempt == 0 else name+'-revision-'+str(attempt)
-        raw = call(out, stage, system, user, schema, config)
+        try:
+            raw = call(out, stage, system, user, schema, config)
+        except ModelFailure as exc:
+            if not recover_incomplete or exc.code not in ('truncated_output', 'incomplete_stream'):
+                raise
+            # No partial answer exists. Bind the failed request and reason,
+            # then use one of the SAME three attempts, never an extra budget.
+            school.save(out/(stage+'-incomplete.json'), {
+                'schema': 'bounded-incomplete-retry.v1', 'stage': stage, 'error': exc.code,
+                'request_sha256': school.checksum(out/(stage+'-request.json')),
+                'partial_response_saved': False, 'attempt': attempt})
+            if attempt == 2: raise
+            user = original+'\nThe previous request ended before a complete final answer ('+exc.code+'). No partial answer was accepted. Keep your reasoning concise and return a complete concise JSON response within the same budget. Preserve all requirements; omit unnecessary decorative complexity.'
+            continue
         try: return validator(raw)
         except ValueError as exc:
             feedback = {'schema': 'brand-validation-feedback.v1', 'stage': stage,

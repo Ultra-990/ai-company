@@ -9,6 +9,14 @@ miarek do typu SVG `line`, uciętą odpowiedź oraz nieprecyzyjny błąd strumie
 Trzeba usunąć potwierdzone ograniczenia narzędzi i obsłużyć niepełne odpowiedzi
 w ograniczonym budżecie, zachowując pierwotny wynik egzaminu poza nauką.
 
+Te poprawki są już wdrożone badawczo: kontrakt v3 uznaje równoważne widoczne
+miarki z prostokątów, a niepełna odpowiedź może być ponowiona w tym samym
+limicie trzech prób. Błędy strumienia mają osobne kody. Powtórzenie wejścia
+przeszło przy 955 KB, co nie dowodzi przyczyny poprzedniego przerwania.
+Przygotowano nowe COVE/MESA/PEAK do osobnego egzaminu v2; poprzedni wynik 0/3
+pozostaje bez zmian. Regresja: **1810 passed, 22 skipped**, dodatkowo osiem
+nowych testów sondy. Nie zmieniono wag ani aktywnego routingu modeli.
+
 Właściciel ustalił dalszą kolejność: gotowość modelu, rozwinięcie konkretnych
 umiejętności analizy/programowania/narzędzi, potem rozbudowa AI Company
 i nowy interfejs wykonywane przez model lokalny. Szczegóły panelu klienta

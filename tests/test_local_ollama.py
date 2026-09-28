@@ -115,3 +115,49 @@ def test_reasoning_transport_returns_only_final_content(monkeypatch, settings, e
     result = adapter.transport({'config':config, 'messages':[]})
     assert json.loads(calls[1][1]['body'])['think'] == expected
     assert result['content'] == 'Final answer' and 'thinking' not in result
+
+
+def fake_stream(monkeypatch, chunks, config=CONFIG):
+    chunks = iter(chunks)
+    class Connection:
+        status = 200
+        def __init__(self, *args, **kwargs): pass
+        def request(self, *args, **kwargs): pass
+        def getresponse(self): return self
+        def read(self, limit): return json.dumps({'models':[{'name':config['model'],'digest':config['digest']}]}).encode()
+        def readline(self, limit): return next(chunks, b'')
+        def close(self): pass
+    monkeypatch.setattr('http.client.HTTPConnection', Connection)
+
+
+@pytest.mark.parametrize('payload,code', [
+    (b'', 'incomplete_stream'), (b'x'*65537, 'stream_line_limit'),
+    (b'not-json\n', 'invalid_stream'), (b'[]\n', 'invalid_stream'),
+    (b'{"message":[]}\n', 'invalid_stream'),
+])
+def test_stream_failures_have_precise_bounded_codes(monkeypatch, payload, code):
+    fake_stream(monkeypatch, [payload])
+    with pytest.raises(ValueError, match=code): adapter.transport({'config':CONFIG,'messages':[]})
+
+
+def test_reasoning_wire_budget_accepts_envelope_overhead_but_never_returns_thinking(monkeypatch):
+    thinking = json.dumps({'message':{'thinking':'fixture '*400},'done':False}).encode()+b'\n'
+    final = b'{"message":{"content":"Complete"},"done":true,"done_reason":"stop"}\n'
+    chunks = [thinking]*500+[final]
+    assert 1024*1024 < sum(map(len,chunks)) < 4*1024*1024
+    fake_stream(monkeypatch, chunks)
+    with pytest.raises(ValueError, match='stream_size_limit'): adapter.transport({'config':CONFIG,'messages':[]})
+    config = CONFIG | {'sampling_profile':'qwen-deliberate-trial.v1','think':True,'num_predict':8192}
+    fake_stream(monkeypatch, chunks, config)
+    result = adapter.transport({'config':config,'messages':[]})
+    assert result['content'] == 'Complete' and 'fixture' not in json.dumps(result)
+    assert result['stream_bytes'] == sum(map(len,chunks))
+    fake_stream(monkeypatch, [thinking]*2000+[final], config)
+    with pytest.raises(ValueError, match='stream_size_limit'): adapter.transport({'config':config,'messages':[]})
+
+
+def test_reasoning_wire_budget_does_not_raise_final_answer_limit(monkeypatch):
+    config = CONFIG | {'sampling_profile':'qwen-deliberate-trial.v1','think':True}
+    chunk = json.dumps({'message':{'content':'x'*32001},'done':True,'done_reason':'stop'}).encode()
+    fake_stream(monkeypatch, [chunk], config)
+    with pytest.raises(ValueError, match='output_limit'): adapter.transport({'config':config,'messages':[]})

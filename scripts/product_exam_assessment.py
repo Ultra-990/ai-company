@@ -24,10 +24,11 @@ def assess(path):
     path = Path(path)
     report = revision.read(path/'report.json'); manifest = revision.read(path/'exam.json')
     if (report.get('schema') != 'product-full-package-exam-result.v1' or report.get('status') != 'completed'
-            or manifest.get('schema') != exam.VERSION
+            or manifest.get('schema') not in exam.CATALOGS
             or product.school.checksum(path/'exam.json') != report['exam_sha256']):
         raise ValueError('Completed unchanged frozen exam required')
-    if (manifest['cases'] != [exam.definition(case) for case in exam.CASES] or manifest['arms'] != exam.ARMS
+    version = manifest['schema']
+    if (manifest['cases'] != [exam.definition(case) for case in exam.CATALOGS[version]] or manifest['arms'] != exam.ARMS
             or manifest['training_export_allowed'] is not False or manifest['manual_hints_allowed'] is not False
             or manifest['manual_product_edits_allowed'] is not False or manifest['continuations_allowed'] is not False):
         raise ValueError('Exam cases, arms or independent evaluation controls changed')
@@ -57,7 +58,8 @@ def assess(path):
             for key in ('num_ctx', 'num_predict', 'num_thread', 'timeout_seconds'):
                 if config[key] != manifest['shared_budget'][key]: raise ValueError('Unequal exam budget')
             for name in ('product_infographic_school.py', 'product_callouts.py', 'brand_school.py',
-                         'product_model_feedback.py', 'render_school_svg.py', 'vector_school_contract.py'):
+                         'product_model_feedback.py', 'render_school_svg.py', 'vector_school_contract.py',
+                         *(('local_ollama.py',) if version == exam.VERSION else ())):
                 if (revision.bounded(folder/'implementation'/name).read_bytes()
                         != revision.bounded(path/'implementation'/name).read_bytes()):
                     raise ValueError('Implementation changed during the frozen exam')
@@ -69,6 +71,9 @@ def assess(path):
                 if package[field] != controls[control]: raise ValueError('Case acceptance contract changed')
             if package['instruction_contract'] != 'focused-stages.v1' or package['correction_contract'] != 'legacy-text.v1':
                 raise ValueError('Case instruction or feedback arm changed')
+            recovery = 'bounded-incomplete-retry.v1' if version == exam.VERSION else None
+            if package.get('transport_recovery_contract') != recovery:
+                raise ValueError('Case incomplete-answer recovery contract changed')
             requests = sorted(folder.glob('*-request.json')); responses = sorted(folder.glob('*-response.json'))
             if (outcome['model_requests'] != len(requests) or outcome['model_calls'] != len(responses)
                     or not 1 <= len(requests) <= 18 or len(responses) > len(requests)):

@@ -13,11 +13,11 @@ def fixture_exam(tmp_path, monkeypatch):
     monkeypatch.setattr(p, 'verify', lambda folder: {'verified': True})
     out = tmp_path/'exam'; out.mkdir(); (out/'implementation').mkdir()
     names = ('product_infographic_school.py', 'product_callouts.py', 'brand_school.py',
-             'product_model_feedback.py', 'render_school_svg.py', 'vector_school_contract.py')
+             'product_model_feedback.py', 'render_school_svg.py', 'vector_school_contract.py', 'local_ollama.py')
     for name in names: (out/'implementation'/name).write_text('frozen fixture code')
     budget = {'num_ctx': 16384, 'num_predict': 8192, 'num_thread': 4, 'timeout_seconds': 180}
     controls = {'source_contract': 'bottle-visible-parts.v4', 'panel_contract': 'text-and-lines.v2',
-                'placement_contract': 'extended-transform.v2', 'annotation_contract': 'functional-callouts.v2'}
+                'placement_contract': 'extended-transform.v2', 'annotation_contract': 'functional-callouts.v3'}
     manifest = {'schema': assessment.exam.VERSION, 'cases': [assessment.exam.definition(c) for c in assessment.exam.CASES],
                 'arms': assessment.exam.ARMS, 'model': 'fixture', 'digest': 'f'*64, 'shared_budget': budget,
                 'shared_controls': controls, 'training_export_allowed': False, 'manual_hints_allowed': False,
@@ -38,6 +38,7 @@ def fixture_exam(tmp_path, monkeypatch):
                        'source_fidelity_contract': controls['source_contract'], 'panel_fidelity_contract': controls['panel_contract'],
                        'placement_contract': controls['placement_contract'], 'annotation_contract': controls['annotation_contract'],
                        'instruction_contract': 'focused-stages.v1', 'correction_contract': 'legacy-text.v1',
+                       'transport_recovery_contract': 'bounded-incomplete-retry.v1',
                        'artifacts': {str(f.relative_to(folder)): p.school.checksum(f) for f in folder.rglob('*') if f.is_file()}}
             p.school.save(folder/'report.json', package)
             item['arms'][arm] = {'package': str(folder), 'report_sha256': p.school.checksum(folder/'report.json'),
