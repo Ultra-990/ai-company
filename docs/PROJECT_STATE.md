@@ -1,5 +1,14 @@
 # Stan projektu AI Company
 
+## Aktualizacja 28.09.2026 — wznowienie i niedostępny GPU
+
+Po restarcie działa Ollama, ale kernel `7.0.0-34-generic` nie ma modułu
+NVIDIA. Poprzedni kernel `7.0.0-31-generic` i jego sterownik `595.84`
+są zainstalowane; log poprzedniego rozruchu potwierdza ich działanie.
+Nie zmieniano sterowników ani rozruchu. Próby modeli czekają na przywrócenie
+GPU i ponowny preflight. Szczegóły oraz otwarte błędy intake/checkpointu
+zapisano w `docs/WORK_LOG.md`.
+
 ## Aktualizacja 24.09.2026 — korpus 200 i drugi pełny pomiar adaptera
 
 Automatyczny intake osiągnął `200 train / 25 validation / 50 test` i przeszedł

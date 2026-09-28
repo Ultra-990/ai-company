@@ -4891,3 +4891,28 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Po restarcie Ollama nie odpowiadała (`PermissionError` w izolowanym procesie),
   więc następny krok został poprawnie wskazany jako przywrócenie Ollama i
   ponowny preflight. Testy checkpointu: `2 passed`.
+
+## 2026-09-28 — diagnoza GPU po restarcie
+
+- Ollama odpowiada na `/api/tags`, Qwen jest zainstalowany. Poprzedni
+  `PermissionError` checkpointu nie był dowodem zatrzymania usługi.
+- Bieżący kernel `7.0.0-34-generic` nie ma modułu NVIDIA (`modinfo`);
+  `nvidia-smi` kończy się kodem 9, brak `/dev/nvidia*`, karta jest widoczna
+  na PCI. Ollama raportuje CPU i 0 B VRAM. Brak aktywnych kontenerów.
+- Historia APT: unattended-upgrade z 24.09 zainstalował kernel 34 bez
+  modułu NVIDIA. Sterownik `595.84` ma hold; moduł istnieje dla kernela 31.
+  Log poprzedniego rozruchu potwierdza działający NVIDIA `595.84` na
+  `7.0.0-31-generic`; obraz, initrd i moduł tego kernela nadal istnieją.
+- Symulacja instalacji modułu dla 34 wykazała konflikt wersji. Symulacja
+  obejmująca również sterownik przewiduje aktualizację 21 pakietów, dwa
+  nowe i zmianę pakietu objętego hold. Nie wykonano instalacji, zmiany
+  sterowników, konfiguracji rozruchu ani restartu.
+- Następny krok: ręczny wybór kernela 31 przy restarcie i sprawdzenie
+  `uname -r`, `nvidia-smi`, dostępności GPU w Ollama przed próbą modelową.
+- Do dalszej naprawy systemu nauki: checkpoint musi rozróżniać ograniczenie
+  dostępu od awarii usługi i uwzględniać preflight GPU. Intake wynosi
+  220/25/50; pięć historycznych rewizji produktu odrzucono z powodu
+  porównywania zapisanej rozmowy ze zmienioną instrukcją PANEL. Trzeba
+  wersjonować kontrakt rekonstrukcji bez osłabienia kontroli pochodzenia.
+- Testy zastanego checkpointu, runnera i bramki: 8 passed. Bez nowego
+  treningu, promocji adaptera ani zmiany autorstwa produktów.
