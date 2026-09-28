@@ -137,3 +137,47 @@ Raport kolizji zawiera obie zmierzone ramki. Błąd liczbowy wskazuje
 atrybut, wartość i rozmiar płótna; niezgodność tekstu PDF wskazuje do
 trzech brakujących i nieoczekiwanych słów. Model dostaje konkretną
 przyczynę odrzucenia zamiast samego ogólnego komunikatu.
+
+## Porównanie sposobów generowania i korekt — 28.09.2026
+
+Domyślnie włączone `--focused-stages` przekazuje wyłącznie instrukcje bieżącego etapu: źródło
+nie dostaje kontraktu panelu 1500×1500, a panel nie dostaje polecenia
+rysowania nowej butelki. Źródło ma sprawdzić proporcje całej sylwetki,
+połączenie części oraz dopasowanie napisu do jego tła. Wszystkie konkretne
+współrzędne i decyzje graficzne nadal wybiera lokalny model.
+`--no-focused-stages` pozostawia starsze instrukcje do porównań.
+
+`--visual-feedback` jest eksperymentalną opcją. Dwie ograniczone korekty
+mogą otrzymać PNG ostatniej odrzuconej odpowiedzi, pełny błąd i pomiary.
+Nie przekazuje się starego podglądu po błędzie składni nowszej odpowiedzi.
+Zapisane żądania wiążą obraz, SVG, odpowiedź i informację zwrotną hashami;
+weryfikator odtwarza rozmowę. Mechanizm nie naprawia sceny za model.
+Bez tego przełącznika pozostaje dotychczasowa korekta tekstowa.
+
+Porównanie `--compare-feedback` używa trzech zachowanych błędnych źródeł,
+tego samego modelu, limitu tokenów i po dwóch korektach. To regresje
+rozwojowe, nie nowe egzaminy. Pierwszy wynik: tekst **3/3**, obraz z pomiarami
+**2/3**; nie ma podstaw do domyślnego włączania korekt obrazowych.
+
+`--source-exam` zamraża przed inferencją trzy nowe syntetyczne briefy,
+obie instrukcje i konfigurację. Każda para korzysta z tego samego stylu,
+briefu, schematu i limitu trzech wywołań. Kolejność metod jest przeplatana.
+Raport osobno liczy zaliczenia techniczne i liczbę wywołań; nie eksportuje
+egzaminu do treningu. To mały sprawdzian samych źródeł o jednakowych
+wymiarach fizycznych, nie kwalifikacja kompletnych zleceń.
+
+Pierwszy egzamin `source-exam-cj17a_87` dał **0/3** dla wspólnej instrukcji
+i **3/3** dla rozdzielonej według kontraktu v3, przy 9 wobec 5 wywołań.
+Niezależny ogląd wykrył jednak całkowicie zasłoniętą zakrętkę w RIVER 450.
+Nowy kontrakt źródła `bottle-visible-parts.v4` dodatkowo bada siatkę punktów
+widoczności kształtów w kolorach korpusu i zakrętki. Osobny audyt
+`--audit-source-exam KATALOG` obniżył wynik nowych źródeł do **2/3**;
+oryginalnego raportu egzaminu nie zmieniono. To nadal ograniczony pomiar,
+który nie ocenia wiarygodności wszystkich detali ani estetyki.
+
+Panele mają osobny kontrakt `text-background-samples.v1`: dziewięć punktów
+każdego znaku wykrywa też zanik dolnych fragmentów liter na granicy tła.
+`--audit-package KATALOG` ponownie renderuje źródło i panele pod aktualnymi
+kontrolami do osobnego katalogu. W rzeczywistym pakiecie `series-zcwfe822`
+wykryto w ten sposób nieczytelną dolną część drugiego zdania panelu care,
+choć wcześniejszy środkowy pomiar kontrastu oraz ekstrakcja PDF przechodziły.

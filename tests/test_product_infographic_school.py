@@ -97,6 +97,40 @@ def test_source_label_requires_readable_background_and_real_measurement():
     assert product.source_fidelity_issues(measured, label_check=True) == []
 
 
+def test_cap_present_in_json_but_hidden_by_body_is_not_a_visible_product_part():
+    palette = style()
+    def rgb(color): return 'rgb('+', '.join(str(int(color[i:i+2], 16)) for i in (1, 3, 5))+')'
+    measured = {'shape_layout': [{'bbox': [200, 100, 140, 480]}, {'bbox': [230, 100, 60, 20]}],
+                'source_shape_visibility': [
+                    {'index': 0, 'fill': rgb(palette['body_color']), 'visible_samples': 25, 'tested_samples': 25},
+                    {'index': 1, 'fill': rgb(palette['cap_color']), 'visible_samples': 0, 'tested_samples': 25}]}
+    issues = product.source_fidelity_issues(measured, style=palette)
+    assert issues[0]['kind'] == 'product_part_not_visible' and issues[0]['part'] == 'cap'
+    assert issues[0]['shape_indices'] == [1]
+    measured['source_shape_visibility'][1]['visible_samples'] = 12
+    assert product.source_fidelity_issues(measured, style=palette) == []
+    del measured['source_shape_visibility']
+    assert product.source_fidelity_issues(measured, style=palette)[0]['kind'] == 'missing_product_part_visibility_measurement'
+
+
+def test_partial_letter_background_collision_has_versioned_panel_gate():
+    measured = {'layout': [{'text': 'FIELD 600', 'bbox': [100, 300, 100, 30]},
+                           {'text': 'Care', 'bbox': [100, 100, 200, 60]},
+                           {'text': 'Hand wash only', 'bbox': [600, 900, 500, 60]},
+                           {'text': 'Air dry before storage', 'bbox': [600, 1100, 600, 60]}],
+                'group_layout': [{'bbox': [100, 300, 200, 600]}],
+                'label_background_samples': [
+                    {'text': 'Care', 'character_indices': []},
+                    {'text': 'Hand wash only', 'character_indices': []},
+                    {'text': 'Air dry before storage', 'character_indices': [0, 1, 2]}]}
+    assert product.quality_issues(measured, panel=True) == []
+    issues = product.quality_issues(measured, panel=True, panel_contrast=True)
+    assert len(issues) == 1 and issues[0]['kind'] == 'panel_text_background_interference'
+    assert issues[0]['text'] == 'Air dry before storage'
+    del measured['label_background_samples']
+    assert product.quality_issues(measured, panel=True, panel_contrast=True)[0]['kind'] == 'missing_panel_text_contrast_measurement'
+
+
 def test_printed_label_must_fit_product_even_when_it_fits_canvas():
     measured = {'shape_layout': [{'bbox': [210, 100, 180, 620]}],
                 'layout': [{'text': product.BRIEF['product_name'], 'bbox': [184, 400, 232, 50]}]}
@@ -155,6 +189,18 @@ def test_numeric_failure_identifies_attribute_value_and_source_canvas():
     value = source_scene(); value['shapes'][0]['attributes']['y'] = '1940'
     with pytest.raises(ValueError, match=r'rect.y=1940.*600x800'):
         product.compile_scene(json.dumps(value), style())
+
+
+def test_focused_stage_instructions_exclude_the_other_stage_contract():
+    source = product.stage_rules('source', focused=True)
+    panel = product.stage_rules('capacity', focused=True)
+    assert '600x800' in source and '1500x1500' not in source
+    assert 'product_placement' not in source and 'EXACTLY THREE' not in source
+    assert '1500x1500' in panel and '600x800' not in panel
+    assert 'EXACTLY ONE name' not in panel
+    assert product.stage_rules('source') == product.SCENE_RULES
+    with pytest.raises(ValueError, match='Known product stage'):
+        product.stage_rules('unknown', focused=True)
 
 
 def test_continuation_requires_unchanged_failure_and_cannot_repeat_forever(tmp_path, monkeypatch):

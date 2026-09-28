@@ -1,5 +1,22 @@
 # Stan projektu AI Company
 
+## Aktualizacja 28.09.2026 — rozdzielone instrukcje i sprawdzian nowych briefów
+
+Generator domyślnie rozdziela instrukcje rysunku produktu od kompozycji
+paneli. Na trzech nowych briefach wynik techniczny poprawił się z 0/3
+do 3/3 przy mniejszej liczbie wywołań. Ogląd ujawnił jednak zasłoniętą
+zakrętkę; po rozszerzeniu kontroli bieżący wynik nowych źródeł wynosi 2/3.
+Oryginalne wyniki i odpowiedzi pozostają zachowane w osobnych raportach.
+
+System wykrywa teraz również części istniejące w JSON, lecz niewidoczne
+na obrazie, oraz litery znikające na granicy tła. Obrazowe korekty nie
+wykazały przewagi w osobnym porównaniu i pozostały eksperymentalne.
+Ograniczone wznowienie ukończyło pełny pakiet pod rozszerzonymi kontrolami,
+ale niezależna ocena nadal wykazała słabą kompozycję i kolizję dekoracji
+z napisem. Model **nadal wymaga nadzoru**. Pełne testy infrastruktury:
+**1751 passed, 21 skipped**; dane nauki: **225/25/50**. To poprawa sposobu
+prowadzenia i sprawdzania modelu, bez nowego treningu wag.
+
 ## Aktualizacja 28.09.2026 — kontrola jakości źródła produktu
 
 Wznowiono rzeczywiste próby Qwena na GPU. Generator sprawdza teraz proporcje

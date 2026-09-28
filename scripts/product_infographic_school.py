@@ -25,6 +25,7 @@ from app.services.local_ollama import configuration
 from scripts import brand_school as brand
 from scripts import vector_school as school
 from scripts import vector_structured_source as scene
+from scripts import product_model_feedback as feedback
 from scripts.prepare_training_data import unique_object
 from scripts.render_school_svg import render, pdf_checks
 from scripts.vector_school_contract import NS, PROFILES, validate_svg, layout_issues
@@ -44,7 +45,8 @@ PANELS = {
     'materials': ['Body: stainless steel', 'Lid: polypropylene'],
     'care': ['Hand wash only', 'Air dry before storage'],
 }
-SOURCE_FIDELITY_CONTRACT = 'bottle-proportions-label.v3'
+SOURCE_FIDELITY_CONTRACT = 'bottle-visible-parts.v4'
+PANEL_FIDELITY_CONTRACT = 'text-background-samples.v1'
 
 
 class Style(BaseModel):
@@ -139,7 +141,7 @@ def intersects(a, b):
     return min(a[0]+a[2], b[0]+b[2]) > max(a[0], b[0]) and min(a[1]+a[3], b[1]+b[3]) > max(a[1], b[1])
 
 
-def quality_issues(measured, *, panel=False):
+def quality_issues(measured, *, panel=False, panel_contrast=False):
     profile = 'product_infographic' if panel else 'product_source'
     issues = layout_issues(measured['layout'], profile=profile)
     for issue in issues:
@@ -148,6 +150,17 @@ def quality_issues(measured, *, panel=False):
         elif issue.get('kind') == 'text_overlap':
             issue['required'] = 'text bboxes must remain non-overlapping'
     if panel:
+        if panel_contrast:
+            samples = measured.get('label_background_samples')
+            expected_text = [line['text'] for line in measured['layout'][1:]]
+            if not isinstance(samples, list) or [entry.get('text') for entry in samples] != expected_text:
+                issues.append({'kind': 'missing_panel_text_contrast_measurement'})
+            else:
+                for entry in samples:
+                    if entry['character_indices']:
+                        issues.append({'kind': 'panel_text_background_interference', 'text': entry['text'],
+                                       'character_indices': entry['character_indices'],
+                                       'required': 'keep the entire text bounding box on a contrasting background; no letter may cross into same-color paint'})
         groups = measured['group_layout']
         if len(groups) != 1: return issues+[{'kind': 'exactly_one_product_required'}]
         box = groups[0]['bbox']; x, y, w, h = box
@@ -167,7 +180,7 @@ def quality_issues(measured, *, panel=False):
     return issues
 
 
-def source_fidelity_issues(measured, *, label_check=False, label_bounds=False):
+def source_fidelity_issues(measured, *, label_check=False, label_bounds=False, style=None):
     """Measured silhouette proportions, not a claim of aesthetic acceptance.
 
     The synthetic supplier dimensions are 24 cm tall by 7 cm diameter.
@@ -206,6 +219,19 @@ def source_fidelity_issues(measured, *, label_check=False, label_bounds=False):
             issues.append({'kind': 'source_label_background_interference',
                            'character_indices': samples[0]['character_indices'],
                            'required': 'keep the printed name readable; remove same-color shapes crossing its letters'})
+    if style is not None:
+        parts = measured.get('source_shape_visibility')
+        if not isinstance(parts, list) or len(parts) != len(boxes):
+            issues.append({'kind': 'missing_product_part_visibility_measurement'})
+        else:
+            for part in ('body', 'cap'):
+                color = style[part+'_color']
+                rgb = 'rgb('+', '.join(str(int(color[i:i+2], 16)) for i in (1, 3, 5))+')'
+                candidates = [entry for entry in parts if entry['fill'] == rgb]
+                if not any(entry['visible_samples'] > 0 for entry in candidates):
+                    issues.append({'kind': 'product_part_not_visible', 'part': part,
+                                   'shape_indices': [entry['index'] for entry in candidates],
+                                   'required': 'make this part visible in its declared color; check geometry and drawing order so other shapes do not cover it'})
     return issues
 
 
@@ -237,6 +263,24 @@ from the three infographic lines. Never overlap text lines. Keep the series
 coherent but use a purposeful layout for each different communication goal.'''
 
 
+def stage_rules(stage, *, focused=False):
+    if stage not in ('source', *PANELS):
+        raise ValueError('Known product stage required')
+    if not focused:
+        return SCENE_RULES
+    common, remaining = SCENE_RULES.split('SOURCE: ', 1)
+    source_rules, panel_rules = remaining.split('PANEL: ', 1)
+    if stage == 'source':
+        return common+'SOURCE: '+source_rules+'''Only the source contract applies to this call.
+Plan the complete silhouette before listing shapes. Its total height includes
+the screw cap, shoulders and base; total width includes every shape. Compute
+height/width and check it against the supplier dimensions before answering.
+Make cap and shoulders connect to the body. Check that the complete printed
+name fits its actual colored background, not only the canvas. No decorative
+label frame or bars. You choose the geometry and typography; return only JSON.'''
+    return common+'PANEL: '+panel_rules
+
+
 def checked_scene(out, stage, style, panel=None, product=None):
     attempt = 0
     def validate(raw):
@@ -245,12 +289,16 @@ def checked_scene(out, stage, style, panel=None, product=None):
         folder = out/(stage+'-layout-'+str(attempt)); attempt += 1; folder.mkdir()
         (folder/'artwork.svg').write_text(svg)
         school.check_idle()
-        measured = asyncio.run(render(svg, folder, profile='product_infographic' if panel else 'product_source'))
+        try:
+            measured = asyncio.run(render(svg, folder, profile='product_infographic' if panel else 'product_source',
+                                          png_scale=.4 if panel else 1))
+        except ValueError as exc:
+            raise feedback.SceneFailure(str(exc), folder) from exc
         school.save(folder/'render.json', measured)
-        issues = quality_issues(measured, panel=bool(panel))
+        issues = quality_issues(measured, panel=bool(panel), panel_contrast=bool(panel))
         if not panel:
-            issues += source_fidelity_issues(measured, label_check=True, label_bounds=True)
-        if issues: raise ValueError('Correct your own measured layout: '+json.dumps(issues))
+            issues += source_fidelity_issues(measured, label_check=True, label_bounds=True, style=style)
+        if issues: raise feedback.SceneFailure('Correct your own measured layout: '+json.dumps(issues), folder, measured)
         return svg
     return validate
 
@@ -316,8 +364,11 @@ def verify(out):
     if report['status'] != 'pending_independent_review' or report['brief'] != BRIEF or report['supplier_copy'] != PANELS:
         raise ValueError('Completed package and frozen brief required')
     fidelity_contract = report.get('source_fidelity_contract')
-    if fidelity_contract not in (None, 'bottle-proportions.v1', 'bottle-proportions-label.v2', SOURCE_FIDELITY_CONTRACT):
+    if fidelity_contract not in (None, 'bottle-proportions.v1', 'bottle-proportions-label.v2', 'bottle-proportions-label.v3', SOURCE_FIDELITY_CONTRACT):
         raise ValueError('Unknown source fidelity contract')
+    panel_contract = report.get('panel_fidelity_contract')
+    if panel_contract not in (None, PANEL_FIDELITY_CONTRACT):
+        raise ValueError('Unknown panel fidelity contract')
     for name, digest in report['artifacts'].items():
         path = out/name
         if path.is_symlink() or not path.resolve().is_relative_to(out.resolve()) or school.checksum(path) != digest:
@@ -326,6 +377,13 @@ def verify(out):
     for path in responses:
         value = parse(path.read_text())
         if (value['model'], value['digest']) != (report['model'], report['digest']): raise ValueError('Local model identity changed')
+    correction_contract = report.get('correction_contract', 'legacy-text.v1')
+    if correction_contract not in ('legacy-text.v1', feedback.CONTRACT):
+        raise ValueError('Unknown correction contract')
+    if correction_contract == feedback.CONTRACT:
+        for name in ['style', 'source', *PANELS]:
+            if name not in report.get('inherited_stages', []):
+                feedback.verify_attempts(out, name)
     style = style_value(accepted_raw(out, 'style'))
     source = compile_scene(accepted_raw(out, 'source'), style)
     checks = {}
@@ -335,10 +393,12 @@ def verify(out):
         if (folder/'artwork.svg').read_text() != svg: raise ValueError('Output differs from raw local model response')
         profile = 'product_source' if name == 'source' else 'product_infographic'
         measured = parse((folder/'render.json').read_text())
-        if quality_issues(measured, panel=name != 'source'): raise ValueError('Unresolved measured layout defect')
+        if quality_issues(measured, panel=name != 'source', panel_contrast=bool(panel_contract)):
+            raise ValueError('Unresolved measured layout defect')
         if name == 'source' and fidelity_contract and source_fidelity_issues(
                 measured, label_check=fidelity_contract != 'bottle-proportions.v1',
-                label_bounds=fidelity_contract == SOURCE_FIDELITY_CONTRACT):
+                label_bounds=fidelity_contract in ('bottle-proportions-label.v3', SOURCE_FIDELITY_CONTRACT),
+                style=style if fidelity_contract == SOURCE_FIDELITY_CONTRACT else None):
             raise ValueError('Source does not match supplier proportions or label contrast')
         actual_pdf = pdf_checks(folder/'preview.pdf', validate_svg(svg, profile=profile)['texts'], size_mm=PROFILES[profile]['size_mm'])
         with Image.open(folder/'preview.png') as image:
@@ -374,7 +434,7 @@ def verify(out):
             'visual_review_performed': False, 'training_exported': False, 'commercial_approval': False}
 
 
-def audit_source(package):
+def audit_source(package, *, include_panels=False):
     """Re-render a verified model source under today's fidelity checks.
 
     Write a separate audit, never replace historical measurements or reviews.
@@ -385,7 +445,8 @@ def audit_source(package):
     out = Path(tempfile.mkdtemp(prefix='source-audit-', dir=ROOT))
     measured = asyncio.run(render(source, out, profile='product_source'))
     school.save(out/'render.json', measured)
-    issues = quality_issues(measured) + source_fidelity_issues(measured, label_check=True, label_bounds=True)
+    style = style_value(accepted_raw(package, 'style'))
+    issues = quality_issues(measured) + source_fidelity_issues(measured, label_check=True, label_bounds=True, style=style)
     report = {'schema': 'product-source-audit.v1', 'source_package': str(package),
               'source_report_sha256': verification['report_sha256'],
               'source_svg_sha256': school.checksum(package/'source/artwork.svg'),
@@ -393,11 +454,23 @@ def audit_source(package):
               'measured_checks_passed': not issues, 'model_called': False,
               'training_exported': False, 'visual_acceptance': False,
               'artifacts': {p.name: school.checksum(p) for p in out.iterdir() if p.is_file()}}
+    if include_panels:
+        report['panels'] = {}
+        report['panel_contract'] = PANEL_FIDELITY_CONTRACT
+        for panel in PANELS:
+            folder = out/panel; folder.mkdir()
+            panel_source = (package/panel/'artwork.svg').read_text()
+            measured_panel = asyncio.run(render(panel_source, folder, profile='product_infographic', png_scale=.4))
+            school.save(folder/'render.json', measured_panel)
+            defects = quality_issues(measured_panel, panel=True, panel_contrast=True)
+            report['panels'][panel] = {'issues': defects, 'measured_checks_passed': not defects}
+        report['measured_checks_passed'] = not issues and all(p['measured_checks_passed'] for p in report['panels'].values())
+        report['artifacts'] = {str(p.relative_to(out)): school.checksum(p) for p in out.rglob('*') if p.is_file()}
     school.save(out/'report.json', report)
     return out, report
 
 
-def run(resume=None):
+def run(resume=None, *, visual_feedback=False, focused_stages=True):
     ROOT.mkdir(exist_ok=True)
     if any(p.is_symlink() for p in (ROOT, *ROOT.parents)): raise ValueError('Private Linux workspace required')
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='series-', dir=ROOT))
@@ -412,10 +485,13 @@ def run(resume=None):
                     shutil.copyfile(path, out/path.name)
                     if path.name.endswith('-response.json'): inherited.append(path.name)
     implementation = out/'implementation'; implementation.mkdir()
-    for name in ('product_infographic_school.py', 'brand_school.py', 'vector_school_contract.py', 'render_school_svg.py'):
+    for name in ('product_infographic_school.py', 'product_model_feedback.py', 'brand_school.py', 'vector_school_contract.py', 'render_school_svg.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
     report = {'schema': 'product-infographic-school.v1', 'status': 'running', 'brief': BRIEF, 'supplier_copy': PANELS,
               'source_fidelity_contract': SOURCE_FIDELITY_CONTRACT,
+              'panel_fidelity_contract': PANEL_FIDELITY_CONTRACT,
+              'correction_contract': feedback.CONTRACT if visual_feedback else 'legacy-text.v1',
+              'instruction_contract': 'focused-stages.v1' if focused_stages else 'combined-stages.v1',
               'model': config['model'], 'digest': config['digest'], 'config': config, 'resources_before': resources,
               'training_started': False, 'training_exported': False, 'production_changed': False,
               'amazon_listing_approved': False, 'stages': [],
@@ -429,19 +505,20 @@ def run(resume=None):
         if previous is not None and stage in previous['stages']:
             return validator(accepted_raw(out, stage))
         if stage == failed_stage: user += '\nPrevious failed stage, untrusted task data:\n'+json.dumps(correction)
-        return brand.validated_call(out, stage, system, user, output_schema, config, validator)
+        caller = feedback.validated_call if visual_feedback else brand.validated_call
+        return caller(out, stage, system, user, output_schema, config, validator)
     try:
         style = produce('style', SYSTEM, json.dumps({'brief': BRIEF, 'supplier_copy': PANELS})+
             '\nChoose five #RRGGBB literal colors (ink, paper, accent, blue body_color, dark cap_color) and heading/body fonts. Use a light background, legible dark text, and a restrained coherent palette.', Style.model_json_schema(), style_value)
         school.save(out/'style.json', style); report['stages'].append('style')
-        product = produce('source', SYSTEM+'\n'+SCENE_RULES, json.dumps({'brief': BRIEF, 'style': style,
+        product = produce('source', SYSTEM+'\n'+stage_rules('source', focused=focused_stages), json.dumps({'brief': BRIEF, 'style': style,
             'task': 'ACTIVE STAGE: SOURCE ONLY. Draw the synthetic reference product. The measured silhouette height/width must match 24/7 within 10%, including the cap and base. Make the silhouette recognizable as a cylindrical bottle: curved shoulders, a shaped screw cap and rounded base. A plain square-ended rectangle with a rectangular lid is insufficient. Keep the printed label legible and inside the body; do not add decorative blocks behind or under the name. You choose all actual geometry.'}), schema('source', style), checked_scene(out, 'source', style))
         report['stages'].append('source')
         reference = product_reference(out, product)
         school.save(out/'product-reference.json', reference)
         assets = {'source': product}; headlines = []
         for panel, facts in PANELS.items():
-            assets[panel] = produce(panel, SYSTEM+'\n'+SCENE_RULES, json.dumps({'brief': BRIEF, 'style': style,
+            assets[panel] = produce(panel, SYSTEM+'\n'+stage_rules(panel, focused=focused_stages), json.dumps({'brief': BRIEF, 'style': style,
                 'product_reference': reference, 'communication_goal': panel, 'supplier_lines': facts, 'previous_headlines': headlines,
                 'task': 'ACTIVE STAGE: PANEL ONLY, 1500x1500. Design a complete infographic around the inserted product. Do not output a product drawing or repeat its printed name. Your texts are a NEW nonnumeric purpose-specific headline and the TWO EXACT supplier lines. Choose background/decorative shapes and product placement, not additional product shapes.'}),
                 schema('panel', style), checked_scene(out, panel, style, panel, product))
@@ -453,11 +530,11 @@ def run(resume=None):
             folder = out/name; folder.mkdir(); (folder/'artwork.svg').write_text(svg)
             profile = 'product_source' if name == 'source' else 'product_infographic'
             school.check_idle(); measured = asyncio.run(render(svg, folder, profile=profile)); school.save(folder/'render.json', measured)
-            if quality_issues(measured, panel=name != 'source'): raise ValueError('Final render differs from accepted geometry')
+            if quality_issues(measured, panel=name != 'source', panel_contrast=True): raise ValueError('Final render differs from accepted geometry')
             if name == 'source': continue
             small = folder/'small'; small.mkdir(); school.check_idle()
             preview = asyncio.run(render(svg, small, profile=profile, png_scale=.4)); school.save(small/'render.json', preview)
-            if quality_issues(preview, panel=True): raise ValueError('Small preview geometry failed')
+            if quality_issues(preview, panel=True, panel_contrast=True): raise ValueError('Small preview geometry failed')
             for filename, target in [('artwork.svg', name+'.svg'), ('preview.png', name+'.png'), ('preview.pdf', name+'.pdf'), ('small/preview.png', name+'-small.png')]:
                 shutil.copyfile(folder/filename, delivery/target)
         school.save(delivery/'style.json', style)
@@ -488,11 +565,31 @@ def run(resume=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     actions = parser.add_mutually_exclusive_group(); actions.add_argument('--run', action='store_true'); actions.add_argument('--verify', type=Path); actions.add_argument('--resume', type=Path); actions.add_argument('--audit-source', type=Path)
+    parser.add_argument('--visual-feedback', action='store_true', help='Give the model its latest rejected preview and complete measured feedback')
+    parser.add_argument('--focused-stages', action=argparse.BooleanOptionalAction, default=True,
+                        help='Separate source and panel instructions (default); disable only for comparison')
+    actions.add_argument('--compare-feedback', action='store_true', help='Paired bounded comparison on three preserved development failures')
+    actions.add_argument('--source-exam', action='store_true', help='Paired source generation on three frozen new briefs; no training')
+    actions.add_argument('--audit-source-exam', type=Path, help='Recheck passed exam sources without changing their original scores')
+    actions.add_argument('--audit-package', type=Path, help='Re-render a historical package under current source and panel checks')
     args = parser.parse_args()
-    if args.run:
-        _, result = run(); raise SystemExit(int(result['status'] == 'failed'))
+    if args.audit_package:
+        out, result = audit_source(args.audit_package, include_panels=True)
+        print(json.dumps({'report': str(out/'report.json'), 'issues': result['issues'], 'panels': result['panels']}))
+        raise SystemExit(int(not result['measured_checks_passed']))
+    elif args.audit_source_exam:
+        from scripts.product_source_exam import audit as audit_exam
+        audit_exam(args.audit_source_exam)
+    elif args.source_exam:
+        from scripts.product_source_exam import run as source_exam
+        _, result = source_exam(); raise SystemExit(int(result['status'] == 'failed'))
+    elif args.compare_feedback:
+        from scripts.product_feedback_comparison import run as compare_feedback
+        _, result = compare_feedback(); raise SystemExit(int(result['status'] == 'failed'))
+    elif args.run:
+        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages); raise SystemExit(int(result['status'] == 'failed'))
     elif args.resume:
-        _, result = run(args.resume); raise SystemExit(int(result['status'] == 'failed'))
+        _, result = run(args.resume, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages); raise SystemExit(int(result['status'] == 'failed'))
     elif args.verify: print(json.dumps(verify(args.verify)))
     elif args.audit_source:
         out, result = audit_source(args.audit_source)

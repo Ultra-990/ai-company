@@ -4979,3 +4979,58 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   nie wykonano nowego treningu wag i nie uzyskano nowej akceptacji produktu.
 - Końcowy cykl intake zakończył się bez błędów: **225 train / 25 validation /
   50 test**, bez nowych rekordów z odrzuconych prób i bez uruchomienia treningu.
+
+## 2026-09-28 — poprawa sposobu prowadzenia lokalnego modelu
+
+- Na polecenie poprawy samodzielności sprawdzono ograniczenie korekt: wcześniej
+  model dostawał tekst błędu ucięty do 600 znaków i nie otrzymywał aktualnego
+  podglądu. Dodano opcjonalną korektę z PNG, pełnymi błędami i pomiarami.
+  Każda próba zachowuje oryginalną odpowiedź i hashe wejść; błąd składni
+  kasuje odniesienie do wcześniejszego obrazu. Limit pozostaje trzy odpowiedzi.
+- `series-d5tjyysa` z obrazową korektą poprawiła czytelność źródła, ale nie
+  jego proporcje. Pakiet odrzucony. Wynik nie został wyeksportowany do nauki.
+- Zamrożone porównanie regresji `feedback-comparison-7gwy8w8e`: tekst 3/3,
+  obraz/pomiary 2/3 przy tym samym limicie dwóch korekt i 2400 tokenów.
+  Obraz szybciej poprawił złą sylwetkę, ale nie poprawił krańców etykiety.
+  Nie włączono go domyślnie. To znane przypadki rozwojowe, nie nowe holdouty.
+- Dodano wariant oddzielający instrukcje źródła od panelu oraz zamrażany
+  przed inferencją egzamin trzech nowych briefów z równymi budżetami,
+  wspólnym stylem każdej pary i przeplataną kolejnością metod.
+  Egzamin jest wyłączony z eksportu treningowego i nie promuje modelu.
+- Testy kierunkowe kolejnych zmian: 59, 151, 49, następnie **33 passed**.
+  Sprawdzono m.in. brak starego PNG po błędzie składni, pełne błędy,
+  limit korekt, związanie obrazu z odpowiedzią i odtworzenie briefu po awarii
+  egzaminu. Oryginalne wagi oraz aktywny routing pozostają bez zmian.
+- `source-exam-cj17a_87`: wspólna instrukcja 0/3 przy 9 wywołaniach,
+  rozdzielona 3/3 przy 5 wywołaniach według ówczesnego kontraktu v3.
+  Obejrzano wszystkie trzy nowe źródła. RIVER miał zakrętkę całkowicie
+  przykrytą korpusem; GROVE wymaga dopracowania kształtu szyjki i zakrętki.
+  Nie nadano automatycznej akceptacji wizualnej ani komercyjnej.
+- Dodano kontrakt v4 badający widoczność części. Osobny audyt
+  `source-exam-audit-c1y68f30` potwierdził niewidoczną zakrętkę RIVER:
+  bieżący wynik źródeł rozdzielonej instrukcji to 2/3, a oryginalny wynik
+  egzaminu pozostał niezmieniony. Egzamin i obrazy nie weszły do treningu.
+- Pełna `series-zcwfe822` ukończyła źródło i wszystkie cztery panele, lecz
+  niezależny ogląd nadal odrzucił jakość: mały produkt, niepowiązane linie
+  wymiarowe, zbędne dekoracje i znikające dolne fragmenty liter care.
+  `source-audit-s2th4jns` zaliczył źródło pod v4. Nowy osobny kontrakt
+  panelu wykrył utratę kontrastu care (`source-audit-j1ht_7mu`).
+- Jedna ograniczona wizualna korekta care (`visual-revision-kix4b4ae`)
+  nie usunęła kolizji produktu z tekstem w trzech odpowiedziach. Nie
+  zatwierdzono rewizji ani nie wyeksportowano jej do nauki.
+- Rozdzielone instrukcje włączono domyślnie; zachowano jawny wariant
+  porównawczy `--no-focused-stages`. Obrazowe korekty pozostają opcjonalne.
+  Nowa `series-rmmp_dw8` nadal nie poprawiła proporcji źródła (547/140)
+  w trzech odpowiedziach. Dowód poprawy części zadań nie oznacza stabilnej
+  samodzielności ani gotowości kompletnej usługi.
+- Pełna regresja po zmianach: **1751 passed, 21 skipped**, 86,53 s.
+  Końcowy intake: **225 train / 25 validation / 50 test**, bez błędów,
+  bez eksportu odrzuconych prac i bez nowego treningu wag.
+- Jedno ograniczone wznowienie `series-vzqzmqtv` ukończyło wszystkie etapy
+  pod bieżącymi kontraktami: 6 nowych odpowiedzi oraz odziedziczony styl.
+  Niezależna weryfikacja potwierdziła dokładne odtworzenie odpowiedzi,
+  źródła, PDF i paczki. Ogląd wykazał poprawne proste źródło, ale nadal
+  słabą kompozycję paneli: za mały produkt, brak powiązania wymiarów
+  i materiałów z częściami oraz krótka linia przecinająca napis care.
+  Zapisano negatywną ocenę całego pakietu; bez akceptacji komercyjnej,
+  bez nowego rekordu treningowego i bez promocji adaptera.

@@ -122,6 +122,20 @@ if(foreground&&background&&Math.max(...foreground.map((v,j)=>Math.abs(v-backgrou
 return {text:el.textContent,character_indices:[...bad]};
 });})()'''
 
+# Source objects are flat, bounded SVG shapes. A small interior grid detects
+# parts that exist in JSON but are entirely painted over by later shapes.
+SOURCE_PART_MEASURE = r'''(()=>{
+const shapes=[...document.querySelectorAll('svg>rect,svg>circle,svg>ellipse,svg>line,svg>path')];
+const members=new Set(shapes);
+return shapes.map((el,index)=>{
+const b=el.getBoundingClientRect();let visible=0;
+for(const fx of [.1,.3,.5,.7,.9])for(const fy of [.1,.3,.5,.7,.9]){
+const front=document.elementsFromPoint(b.x+b.width*fx,b.y+b.height*fy).find(n=>members.has(n));
+if(front===el)visible++;
+}
+return {index,fill:getComputedStyle(el).fill,visible_samples:visible,tested_samples:25};
+});})()'''
+
 
 def pdf_checks(path, texts, *, size_mm=(148, 210)):
     env = {'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8'}
@@ -218,10 +232,14 @@ async def render(source, output, *, purpose='deliverable', profile='leaflet', pn
                     if 'exceptionDetails' in measured: raise RuntimeError('Text measurement failed')
                     layout = measured['result']['value']
                     label_background_samples = None
-                    if profile == 'product_source':
+                    if profile in ('product_source', 'product_infographic'):
                         samples = await call('Runtime.evaluate', {'expression': SOURCE_LABEL_MEASURE, 'returnByValue': True}, session)
                         if 'exceptionDetails' in samples: raise RuntimeError('Label contrast measurement failed')
                         label_background_samples = samples['result']['value']
+                    if profile == 'product_source':
+                        parts = await call('Runtime.evaluate', {'expression': SOURCE_PART_MEASURE, 'returnByValue': True}, session)
+                        if 'exceptionDetails' in parts: raise RuntimeError('Product part visibility measurement failed')
+                        source_shape_visibility = parts['result']['value']
                     shape_layout = None
                     group_layout = None
                     if profile != 'leaflet':
@@ -249,6 +267,7 @@ async def render(source, output, *, purpose='deliverable', profile='leaflet', pn
                               'desktop_used': False, 'sandbox_disabled': False, 'external_page_loaded': False}
                     if shape_layout is not None: result['shape_layout'] = shape_layout
                     if label_background_samples is not None: result['label_background_samples'] = label_background_samples
+                    if profile == 'product_source': result['source_shape_visibility'] = source_shape_visibility
                     if group_layout is not None: result['group_layout'] = group_layout
         finally:
             stop_owned_chrome(process)
