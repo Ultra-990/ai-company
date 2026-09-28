@@ -115,3 +115,25 @@ nowego, zatwierdzonego pakietu czterech grafik.
 
 Testy infrastruktury: pełne `.venv/bin/pytest -q` — **1674 passed, 21 skipped**,
 84,24 s. Testy nie zastępują negatywnego odbioru wizualnego powyżej.
+
+## Kontrola wzorca i diagnostyka — 28.09.2026
+
+Nowe serie zapisują wersję kontraktu wzorca. `bottle-proportions.v1`
+sprawdza wysokość/szerokość sylwetki wobec danych 24/7 z tolerancją 10%;
+`bottle-proportions-label.v2` dodaje próbki kontrastu nadruku; wersja v3
+wymaga też pełnego zmieszczenia napisu w obrysie produktu. Sprawdzian
+nie dobiera ani nie poprawia współrzędnych modelu i nie zatwierdza estetyki.
+Historyczne pakiety zachowują własny kontrakt; nie dostają nowych zaliczeń.
+
+Pomiar kontrastu wzorca obejmuje dziewięć punktów pola każdego znaku.
+Kontrola samego środka pomijała poziome czarne paski przecinające litery.
+Osobny `--audit-source KATALOG_SERII` odtwarza wzorzec w headless Chrome
+i zapisuje nowy raport pod bieżącym kontraktem bez modyfikowania starego
+pakietu. Rzeczywisty audyt wykrył interferencję pięciu znaków w pakiecie
+wcześniej poprawnym technicznie. To ograniczony pomiar czytelności, nie
+pełna analiza obrazu ani automatyczny odbiór projektu.
+
+Raport kolizji zawiera obie zmierzone ramki. Błąd liczbowy wskazuje
+atrybut, wartość i rozmiar płótna; niezgodność tekstu PDF wskazuje do
+trzech brakujących i nieoczekiwanych słów. Model dostaje konkretną
+przyczynę odrzucenia zamiast samego ogólnego komunikatu.

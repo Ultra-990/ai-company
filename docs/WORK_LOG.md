@@ -4941,3 +4941,41 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Trzy ograniczone cykle intake przywróciły 222, 224, następnie 225 train;
   validation/test pozostały 25/50. Stan końcowy: bez błędów, bez treningu.
 - Pełny zestaw testów: **1730 passed, 21 skipped**, 85,74 s.
+
+## 2026-09-28 — próby Amazon i nowe pomiary wad
+
+- `series-ti6k7_np` zatrzymała się na panelu care po wykorzystaniu korekt.
+  Ogląd źródła ujawnił proporcje 635/120 zamiast 24/7. Odrzucona; bez
+  eksportu do treningu. Potwierdzono rzeczywistą inferencję: wszystkie
+  66 warstw Qwena załadowane na GPU po aktualizacji sterownika.
+- `series-8yndpvjs` ukończyła pakiet (7 odpowiedzi, 60,859 s) po dodaniu
+  kontroli proporcji. Niezależny ogląd źródła i czterech małych paneli
+  odrzucił pakiet: nadruk przecinany czarnymi paskami, słaba hierarchia
+  i dekoracja przecinająca nagłówek pojemności. Nie przyjęto do nauki.
+- Dodano pomiar dziewięciu punktów każdego znaku wzorca oraz oddzielny
+  audyt źródła. `source-audit-d03dxvqm` wykrył pięć problematycznych
+  znaków w rzeczywistym PNG/PDF wcześniej przepuszczonym przez kontrolę
+  środka znaku. Oryginalne raporty i odpowiedzi pozostały bez zmian.
+- `series-9ygidn4y` trzykrotnie powtórzyła współrzędne poza płótnem.
+  Jedno dozwolone wznowienie `series-g8_h9jar` poprawiło źródło, ale
+  utknęło na przyciętym nagłówku PDF. Bez pozytywnego rekordu treningowego.
+  Ogląd wykrył też napis wykraczający poza obrys butelki.
+- Bieżący kontrakt v3 sprawdza proporcje, próbki kontrastu i ramkę nadruku.
+  Błędy PDF i współrzędnych mają konkretny feedback. Kolejne wersje
+  kontraktu są jawne; stare pakiety nie otrzymują wstecznie nowych zaliczeń.
+- Testy kierunkowe kolejnych rozszerzeń: 50, 39, 120, 121, następnie
+  **137 passed**. Jedno wywołanie testów wskazało nieistniejący plik
+  test_render_school_svg.py i nie uruchomiło testów; poprawiono zakres
+  na rzeczywiste test_vector_school.py. Kontrola składni/diff bez błędów.
+- `series-qowjkibt` oraz jej jedno ograniczone wznowienie `series-a05lkqkv`
+  zatrzymały się na źródle: nieprawidłowe proporcje, następnie niewystarczająca
+  czytelność skrajnych znaków etykiety. Zachowano oryginalne odpowiedzi
+  i błędy. Nie zwiększano liczby prób po wyczerpaniu budżetu korekt.
+- Powtórzony audyt bieżącym kontraktem v3 (`source-audit-52ho375c`) wykrył
+  te same pięć problematycznych znaków w `series-8yndpvjs`; kod wyjścia 1
+  jest oczekiwanym odrzuceniem wadliwego produktu, nie awarią audytora.
+- Pełny zestaw testów po zmianach: **1740 passed, 21 skipped**, 85,99 s.
+  Ten etap rozbudował walidację i feedback oraz wznowił inferencję na GPU;
+  nie wykonano nowego treningu wag i nie uzyskano nowej akceptacji produktu.
+- Końcowy cykl intake zakończył się bez błędów: **225 train / 25 validation /
+  50 test**, bez nowych rekordów z odrzuconych prób i bez uruchomienia treningu.

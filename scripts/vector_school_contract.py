@@ -118,7 +118,8 @@ def validate_svg(source, *, profile='leaflet'):
                     raise ValueError('Plain bounded decimal required')
                 number = float(value)
                 if not -840 <= number <= 1680 or not math.isfinite(number):
-                    raise ValueError('Numeric range')
+                    raise ValueError(f'Numeric range: {tag}.{key}={value}; allowed -840..1680. '
+                                     f'The {profile} canvas is {width}x{height}; keep the complete artwork inside its margins.')
                 if key in {'width', 'height', 'rx', 'ry', 'r', 'stroke-width'} and number < 0:
                     raise ValueError('Negative dimension')
                 if key == 'font-size' and not spec['fonts'][0] <= number <= spec['fonts'][1]:

@@ -101,6 +101,28 @@ return {text:el.textContent,bbox:[b.x,b.y,b.width,b.height],occluded_character_c
 font_family:getComputedStyle(el).fontFamily,font_size:getComputedStyle(el).fontSize};});})()'''
 
 
+# The original center-only contrast sample misses bars crossing the top or
+# bottom of a label. Keep this additional measurement separate so historical
+# render reports and other profiles retain their original contract.
+SOURCE_LABEL_MEASURE = r'''(()=>{
+const rgb=value=>{const m=value.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);return m?m.slice(1).map(Number):null;};
+return [...document.querySelectorAll('svg>text')].map(el=>{
+const foreground=rgb(getComputedStyle(el).fill),bad=new Set();
+for(let i=0;i<el.getNumberOfChars();i++){
+if(!el.textContent[i].trim())continue;
+const c=el.getExtentOfChar(i);
+for(const fx of [.2,.5,.8])for(const fy of [.15,.5,.85]){
+const stack=document.elementsFromPoint(c.x+c.width*fx,c.y+c.height*fy);
+const under=stack.find(n=>n!==el&&['rect','circle','ellipse','line','path','text'].includes(n.localName));
+const paint=under?getComputedStyle(under):null;
+const background=paint?rgb(paint.fill==='none'?paint.stroke:paint.fill):[255,255,255];
+if(foreground&&background&&Math.max(...foreground.map((v,j)=>Math.abs(v-background[j])))<24)bad.add(i);
+}
+}
+return {text:el.textContent,character_indices:[...bad]};
+});})()'''
+
+
 def pdf_checks(path, texts, *, size_mm=(148, 210)):
     env = {'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8'}
     info = subprocess.check_output(['/usr/bin/pdfinfo', str(path)], env=env, text=True, timeout=10)
@@ -114,13 +136,19 @@ def pdf_checks(path, texts, *, size_mm=(148, 210)):
     pages = re.search(r'^Pages:\s+(\d+)$', info, re.M)
     size = re.search(r'^Page size:\s+([\d.]+) x ([\d.]+) pts', info, re.M)
     correct_size = bool(size and abs(float(size[1])-size_mm[0]/25.4*72) < .5 and abs(float(size[2])-size_mm[1]/25.4*72) < .5)
-    same_words = Counter(extracted.split()) == Counter(' '.join(texts).split())
+    actual_words = Counter(extracted.split()); expected_words = Counter(' '.join(texts).split())
+    same_words = actual_words == expected_words
     result = {'pages': int(pages[1]) if pages else None, 'a5_size': correct_size and size_mm == (148, 210),
               'text_word_multiset_preserved': same_words, 'text_extraction': extracted,
               'embedded_fonts': embedded, 'actual_font_names': [row[0] for row in font_rows],
               'raster_image_count': image_count,
               'press_preflight_performed': False}
     if size_mm != (148, 210): result.update(expected_size_mm=list(size_mm), page_size_matches=correct_size)
+    if not same_words:
+        mismatch = {'missing': [w[:40] for w in list((expected_words-actual_words).elements())[:3]],
+                    'unexpected': [w[:40] for w in list((actual_words-expected_words).elements())[:3]]}
+        raise ValueError('PDF text clipped or changed: '+json.dumps(mismatch)+
+                         '; fit each complete text line inside page margins before export.')
     if result['pages'] != 1 or not correct_size or not same_words or not embedded or image_count:
         raise ValueError('PDF page/text export check failed')
     return result
@@ -189,6 +217,11 @@ async def render(source, output, *, purpose='deliverable', profile='leaflet', pn
                     measured = await call('Runtime.evaluate', {'expression': measurement, 'returnByValue': True, 'awaitPromise': True}, session)
                     if 'exceptionDetails' in measured: raise RuntimeError('Text measurement failed')
                     layout = measured['result']['value']
+                    label_background_samples = None
+                    if profile == 'product_source':
+                        samples = await call('Runtime.evaluate', {'expression': SOURCE_LABEL_MEASURE, 'returnByValue': True}, session)
+                        if 'exceptionDetails' in samples: raise RuntimeError('Label contrast measurement failed')
+                        label_background_samples = samples['result']['value']
                     shape_layout = None
                     group_layout = None
                     if profile != 'leaflet':
@@ -215,6 +248,7 @@ async def render(source, output, *, purpose='deliverable', profile='leaflet', pn
                               'render_purpose': purpose,
                               'desktop_used': False, 'sandbox_disabled': False, 'external_page_loaded': False}
                     if shape_layout is not None: result['shape_layout'] = shape_layout
+                    if label_background_samples is not None: result['label_background_samples'] = label_background_samples
                     if group_layout is not None: result['group_layout'] = group_layout
         finally:
             stop_owned_chrome(process)

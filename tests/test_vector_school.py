@@ -225,7 +225,11 @@ def test_pdf_requires_embedded_fonts_vector_export_a5_and_copy(monkeypatch, defe
     if defect == 'raster_page': outputs['/usr/bin/pdfimages'] += '1 0 image 592 840 rgb 3 8 image no 4 0 96 96\n'
     if defect == 'wrong_size': outputs['/usr/bin/pdfinfo'] = 'Pages: 1\nPage size: 612 x 792 pts\n'
     if defect == 'lost_text': outputs['/usr/bin/pdftotext'] = 'fixture'
-    with pytest.raises(ValueError, match='PDF'): pdf_checks(Path('/unused.pdf'), ['fixture text'])
+    with pytest.raises(ValueError, match='PDF') as failure:
+        pdf_checks(Path('/unused.pdf'), ['fixture text'])
+    if defect == 'lost_text':
+        assert '"missing": ["text"]' in str(failure.value)
+        assert 'page margins' in str(failure.value)
 
 
 def edit(element=3, attribute='font-size', before='20', after='22'):

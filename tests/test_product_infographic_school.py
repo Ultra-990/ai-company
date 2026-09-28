@@ -70,6 +70,58 @@ def test_out_of_frame_and_copy_over_product_are_measured_independently():
     assert product.quality_issues(measured)[0]['kind'] == 'source_shape_outside_margin'
 
 
+@pytest.mark.parametrize('width,height,accepted', [(120, 635, False), (200, 200, False),
+                                                  (140, 480, True), (175, 600, True), (0, 480, False)])
+def test_source_ratio_checks_real_silhouette_independent_of_canvas(width, height, accepted):
+    measured = {'shape_layout': [{'bbox': [100, 50, width, height]}]}
+    before = json.dumps(measured)
+    issues = product.source_fidelity_issues(measured)
+    assert (not issues) is accepted
+    assert json.dumps(measured) == before
+    if issues:
+        assert issues[0]['kind'] == 'source_proportions_differ_from_supplier'
+
+
+def test_source_ratio_includes_cap_and_base():
+    measured = {'shape_layout': [{'bbox': [200, 150, 140, 480]}, {'bbox': [240, 70, 60, 80]}]}
+    assert product.source_fidelity_issues(measured)[0]['height'] == 560
+    assert product.source_fidelity_issues({'shape_layout': []})[0]['kind'] == 'missing_product_silhouette'
+
+
+def test_source_label_requires_readable_background_and_real_measurement():
+    measured = {'shape_layout': [{'bbox': [200, 100, 140, 480]}]}
+    assert product.source_fidelity_issues(measured, label_check=True)[0]['kind'] == 'missing_source_label_contrast_measurement'
+    measured['label_background_samples'] = [{'text': product.BRIEF['product_name'], 'character_indices': [0, 1]}]
+    assert product.source_fidelity_issues(measured, label_check=True)[0]['kind'] == 'source_label_background_interference'
+    measured['label_background_samples'][0]['character_indices'] = []
+    assert product.source_fidelity_issues(measured, label_check=True) == []
+
+
+def test_printed_label_must_fit_product_even_when_it_fits_canvas():
+    measured = {'shape_layout': [{'bbox': [210, 100, 180, 620]}],
+                'layout': [{'text': product.BRIEF['product_name'], 'bbox': [184, 400, 232, 50]}]}
+    issue = product.source_fidelity_issues(measured, label_bounds=True)[0]
+    assert issue['kind'] == 'printed_label_outside_product'
+    assert issue['label_bbox'] == [184, 400, 232, 50]
+    measured['layout'][0]['bbox'] = [230, 400, 140, 40]
+    assert product.source_fidelity_issues(measured, label_bounds=True) == []
+
+
+def test_new_package_verifier_enforces_declared_source_proportions(tmp_path, monkeypatch):
+    monkeypatch.setattr(product, 'ROOT', tmp_path)
+    out = tmp_path/'trial'; out.mkdir(); (out/'source').mkdir()
+    for name, value in [('style', style()), ('source', source_scene())]:
+        (out/(name+'-response.json')).write_text(json.dumps({'content': json.dumps(value), 'model': 'fixture', 'digest': 'f'*64}))
+    (out/'source/artwork.svg').write_text(source())
+    (out/'source/render.json').write_text(json.dumps({'layout': [], 'shape_layout': [{'bbox': [240, 105, 120, 635]}]}))
+    report = {'status': 'pending_independent_review', 'brief': product.BRIEF, 'supplier_copy': product.PANELS,
+              'model': 'fixture', 'digest': 'f'*64, 'source_fidelity_contract': product.SOURCE_FIDELITY_CONTRACT,
+              'artifacts': {str(p.relative_to(out)): product.school.checksum(p) for p in out.rglob('*') if p.is_file()}}
+    (out/'report.json').write_text(json.dumps(report))
+    with pytest.raises(ValueError, match='supplier proportions'):
+        product.verify(out)
+
+
 def test_rejected_latest_response_cannot_be_replaced_by_earlier_pass(tmp_path):
     for name in ['source', 'source-revision-1']:
         (tmp_path/(name+'-response.json')).write_text(json.dumps({'content': 'fixture'}))
@@ -97,6 +149,12 @@ def test_style_and_schema_keep_local_values_and_explicit_text_anchors():
     schema = product.schema('panel', style())
     assert 'text-anchor' in schema['properties']['texts']['items']['properties']['attributes']['required']
     assert schema['properties']['texts']['minItems'] == 3
+
+
+def test_numeric_failure_identifies_attribute_value_and_source_canvas():
+    value = source_scene(); value['shapes'][0]['attributes']['y'] = '1940'
+    with pytest.raises(ValueError, match=r'rect.y=1940.*600x800'):
+        product.compile_scene(json.dumps(value), style())
 
 
 def test_continuation_requires_unchanged_failure_and_cannot_repeat_forever(tmp_path, monkeypatch):

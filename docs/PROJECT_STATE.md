@@ -1,5 +1,17 @@
 # Stan projektu AI Company
 
+## Aktualizacja 28.09.2026 — kontrola jakości źródła produktu
+
+Wznowiono rzeczywiste próby Qwena na GPU. Generator sprawdza teraz proporcje
+butelki względem danych dostawcy, położenie całej etykiety oraz kontrast
+w dziewięciu punktach każdego znaku. Osobny audyt ponownie renderuje stare
+źródło bez zmiany jego historii. Błędy współrzędnych i eksportu PDF zawierają
+konkretne wskazówki dla modelu. Kontrakty kontroli są wersjonowane.
+
+Żaden z nowych pakietów nie uzyskał niezależnej akceptacji: model nadal
+popełnia błędy geometrii i czytelności. Nie eksportowano ich do treningu
+ani nie promowano adapterów. Pełne testy systemu: **1740 passed, 21 skipped**.
+
 ## Aktualizacja 28.09.2026 — GPU działa i wznowiono rozwój
 
 Sterownik NVIDIA 595.91.07 działa na kernelu 7.0.0-34, a Ollama wykrywa
