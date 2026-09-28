@@ -87,6 +87,14 @@ wszystkich pięciu usługach — to osobny sprawdzian.
 
 ## Stan i uruchamianie
 
+`scripts/resume_learning_checkpoint.py --write` zapisuje prywatny punkt
+wznowienia po restarcie. Odczyt stosuje tę samą kontrolę zasobów co próby
+modelowe: bezczynność Ollama/ComfyUI, brak aktywnych kontenerów i dostępność
+pamięci GPU. Sama odpowiedź `/api/tags` nie wystarcza. Brak uprawnień,
+timeout lub błędny odczyt oznaczają potrzebę sprawdzenia dostępu, a nie
+zalecenie restartu usługi. Błąd `nvidia-smi` wskazuje diagnostykę sterownika.
+Raport niczego nie uruchamia; wykonanie wymaga świeżego preflightu.
+
 Prywatny stan: `ai-company-workspaces/learning-autopilot/state.json`.
 Właściciel może odczytać ograniczone podsumowanie przez
 `GET /api/learning/status`; odpowiedź nie zawiera ścieżek, promptów ani wyników.

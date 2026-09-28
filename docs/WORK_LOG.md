@@ -4916,3 +4916,28 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   wersjonować kontrakt rekonstrukcji bez osłabienia kontroli pochodzenia.
 - Testy zastanego checkpointu, runnera i bramki: 8 passed. Bez nowego
   treningu, promocji adaptera ani zmiany autorstwa produktów.
+
+## 2026-09-28 — GPU przywrócone, zgodność historycznych rozmów
+
+- Właściciel dokończył konfigurację runsc po zdjęciu immutable z konfiguracji
+  Dockera i utworzeniu kopii. Odblokował aktualizacje sterownika oraz
+  zainstalował spójny NVIDIA 595.91.07 i metapakiet modułów HWE. Po resecie
+  `dpkg --audit` nie zgłasza problemów; RTX 5090 działa na kernelu 34,
+  Ollama wykrywa CUDA i 31,3 GiB VRAM. Poprzedni log pokazał konflikt
+  starej biblioteki Xorg z nowym modułem — prawdopodobną przyczynę
+  zawieszenia obrazu podczas aktualizacji. W bieżącym logu konflikt zniknął.
+- Zamrożono instrukcje panelu dla historycznych request_version 1/2; nowe
+  rewizje używają wersji 3 z jawnymi marginesami i szerokością produktu.
+  Kolektor zweryfikował siedem istniejących pozytywnych rewizji, w tym
+  pięć traconych przez odtwarzanie starej rozmowy nowszym promptem.
+  Żadnych zmian oryginalnych odpowiedzi, obrazów, raportów ani ocen.
+- Checkpoint wykorzystuje rzeczywisty preflight prób: Ollama/ComfyUI,
+  kontenery i wolna pamięć GPU. Odróżnia brak dostępu od odmowy połączenia;
+  awaria nvidia-smi wskazuje diagnostykę GPU. Obserwacja w sandboxie
+  poprawnie zgłosiła PermissionError, a odczyt hosta potwierdził zasoby.
+- Testy początkowe: 40 passed; rozszerzone kierunkowe: 73 passed.
+  Sprawdzono odrzucenie nieznanych wersji oraz zmienionej rozmowy i SVG
+  nawet po aktualizacji hashy. Składnia i git diff --check poprawne.
+- Trzy ograniczone cykle intake przywróciły 222, 224, następnie 225 train;
+  validation/test pozostały 25/50. Stan końcowy: bez błędów, bez treningu.
+- Pełny zestaw testów: **1730 passed, 21 skipped**, 85,74 s.

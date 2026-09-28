@@ -95,8 +95,36 @@ path(d,fill,stroke,stroke-width). Use short paths; optional stroke/stroke-width
 and rect rx/ry allowed. No external resources, scripts, nested elements or CSS.'''
 
 
-def request(package, review_path, part, version=2):
-    if version not in (1, 2): raise ValueError('Known revision request version required')
+# Frozen prompt contracts: never rebuild historical conversations from mutable
+# generation rules. New wording requires a new request version. Output and
+# independent review checks still use the current validators.
+LEGACY_PANEL_RULES = '''1500x1500, 1..12 background/decorative shapes and EXACTLY THREE texts:
+your headline <=28 characters with no numbers, followed by the two exact supplier
+lines in their supplied order. Heading font for headline, body font for facts.
+Font-size44..130, each text line has text-anchor explicitly. Choose product_placement
+x,y,scale (.1..1.5). The compiler inserts ALL original product artwork unchanged
+after background shapes and before text, with only your translate/scale. Do not
+draw another bottle or add product features. Keep the full product within a
+50-unit margin, visibly at least350 units tall, and its bounding box separate
+from the three infographic lines. Never overlap text lines. Keep the series
+coherent but use a purposeful layout for each different communication goal.'''
+CURRENT_PANEL_RULES = '''1500x1500, 1..12 background/decorative shapes and EXACTLY THREE texts:
+your headline <=28 characters with no numbers, followed by the two exact supplier
+lines in their supplied order. Heading font for headline, body font for facts.
+        Font-size44..130, each text line has text-anchor explicitly. Keep every rendered
+        text bounding box within x/y 50..1450; reserve at least 100 units below the
+        lowest line before choosing its baseline. Choose product_placement
+x,y,scale (.1..1.5). The compiler inserts ALL original product artwork unchanged
+after background shapes and before text, with only your translate/scale. Do not
+draw another bottle or add product features. Keep the full product within a
+50-unit margin, visibly at least 120 units wide and 350 units tall, and its bounding box separate
+from the three infographic lines. Never overlap text lines. Keep the series
+coherent but use a purposeful layout for each different communication goal.'''
+REQUEST_VERSION = 3
+
+
+def request(package, review_path, part, version=REQUEST_VERSION):
+    if type(version) is not int or version not in (1, 2, 3): raise ValueError('Known revision request version required')
     _, style, source_scene, source, image, comments = evidence(package, review_path, part)
     data = {'brief': product.BRIEF, 'style': style, 'independent_comments': comments}
     if part == 'cap':
@@ -106,7 +134,7 @@ def request(package, review_path, part, version=2):
         if version == 1: data['original_scene'] = product.parse(product.accepted_raw(package, part))
         data.update(supplier_lines=product.PANELS[part],
             product_reference=read(package/'product-reference.json'),
-            task='Recompose this infographic to address the visual comments, not merely to pass bounds. Use all the page purposefully. Keep the original product unchanged, both supplier lines exact, and a concise headline. Return a complete panel scene. '+product.SCENE_RULES.split('PANEL: ', 1)[1])
+            task='Recompose this infographic to address the visual comments, not merely to pass bounds. Use all the page purposefully. Keep the original product unchanged, both supplier lines exact, and a concise headline. Return a complete panel scene. '+(LEGACY_PANEL_RULES if version < 3 else CURRENT_PANEL_RULES))
     return {'system': SYSTEM, 'user': json.dumps(data), 'image_source': str(image), 'image_sha256': school.checksum(image),
             'format': output_schema(part, style)}, (style, source_scene, source)
 
@@ -118,7 +146,7 @@ def run(package, review_path, part):
     code = out/'implementation'; code.mkdir()
     for name in ('product_visual_revision.py', 'product_infographic_school.py', 'render_school_svg.py', 'vector_school_contract.py'):
         shutil.copyfile(Path(__file__).parent/name, code/name)
-    report = {'schema': 'product-visual-revision.v1', 'request_version': 2, 'status': 'running', 'part': part,
+    report = {'schema': 'product-visual-revision.v1', 'request_version': REQUEST_VERSION, 'status': 'running', 'part': part,
         'package': str(package), 'package_sha256': school.checksum(package/'report.json'),
         'source_review': str(review_path), 'source_review_sha256': school.checksum(review_path),
         'model': config['model'], 'digest': config['digest'], 'config': config, 'resources_before': resources,

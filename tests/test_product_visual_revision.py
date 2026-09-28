@@ -77,3 +77,68 @@ def test_request_versions_preserve_original_serialization_and_remove_layout_anch
     assert list(json.loads(old['user'])) == ['brief', 'style', 'independent_comments', 'original_scene', 'supplier_lines', 'product_reference', 'task']
     assert 'original_scene' not in json.loads(new['user'])
     assert json.loads(new['user'])['supplier_lines'] == revision.product.PANELS['care']
+
+
+def test_prompt_history_survives_changes_to_live_generator(tmp_path, monkeypatch):
+    image = tmp_path/'fixture.png'; image.write_bytes(b'fixture image')
+    monkeypatch.setattr(revision, 'evidence', lambda *args: ({}, style(), scene(), 'fixture', image, ['Fixture review.']))
+    monkeypatch.setattr(revision, 'read', lambda p: {'fixture': 'measured reference'})
+    monkeypatch.setattr(revision.product, 'accepted_raw', lambda *args: '{}')
+    snapshots = {v: revision.request(tmp_path, tmp_path/'review', 'care', version=v)[0] for v in (1, 2, 3)}
+    assert 'visibly at least350 units tall' in snapshots[2]['user']
+    assert '120 units wide' not in snapshots[2]['user']
+    assert '120 units wide' in snapshots[3]['user']
+    assert '50..1450' in snapshots[3]['user']
+    monkeypatch.setattr(revision.product, 'SCENE_RULES', 'PANEL: unrelated future contract')
+    for v, before in snapshots.items():
+        assert revision.request(tmp_path, tmp_path/'review', 'care', version=v)[0] == before
+    assert revision.request(tmp_path, tmp_path/'review', 'care')[0] == snapshots[3]
+
+
+@pytest.mark.parametrize('version', [0, 4, True, 2.0, '2'])
+def test_unknown_prompt_versions_cannot_fall_back_to_current(tmp_path, version):
+    with pytest.raises(ValueError, match='Known revision request version'):
+        revision.request(tmp_path, tmp_path/'review', 'care', version=version)
+
+
+@pytest.mark.parametrize('tamper', ['prompt', 'answer', 'artwork'])
+def test_authentication_rejects_rehashed_conversation_or_artwork_changes(tmp_path, monkeypatch, tamper):
+    monkeypatch.setattr(revision, 'ROOT', tmp_path)
+    image = tmp_path/'input.png'; image.write_bytes(b'fixture image')
+    package = tmp_path/'package'; package.mkdir()
+    (package/'report.json').write_text('{}')
+    review = tmp_path/'source-review.json'; review.write_text('{}')
+    source = revision.product.compile_scene(json.dumps(scene()), style())
+    monkeypatch.setattr(revision, 'evidence', lambda *args: ({}, style(), scene(), source, image, ['Fixture review.']))
+    monkeypatch.setattr(revision.product, 'quality_issues', lambda *a, **kw: [])
+    monkeypatch.setattr(revision, 'pdf_checks', lambda *a, **kw: {})
+    out = tmp_path/'revision'; out.mkdir(); folder = out/'attempt-0'; folder.mkdir()
+    prompt, inputs = revision.request(package, review, 'cap', version=2)
+    prompt['config'] = {}
+    answer = {'model': 'fixture', 'digest': 'a'*64, 'content': json.dumps({'cap_shapes': [shape('#222222', 170)]})}
+    svg = revision.apply_answer(answer['content'], 'cap', *inputs)
+    for name, content in {'request.json': json.dumps(prompt), 'response.json': json.dumps(answer),
+                          'artwork.svg': svg, 'preview.png': 'fixture', 'preview.pdf': 'fixture',
+                          'render.json': '{}'}.items():
+        (folder/name).write_text(content)
+    report = {'schema': 'product-visual-revision.v1', 'status': 'pending_independent_review',
+              'family': revision.product.BRIEF['family'], 'split': 'train', 'accepted_attempt': 0,
+              'package': str(package), 'package_sha256': revision.school.checksum(package/'report.json'),
+              'source_review': str(review), 'source_review_sha256': revision.school.checksum(review),
+              'part': 'cap', 'request_version': 2, 'config': {}, 'model': 'fixture', 'digest': 'a'*64}
+    def save_report():
+        report['artifacts'] = {str(p.relative_to(out)): revision.school.checksum(p) for p in folder.iterdir()}
+        (out/'report.json').write_text(json.dumps(report))
+    save_report()
+    assert revision.authenticate(out/'report.json')[3] == answer
+    if tamper == 'prompt':
+        prompt['user'] += ' changed instruction'
+        (folder/'request.json').write_text(json.dumps(prompt))
+    elif tamper == 'answer':
+        answer['content'] = json.dumps({'cap_shapes': [shape('#222222', 190)]})
+        (folder/'response.json').write_text(json.dumps(answer))
+    else:
+        (folder/'artwork.svg').write_text(svg+'\n')
+    save_report()
+    with pytest.raises(ValueError, match='differs'):
+        revision.authenticate(out/'report.json')

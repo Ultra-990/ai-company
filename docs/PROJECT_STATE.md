@@ -1,5 +1,14 @@
 # Stan projektu AI Company
 
+## Aktualizacja 28.09.2026 — GPU działa i wznowiono rozwój
+
+Sterownik NVIDIA 595.91.07 działa na kernelu 7.0.0-34, a Ollama wykrywa
+RTX 5090 przez CUDA. Właściciel potwierdził czysty audyt pakietów.
+Naprawiono rekonstrukcję historycznych instrukcji rewizji produktowych:
+zmiany promptu generatora nie usuwają wcześniej zatwierdzonych rozmów
+z intake. Nowy checkpoint sprawdza zasoby i poprawnie rozpoznaje brak
+uprawnień odczytu. Żaden adapter nie został w tym etapie wdrożony.
+
 ## Aktualizacja 28.09.2026 — wznowienie i niedostępny GPU
 
 Po restarcie działa Ollama, ale kernel `7.0.0-34-generic` nie ma modułu

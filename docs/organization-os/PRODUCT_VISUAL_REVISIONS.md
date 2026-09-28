@@ -21,6 +21,13 @@ układ. Druga wersja zachowuje obraz, pomiary produktu, styl i fakty, lecz
 nie podaje starych współrzędnych strony. Odtwarzanie historycznych rozmów
 zachowuje dokładną serializację pierwszej wersji.
 
+Od 28.09.2026 treść instrukcji panelu jest zamrożona osobno dla wersji
+żądań 1/2 oraz 3. Wersja 3 dodaje jawny dolny margines i szerokość produktu.
+Zmiana instrukcji generatora nie zmienia historycznych rozmów: pięć wcześniej
+przyjętych rewizji ponownie przeszło pełny odczyt kolektora. Nie modyfikowano
+ich odpowiedzi, raportów ani ocen. Bieżące walidatory wyniku nadal obowiązują;
+testy odrzucają zmienioną rozmowę lub grafikę nawet po przeliczeniu hashy.
+
 Każda próba zachowuje żądanie, odpowiedź, PNG, PDF, SVG, pomiary i hashe.
 Po błędzie pomiarów dopuszczone są dwie poprawki lokalnego modelu.
 Samo przejście pomiarów oznacza tylko oczekiwanie na niezależną ocenę.
