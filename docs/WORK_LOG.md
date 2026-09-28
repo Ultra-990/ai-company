@@ -4881,3 +4881,13 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   `50..1450` oraz rezerwy 100 jednostek pod najniższą linią. Testy: `23 passed`.
 - Cel został wstrzymany na prośbę użytkownika; żadne adaptery nie zostały
   wypromowane ani podłączone do produkcji.
+
+## 2026-09-28 — checkpoint wznowienia po restarcie
+
+- Dodano obserwacyjny `scripts/resume_learning_checkpoint.py` oraz dwa testy.
+  Skrypt odczytuje commit, czystość worktree, macierz kwalifikacji i dostępność
+  lokalnego Ollama, po czym zapisuje prywatny `resume-checkpoint.json` z jednym
+  bezpiecznym następnym krokiem. Nie uruchamia usług, wag ani promocji.
+- Po restarcie Ollama nie odpowiadała (`PermissionError` w izolowanym procesie),
+  więc następny krok został poprawnie wskazany jako przywrócenie Ollama i
+  ponowny preflight. Testy checkpointu: `2 passed`.
