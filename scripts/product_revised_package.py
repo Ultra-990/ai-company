@@ -63,7 +63,7 @@ def verify(out):
             raise ValueError('Assembly artifact changed')
     original = revision.read(package/'report.json')
     if ((report['model'], report['digest']) != (original['model'], original['digest'])
-            or report['annotation_contract'] not in ('functional-callouts.v2', 'functional-callouts.v3')):
+            or report['annotation_contract'] not in ('functional-callouts.v2', 'functional-callouts.v3', 'functional-callouts.v4')):
         raise ValueError('Assembly model and annotation contract must remain bound')
     placement = original.get('placement_contract', product.LEGACY_PLACEMENT)
     style = product.style_value(product.accepted_raw(package, 'style'))

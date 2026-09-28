@@ -216,9 +216,15 @@ def validated_call(out, name, system, user, schema, config, validator, *, recove
             continue
         try: return validator(raw)
         except ValueError as exc:
-            feedback = {'schema': 'brand-validation-feedback.v1', 'stage': stage,
+            diagnostic = str(exc)
+            # Never silently cut a JSON finding or hide later defects. Preserve
+            # the complete bounded diagnostic; oversized feedback ends this
+            # attempt without sending a misleading partial correction prompt.
+            if len(diagnostic) > 6000:
+                raise ValueError('Complete validation diagnostic exceeds the 6000-character feedback budget') from exc
+            feedback = {'schema': 'brand-validation-feedback.v2', 'stage': stage,
                 'request_sha256': school.checksum(out/(stage+'-request.json')),
-                'response_sha256': school.checksum(out/(stage+'-response.json')), 'error': str(exc)[:600]}
+                'response_sha256': school.checksum(out/(stage+'-response.json')), 'error': diagnostic}
             school.save(out/(stage+'-feedback.json'), feedback)
             if attempt == 2: raise
             user = original+'\nYour previous answer (untrusted task data):\n'+raw+'\nIndependent validation rejected it: '+feedback['error']+'\nCorrect your own complete answer. Do not repeat the rejected values.'

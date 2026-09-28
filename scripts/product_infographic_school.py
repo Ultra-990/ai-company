@@ -27,6 +27,7 @@ from scripts import vector_school as school
 from scripts import vector_structured_source as scene
 from scripts import product_model_feedback as feedback
 from scripts import product_callouts as callouts
+from scripts import product_silhouette as silhouette
 from scripts.prepare_training_data import unique_object
 from scripts.render_school_svg import render, pdf_checks
 from scripts.vector_school_contract import NS, PROFILES, validate_svg, layout_issues
@@ -49,6 +50,7 @@ PANELS = {
 DEFAULT_BRIEF = deepcopy(BRIEF)
 DEFAULT_PANELS = deepcopy(PANELS)
 SOURCE_FIDELITY_CONTRACT = 'bottle-visible-parts.v4'
+SOURCE_INSTRUCTION_CONTRACT = 'explicit-source-fonts-and-shape-budget.v1'
 PANEL_FIDELITY_CONTRACT = 'text-and-lines.v2'
 LEGACY_PLACEMENT = 'canvas-transform.v1'
 PLACEMENT_CONTRACT = 'extended-transform.v2'
@@ -293,7 +295,9 @@ No scripts, links, images, code, gradients, CSS, nested shapes, or extra fields.
 Text x is the explicit start/middle/end anchor; y is baseline. All text must fit.
 SOURCE: 600x800 transparent canvas, 3..20 shapes, EXACTLY ONE name label printed
 on the bottle. Draw the full bottle inside a 24-unit margin; no page background,
-floor, extra props or dimension labels. Label uses heading_font.
+floor, extra props or dimension labels. Label uses heading_font and font-size
+24..80. The shape-count maximum is a limit, not a target: include only necessary
+shapes, without padding the answer with redundant or tiny decorative elements.
 PANEL: 1500x1500, 1..12 background/decorative shapes and EXACTLY THREE texts:
 your headline <=28 characters with no numbers, followed by the two exact supplier
 lines in their supplied order. Heading font for headline, body font for facts.
@@ -340,7 +344,7 @@ identify the body/lid on the drawing. You choose all shapes and coordinates.'''
         if placement_contract == PLACEMENT_CONTRACT else '')
 
 
-def checked_scene(out, stage, style, panel=None, product=None, *, placement_contract=LEGACY_PLACEMENT, annotation_contract=None):
+def checked_scene(out, stage, style, panel=None, product=None, *, placement_contract=LEGACY_PLACEMENT, annotation_contract=None, source_contour=False):
     callouts.validate_contract(annotation_contract)
     attempt = 0
     def validate(raw):
@@ -359,6 +363,10 @@ def checked_scene(out, stage, style, panel=None, product=None, *, placement_cont
                                placement_contract=placement_contract, line_check=bool(panel))
         if not panel:
             issues += source_fidelity_issues(measured, label_check=True, label_bounds=True, style=style)
+            if source_contour:
+                observed = silhouette.inspect(folder/'preview.png', style)
+                school.save(folder/'contour.json', observed)
+                issues += observed['issues']
         elif annotation_contract:
             issues += callouts.issues(measured, panel, style, contract=annotation_contract)
         if issues: raise feedback.SceneFailure('Correct your own measured layout: '+json.dumps(issues), folder, measured)
@@ -463,6 +471,10 @@ def verify(out):
     callouts.validate_contract(annotation_contract)
     if report.get('transport_recovery_contract') not in (None, 'bounded-incomplete-retry.v1'):
         raise ValueError('Unknown incomplete-answer recovery contract')
+    if report.get('source_contour_contract') not in (None, silhouette.CONTRACT):
+        raise ValueError('Unknown source contour contract')
+    if report.get('source_instruction_contract') not in (None, SOURCE_INSTRUCTION_CONTRACT):
+        raise ValueError('Unknown source instruction contract')
     panel_render_profile = panel_profile(placement_contract)
     for name, digest in report['artifacts'].items():
         path = out/name
@@ -499,6 +511,10 @@ def verify(out):
                 label_bounds=fidelity_contract in ('bottle-proportions-label.v3', SOURCE_FIDELITY_CONTRACT),
                 style=style if fidelity_contract == SOURCE_FIDELITY_CONTRACT else None):
             raise ValueError('Source does not match supplier proportions or label contrast')
+        if name == 'source' and report.get('source_contour_contract'):
+            observed = silhouette.inspect(folder/'preview.png', style)
+            if observed != parse((folder/'contour.json').read_text()) or observed['issues']:
+                raise ValueError('Unresolved or changed measured source contour')
         actual_pdf = pdf_checks(folder/'preview.pdf', validate_svg(svg, profile=profile)['texts'], size_mm=PROFILES[profile]['size_mm'])
         with Image.open(folder/'preview.png') as image:
             if image.size != (PROFILES[profile]['width'], PROFILES[profile]['height']): raise ValueError('PNG size changed')
@@ -584,7 +600,7 @@ def audit_source(package, *, include_panels=False, functional_callouts=False):
     return out, report
 
 
-def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False, recover_incomplete=False):
+def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False, recover_incomplete=False, source_contour=False):
     if recover_incomplete and visual_feedback:
         raise ValueError('Incomplete-answer recovery currently requires the text feedback caller')
     ROOT.mkdir(exist_ok=True)
@@ -607,6 +623,9 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         raise ValueError('Choose continuation or source reuse')
     if resume is not None:
         resume = Path(resume); previous, failed_stage, correction = resume_input(resume)
+        if source_contour and previous.get('source_contour_contract') != silhouette.CONTRACT:
+            raise ValueError('A resume preserves its source contour contract; start a fresh exercise')
+        source_contour = previous.get('source_contour_contract') == silhouette.CONTRACT
         placement_contract = previous.get('placement_contract', LEGACY_PLACEMENT)
         # Inherited finished panels must keep their original acceptance contract.
         previous_annotations = previous.get('annotation_contract')
@@ -631,11 +650,13 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
                     shutil.copyfile(path, out/path.name)
                     if path.name.endswith('-response.json'): inherited.append(path.name)
     implementation = out/'implementation'; implementation.mkdir()
-    for name in ('product_infographic_school.py', 'product_callouts.py', 'product_model_feedback.py', 'brand_school.py', 'vector_school_contract.py', 'render_school_svg.py'):
+    for name in ('product_infographic_school.py', 'product_callouts.py', 'product_model_feedback.py', 'product_silhouette.py', 'brand_school.py', 'vector_school_contract.py', 'render_school_svg.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
     report = {'schema': 'product-infographic-school.v1', 'status': 'running', 'brief': BRIEF, 'supplier_copy': PANELS,
               'source_fidelity_contract': SOURCE_FIDELITY_CONTRACT,
+              'source_instruction_contract': SOURCE_INSTRUCTION_CONTRACT,
+              'source_contour_contract': silhouette.CONTRACT if source_contour else None,
               'panel_fidelity_contract': PANEL_FIDELITY_CONTRACT,
               'placement_contract': placement_contract,
               'annotation_contract': annotation_contract,
@@ -668,7 +689,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         school.save(out/'style.json', style); report['stages'].append('style')
         supplier_height, supplier_diameter = BRIEF.get('physical_dimensions_cm', [24, 7])
         product = produce('source', SYSTEM+'\n'+stage_rules('source', focused=focused_stages), json.dumps({'brief': BRIEF, 'style': style,
-            'task': f'ACTIVE STAGE: SOURCE ONLY. Draw the synthetic reference product. The measured silhouette height/width must match {supplier_height}/{supplier_diameter} within 10%, including the cap and base. Make the silhouette recognizable as a cylindrical bottle: curved shoulders, a shaped screw cap and rounded base. A plain square-ended rectangle with a rectangular lid is insufficient. Keep the printed label legible and inside the body; do not add decorative blocks behind or under the name. You choose all actual geometry.'}), schema('source', style), checked_scene(out, 'source', style))
+            'task': f'ACTIVE STAGE: SOURCE ONLY. Draw the synthetic reference product. The measured silhouette height/width must match {supplier_height}/{supplier_diameter} within 10%, including the cap and base. Make the silhouette recognizable as a cylindrical bottle: curved shoulders, a shaped screw cap and rounded base. A plain square-ended rectangle with a rectangular lid is insufficient. Keep the printed label legible and inside the body; do not add decorative blocks behind or under the name. You choose all actual geometry.'}), schema('source', style), checked_scene(out, 'source', style, source_contour=source_contour))
         report['stages'].append('source')
         reference = product_reference(out, product, style=style if annotation_contract else None)
         school.save(out/'product-reference.json', reference)
@@ -688,7 +709,12 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
             profile = 'product_source' if name == 'source' else panel_render_profile
             school.check_idle(); measured = asyncio.run(render(svg, folder, profile=profile)); school.save(folder/'render.json', measured)
             if quality_issues(measured, panel=name != 'source', panel_contrast=True, placement_contract=placement_contract, line_check=True): raise ValueError('Final render differs from accepted geometry')
-            if name == 'source': continue
+            if name == 'source':
+                if source_contour:
+                    observed = silhouette.inspect(folder/'preview.png', style)
+                    school.save(folder/'contour.json', observed)
+                    if observed['issues']: raise ValueError('Final source contour differs from accepted geometry')
+                continue
             if annotation_contract and callouts.issues(measured, name, style, contract=annotation_contract): raise ValueError('Final functional annotation check failed')
             small = folder/'small'; small.mkdir(); school.check_idle()
             preview = asyncio.run(render(svg, small, profile=profile, png_scale=.4)); school.save(small/'render.json', preview)
@@ -727,6 +753,7 @@ if __name__ == '__main__':
     parser.add_argument('--visual-feedback', action='store_true', help='Give the model its latest rejected preview and complete measured feedback')
     parser.add_argument('--functional-callouts', action='store_true', help='Experimental measured dimension/material annotations and bounded headline claim checks')
     parser.add_argument('--recover-incomplete', action='store_true', help='Retry truncated/closed responses within the same three-attempt stage budget')
+    parser.add_argument('--source-contour', action='store_true', help='Experimental pixel checks for square shoulders and notched bases in the synthetic bottle exercise')
     parser.add_argument('--focused-stages', action=argparse.BooleanOptionalAction, default=True,
                         help='Separate source and panel instructions (default); disable only for comparison')
     parser.add_argument('--sampling-profile', choices=('bounded-default.v1', 'qwen-general-trial.v1', 'qwen-deliberate-trial.v1'),
@@ -763,7 +790,7 @@ if __name__ == '__main__':
         print(json.dumps(verify_assembled(args.verify_assembled)))
     elif args.recompose:
         _, result = run(recompose=args.recompose, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages,
-                        sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete)
+                        sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete, source_contour=args.source_contour)
         raise SystemExit(int(result['status'] == 'failed'))
     elif args.audit_package:
         out, result = audit_source(args.audit_package, include_panels=True, functional_callouts=args.functional_callouts)
@@ -779,10 +806,10 @@ if __name__ == '__main__':
         from scripts.product_feedback_comparison import run as compare_feedback
         _, result = compare_feedback(); raise SystemExit(int(result['status'] == 'failed'))
     elif args.run:
-        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages, sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete); raise SystemExit(int(result['status'] == 'failed'))
+        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages, sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete, source_contour=args.source_contour); raise SystemExit(int(result['status'] == 'failed'))
     elif args.resume:
         _, result = run(args.resume, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages,
-                        sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete); raise SystemExit(int(result['status'] == 'failed'))
+                        sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete, source_contour=args.source_contour); raise SystemExit(int(result['status'] == 'failed'))
     elif args.verify: print(json.dumps(verify(args.verify)))
     elif args.audit_source:
         out, result = audit_source(args.audit_source)

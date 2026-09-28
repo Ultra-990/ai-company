@@ -127,7 +127,9 @@ def validate_svg(source, *, profile='leaflet'):
                 if key in {'width', 'height', 'rx', 'ry', 'r', 'stroke-width'} and number < 0:
                     raise ValueError('Negative dimension')
                 if key == 'font-size' and not spec['fonts'][0] <= number <= spec['fonts'][1]:
-                    raise ValueError('Text size range')
+                    raise ValueError(f'Text size range: {tag}.{key}={value}; allowed '
+                                     f'{spec["fonts"][0]}..{spec["fonts"][1]} for {profile}. '
+                                     'Choose a permitted size and keep the complete label within its visible background.')
             elif key in {'fill', 'stroke'}:
                 if not re.fullmatch(r'#[0-9a-fA-F]{6}|none', value):
                     raise ValueError('Literal colors only')

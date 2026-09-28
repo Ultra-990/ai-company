@@ -241,11 +241,18 @@ def test_numeric_failure_identifies_attribute_value_and_source_canvas():
         product.compile_scene(json.dumps(value), style())
 
 
+def test_font_failure_identifies_actual_value_and_allowed_source_range():
+    value = source_scene(); value['texts'][0]['attributes']['font-size'] = '14'
+    with pytest.raises(ValueError, match=r'font-size=14; allowed 24..80 for product_source'):
+        product.compile_scene(json.dumps(value), style())
+
+
 def test_focused_stage_instructions_exclude_the_other_stage_contract():
     source = product.stage_rules('source', focused=True)
     panel = product.stage_rules('capacity', focused=True)
     assert '600x800' in source and '1500x1500' not in source
     assert 'product_placement' not in source and 'EXACTLY THREE' not in source
+    assert '24..80' in source and 'limit, not a target' in source
     assert '1500x1500' in panel and '600x800' not in panel
     assert 'EXACTLY ONE name' not in panel
     assert product.stage_rules('source') == product.SCENE_RULES

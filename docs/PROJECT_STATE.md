@@ -1,5 +1,26 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — odbiór egzaminu v2 i diagnostyka poprawek
+
+Egzamin COVE/MESA/PEAK ukończony: technicznie **0/3 bazowy, 1/3 z
+rozumowaniem**, ale niezależny ogląd odrzucił ukończony COVE za kanciaste
+barki, wadliwe połączenie podstawy i ślad przecinający nazwę. Odbiór pełnych
+pakietów: **0/3 w obu profilach**. Model nadal nie jest zakwalifikowany.
+Nowy zbiorczy weryfikator wymaga oceny źródła i wszystkich czterech paneli,
+związanej hashami z niezmienionym pakietem; nie utożsamia testów z odbiorem.
+
+Naprawiono ujawnione ograniczenia narzędzi: jawny zakres czcionki źródła
+24–80, komunikat z błędną wartością i granicami, pełny raport korekt zamiast
+ucięcia po 600 znakach oraz pomiar styku łącznika z widoczną częścią produktu
+z tolerancją jednej jednostki płótna. Osobny audyt niezmienionego odrzuconego
+PEAK potwierdził fałszywy alarm przy odległości 0,25 jednostki. Historyczny
+wynik pozostaje zachowany. Opcjonalny pomiar obrysu wykrywa kanciaste barki
+i przewężenie podstawy; dotyczy tylko syntetycznej płaskiej butelki.
+
+Pierwsza próba rozwojowa profilu bazowego po doprecyzowaniu typografii
+przeszła składnię, lecz nadal nie poprawiła proporcji i zbyt szerokiej etykiety.
+Nie jest to dowód poprawy modelu. Wagi, routing i odbiór komercyjny bez zmian.
+
 ## Aktualizacja 29.09.2026 — pełne nowe briefy ujawniły dalsze ograniczenia
 
 Zamrożone porównanie trzech nowych pełnych zleceń dało **0/3** zarówno

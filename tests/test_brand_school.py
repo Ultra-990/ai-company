@@ -99,6 +99,30 @@ def test_invalid_plan_returns_to_model_without_replacing_its_answer(tmp_path, mo
     assert (tmp_path/'plan-feedback.json').exists()
 
 
+@pytest.mark.parametrize('size', [1500, 6001])
+def test_correction_never_silently_truncates_validation_diagnostics(tmp_path, monkeypatch, size):
+    diagnostic = 'First finding. '+('x'*size)+' Final finding.'
+    calls = []
+    def call(out, stage, system, user, schema, config):
+        calls.append(user)
+        brand.school.save(out/(stage+'-request.json'), {'user': user})
+        brand.school.save(out/(stage+'-response.json'), {'content': 'bad' if len(calls) == 1 else 'good'})
+        return 'bad' if len(calls) == 1 else 'good'
+    def validate(raw):
+        if raw == 'bad': raise ValueError(diagnostic)
+        return raw
+    monkeypatch.setattr(brand, 'call', call)
+    if size > 6000:
+        with pytest.raises(ValueError, match='6000-character feedback budget'):
+            brand.validated_call(tmp_path, 'scene', 'system', 'brief', {}, {}, validate)
+        assert len(calls) == 1
+    else:
+        assert brand.validated_call(tmp_path, 'scene', 'system', 'brief', {}, {}, validate) == 'good'
+        saved = json.loads((tmp_path/'scene-feedback.json').read_text())
+        assert saved['schema'] == 'brand-validation-feedback.v2' and saved['error'] == diagnostic
+        assert diagnostic in calls[1]
+
+
 def test_logo_collision_and_small_print_are_not_hidden_by_valid_svg():
     measured = {'layout': [{'text': 'fixture', 'bbox': [100, 200, 250, 48]}],
                 'shape_layout': [{'tag': 'path', 'bbox': [90, 190, 300, 60]}]}

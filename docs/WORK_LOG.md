@@ -5183,3 +5183,39 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   uruchomiono osobno. Limit bajtów protokołu różni się między profilami
   (1/4 MiB, jawnie w manifeście); limity czasu, kontekstu, tokenów i finalnego
   tekstu są wspólne. To uwzględnia dodatkowe koperty JSON rozumowania.
+
+## 2026-09-29 — odbiór v2, kompletność informacji i pomiar styku
+
+- `full-exam-98ppvjtb` zakończył sześć wykonań bez zmiany kodu w trakcie.
+  Technicznie bazowy 0/3, rozumowanie 1/3. Wszystkie bazowe źródła odrzucono
+  za rozmiar tekstu. MESA zakończyła materiałami i `truncated_output` w
+  ostatniej dozwolonej próbie; PEAK odrzucił pomiar połączenia z korpusem.
+- COVE `series-cho1e6w6` miał czytelne fakty i funkcjonalne oznaczenia,
+  ale bezpośredni ogląd źródła i czterech dostaw odrzucił kwadratowe barki,
+  przewężenie połączenia podstawy i jasny ślad przecinający nazwę.
+  Zachowano negatywną ocenę z hashami. Zbiorczy niezależny weryfikator
+  potwierdził **0/3 odebranych pakietów w obu profilach**. Brak odbioru
+  nie jest zmieniany w sukces przez techniczny status pakietu.
+- Instrukcja źródła nie podawała dozwolonego font-size 24–80, a błąd
+  `Text size range` nie podawał wartości ani zakresu. Uzupełniono obie
+  informacje i wyjaśniono, że maksymalna liczba kształtów nie jest celem.
+  Próba bazowa `series-f0eetxeg` przeszła do pomiaru źródła, lecz nie
+  poprawiła proporcji i etykiety. Nadal niezaliczona, bez promocji modelu.
+- Ta próba ujawniła ucinanie raportów korekt po 600 znakach, wewnątrz
+  listy usterek. Feedback v2 przekazuje całą diagnozę do 6000 znaków;
+  większa kończy próbę jawnie. Oryginalny limit całego żądania pozostaje.
+- Opcjonalny `--source-contour` mierzy rzeczywisty kolor korpusu w PNG.
+  Wykrył oba błędy COVE i przepuścił wcześniej odebrane źródło FIELD.
+  Usunięto fałszywą interpretację kolorowych pasów jako przerw w bryle.
+  To ograniczony pomiar płaskiej syntetycznej butelki, nie pełny odbiór.
+- Ogląd ostatniego PEAK ujawnił koniec łącznika 0,25 jednostki od obrysu.
+  Kontrakt oznaczeń v4 akceptuje jednoznaczną widoczną farbę do jednej
+  jednostki płótna; dokładne trafienie w złą część ma pierwszeństwo przed
+  sąsiedztwem. Dawne v1–v3 zachowane. Osobny `callout-audit-6oy3ou_y`
+  ponownie wyrenderował literalny odrzucony panel: jedna odmowa v3 → zero
+  v4. Nie ukończyło to historycznego pakietu ani nie zmieniło egzaminu.
+- Testy kierunkowe: **91 passed** oraz po kolejnych poprawkach
+  **92 passed, 1 skipped**. Rzeczywisty izolowany test przeglądarkowy:
+  **17 passed**, w tym kontakt 0,25, brak kontaktu przy 2 jednostkach,
+  rozróżnianie części i historyczne kontrakty. Pełna regresja:
+  **1837 passed, 22 skipped**, 87,20 s. Wagi i routing bez zmian.

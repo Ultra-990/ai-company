@@ -93,6 +93,23 @@ def test_crossing_leaders_are_rejected_without_rewriting_historical_contract():
     assert callouts.crossing_point(segment([0, 0], [100, 0]), segment([100, 0], [100, 100])) is None
 
 
+def test_subpixel_contact_is_new_version_only_and_cannot_override_wrong_or_ambiguous_part():
+    data = material_data(); line = data['panel_line_segments'][0]
+    body = callouts.paint(STYLE['body_color']); cap = callouts.paint(STYLE['cap_color'])
+    line.update(product_endpoint_fills=[None, None], endpoint_contact_radius=1,
+                product_endpoint_contact_fills=[[body], []])
+    assert callouts.issues(data, 'materials', STYLE) == []
+    assert callouts.issues(data, 'materials', STYLE, contract=callouts.RECTANGLE_CONTRACT)
+    line['product_endpoint_fills'][0] = cap
+    assert callouts.issues(data, 'materials', STYLE)
+    line['product_endpoint_fills'][0] = None
+    line['product_endpoint_contact_fills'][0] = [body, cap]
+    assert callouts.issues(data, 'materials', STYLE)
+    line['product_endpoint_contact_fills'][0] = [body]
+    line['endpoint_contact_radius'] = 6
+    assert callouts.issues(data, 'materials', STYLE)
+
+
 @pytest.mark.parametrize('headline', ['Built From What Lasts', 'Leakproof assurance', 'Certified quality', 'Sustainable choice'])
 def test_unsubstantiated_headline_fails_even_with_exact_supplier_copy(headline):
     data = measured('capacity'); data['layout'][1]['text'] = headline
@@ -124,6 +141,9 @@ def test_browser_endpoints_use_frontmost_part_paint_and_detect_invisible_lines(t
         svg += f'<line x1="350" y1="{y}" x2="550" y2="{y}" stroke="{color}" stroke-width="4"/>'
     svg += '<rect x="350" y="578" width="200" height="4" fill="#112233"/>'
     svg += '<rect x="350" y="478" width="200" height="4" fill="#FFFFFF"/>'
+    svg += '<line x1="700.25" y1="650" x2="900" y2="650" stroke="#112233" stroke-width="4"/>'
+    svg += '<line x1="702" y1="675" x2="900" y2="675" stroke="#112233" stroke-width="4"/>'
+    svg += '<rect x="700.25" y="620" width="200" height="4" fill="#112233"/>'
     svg += '<g transform="translate(0 0) scale(1)"><rect x="500" y="500" width="200" height="200" fill="#225588"/>'
     svg += '<rect x="500" y="500" width="200" height="100" fill="#112233"/>'
     svg += text('Fixture', 1000)+'</g>'+text('Probe one', 100)+text('Probe two', 200)+text('Probe three', 300)+'</svg>'
@@ -136,3 +156,9 @@ def test_browser_endpoints_use_frontmost_part_paint_and_detect_invisible_lines(t
     assert lines[4]['kind'] == 'rectangle_bar' and lines[4]['visible_samples'] > 0
     assert lines[4]['product_endpoint_fills'] == [None, callouts.paint(STYLE['cap_color'])]
     assert lines[5]['visible_samples'] == 0
+    assert lines[6]['product_endpoint_fills'][0] is None
+    assert lines[6]['product_endpoint_contact_fills'][0] == [callouts.paint(STYLE['body_color'])]
+    assert lines[6]['endpoint_contact_radius'] == 1
+    assert lines[7]['product_endpoint_contact_fills'][0] == []
+    assert lines[8]['product_endpoint_fills'][0] is None
+    assert lines[8]['product_endpoint_contact_fills'][0] == [callouts.paint(STYLE['body_color'])]

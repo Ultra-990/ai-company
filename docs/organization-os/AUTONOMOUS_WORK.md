@@ -83,3 +83,15 @@ zachowuje literalne SVG i wymaga osobnego odbioru całej paczki.
 Istotne próby i wyniki zapisujemy w `docs/WORK_LOG.md`. Historyczna
 kwalifikacja przeglądu technicznego nie zostaje automatycznie zamieniona
 w potwierdzenie wszystkich kryteriów samodzielnego przebiegu powyżej.
+
+Pełny egzamin v2 zakończył się wynikiem technicznym 0/3 vs 1/3, lecz
+odbiorem jakościowym 0/3 vs 0/3. `product_exam_visual_assessment.py` łączy
+weryfikację niezmienionych wykonań z odrębnym oglądem źródła i czterech
+paneli. Nawet trzy pozytywne odbiory wymagają jeszcze osobnych dowodów
+autonomicznych korekt; narzędzie nie kwalifikuje samoczynnie usługi.
+
+Badawcze `--source-contour` mierzy obrys korpusu w PNG źródłowym, aby
+wykryć kwadratowe uskoki barków i przewężenie przy podstawie. Nie generuje
+współrzędnych ani nie poprawia grafiki. Nie ocenia pełnej estetyki, zakrętki
+czy dowolnych produktów z uchwytami/nóżkami; kolorowe pasy nie są uznawane
+za fizyczne przerwy. Historyczne pakiety zachowują swoje dawne kontrakty.
