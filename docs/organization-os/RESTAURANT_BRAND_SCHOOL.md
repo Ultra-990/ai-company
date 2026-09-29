@@ -89,3 +89,42 @@ Audyt pozostaje obok raportu jako `independent-audit.json`, SHA-256
 Nie zmieniono oryginalnego raportu, nie wyeksportowano danych do treningu,
 nie trenowano wag i nie wdrożono adaptera w tym etapie. Pętla poprawek
 ma test infrastruktury; ta udana próba nie wymagała jej uruchomienia.
+
+## Pełne porównanie trzech nowych briefów
+
+`scripts/brand_school.py --full-exam` zamraża trzy syntetyczne briefy testowe
+(Tide & Hearth, Ember Yard, Willow Breakfast), przypięty model, budżety
+i kopie kodu przed inferencją. Porównuje profil bazowy oraz rozumowanie,
+z naprzemienną kolejnością i jednakowym limitem 8192 tokenów odpowiedzi,
+16384 kontekstu, 180 s i trzech prób na każdy z pięciu etapów. Nie przyjmuje
+dodatkowych wskazówek ani kontynuacji wcześniejszych projektów.
+
+`scripts/verify_brand_package.py KATALOG` odtwarza sceny z dosłownych
+odpowiedzi i łańcuchy poprawek, wybór i powtórzenie logo, konwersję
+jednokolorową oraz instrukcję stylu. Sprawdza rzeczywiste PDF-y, wymiary PNG,
+hashe i dokładną zawartość 21 plików ZIP. Zachowane pomiary układu nie
+zastępują niezależnego oglądu obrazu i znaczenia tekstu.
+
+`scripts/brand_full_exam.py --assess KATALOG` weryfikuje równe warunki,
+niezmieniony kod i pochodzenie wyników wszystkich sześciu wykonań. Wynik
+techniczny pozostaje oddzielony od końcowego odbioru; żadna z tych komend
+nie kwalifikuje samodzielności ani nie eksportuje egzaminu do treningu.
+
+Pierwsze uruchomienie `brand-exam-s5xiz5s0` zostało przerwane kodem 143
+podczas szóstego wykonania. Przyczyna nieustalona; potwierdzono brak procesu
+i pustą listę modeli Ollamy. Zapisano oddzielne `interruption.json`,
+zachowując raport i odpowiedzi niedokończonego `identity-cnq86kmu`.
+**Brak kompletnego wyniku egzaminu**; nie powtórzono ukończonych prób.
+
+Zachowane wyniki: bazowy Tide & Hearth 33,131 s, Ember Yard 29,668 s,
+Willow Breakfast 32,254 s — wszystkie technicznie kompletne. Rozumowanie:
+Tide & Hearth 144,268 s technicznie kompletny; Ember Yard 107,953 s,
+nie naprawił kolizji symbolu z napisem w limicie prób.
+
+Niezależny odbiór zaakceptował syntetyczny pakiet Willow
+`identity-v0fs3gxq`. Pozostałe ukończone zestawy wymagają zmian: bazowy
+Tide podaje nieuzasadnione minimum logo 12 mm (napis około 2,72 pt),
+rozumowanie obiecuje inny mały wariant i inne grubości fontu niż faktycznie
+dostarczone, a bazowy Ember zaleca ciemny tusz na ciemnym papierze i ma
+bardzo słaby kontrast alternatywnego symbolu. Dłuższe rozumowanie nie
+zapewniło poprawnego pełnego pakietu. Recenzje zapisano obok artefaktów.

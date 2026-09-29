@@ -34,6 +34,7 @@ BRIEF = {'restaurant_name': 'Juniper Table', 'family': 'juniper-table-identity-0
          'audience': 'Adults meeting friends for relaxed, thoughtful dinners.',
          'contacts': ['Reservations by email', 'hello@junipertable.example', 'junipertable.example'],
          'synthetic': True, 'printer_specifications_supplied': False}
+DEFAULT_BRIEF = deepcopy(BRIEF)
 
 
 class Plan(BaseModel):
@@ -275,11 +276,22 @@ def selected_value(raw):
     return value
 
 
-def run():
+def run(*, sampling_profile=None, matched_exam_budget=False):
     ROOT.mkdir(exist_ok=True)
     if any(p.is_symlink() for p in (ROOT, *ROOT.parents)): raise ValueError('Private Linux workspace required')
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='identity-', dir=ROOT))
     config = configuration() | {'num_ctx': 8192, 'num_predict': 4096, 'num_thread': 4, 'timeout_seconds': 180}
+    if sampling_profile is not None:
+        if sampling_profile not in ('bounded-default.v1', 'qwen-deliberate-trial.v1'):
+            raise ValueError('Known bounded brand profile required')
+        config.update(sampling_profile=sampling_profile, think=sampling_profile == 'qwen-deliberate-trial.v1')
+        if config['think'] or matched_exam_budget: config.update(num_ctx=16384, num_predict=8192)
+    elif matched_exam_budget:
+        raise ValueError('Explicit profile required for matched exam budget')
+    implementation = out/'implementation'; implementation.mkdir()
+    for name in ('brand_school.py', 'render_school_svg.py', 'vector_structured_source.py', 'vector_school_contract.py'):
+        shutil.copyfile(Path(__file__).parent/name, implementation/name)
+    shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
     report = {'schema': 'restaurant-brand-school.v1', 'status': 'running', 'brief': BRIEF,
         'brief_sha256': sha256(json.dumps(BRIEF, sort_keys=True).encode()).hexdigest(), 'model': config['model'],
         'digest': config['digest'], 'config': config, 'resources_before': resources, 'training_started': False,
@@ -346,7 +358,12 @@ def run():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__); parser.add_argument('--run', action='store_true'); args = parser.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__)
+    actions = parser.add_mutually_exclusive_group(); actions.add_argument('--run', action='store_true'); actions.add_argument('--full-exam', action='store_true')
+    args = parser.parse_args()
+    if args.full_exam:
+        from scripts.brand_full_exam import run as full_exam
+        _, report = full_exam(); raise SystemExit(int(report['status'] != 'completed'))
     if args.run:
         _, report = run(); raise SystemExit(int(report['status'] == 'failed'))
     print(json.dumps({'model_called': False, 'training_started': False, 'brief': BRIEF}))

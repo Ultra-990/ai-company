@@ -1,5 +1,27 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — zmierzone przyspieszenie krótkich serii
+
+Pilotaż `batch-speed-s9_mzxji`: trzy zadania z ponownym ładowaniem modelu
+9,371 s, z zachowaniem modelu między wywołaniami 4,782 s, czyli około
+49% krócej wraz z oczekiwaniem na zwolnienie GPU. Odpowiedzi 6/6 poprawnych;
+to krótka próba arytmetyczna, nie pomiar pełnych realizacji. Adapter ma
+ograniczoną wewnętrzną opcję zatrzymania modelu w pamięci na maksymalnie
+15 sekund i zapisuje osobne pomiary czasu. Domyślna produkcyjna konfiguracja
+nie została zmieniona; integracja z pełnymi przebiegami pozostaje do wykonania.
+
+Nowy pełny egzamin marki zakończył pięć z sześciu wykonań, po czym proces
+został przerwany kodem 143. Przyczyna nieustalona, model i proces już
+nieaktywne. Zachowano dowody oraz oddzielną notatkę przerwania; nie ma
+kompletnego wyniku egzaminu. Nowy weryfikator odtworzył autorstwo czterech
+kompletnych paczek, sprawdził rzeczywiste PDF-y i dokładne 21 plików ZIP.
+
+Willow Breakfast z profilu bazowego (`identity-v0fs3gxq`, 32,254 s) uzyskał
+pozytywny niezależny odbiór syntetycznego pakietu. Pozostałe kompletne
+projekty mają błędy instrukcji użycia; rozumowanie nie naprawiło też kolizji
+w Ember Yard. Testy kodu: 73 passed. Nadal brak kwalifikacji do samodzielnej
+realizacji pięciu usług; bez treningu, zmiany wag i eksportu egzaminu do nauki.
+
 ## Aktualizacja 29.09.2026 — pełny HIGHPOINT odebrany po lokalnych poprawkach
 
 `reviewed-package-vk67ewe2` zawiera odebrany komplet HIGHPOINT: naprawione

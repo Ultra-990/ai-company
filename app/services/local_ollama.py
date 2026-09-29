@@ -134,6 +134,11 @@ def transport(payload):
     options=generation_options(config)
     schema=output_format(config)
     think=thinking_mode(config)
+    # Explicit internal batch opt-in. Ordinary requests still release the model;
+    # a bounded natural expiry prevents accidental indefinite VRAM retention.
+    retention=config.get('keep_alive_seconds', 0)
+    if type(retention) is not int or not 0 <= retention <= 15:
+        raise ValueError('invalid_generation_profile')
     # Thinking chunks include repeated JSON envelopes even though they are not
     # retained as output. The explicit long reasoning trial needs a separate
     # bounded wire budget; the default profile retains its original 1 MiB cap.
@@ -152,7 +157,7 @@ def transport(payload):
         if not model or model.get('digest') != config['digest']:
             raise ValueError('model_changed')
         request = {'model':config['model'], 'messages':messages, 'stream':True,
-                   'think':think, 'keep_alive':0,
+                   'think':think, 'keep_alive':retention,
                    'options':options}
         if schema is not None:request['format']=schema
         connection.request('POST','/api/chat',body=json.dumps(request).encode(),headers={'Content-Type':'application/json'})
@@ -184,6 +189,11 @@ def transport(payload):
                 return {'content':text,'model':config['model'],'digest':config['digest'],
                         'elapsed_seconds':round(time.monotonic()-start,3),
                         'stream_bytes':total_bytes,
+                        # Optional server measurements; missing/invalid is unknown,
+                        # never zero. Preserve units and do not retain reasoning.
+                        'timings_ns': {key: chunk[key] for key in
+                            ('total_duration', 'load_duration', 'prompt_eval_duration', 'eval_duration')
+                            if type(chunk.get(key)) is int and 0 <= chunk[key] <= 10**15},
                         'eval_count':chunk.get('eval_count'), 'prompt_eval_count':chunk.get('prompt_eval_count'),
                         'done_reason':'stop'}
     finally:

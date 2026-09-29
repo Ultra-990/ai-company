@@ -25,6 +25,27 @@ pełne generowanie. Niezależne lekkie odczyty wykonujemy razem, a testy
 dobieramy do zmiany. Pełne egzaminy uruchamiamy po wykazaniu poprawy
 mechanizmu. Skrócenie czasu nie zmienia kryteriów odbioru ani autorstwa.
 
+Pomiar 29.09 (`batch-speed-s9_mzxji`) potwierdził koszt wielokrotnego ładowania
+modelu. Trzy krótkie identyczne zadania diagnostyczne: 9,371 s z ładowaniem
+przy każdym wywołaniu, 4,782 s z zachowaniem modelu między wywołaniami
+(około 49% krócej, łącznie z oczekiwaniem na naturalne zwolnienie pamięci).
+Same żądania: 8,842 s vs 3,555 s. Wszystkie sześć odpowiedzi poprawnych.
+To pojedyncza próba arytmetyczna, z zimną serią jako pierwszą; nie dowód
+takiego samego przyspieszenia całych projektów lub jakości usług.
+
+Adapter obsługuje wewnętrzną opcję `keep_alive_seconds` od 0 do 15;
+domyślne 0 i aktywna konfiguracja pozostają bez zmian. Jawny pilotaż
+`scripts/probe_local_inference.py --batch-speed` wykonuje preflight,
+odrzuca zmianę modelu lub pojawienie się kontenera, zachowuje pełne odpowiedzi
+i oczekuje na krótkie naturalne wygaśnięcie modelu. Nie używa stop/unload API.
+Kolejny krok to integracja tego mechanizmu z pełnym przebiegiem i pomiar
+rzeczywistej pracy, z uwzględnieniem kontroli zasobów między etapami.
+
+Odpowiedzi transportu zawierają opcjonalne `timings_ns`: czas całkowity,
+ładowania, przetwarzania promptu i generacji, zgodnie z
+[API Ollamy](https://docs.ollama.com/api/chat). Brak lub niepoprawny pomiar
+nie jest zamieniany na zero; nie zapisujemy wewnętrznego rozumowania.
+
 Kontrola treści ma oddzielny test `scripts/product_headline_holdout.py`
 (16 nowych syntetycznych nagłówków, oczekiwane oceny poza żądaniami).
 `scripts/product_headline_repair.py` przyjmuje zweryfikowany pakiet

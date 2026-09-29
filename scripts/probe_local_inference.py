@@ -7,8 +7,15 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from app.services.local_ollama import configuration, OllamaProvider
 
-parser=argparse.ArgumentParser();parser.add_argument('--run-id',type=int)
+parser=argparse.ArgumentParser()
+actions=parser.add_mutually_exclusive_group()
+actions.add_argument('--run-id',type=int)
+actions.add_argument('--batch-speed',action='store_true')
 args=parser.parse_args()
+if args.batch_speed:
+    from scripts.probe_local_batch import run
+    _, report = run()
+    raise SystemExit(int(report['status'] != 'completed'))
 config=configuration() | {'num_predict':256,'timeout_seconds':60}
 messages=[
     {'role':'system','content':'Odpowiadaj krótko po polsku. Nie twierdź, że wykonano testy lub działania.'},

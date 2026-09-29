@@ -5543,3 +5543,42 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   test Chrome z linią ukrytą kolejno pod zakrętką i korpusem: **23 passed**,
   0,74 s. Sprawdzono także zakaz podstawienia pomiarów, odrzucenie zmienionej
   opinii/obrazu i dowodu, oraz zachowanie starych kontraktów.
+
+## 2026-09-29 — pomiar kosztu ładowania i nowe pełne briefy marki
+
+Na polecenie maksymalnego przyspieszenia prac dodano opcjonalne pomiary
+Ollamy (ns; brak pomiaru pozostaje brakiem), ograniczoną wewnętrzną retencję
+0–15 s i jawny `probe_local_inference.py --batch-speed`. Domyślne 0 bez
+zmian. Pilotaż odrzuca obcy model/kontener, korzysta z naturalnego wygaśnięcia
+zamiast stop/unload, zapisuje odpowiedzi i sprawdza je niezależnie.
+`batch-speed-s9_mzxji`: cold 9,371 s, warm 4,782 s z pełnym oczekiwaniem
+na naturalne zwolnienie GPU; same żądania 8,842/3,555 s. Wszystkie 6 odpowiedzi
+poprawnych. Pojedyncza seria trzech prostych zadań arytmetycznych na ramię,
+cold pierwszy; nie deklarujemy takiej redukcji dla całego projektu.
+
+W `brand-exam-s5xiz5s0` zamrożono trzy nowe briefy i równe budżety dwóch
+profili. Zakończono pięć ramion; podczas szóstego proces zakończył się kodem
+143. Przyczyna nieustalona, potwierdzono brak procesu i pusty stan Ollamy.
+Odczyt localhost wymagał eskalacji po PermissionError sandboxa. Oryginały
+pozostają bez zmian, fakt przerwania zapisano w `interruption.json`.
+Nie wznowiono ani nie podmieniono wyniku niedokończonego egzaminu.
+
+Bazowe Tide/Ember/Willow: technicznie kompletne, 33,131/29,668/32,254 s.
+Tide z rozumowaniem: 144,268 s kompletny; Ember z rozumowaniem: 107,953 s,
+wyczerpany limit poprawek kolizji symbolu z napisem. Nowy niezależny
+weryfikator sprawdził cztery kompletne paczki: dosłowne sceny i korekty,
+wybór/powtórzenie logo, monochrom, guide, PDF-y, PNG i 21 plików każdego ZIP.
+
+Obejrzano pięć obrazów oraz instrukcję każdego kompletnego pakietu.
+Odebrano syntetyczny Willow `identity-v0fs3gxq`; pozostałe wymagają zmian:
+Tide bazowy minimum 12 mm daje napis ok. 2,72 pt; Tide z rozumowaniem
+obiecuje nieistniejący inny mały lockup i błędne grubości fontu; Ember bazowy
+zaleca ciemny tusz na ciemnym podłożu i ma blady symbol alternatywny.
+Oceny są osobnymi plikami związanymi hashami, bez ręcznych poprawek produktów.
+
+Testy zmian: 73 passed (brand, exam/replay, transport, batch). Ponowny
+wąski test po izolacji katalogu fixture: 2 passed. Dotychczasowy Juniper
+również przeszedł nowy weryfikator. Bez SFT, eksportu testów do nauki,
+zmiany wag, routingu lub kwalifikacji samodzielnej usługi. Kolejny krok:
+użyć krótkiej retencji w kontrolowanych pełnych przebiegach i ograniczonych
+poprawkach modelu, mierząc rzeczywistą oszczędność oraz jakość.

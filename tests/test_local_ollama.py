@@ -8,7 +8,7 @@ CONFIG={'model':'qwen3.8:27b','digest':'a'*64,'timeout_seconds':30,'num_ctx':819
 
 @pytest.mark.parametrize('extra', [{}, {'format':'json'},
     {'format':{'type':'object','required':['questions'],'properties':{'questions':{'type':'array','maxItems':6,'items':{'type':'string'}}}}},
-    {'sampling_profile':'qwen-general-trial.v1'}])
+    {'sampling_profile':'qwen-general-trial.v1'}, {'keep_alive_seconds': 15}, {'keep_alive_seconds': 1}])
 def test_transport_is_loopback_streamed_pinned_and_toolless(monkeypatch,extra):
     requests=[]
     class Response:
@@ -26,14 +26,15 @@ def test_transport_is_loopback_streamed_pinned_and_toolless(monkeypatch,extra):
     assert result['content']=='Wynik' and result['digest']==CONFIG['digest']
     assert requests[-1]=='closed'
     payload=json.loads(requests[1][2]['body'])
-    assert payload['stream'] and payload['keep_alive']==0 and payload['think'] is False
+    assert payload['stream'] and payload['keep_alive']==extra.get('keep_alive_seconds',0) and payload['think'] is False
     assert 'tools' not in payload and payload['options']['num_predict']==128
     assert payload.get('format')==extra.get('format')
     assert payload['options']['temperature']==(0.7 if extra.get('sampling_profile') else 0.2)
 
 
 @pytest.mark.parametrize('extra', [{'sampling_profile':'arbitrary'}, {'format':'other'},
-    {'format':{'$ref':'https://example.com/schema'}}, {'format':{'type':'object','description':'x'*16000}}])
+    {'format':{'$ref':'https://example.com/schema'}}, {'format':{'type':'object','description':'x'*16000}},
+    *({'keep_alive_seconds': value} for value in (-1, 16, True, 1.5, '15s'))])
 def test_invalid_generation_settings_fail_before_network(monkeypatch,extra):
     monkeypatch.setattr('http.client.HTTPConnection',lambda *a,**k:pytest.fail('Unexpected network'))
     with pytest.raises(ValueError,match='invalid_generation_profile'):
@@ -161,3 +162,17 @@ def test_reasoning_wire_budget_does_not_raise_final_answer_limit(monkeypatch):
     chunk = json.dumps({'message':{'content':'x'*32001},'done':True,'done_reason':'stop'}).encode()
     fake_stream(monkeypatch, [chunk], config)
     with pytest.raises(ValueError, match='output_limit'): adapter.transport({'config':config,'messages':[]})
+
+
+@pytest.mark.parametrize('metrics,expected', [
+    ({}, {}),
+    ({'load_duration': 250000000, 'eval_duration': 1500000000},
+     {'load_duration': 250000000, 'eval_duration': 1500000000}),
+    ({'load_duration': True, 'total_duration': -1, 'eval_duration': '500',
+      'prompt_eval_duration': 10**16}, {}),
+])
+def test_server_timings_preserve_units_and_missing_values(monkeypatch, metrics, expected):
+    chunk = {'message': {'content': 'Result'}, 'done': True, 'done_reason': 'stop', **metrics}
+    fake_stream(monkeypatch, [json.dumps(chunk).encode()+b'\n'])
+    result = adapter.transport({'config': CONFIG, 'messages': []})
+    assert result['timings_ns'] == expected
