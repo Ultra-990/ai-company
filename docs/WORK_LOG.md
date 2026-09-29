@@ -5673,3 +5673,48 @@ za kwalifikację. Testy powiązanego kodu: 74 passed. Ponowna weryfikacja obu
 starszych poprawionych paczek i starego testu 15/16 przeszła. Bez SFT,
 eksportu testów do nauki, zmiany oryginalnych wag/routingu lub samodzielnej
 kwalifikacji którejkolwiek z pięciu usług na podstawie tego obrotu.
+
+## 2026-09-29 — kontrola przestrzenna i odebrana poprawka Harbor Plate
+
+Dodano jawne kontrakty brand-measured-spatial-review.v3 oraz
+brand-subject-spatial-review.v4 i osobne flagi --revise-spatial-text,
+--revise-spatial-subjects, --spatial-claim-exam, --spatial-subject-exam.
+Odczyt relacji otrzymuje tylko dwa opisy, bez geometrii. Kod sprawdza literalne
+cytaty i konieczne warunki ramek rzeczywistego renderera; sprzeczność blokuje
+supported. Autor otrzymuje pomiary i sam pisze ograniczoną poprawkę.
+Budżet wynosi pięć wywołań zamiast trzech v1/v2. Weryfikator odtwarza cały
+łańcuch, chronione grafiki i ZIP; v3/v4 dodatkowo renderuje oba SVG na nowo.
+
+Harbor: pierwsza próba v3 guide-revision-rpuhj122, 22,895 s, needs_revision:
+model poprawił oba kierunki, lecz końcowy recenzent wymagał niezamówionego
+diagramu pola ochronnego. Doprecyzowano różnicę między zaleceniem użytkowania
+i deklaracją wykonanego pomiaru. Następna guide-revision-wdysbmad, 23,722 s,
+została zweryfikowana technicznie, pomiarowo i wizualnie. Obie nowe koncepcje
+mówią poprawnie o symbolu nad napisem. Obejrzano pięć PNG; 18 plików grafiki
+pozostało identycznych, ZIP ma 21 plików. Niezależny dowód renderowania
+spatial-proof-xn67asej. Zapisano oddzielny odbiór poprawionej syntetycznej
+paczki, bez zmiany historycznego wyniku pełnego egzaminu. Pierwsza próba
+weryfikacji Chrome była zablokowana sandboxem; powtórzenie z eskalacją przeszło.
+
+Nowy v3 spatial-holdout-9snkln22: 14/16, 28,807 s. Dwa odwrócone kierunki,
+zachowana niezależna ocena odrzucająca kwalifikację. V4 odczytuje podmiot
+z dosłownego cytatu i przenosi odwracanie kierunku do kodu. Nowy katalog
+spatial-holdout-z93a_mzi zatrzymał się po ośmiu poprawnych tekstach: walidator
+nie dopuszczał poprawnego odwrotnego opisu „name inside” dla „ring encloses
+name”. Poprawiono walidator. Powtórzenie tego samego katalogu
+spatial-holdout-f5fk0di_ po 14 poprawnych tekstach zatrzymało się na literalnym
+cytacie bez relacji; poprawiono obsługę takiego cytatu, zachowując blokadę
+pominięcia jawnego kierunku. Oddzielny spatial-replay-ynil3gah odtworzył
+wszystkie zachowane odpowiedzi: 16/16, zero nowych wywołań. Oryginalne raporty
+pozostają failed; replay nie jest nowym egzaminem ani treningiem.
+
+Równoległa w czasie prac nad walidatorem próba v4 guide-revision-2tahuycs
+została prawidłowo zatrzymana po 9,924 s: model wybrał wordmark jako podmiot,
+lecz utrzymał below z opisu wave beneath wordmark. To rzeczywisty błąd modelu,
+nie kolejny powód rozluźnienia walidatora. Nie ponawiano generacji i nie
+stworzono paczki z tej próby. Kontrola opiera się na ograniczonym angielskim
+słowniku; ramki są warunkami koniecznymi, nie dowodem krzywych ani estetyki.
+
+Bez ręcznego pisania produktów, SFT, zmiany wag, promocji recenzenta lub
+wyników egzaminu. Kod sprawdzony testami powiązanego generatora, poprawek,
+odtworzenia dowodów i nowych kontroli przestrzennych.

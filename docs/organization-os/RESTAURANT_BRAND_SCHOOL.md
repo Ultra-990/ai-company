@@ -233,3 +233,29 @@ wystarcza. Potrzebna jest kontrola zgodności znaku po konwersji monochromowej,
 przekazywanie rzeczywistych pomiarów kolizji autorowi oraz deterministyczne
 sprawdzenie deklarowanych relacji przestrzennych względem pomiarów renderera.
 Sam werdykt modelu nie może uchylać takiego stwierdzonego konfliktu.
+
+## Mierzone relacje przestrzenne (eksperymentalne v3/v4)
+
+`--revise-spatial-text KATALOG` dodaje odczyt relacji z dwóch samych opisów
+oraz veto na podstawie ramek SVG: nad/pod/lewo/prawo, pozioma sąsiedniość,
+otaczanie, nakładanie. Potrzeba pięciu wywołań na pełną poprawkę. Autor
+pisze tekst, a narzędzie zachowuje wszystkie grafiki i chronione pola.
+Weryfikator wykonuje ponowny izolowany render obu logo. Ramki mogą obalić
+sprzeczność; nie dowodzą otaczania przez krzywą ani jakości wizualnej.
+
+`--revise-spatial-subjects KATALOG` (v4) wymaga dosłownego cytatu podmiotu
+i relacji, a odwrócenie relacji dla napisu wykonuje kod. Jest to ograniczony
+angielski walidator, nie pełny parser języka. Błędne lub niejednoznaczne
+wyjście zatrzymuje przebieg. To eksperyment, nie domyślna kontrola produkcji.
+
+Harbor v3 guide-revision-wdysbmad: odebrana poprawka obu opisów, 23,722 s,
+18 niezmienionych grafik i 21 plików ZIP. Pierwsza próba needs_revision
+pozostaje zachowana. Pełny wcześniejszy egzamin nadal 0/3 dla obu ramion.
+
+Test `--spatial-claim-exam`: v3 14/16 z dwoma odwróconymi kierunkami.
+`--spatial-subject-exam`: pierwsza próba nowego katalogu i jej powtórzenie
+zatrzymane przez zbyt restrykcyjną walidację poprawnych cytatów. Po naprawach
+osobny replay dał 16/16 z zachowanych odpowiedzi; zero nowych wywołań,
+oryginalne failed zachowane. Pełna próba v4 Harbor została z kolei poprawnie
+zablokowana za błędny kierunek względem podmiotu. Wynik izolowanego replay
+nie kwalifikuje recenzenta ani całej usługi do autonomicznej pracy.

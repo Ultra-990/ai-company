@@ -59,8 +59,18 @@ def revised(tmp_path, monkeypatch, request):
     brand.school.save(source/'report.json', original)
     data = {'restaurant': 'Fixture', 'plan': deepcopy(PLAN)}
     expanded = getattr(request, 'param', False)
+    spatial = expanded in ('spatial', 'subject')
     if expanded:
         data['plan'].update(concept_a='A false original concept description.', concept_b='A preserved second concept description.')
+    if spatial:
+        from scripts import brand_spatial_review as measured
+        if expanded == 'subject': from scripts import brand_spatial_subject_review as measured
+        data['plan'].update(concept_a='A wave sits below the wordmark.', concept_b='A circle surrounds the wordmark.')
+        from scripts.brand_spatial_review import geometry as measure
+        geometry = measure({'layout': [{'bbox': [100, 250, 300, 60]}], 'shape_layout': [{'bbox': [200, 100, 100, 80]}]})
+        if expanded == 'subject': geometry['necessary_conditions']['inside'] = False
+        monkeypatch.setattr(measured, 'expand', lambda data, p: data | {'spatial_measurements': {'a': geometry, 'b': geometry}})
+        monkeypatch.setattr(measured, 'remeasure', lambda p, data: {'fixture_only': True})
     brand.school.save(delivery/'style-plan.json', PLAN)
     (delivery/'brand-guide.md').write_text(guide.guide_text('Fixture', PLAN, original['selection']))
     (delivery/'logo.svg').write_text('<svg>protected fixture</svg>')
@@ -76,13 +86,28 @@ def revised(tmp_path, monkeypatch, request):
         first['reviews'][4]['verdict'] = 'unsupported'
         patch['replacements'].append({'index': 4, 'text': 'A corrected description from the local model.'})
     answers = iter([first, patch, final])
+    if spatial:
+        first['reviews'][4]['verdict'] = 'supported'
+        patch['replacements'][-1]['text'] = 'A wave sits above the wordmark.'
+        patch['replacements'].append({'index': 5, 'text': 'A circle sits above the wordmark.'})
+        def claims(phase):
+            return {'concepts': [{'id': key, 'claims': [{'relation': relation, 'quote': quote}]} for key, relation, quote in phase]}
+        before = claims([('a', 'below', 'below the wordmark'), ('b', 'surrounds', 'surrounds the wordmark')])
+        after = claims([('a', 'above', 'above the wordmark'), ('b', 'above', 'above the wordmark')])
+        if expanded == 'subject':
+            for value in (before, after):
+                for row in value['concepts']:
+                    noun = 'wave' if row['id'] == 'a' else 'circle'
+                    for c in row['claims']:
+                        c.update(subject='symbol', subject_quote=noun, quote='A '+noun+' '+('surrounds the wordmark.' if c['relation'] == 'surrounds' else 'sits '+c['relation']+' the wordmark.'))
+        answers = iter([first, before, patch, final, after])
     class Provider:
         def __init__(self, config): pass
         def complete(self, messages):
             assert 'independent-review' not in json.dumps(messages)
             return {'content': json.dumps(next(answers)), 'model': 'fixture', 'digest': 'f'*64}
     monkeypatch.setattr(brand, 'OllamaProvider', Provider)
-    out, report = guide.run(source, expanded=expanded)
+    out, report = guide.run(source, expanded=bool(expanded), spatial='subject' if expanded == 'subject' else spatial)
     assert report['status'] == 'pending_independent_review'
     return out, report
 
@@ -100,6 +125,19 @@ def test_expanded_revision_replays_structure_and_changed_concept(revised):
     result = guide.verify(out)
     assert result['literal_authorship_verified'] and result['protected_artwork_unchanged']
     assert json.loads((out/'revised-plan.json').read_text())['concept_a'] == 'A corrected description from the local model.'
+
+
+@pytest.mark.parametrize('revised', ['spatial', 'subject'], indirect=True)
+def test_spatial_revision_overrides_false_model_approval_and_replays_five_calls(revised):
+    out, report = revised
+    assert report['max_model_calls'] == 5
+    raw = json.loads((out/'raw-review.json').read_text())
+    combined = json.loads((out/'review.json').read_text())
+    assert raw['reviews'][4]['verdict'] == 'supported'
+    assert combined['reviews'][4]['verdict'] == 'unsupported'
+    result = guide.verify(out)
+    assert result['independent_spatial_render'] == {'fixture_only': True}
+    assert result['protected_artwork_unchanged']
 
 
 @pytest.mark.parametrize('fault', ['artwork', 'guide', 'author', 'hint', 'extra', 'qualify'])

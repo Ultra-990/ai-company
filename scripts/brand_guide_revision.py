@@ -108,11 +108,14 @@ def guide_text(name, plan, selection):
     return text+'\n\n'+'\n'.join('- '+s for s in plan['guidelines'])+'\n\n'+selection['reason']+'\n'
 
 
-def run(package, *, expanded=False):
+def run(package, *, expanded=False, spatial=False):
     package = Path(package); original, data = inputs(package)
     protocol = sys.modules[__name__]
+    if spatial: expanded = True
     if expanded:
         from scripts import brand_plan_review as protocol
+        if spatial: from scripts import brand_spatial_review as protocol
+        if spatial == 'subject': from scripts import brand_spatial_subject_review as protocol
         data = protocol.expand(data, package)
     config = brand.configuration() | {'sampling_profile': 'bounded-default.v1', 'think': False,
         'num_ctx': 8192, 'num_predict': 1800, 'num_thread': 4, 'timeout_seconds': 90}
@@ -124,27 +127,46 @@ def run(package, *, expanded=False):
     for name in ('brand_guide_revision.py', 'brand_school.py', 'verify_brand_package.py'):
         shutil.copyfile(Path(__file__).parent/name, code/name)
     if expanded: shutil.copyfile(Path(__file__).parent/'brand_plan_review.py', code/'brand_plan_review.py')
+    if spatial:
+        for name in ('brand_spatial_review.py', 'render_school_svg.py', 'vector_school_contract.py'):
+            shutil.copyfile(Path(__file__).parent/name, code/name)
+        if spatial == 'subject': shutil.copyfile(Path(__file__).parent/'brand_spatial_subject_review.py', code/'brand_spatial_subject_review.py')
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', code/'local_ollama.py')
     report = {'schema': CONTRACT, 'status': 'running', 'package': str(package),
         'source_report_sha256': brand.school.checksum(package/'report.json'), 'config': config,
         'model': config['model'], 'digest': config['digest'], 'resources_before': resources,
-        'max_model_calls': 3, 'training_exported': False, 'exam_score_changed': False,
+        'max_model_calls': 5 if spatial else 3, 'training_exported': False, 'exam_score_changed': False,
         'production_changed': False, 'autonomy_qualified': False, 'independent_review_required': True}
     if expanded: report['review_contract'] = protocol.CONTRACT
     started = time.monotonic(); print(json.dumps({'output': str(out)}), flush=True)
     try:
         review = protocol.review_value(brand.call(out, 'review', protocol.REVIEW_SYSTEM, json.dumps(data), protocol.REVIEW_SCHEMA, config))
+        if spatial:
+            brand.school.save(out/'raw-review.json', review)
+            texts = protocol.claim_input(data)
+            claims = protocol.claims_value(brand.call(out, 'spatial', protocol.CLAIM_SYSTEM, json.dumps(texts), protocol.CLAIM_SCHEMA, config), texts)
+            brand.school.save(out/'spatial.json', claims)
+            review, findings = protocol.combine(review, claims, data)
+            brand.school.save(out/'spatial-findings.json', findings)
         brand.school.save(out/'review.json', review)
         if all(r['verdict'] == 'supported' for r in review['reviews']):
             report['status'] = 'no_repair_requested'
         else:
             writer_data = {'assets': data, 'review': review}
+            if spatial: writer_data['spatial_findings'] = findings
             writer_schema = protocol.patch_schema(review) if expanded else protocol.PATCH_SCHEMA
             raw = brand.call(out, 'writer', protocol.WRITER_SYSTEM, json.dumps(writer_data), writer_schema, config)
             changed = protocol.apply(data['plan'], raw, review)
             brand.school.save(out/'revised-plan.json', changed)
             updated = data | {'plan': changed}
             final = protocol.review_value(brand.call(out, 'final-review', protocol.REVIEW_SYSTEM, json.dumps(updated), protocol.REVIEW_SCHEMA, config))
+            if spatial:
+                brand.school.save(out/'raw-final-review.json', final)
+                texts = protocol.claim_input(updated)
+                claims = protocol.claims_value(brand.call(out, 'final-spatial', protocol.CLAIM_SYSTEM, json.dumps(texts), protocol.CLAIM_SCHEMA, config), texts)
+                brand.school.save(out/'final-spatial.json', claims)
+                final, findings = protocol.combine(final, claims, updated)
+                brand.school.save(out/'final-spatial-findings.json', findings)
             brand.school.save(out/'final-review.json', final)
             report['status'] = 'needs_revision'
             if all(r['verdict'] == 'supported' for r in final['reviews']):
@@ -171,8 +193,9 @@ def run(package, *, expanded=False):
 
 def verify(out):
     out = Path(out); report = evidence.read(out/'report.json')
+    spatial = report.get('review_contract') in ('brand-measured-spatial-review.v3', 'brand-subject-spatial-review.v4')
     if (report.get('schema') != CONTRACT or report.get('status') != 'pending_independent_review'
-            or report.get('max_model_calls') != 3
+            or report.get('max_model_calls') != (5 if spatial else 3)
             or any(report.get(k) is not False for k in ('training_exported', 'exam_score_changed', 'production_changed', 'autonomy_qualified'))):
         raise ValueError('Completed bounded guide revision required')
     for name, digest in report['artifacts'].items():
@@ -186,13 +209,17 @@ def verify(out):
     protocol = sys.modules[__name__]
     if 'review_contract' in report:
         from scripts import brand_plan_review as protocol
+        if spatial: from scripts import brand_spatial_review as protocol
+        if report['review_contract'] == 'brand-subject-spatial-review.v4': from scripts import brand_spatial_subject_review as protocol
         if report['review_contract'] != protocol.CONTRACT: raise ValueError('Unknown text review contract')
         data = protocol.expand(data, package)
     if (brand.school.checksum(package/'report.json') != report['source_report_sha256']
             or (report['model'], report['digest']) != (original['model'], original['digest'])):
         raise ValueError('Original package or author changed')
-    if {p.name for p in out.glob('*-request.json')} != {'review-request.json', 'writer-request.json', 'final-review-request.json'}:
-        raise ValueError('Exactly three bounded model calls required')
+    expected_calls = {'review-request.json', 'writer-request.json', 'final-review-request.json'}
+    if spatial: expected_calls |= {'spatial-request.json', 'final-spatial-request.json'}
+    if {p.name for p in out.glob('*-request.json')} != expected_calls:
+        raise ValueError('Exact bounded model call set required')
     def response(stage, system, payload, schema):
         if read(stage+'-request.json') != {'system': system, 'user': json.dumps(payload), 'format': schema}:
             raise ValueError('Revision request contains changed inputs or additional hints')
@@ -201,9 +228,24 @@ def verify(out):
             raise ValueError('Revision author changed')
         return value['content']
     review = protocol.review_value(response('review', protocol.REVIEW_SYSTEM, data, protocol.REVIEW_SCHEMA))
+    writer_data = {'assets': data, 'review': review}
+    if spatial:
+        if review != read('raw-review.json'): raise ValueError('Raw model review changed')
+        texts = protocol.claim_input(data)
+        claims = protocol.claims_value(response('spatial', protocol.CLAIM_SYSTEM, texts, protocol.CLAIM_SCHEMA), texts)
+        review, findings = protocol.combine(review, claims, data)
+        if claims != read('spatial.json') or findings != read('spatial-findings.json'): raise ValueError('Spatial diagnosis changed')
+        writer_data.update(review=review, spatial_findings=findings)
     writer_schema = protocol.patch_schema(review) if 'review_contract' in report else protocol.PATCH_SCHEMA
-    changed = protocol.apply(data['plan'], response('writer', protocol.WRITER_SYSTEM, {'assets': data, 'review': review}, writer_schema), review)
-    final = protocol.review_value(response('final-review', protocol.REVIEW_SYSTEM, data | {'plan': changed}, protocol.REVIEW_SCHEMA))
+    changed = protocol.apply(data['plan'], response('writer', protocol.WRITER_SYSTEM, writer_data, writer_schema), review)
+    updated = data | {'plan': changed}
+    final = protocol.review_value(response('final-review', protocol.REVIEW_SYSTEM, updated, protocol.REVIEW_SCHEMA))
+    if spatial:
+        if final != read('raw-final-review.json'): raise ValueError('Raw final model review changed')
+        texts = protocol.claim_input(updated)
+        claims = protocol.claims_value(response('final-spatial', protocol.CLAIM_SYSTEM, texts, protocol.CLAIM_SCHEMA), texts)
+        final, findings = protocol.combine(final, claims, updated)
+        if claims != read('final-spatial.json') or findings != read('final-spatial-findings.json'): raise ValueError('Final spatial diagnosis changed')
     if (review != read('review.json') or final != read('final-review.json') or any(r['verdict'] != 'supported' for r in final['reviews'])
             or changed != read('revised-plan.json') or changed != read('delivery/style-plan.json')):
         raise ValueError('Guide revision differs from literal reviewed output')
@@ -223,9 +265,11 @@ def verify(out):
             raise ValueError('Exact ZIP file set required')
         if any(archive.read(name) != (delivery/name).read_bytes() for name in expected_names):
             raise ValueError('ZIP differs from verified delivery')
-    return {'schema': CONTRACT, 'report_sha256': brand.school.checksum(out/'report.json'),
+    result = {'schema': CONTRACT, 'report_sha256': brand.school.checksum(out/'report.json'),
         'literal_authorship_verified': True, 'protected_artwork_unchanged': True, 'zip_files': len(expected_names),
         'independent_review_required': True, 'autonomy_qualified': False, 'exam_score_changed': False}
+    if spatial: result['independent_spatial_render'] = protocol.remeasure(package, data)
+    return result
 
 
 if __name__ == '__main__':

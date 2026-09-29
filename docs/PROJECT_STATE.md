@@ -1,5 +1,26 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — pomiary blokują sprzeczne opisy; poprawiony Harbor
+
+Lokalny model poprawił oba opisy Harbor Plate w 23,722 s
+(`guide-revision-wdysbmad`). Kontrola v3 zestawia odczytane relacje z ramkami
+renderera i uchyla błędne zatwierdzenie recenzenta. Niezależny ponowny render
+potwierdził pomiary; sprawdzono autorstwo, 18 niezmienionych grafik i 21 plików
+ZIP oraz obejrzano pięć PNG. Odebrano poprawiony syntetyczny pakiet.
+To naprawa znanego przypadku; poprzedni pełny egzamin nadal 0/3 w obu ramionach.
+
+Nowy test odczytu relacji v3: 14/16, 28,807 s. Model odwrócił dwa kierunki.
+V4 wymaga cytatu podmiotu, a kod normalizuje kierunek. Dwie rzeczywiste próby
+zatrzymały zbyt ścisłe walidatory: poprawna odwrotność relacji otaczania oraz
+literalny niespatialny cytat przy braku relacji. Po naprawie osobne odtworzenie
+zachowanych odpowiedzi dało 16/16 bez nowych wywołań; nie jest nowym egzaminem.
+Rzeczywista próba v4 na Harbor została poprawnie zatrzymana po 9,924 s:
+model przypisał odwrotny kierunek wybranemu podmiotowi. Brak nowej dostawy.
+
+Nie uznano recenzenta ani usługi za samodzielne. Pozostały m.in. utrata znaku
+w monochromie Cedar i kolizje wizytówki Copper. Bez treningu wag, eksportu
+zadań egzaminacyjnych i zmiany produkcyjnego routingu.
+
 ## Aktualizacja 29.09.2026 — pełny nowy test marki nadal 0/3
 
 Nowa kontrola v2 korzysta z rzeczywistych SVG i obejmuje zasady oraz opisy

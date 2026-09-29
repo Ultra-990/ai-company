@@ -362,10 +362,30 @@ if __name__ == '__main__':
     actions = parser.add_mutually_exclusive_group(); actions.add_argument('--run', action='store_true'); actions.add_argument('--full-exam', action='store_true')
     actions.add_argument('--revise-guide', type=Path)
     actions.add_argument('--revise-plan-text', type=Path)
+    actions.add_argument('--revise-spatial-text', type=Path)
+    actions.add_argument('--revise-spatial-subjects', type=Path)
     actions.add_argument('--guide-review-exam', action='store_true')
     actions.add_argument('--plan-review-exam', action='store_true')
+    actions.add_argument('--spatial-claim-exam', action='store_true')
+    actions.add_argument('--spatial-subject-exam', action='store_true')
     actions.add_argument('--workflow-exam', action='store_true')
     args = parser.parse_args()
+    if args.spatial_subject_exam:
+        from scripts.brand_spatial_holdout import run as subject_exam
+        _, report = subject_exam(subjects=True)
+        raise SystemExit(int(report['status'] != 'completed'))
+    if args.revise_spatial_subjects:
+        from scripts.brand_guide_revision import run as revise_subjects
+        _, report = revise_subjects(args.revise_spatial_subjects, spatial='subject')
+        raise SystemExit(int(report['status'] != 'pending_independent_review'))
+    if args.spatial_claim_exam:
+        from scripts.brand_spatial_holdout import run as spatial_exam
+        _, report = spatial_exam()
+        raise SystemExit(int(report['status'] != 'completed'))
+    if args.revise_spatial_text:
+        from scripts.brand_guide_revision import run as revise_spatial
+        _, report = revise_spatial(args.revise_spatial_text, spatial=True)
+        raise SystemExit(int(report['status'] != 'pending_independent_review'))
     if args.workflow_exam:
         from scripts.brand_workflow_exam import run as workflow_exam
         _, report = workflow_exam()
