@@ -16,7 +16,8 @@ from scripts import product_infographic_school as product
 
 LEGACY_VERSION = 'product-full-package-exam.v1'
 SECOND_VERSION = 'product-full-package-exam.v2'
-VERSION = 'product-full-package-exam.v3'
+THIRD_VERSION = 'product-full-package-exam.v3'
+VERSION = 'product-full-package-exam.v4'
 LEGACY_CASES = (
     {'id': 'breeze-400', 'name': 'BREEZE 400', 'capacity': 400, 'height': 20, 'diameter': 6},
     {'id': 'ridge-750', 'name': 'RIDGE 750', 'capacity': 750, 'height': 22, 'diameter': 8},
@@ -27,12 +28,17 @@ SECOND_CASES = (
     {'id': 'mesa-750', 'name': 'MESA 750', 'capacity': 750, 'height': 23, 'diameter': 8.5},
     {'id': 'peak-900', 'name': 'PEAK 900', 'capacity': 900, 'height': 30, 'diameter': 7.5},
 )
-CASES = (
+THIRD_CASES = (
     {'id': 'sage-350', 'name': 'SAGE 350', 'capacity': 350, 'height': 18, 'diameter': 6.5},
     {'id': 'glen-650', 'name': 'GLEN 650', 'capacity': 650, 'height': 25, 'diameter': 7.5},
     {'id': 'summit-1000', 'name': 'SUMMIT 1000', 'capacity': 1000, 'height': 32, 'diameter': 8},
 )
-CATALOGS = {LEGACY_VERSION: LEGACY_CASES, SECOND_VERSION: SECOND_CASES, VERSION: CASES}
+CASES = (
+    {'id': 'dale-450', 'name': 'DALE 450', 'capacity': 450, 'height': 20, 'diameter': 7},
+    {'id': 'briar-800', 'name': 'BRIAR 800', 'capacity': 800, 'height': 27, 'diameter': 8},
+    {'id': 'highpoint-1100', 'name': 'HIGHPOINT 1100', 'capacity': 1100, 'height': 33, 'diameter': 8.5},
+)
+CATALOGS = {LEGACY_VERSION: LEGACY_CASES, SECOND_VERSION: SECOND_CASES, THIRD_VERSION: THIRD_CASES, VERSION: CASES}
 ARMS = {'baseline': 'bounded-default.v1', 'deliberate': 'qwen-deliberate-trial.v1'}
 
 
@@ -68,11 +74,16 @@ def exercise_context(case):
         product.BRIEF, product.PANELS = previous
 
 
-def run():
+def run(*, source_lesson=None):
+    lesson = None
+    if source_lesson is not None:
+        from scripts.product_source_lesson import load
+        lesson = load(source_lesson)
     resources = product.school.check_idle()
     out = Path(tempfile.mkdtemp(prefix='full-exam-', dir=product.ROOT))
     manifest = {'schema': VERSION, 'cases': [definition(case) for case in CASES],
                 'arms': ARMS, 'model': product.configuration()['model'], 'digest': product.configuration()['digest'],
+                'source_lesson': lesson,
                 'shared_budget': {'num_ctx': 16384, 'num_predict': 8192, 'num_thread': 4, 'timeout_seconds': 180,
                                   'max_calls_per_stage': 3, 'max_stages': 6},
                 'transport_limits': {'wire_bytes_by_arm': {'baseline': 1048576, 'deliberate': 4194304},
@@ -85,6 +96,7 @@ def run():
                                     'source_instruction_contract': product.SOURCE_INSTRUCTION_CONTRACT,
                                     'source_contour_contract': product.silhouette.CONTRACT,
                                     'product_paint_contract': product.paint.CONTRACT,
+                                    'source_lesson_contract': lesson['contract'] if lesson else None,
                                     'supplier_copy_contract': product.COPY_CONTRACT,
                                     'panel_contract': product.PANEL_FIDELITY_CONTRACT,
                                     'annotation_contract': product.callouts.CONTRACT},
@@ -96,6 +108,8 @@ def run():
     for name in ('product_full_exam.py', 'product_infographic_school.py', 'product_callouts.py',
                  'product_model_feedback.py', 'product_silhouette.py', 'product_paint_separation.py', 'brand_school.py', 'render_school_svg.py', 'vector_school_contract.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
+    if lesson is not None:
+        shutil.copyfile(Path(__file__).parent/'product_source_lesson.py', implementation/'product_source_lesson.py')
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
     report = {'schema': 'product-full-package-exam-result.v1', 'status': 'running', 'cases': [],
               'exam_sha256': product.school.checksum(out/'exam.json'), 'resources_before': resources,
@@ -112,7 +126,7 @@ def run():
                 for arm in order:
                     package, generated = product.run(sampling_profile=ARMS[arm], functional_callouts=True,
                         focused_stages=True, visual_feedback=False, matched_exam_budget=True, recover_incomplete=True,
-                        source_contour=True)
+                        source_contour=True, source_lesson=source_lesson)
                     actual = generated['config']
                     for key in ('num_ctx', 'num_predict', 'num_thread', 'timeout_seconds'):
                         if actual[key] != manifest['shared_budget'][key]: raise ValueError('Matched exam budget changed')

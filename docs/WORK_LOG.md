@@ -5351,3 +5351,20 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   kreski/kropki i szew rasteryzacji nie blokują odbioru tego ćwiczenia.
   To znana rodzina treningowa, nie nowy egzamin lub kwalifikacja; bez SFT
   i automatycznego eksportu do nauki.
+- `patch-evidence-b5_j2qxf` niezależnie odtworzył wszystkie trzy próby
+  patcha care, łącznie z odrzuconą niezmienioną wartością. Pomiary i autorstwo
+  potwierdzone; negatywny odbiór całej kompozycji pozostaje w mocy.
+
+## 2026-09-29 — przygotowanie pełnego egzaminu v4 z jawną lekcją
+
+- Nowy katalog spoza nauki: DALE 450 (20×7 cm), BRIAR 800 (27×8 cm),
+  HIGHPOINT 1100 (33×8,5 cm). Różne proporcje i długości nazw, bez zmiany
+  trzech poprzednich katalogów lub ich ocen. Zamrożony przed inferencją.
+- Oba profile dostają tę samą niezależnie zatwierdzoną lekcję treningową,
+  kontrolę całego obrysu v2 i ochronę farby. Wspólne limity wywołań,
+  tokenów, kontekstu i czasu pozostają. Przykład jest zapisany w manifeście;
+  weryfikator odrzuca jego zmianę, brak deklaracji albo dodatkowy przykład
+  tylko dla jednego ramienia. Przykłady testowe nie są lekcjami.
+- Testy katalogu, równych warunków i powiązania lekcji: **84 passed**.
+  Wszystkie trzy wcześniejsze egzaminy ponownie potwierdziły historyczne
+  wyniki; v3 pozostaje 0/3 bazowy i 1/3 rozumowanie po odbiorze wizualnym.

@@ -270,3 +270,9 @@ kompozycji. Weryfikator jest dostępny również jako:
 ```bash
 .venv/bin/python scripts/product_patch_evidence.py KATALOG_PILOTAZU
 ```
+
+Pełny egzamin v4 ma nowe rodziny DALE/BRIAR/HIGHPOINT. Opcjonalne
+`--full-exam --source-lesson KATALOG` zamraża tę samą lekcję z zatwierdzonej
+rodziny treningowej dla obu profili przed pierwszym wywołaniem. Pakiety
+wiążą ją z własnym żądaniem źródła; zmiana przykładu między ramionami
+unieważnia porównanie. Nie wolno zastępować lekcji przykładem testowym.

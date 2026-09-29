@@ -76,3 +76,35 @@ def test_assessment_rejects_score_manipulation_and_unmatched_executions(tmp_path
         result['report_sha256'] = assessment.product.school.checksum(path/'report.json')
     assessment.product.school.save(out/'report.json', report)
     with pytest.raises(ValueError): assessment.assess(out)
+
+
+@pytest.mark.parametrize('fault', [None, 'one_arm', 'unreviewed', 'undeclared'])
+def test_exam_requires_identical_reviewed_training_lesson_for_both_arms(tmp_path, monkeypatch, fault):
+    from scripts import product_source_lesson as lesson
+    out, report = fixture_exam(tmp_path, monkeypatch)
+    save = assessment.product.school.save; checksum = assessment.product.school.checksum
+    manifest = json.loads((out/'exam.json').read_text())
+    value = {'contract': lesson.CONTRACT, 'assembly': str(tmp_path/'approved'), 'example': 'reviewed local training scene'}
+    manifest['source_lesson'] = value
+    manifest['shared_controls']['source_lesson_contract'] = lesson.CONTRACT if fault != 'undeclared' else None
+    monkeypatch.setattr(lesson, 'load', lambda path: value if fault != 'unreviewed' else value | {'example': 'changed'})
+    (out/'implementation/product_source_lesson.py').write_text('frozen lesson fixture')
+    for case in report['cases']:
+        for arm, outcome in case['arms'].items():
+            folder = tmp_path/(case['id']+'-'+arm)
+            package = json.loads((folder/'report.json').read_text())
+            package['source_lesson_contract'] = manifest['shared_controls']['source_lesson_contract']
+            (folder/'implementation/product_source_lesson.py').write_text('frozen lesson fixture')
+            saved = value | {'example': 'extra example for this arm'} if fault == 'one_arm' and arm == 'deliberate' else value
+            save(folder/'source-lesson.json', saved)
+            package['artifacts'] = {str(p.relative_to(folder)): checksum(p) for p in folder.rglob('*') if p.is_file() and p.name != 'report.json'}
+            save(folder/'report.json', package)
+            outcome['report_sha256'] = checksum(folder/'report.json')
+    save(out/'exam.json', manifest)
+    report['exam_sha256'] = checksum(out/'exam.json')
+    report['artifacts'] = {str(p.relative_to(out)): checksum(p) for p in out.rglob('*') if p.is_file() and p.name != 'report.json'}
+    save(out/'report.json', report)
+    if fault:
+        with pytest.raises(ValueError, match='lesson'): assessment.assess(out)
+    else:
+        assert assessment.assess(out)['integrity_verified']

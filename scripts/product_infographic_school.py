@@ -819,11 +819,11 @@ if __name__ == '__main__':
     actions.add_argument('--repair-failed-scene', type=Path, help='Bounded model-authored geometry edits for a preserved failed scene; no exam rescoring')
     parser.add_argument('--repair-part', choices=tuple(PANELS), help='Recheck a panel of a technically complete package with --repair-failed-scene')
     actions.add_argument('--probe-source-lesson', type=Path, help='Known-case source diagnostic with an independently approved development example')
-    parser.add_argument('--source-lesson', type=Path, help='Private independently approved development assembly; fresh run or source probe only')
+    parser.add_argument('--source-lesson', type=Path, help='Private independently approved development assembly; fresh run, full exam or source probe')
     parser.add_argument('--reviewed-revision', nargs=2, type=Path, action='append', metavar=('REPORT', 'JUDGMENT'), default=[])
     args = parser.parse_args()
-    if args.source_lesson is not None and not (args.run or args.probe_source_lesson):
-        parser.error('--source-lesson requires --run or --probe-source-lesson')
+    if args.source_lesson is not None and not (args.run or args.full_exam or args.probe_source_lesson):
+        parser.error('--source-lesson requires --run, --full-exam or --probe-source-lesson')
     if args.repair_part and not args.repair_failed_scene:
         parser.error('--repair-part requires --repair-failed-scene')
     if args.probe_source_lesson:
@@ -847,7 +847,7 @@ if __name__ == '__main__':
         raise SystemExit(int(result['status'] == 'failed'))
     elif args.full_exam:
         from scripts.product_full_exam import run as full_exam
-        _, result = full_exam()
+        _, result = full_exam(source_lesson=args.source_lesson)
         raise SystemExit(int(result['status'] == 'failed'))
     elif args.assemble_reviewed:
         from scripts.product_revised_package import run as assemble

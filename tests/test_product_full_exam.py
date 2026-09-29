@@ -27,6 +27,11 @@ def test_new_cases_are_frozen_nontraining_and_have_distinct_physical_ratios():
         old = exam.definition(case)
         assert old['brief']['qualification_exam'] == exam.SECOND_VERSION
         assert exam.matching_case(old) == case
+    for case in exam.THIRD_CASES:
+        old = exam.definition(case)
+        assert old['brief']['qualification_exam'] == exam.THIRD_VERSION
+        assert exam.matching_case(old) == case
+    assert len({c['name'] for cases in exam.CATALOGS.values() for c in cases}) == 12
 
 
 def test_context_uses_case_dimensions_and_restores_globals_even_after_failure():
@@ -53,11 +58,16 @@ def test_verify_cannot_select_arbitrary_report_defined_brief(tmp_path, monkeypat
     assert exam.product.BRIEF is original
 
 
-def test_full_exam_freezes_before_calls_matches_budgets_and_preserves_failures(tmp_path, monkeypatch):
+@pytest.mark.parametrize('with_lesson', [False, True])
+def test_full_exam_freezes_before_calls_matches_budgets_and_preserves_failures(tmp_path, monkeypatch, with_lesson):
     monkeypatch.setattr(exam.product, 'ROOT', tmp_path)
     monkeypatch.setattr(exam.product.school, 'check_idle', lambda: {'ready': True})
     monkeypatch.setattr(exam.product, 'configuration', lambda: {'model': 'fixture', 'digest': 'f'*64})
     monkeypatch.setattr(exam.product, 'verify', lambda path: {'verified': True})
+    from scripts import product_source_lesson
+    fixture_lesson = {'contract': product_source_lesson.CONTRACT, 'split': 'train', 'fixture': True}
+    monkeypatch.setattr(product_source_lesson, 'load', lambda path: fixture_lesson)
+    lesson_path = tmp_path/'approved-development' if with_lesson else None
     calls = []
     original = exam.product.BRIEF, exam.product.PANELS
     def run(**kwargs):
@@ -68,6 +78,9 @@ def test_full_exam_freezes_before_calls_matches_budgets_and_preserves_failures(t
         assert kwargs['visual_feedback'] is False
         assert kwargs['recover_incomplete'] is True
         assert kwargs['source_contour'] is True
+        assert kwargs['source_lesson'] == lesson_path
+        assert manifest['source_lesson'] == (fixture_lesson if with_lesson else None)
+        assert manifest['shared_controls']['source_lesson_contract'] == (product_source_lesson.CONTRACT if with_lesson else None)
         calls.append((exam.product.BRIEF['family'], kwargs['sampling_profile']))
         package = tmp_path/f'package-{len(calls)}'; package.mkdir()
         report = {'model': 'fixture', 'digest': 'f'*64, 'config': manifest['shared_budget'],
@@ -75,7 +88,7 @@ def test_full_exam_freezes_before_calls_matches_budgets_and_preserves_failures(t
         (package/'report.json').write_text(json.dumps(report))
         return package, report
     monkeypatch.setattr(exam.product, 'run', run)
-    out, result = exam.run()
+    out, result = exam.run(source_lesson=lesson_path)
     assert result['status'] == 'completed' and result['scores'] == {'baseline': 0, 'deliberate': 3}
     assert len(calls) == 6
     for a, b in zip(calls[::2], calls[1::2]):

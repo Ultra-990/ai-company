@@ -33,6 +33,9 @@ Kolejne pełne ćwiczenie z lekcją i kontrolą farby (`series-ueizbp9p`)
 zostało niezależnie odebrane: źródło, cztery panele i eksporty, z własnymi
 poprawkami materiałów i pielęgnacji. To sukces na znanej rodzinie FIELD,
 nie nowy wynik egzaminu. Powtarzalność trzeba sprawdzić na nowych briefach.
+Przygotowano v4: DALE 450, BRIAR 800 i HIGHPOINT 1100. Oba profile dostają
+ten sam odebrany przykład treningowy, ochronę obrysu i wyglądu oraz równe
+budżety. Wyniki historyczne i wykluczenie egzaminów z nauki pozostają.
 
 ## Aktualizacja 29.09.2026 — odbiór egzaminu v2 i diagnostyka poprawek
 

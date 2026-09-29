@@ -61,13 +61,23 @@ def assess(path):
                          'product_model_feedback.py', 'render_school_svg.py', 'vector_school_contract.py',
                          *(('product_silhouette.py',) if manifest['shared_controls'].get('source_instruction_contract') else ()),
                          *(('product_paint_separation.py',) if manifest['shared_controls'].get('product_paint_contract') else ()),
+                         *(('product_source_lesson.py',) if manifest['shared_controls'].get('source_lesson_contract') else ()),
                          *(('local_ollama.py',) if version != exam.LEGACY_VERSION else ())):
                 if (revision.bounded(folder/'implementation'/name).read_bytes()
                         != revision.bounded(path/'implementation'/name).read_bytes()):
                     raise ValueError('Implementation changed during the frozen exam')
             controls = manifest['shared_controls']
-            for field in ('source_instruction_contract', 'source_contour_contract', 'product_paint_contract'):
+            for field in ('source_instruction_contract', 'source_contour_contract', 'product_paint_contract', 'source_lesson_contract'):
                 if package.get(field) != controls.get(field): raise ValueError('Case source controls changed')
+            if controls.get('source_lesson_contract'):
+                from scripts import product_source_lesson as lesson
+                saved_lesson = revision.read(folder/'source-lesson.json')
+                if ('source-lesson.json' not in package['artifacts'] or saved_lesson != manifest.get('source_lesson')
+                        or saved_lesson != lesson.load(saved_lesson['assembly'])):
+                    raise ValueError('Exam source lesson differs between arms or from reviewed training data')
+                if (folder/'source-request.json').exists(): lesson.verify_binding(folder, package)
+            elif manifest.get('source_lesson') is not None:
+                raise ValueError('Undeclared source lesson in exam manifest')
             if package.get('supplier_copy_contract', product.LEGACY_COPY) != controls.get('supplier_copy_contract', product.LEGACY_COPY):
                 raise ValueError('Case supplier copy contract changed')
             for field, control in (('source_fidelity_contract', 'source_contract'),
