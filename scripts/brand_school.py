@@ -369,14 +369,17 @@ if __name__ == '__main__':
     actions.add_argument('--spatial-claim-exam', action='store_true')
     actions.add_argument('--spatial-subject-exam', action='store_true')
     actions.add_argument('--workflow-exam', action='store_true')
+    parser.add_argument('--warm-revision', action='store_true', help='Reuse the local model for one bounded guide revision')
     args = parser.parse_args()
+    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects)):
+        parser.error('--warm-revision requires a guide/plan/spatial revision')
     if args.spatial_subject_exam:
         from scripts.brand_spatial_holdout import run as subject_exam
         _, report = subject_exam(subjects=True)
         raise SystemExit(int(report['status'] != 'completed'))
     if args.revise_spatial_subjects:
         from scripts.brand_guide_revision import run as revise_subjects
-        _, report = revise_subjects(args.revise_spatial_subjects, spatial='subject')
+        _, report = revise_subjects(args.revise_spatial_subjects, spatial='subject', warm=args.warm_revision)
         raise SystemExit(int(report['status'] != 'pending_independent_review'))
     if args.spatial_claim_exam:
         from scripts.brand_spatial_holdout import run as spatial_exam
@@ -384,7 +387,7 @@ if __name__ == '__main__':
         raise SystemExit(int(report['status'] != 'completed'))
     if args.revise_spatial_text:
         from scripts.brand_guide_revision import run as revise_spatial
-        _, report = revise_spatial(args.revise_spatial_text, spatial=True)
+        _, report = revise_spatial(args.revise_spatial_text, spatial=True, warm=args.warm_revision)
         raise SystemExit(int(report['status'] != 'pending_independent_review'))
     if args.workflow_exam:
         from scripts.brand_workflow_exam import run as workflow_exam
@@ -396,7 +399,7 @@ if __name__ == '__main__':
         raise SystemExit(int(report['status'] != 'completed'))
     if args.revise_plan_text:
         from scripts.brand_guide_revision import run as revise_plan
-        _, report = revise_plan(args.revise_plan_text, expanded=True)
+        _, report = revise_plan(args.revise_plan_text, expanded=True, warm=args.warm_revision)
         raise SystemExit(int(report['status'] != 'pending_independent_review'))
     if args.guide_review_exam:
         from scripts.brand_guide_holdout import run as guide_exam
@@ -404,7 +407,7 @@ if __name__ == '__main__':
         raise SystemExit(int(report['status'] != 'completed'))
     if args.revise_guide:
         from scripts.brand_guide_revision import run as revise_guide
-        _, report = revise_guide(args.revise_guide)
+        _, report = revise_guide(args.revise_guide, warm=args.warm_revision)
         raise SystemExit(int(report['status'] != 'pending_independent_review'))
     if args.full_exam:
         from scripts.brand_full_exam import run as full_exam

@@ -108,7 +108,7 @@ def guide_text(name, plan, selection):
     return text+'\n\n'+'\n'.join('- '+s for s in plan['guidelines'])+'\n\n'+selection['reason']+'\n'
 
 
-def run(package, *, expanded=False, spatial=False):
+def run(package, *, expanded=False, spatial=False, warm=False):
     package = Path(package); original, data = inputs(package)
     protocol = sys.modules[__name__]
     if spatial: expanded = True
@@ -132,19 +132,29 @@ def run(package, *, expanded=False, spatial=False):
             shutil.copyfile(Path(__file__).parent/name, code/name)
         if spatial == 'subject': shutil.copyfile(Path(__file__).parent/'brand_spatial_subject_review.py', code/'brand_spatial_subject_review.py')
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', code/'local_ollama.py')
+    batch = None
+    if warm:
+        from scripts.local_retained_batch import RetainedBatch
+        batch = RetainedBatch(config, 5 if spatial else 3)
+        shutil.copyfile(Path(__file__).parent/'local_retained_batch.py', code/'local_retained_batch.py')
+    def invoke(out, name, system, user, schema, config):
+        if batch is None: return brand.call(out, name, system, user, schema, config)
+        return batch.call(out, name, system, user, schema,
+                          final=name == ('final-spatial' if spatial else 'final-review'))
     report = {'schema': CONTRACT, 'status': 'running', 'package': str(package),
         'source_report_sha256': brand.school.checksum(package/'report.json'), 'config': config,
         'model': config['model'], 'digest': config['digest'], 'resources_before': resources,
         'max_model_calls': 5 if spatial else 3, 'training_exported': False, 'exam_score_changed': False,
         'production_changed': False, 'autonomy_qualified': False, 'independent_review_required': True}
     if expanded: report['review_contract'] = protocol.CONTRACT
+    if warm: report['retained_batch_contract'] = 'local-retained-batch.v1'
     started = time.monotonic(); print(json.dumps({'output': str(out)}), flush=True)
     try:
-        review = protocol.review_value(brand.call(out, 'review', protocol.REVIEW_SYSTEM, json.dumps(data), protocol.REVIEW_SCHEMA, config))
+        review = protocol.review_value(invoke(out, 'review', protocol.REVIEW_SYSTEM, json.dumps(data), protocol.REVIEW_SCHEMA, config))
         if spatial:
             brand.school.save(out/'raw-review.json', review)
             texts = protocol.claim_input(data)
-            claims = protocol.claims_value(brand.call(out, 'spatial', protocol.CLAIM_SYSTEM, json.dumps(texts), protocol.CLAIM_SCHEMA, config), texts)
+            claims = protocol.claims_value(invoke(out, 'spatial', protocol.CLAIM_SYSTEM, json.dumps(texts), protocol.CLAIM_SCHEMA, config), texts)
             brand.school.save(out/'spatial.json', claims)
             review, findings = protocol.combine(review, claims, data)
             brand.school.save(out/'spatial-findings.json', findings)
@@ -155,15 +165,15 @@ def run(package, *, expanded=False, spatial=False):
             writer_data = {'assets': data, 'review': review}
             if spatial: writer_data['spatial_findings'] = findings
             writer_schema = protocol.patch_schema(review) if expanded else protocol.PATCH_SCHEMA
-            raw = brand.call(out, 'writer', protocol.WRITER_SYSTEM, json.dumps(writer_data), writer_schema, config)
+            raw = invoke(out, 'writer', protocol.WRITER_SYSTEM, json.dumps(writer_data), writer_schema, config)
             changed = protocol.apply(data['plan'], raw, review)
             brand.school.save(out/'revised-plan.json', changed)
             updated = data | {'plan': changed}
-            final = protocol.review_value(brand.call(out, 'final-review', protocol.REVIEW_SYSTEM, json.dumps(updated), protocol.REVIEW_SCHEMA, config))
+            final = protocol.review_value(invoke(out, 'final-review', protocol.REVIEW_SYSTEM, json.dumps(updated), protocol.REVIEW_SCHEMA, config))
             if spatial:
                 brand.school.save(out/'raw-final-review.json', final)
                 texts = protocol.claim_input(updated)
-                claims = protocol.claims_value(brand.call(out, 'final-spatial', protocol.CLAIM_SYSTEM, json.dumps(texts), protocol.CLAIM_SCHEMA, config), texts)
+                claims = protocol.claims_value(invoke(out, 'final-spatial', protocol.CLAIM_SYSTEM, json.dumps(texts), protocol.CLAIM_SCHEMA, config), texts)
                 brand.school.save(out/'final-spatial.json', claims)
                 final, findings = protocol.combine(final, claims, updated)
                 brand.school.save(out/'final-spatial-findings.json', findings)
@@ -183,6 +193,12 @@ def run(package, *, expanded=False, spatial=False):
     except Exception as exc:
         report.update(status='failed', error_type=type(exc).__name__, error=str(exc)[:600])
     finally:
+        if batch is not None:
+            try:
+                brand.school.save(out/'retained-batch.json', batch.close())
+            except Exception as exc:
+                report.update(status='failed', cleanup_error_type=type(exc).__name__, cleanup_error=str(exc)[:200])
+                brand.school.save(out/'retained-batch.json', {'schema': 'local-retained-batch.v1', 'calls': batch.calls, 'idle_after': False})
         report['elapsed_seconds'] = round(time.monotonic()-started, 3)
         report['artifacts'] = {str(p.relative_to(out)): brand.school.checksum(p)
             for p in out.rglob('*') if p.is_file() and p.name != 'report.json'}
@@ -220,6 +236,18 @@ def verify(out):
     if spatial: expected_calls |= {'spatial-request.json', 'final-spatial-request.json'}
     if {p.name for p in out.glob('*-request.json')} != expected_calls:
         raise ValueError('Exact bounded model call set required')
+    if 'retained_batch_contract' in report:
+        batch = read('retained-batch.json')
+        stages = ['review', 'spatial', 'writer', 'final-review', 'final-spatial'] if spatial else ['review', 'writer', 'final-review']
+        if (report['retained_batch_contract'] != 'local-retained-batch.v1' or batch.get('schema') != report['retained_batch_contract']
+                or batch.get('idle_after') is not True or [c['stage'] for c in batch['calls']] != stages):
+            raise ValueError('Complete naturally released retained batch required')
+        for index, c in enumerate(batch['calls']):
+            response_data = read(c['stage']+'-response.json')
+            if (c['keep_alive_seconds'] != (0 if index == len(stages)-1 else 3)
+                    or c['elapsed_seconds'] != response_data['elapsed_seconds']
+                    or c['timings_ns'] != response_data.get('timings_ns', {})):
+                raise ValueError('Retained batch timing or retention changed')
     def response(stage, system, payload, schema):
         if read(stage+'-request.json') != {'system': system, 'user': json.dumps(payload), 'format': schema}:
             raise ValueError('Revision request contains changed inputs or additional hints')

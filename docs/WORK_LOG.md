@@ -5718,3 +5718,44 @@ słowniku; ramki są warunkami koniecznymi, nie dowodem krzywych ani estetyki.
 Bez ręcznego pisania produktów, SFT, zmiany wag, promocji recenzenta lub
 wyników egzaminu. Kod sprawdzony testami powiązanego generatora, poprawek,
 odtworzenia dowodów i nowych kontroli przestrzennych.
+
+## 2026-09-29 — rzeczywiste przyspieszenie pięciu kroków poprawki
+
+Po zakończeniu zmian kontroli przestrzennej przeszło 98 testów; kod i dowody
+opisowe zapisano jako baf6f90. Następnie wdrożono opt-in --warm-revision
+oraz local-retained-batch.v1 w ograniczonych poprawkach zasad/opisów.
+Budżet 3/5 wywołań pozostaje identyczny. Generacja i treści nie otrzymują
+nowych podpowiedzi. Model pozostaje w pamięci maksymalnie 3 sekundy po
+pośrednim wywołaniu; final-review/final-spatial kończy z keep_alive=0.
+Wcześniejsze zakończenie lub błąd uruchamia tylko odczytowe oczekiwanie
+na naturalne wygaśnięcie. Brak stop/unload API i ingerencji w cudze procesy.
+
+Przed każdym krokiem weryfikowane są nazwa/digest jedynego rezydującego
+modelu załadowanego przez tę serię, Docker, oba porty ComfyUI 8188/8189,
+pamięć GPU z odjęciem deklarowanego własnego modelu. Nieznany lub obcy stan
+zatrzymuje dalsze generacje. To współpracujący lokalny proces, nie wyłączna
+rezerwacja GPU; nie stanowi blokady dla zewnętrznych klientów Ollamy.
+Błąd transportu zużywa próbę. Limity: do 5 wywołań, 600 s na serię,
+3 s retencji, ograniczone oczekiwanie na pusty stan. Nie zmieniono globalnej
+konfiguracji inferencji. Weryfikator wiąże kolejność, retencję i czasy z
+oryginalnymi odpowiedziami; zapisano snapshot implementacji serii.
+
+Harbor: guide-revision-9vxtw8n5 (warm) 13,478 s, następnie
+ guide-revision-parzckyv (cold) 23,499 s. Obie próby pending_independent_review,
+potem osobno zweryfikowane rzeczywistym rendererem i odebrane. Końcowy plan,
+zasady i pięć wcześniej obejrzanych obrazów identyczne bajtowo z odebraną
+poprawką wdysbmad; każda paczka zachowuje wszystkie grafiki. Próba startu
+Chrome w sandboxie była zablokowana; weryfikacja z eskalacją przeszła.
+
+Porównanie revision-speed-dn1k7yu0: 42,64% krócej. Warm suma ładowania
+2,7671 s, cold 13,0065 s; suma odpowiedzi 13,095 vs 22,810 s.
+Równe źródło, model/digest, generacja, pięć wywołań oraz początkowe żądania.
+Jedna para, warm pierwszy, znane zadanie, bez randomizacji i nowego egzaminu.
+Czas obejmuje poprawkę, kontrole zasobów i zwolnienie modelu, ale niezależne
+renderowanie obu paczek wykonano poza pomiarem. Późniejsze żądania zależą
+od wylosowanego brzmienia recenzji. Nie uogólniono wyniku na wszystkie usługi.
+
+Testy: 150 passed (adapter, krótkie serie, odmowa nowych konfliktów zasobów,
+przerwania, naturalne wygaśnięcie, autorstwo, manipulacja retencją, istniejące
+poprawki/generator/egzaminy). Zapisano osobne zweryfikowane raporty i odbiory,
+bez zmiany historycznych niepowodzeń, wag, danych treningowych czy kwalifikacji.

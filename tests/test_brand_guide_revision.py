@@ -59,6 +59,8 @@ def revised(tmp_path, monkeypatch, request):
     brand.school.save(source/'report.json', original)
     data = {'restaurant': 'Fixture', 'plan': deepcopy(PLAN)}
     expanded = getattr(request, 'param', False)
+    warm = expanded == 'warm'
+    if warm: expanded = False
     spatial = expanded in ('spatial', 'subject')
     if expanded:
         data['plan'].update(concept_a='A false original concept description.', concept_b='A preserved second concept description.')
@@ -105,9 +107,14 @@ def revised(tmp_path, monkeypatch, request):
         def __init__(self, config): pass
         def complete(self, messages):
             assert 'independent-review' not in json.dumps(messages)
-            return {'content': json.dumps(next(answers)), 'model': 'fixture', 'digest': 'f'*64}
+            return {'content': json.dumps(next(answers)), 'model': 'fixture', 'digest': 'f'*64, 'elapsed_seconds': .1}
     monkeypatch.setattr(brand, 'OllamaProvider', Provider)
-    out, report = guide.run(source, expanded=bool(expanded), spatial='subject' if expanded == 'subject' else spatial)
+    if warm:
+        from scripts import local_retained_batch as batch
+        monkeypatch.setattr(batch, 'OllamaProvider', Provider)
+        monkeypatch.setattr(batch, 'check_resources', lambda *args: {})
+        monkeypatch.setattr(batch, 'resident_models', lambda: [])
+    out, report = guide.run(source, expanded=bool(expanded), spatial='subject' if expanded == 'subject' else spatial, warm=warm)
     assert report['status'] == 'pending_independent_review'
     return out, report
 
@@ -116,6 +123,18 @@ def test_complete_revision_replays_three_model_calls_and_protects_artwork(revise
     result = guide.verify(revised[0])
     assert result['literal_authorship_verified'] and result['protected_artwork_unchanged']
     assert not result['autonomy_qualified'] and not result['exam_score_changed']
+
+
+@pytest.mark.parametrize('revised', ['warm'], indirect=True)
+def test_warm_revision_preserves_authorship_and_checks_retention_evidence(revised):
+    out, report = revised
+    assert guide.verify(out)['literal_authorship_verified']
+    batch = json.loads((out/'retained-batch.json').read_text())
+    batch['calls'][-1]['keep_alive_seconds'] = 15
+    guide.brand.school.save(out/'retained-batch.json', batch)
+    report['artifacts']['retained-batch.json'] = guide.brand.school.checksum(out/'retained-batch.json')
+    guide.brand.school.save(out/'report.json', report)
+    with pytest.raises(ValueError, match='retention changed'): guide.verify(out)
 
 
 @pytest.mark.parametrize('revised', [True], indirect=True)

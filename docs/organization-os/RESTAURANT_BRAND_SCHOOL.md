@@ -259,3 +259,24 @@ osobny replay dał 16/16 z zachowanych odpowiedzi; zero nowych wywołań,
 oryginalne failed zachowane. Pełna próba v4 Harbor została z kolei poprawnie
 zablokowana za błędny kierunek względem podmiotu. Wynik izolowanego replay
 nie kwalifikuje recenzenta ani całej usługi do autonomicznej pracy.
+
+## Ograniczona seria bez wielokrotnego ładowania modelu
+
+Do `--revise-guide`, `--revise-plan-text`, `--revise-spatial-text` albo
+`--revise-spatial-subjects` można dodać `--warm-revision`. Budżet i wymagania
+jakości pozostają takie same. Model zostaje w pamięci do trzech sekund
+między krokami; końcowy krok ma keep_alive=0. Wcześniejsze zakończenie czeka
+na naturalne wygaśnięcie. Każdy krok kontroluje rezydujący model, Docker,
+ComfyUI na 8188/8189 oraz pamięć GPU. Nie ma automatycznego stop/unload.
+Inne wywołania i globalna konfiguracja pozostają w dotychczasowym trybie.
+
+Dane `retained-batch.json` zachowują kolejność, retencję, kontrolę zasobów
+i pomiary serwera; weryfikator porównuje je z odpowiedziami. Seria liczy
+nieudane wywołania do limitu; nie uruchamia dodatkowych prób.
+
+Jedna para rzeczywistych poprawek Harbor: warm 13,478 s vs cold 23,499 s,
+42,64% krócej, końcowy plan i grafiki identyczne oraz niezależnie odebrane.
+Ładowanie 2,7671 vs 13,0065 s. To obserwacja znanego zadania z warm jako
+pierwszym ramieniem, nie uniwersalna gwarancja szybkości ani egzamin usługi.
+Retencja nie zapewnia wyłączności GPU wobec zewnętrznych klientów; obcy
+lub nieznany stan wykryty przed następnym krokiem zatrzymuje generację.

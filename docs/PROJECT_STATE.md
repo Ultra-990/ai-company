@@ -1,5 +1,27 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — pełna poprawka opisu o 42,6% krócej
+
+Dodano `--warm-revision`: jedna ograniczona seria zachowuje model w pamięci
+na maksymalnie trzy sekundy między wywołaniami. Każdy krok ponownie sprawdza
+model, kontenery, kolejki ComfyUI i pamięć GPU; ostatnie wywołanie ma
+keep_alive=0, wcześniejsze zakończenie czeka na naturalne wygaśnięcie.
+Nie zatrzymuje usług ani modeli. Zwykłe wywołania zachowują dotychczasowy tryb.
+
+Rzeczywista poprawka Harbor z pięcioma wywołaniami: warm 13,478 s
+(`guide-revision-9vxtw8n5`), kontrola cold 23,499 s
+(`guide-revision-parzckyv`), czyli **42,64% krócej**. Łączny czas ładowania
+2,7671 vs 13,0065 s. Ta sama konfiguracja, źródło, początkowe żądania
+oraz identyczny końcowy plan i zasady. Obie paczki zweryfikowano dosłownie,
+niezależnie wyrenderowano i odebrano jako poprawione syntetyczne przykłady.
+Po serii potwierdzono pusty stan modeli. Porównanie revision-speed-dn1k7yu0
+wiąże raporty hashami. Jedna para na znanym zadaniu, warm pierwszy:
+nie jest powtarzanym benchmarkiem ani nowym egzaminem autonomii.
+
+150 powiązanych testów przeszło. Mechanizm jest dostępny dla ograniczonych
+poprawek opisów; nie deklarujemy tego przyspieszenia dla wszystkich usług
+ani gotowości modelu do samodzielnego prowadzenia AI Company.
+
 ## Aktualizacja 29.09.2026 — pomiary blokują sprzeczne opisy; poprawiony Harbor
 
 Lokalny model poprawił oba opisy Harbor Plate w 23,722 s
