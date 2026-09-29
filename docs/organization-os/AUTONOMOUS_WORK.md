@@ -25,6 +25,16 @@ pełne generowanie. Niezależne lekkie odczyty wykonujemy razem, a testy
 dobieramy do zmiany. Pełne egzaminy uruchamiamy po wykazaniu poprawy
 mechanizmu. Skrócenie czasu nie zmienia kryteriów odbioru ani autorstwa.
 
+Kontrola treści ma oddzielny test `scripts/product_headline_holdout.py`
+(16 nowych syntetycznych nagłówków, oczekiwane oceny poza żądaniami).
+`scripts/product_headline_repair.py` przyjmuje zweryfikowany pakiet
+i związany z nim raport lokalnego recenzenta, zmienia wyłącznie tekst
+wadliwego nagłówka, ponownie renderuje i sprawdza jego znaczenie. Weryfikator
+odtwarza literalną zmianę i rozmowy, raportuje też nowe zastrzeżenia recenzenta
+wobec pozostałych paneli. Oddzielna pozytywna ocena obrazu i treści pozwala
+złożyć nową paczkę przez `--assemble-reviewed`; cała paczka nadal wymaga
+własnego odbioru. Pierwotny egzamin i dane treningowe pozostają bez zmian.
+
 ## Kryterium zakończenia dla każdej usługi
 
 Pięć usług pozostaje zgodnych z `scripts/upwork_qualification.py`: przegląd

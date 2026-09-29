@@ -5430,3 +5430,53 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   przerwania bez wzrostu kontekstu, limit budżetu, wykrycie zmienionego
   żądania mimo przeliczenia hashy i nierównej wersji między ramionami.
   Zysk czasu całego zlecenia po tej poprawce nie został jeszcze zmierzony.
+
+## 2026-09-29 — zamrożony test treści i literalna naprawa pełnego BRIAR
+
+- Poprzedni obrót celu: postęp (naprawa ponowień i weryfikacja pochodzenia,
+  commit e2f094a). Brak aktywnego blokera; stan repozytorium potwierdzony.
+- `product_headline_holdout.py`: cztery nowe syntetyczne zestawy LARCH,
+  FERN, HEATH, ASPEN; 16 nagłówków, 8 poprawnych/8 nieuzasadnionych.
+  Cały katalog, oceny, instrukcja, budżet i kod zamrożone przed inferencją.
+  Żądania zawierają tylko fakty/nagłówki, bez wzorcowej oceny lub feedbacku.
+  Cztery bazowe wywołania, brak ponowień. Nie są to realizacje produktu
+  napisane przez asystenta: to wyłącznie syntetyczne przypadki oceny.
+- `headline-holdout-ozwipe_c`: **16/16**, zero nieuzasadnionych akceptacji,
+  **20,780 s**. Niezależnie sprawdzono wszystkie uzasadnienia. Zmywarka
+  i recykling są zaakceptowane wyłącznie tam, gdzie podano je w faktach;
+  samo tworzywo, wymiary lub pojemność nie uzasadniają trwałości, uniwersalnej
+  kompatybilności czy czasu chłodzenia. Uzasadnienie HEATH używa także
+  zwykłego kontekstu wielkości kieszeni; brak dowodu uniwersalnego dopasowania
+  pozostaje poprawnym powodem odrzucenia. Ocena zapisana i związana hashami.
+- `product_headline_repair.py`: oddzielna naprawa sterowana oryginalnym
+  modelem-recenzentem, bez ludzkiej propozycji nowych słów. Zmienialny jest
+  tylko tekst nagłówka; wszystkie pozostałe pola sceny są kopiowane dosłownie.
+  Maksymalnie 3 odpowiedzi autora i 3 kontrole recenzenta na wadliwy panel.
+  Każda propozycja przechodzi kompilację, render, pomiary i ponowną ocenę
+  znaczenia. Weryfikator odtwarza rozmowę i literalne zmiany, nie uznaje
+  samej zgody autora za niezależny odbiór.
+- `headline-repair-dplzjq9m`: BRIAR capacity, **12,974 s**. Pierwszy nagłówek
+  „800 ml Bottle” odrzucony za cyfry; druga własna odpowiedź „One Bottle”
+  zaliczyła geometrię i kontrolę faktów. 2 wywołania autora + 1 recenzenta.
+  Ogląd PNG i ponowne odtworzenie pochodzenia potwierdziły czytelność,
+  usunięcie obietnicy całodziennej wystarczalności i zachowanie reszty pracy.
+- Recenzent w tej samej odpowiedzi zgłosił `uncertain` dla niezmienionego
+  „Compact Daily Profile”, wcześniej `supported`. To zarejestrowana
+  niestabilność, nie ukryty sukces całego automatu. Niezależny przegląd
+  uznał ogólny nagłówek za dopuszczalny, bez konkretnej obietnicy czasu lub
+  uniwersalnego dopasowania. Weryfikator ujawnia zastrzeżenia innych paneli.
+- Składanie paczek obsługuje teraz odrębnie uwierzytelnione poprawki
+  nagłówka oraz wymaga związanej pozytywnej oceny obrazu i treści. Zachowuje
+  właściwy zamrożony brief egzaminacyjny podczas składania i weryfikacji;
+  nie ocenia BRIAR według wymiarów treningowego FIELD.
+- `reviewed-package-inmt8m30`: nowy kompletny zestaw SVG/PNG/PDF/ZIP,
+  źródło i trzy panele skopiowane dosłownie, jeden panel z literalną
+  poprawką modelu. Weryfikacja oraz ogląd pięciu obrazów zakończone
+  `approved_synthetic_repaired_package`. W materiałach/care tolerowany
+  drobny szew rasteryzacji; dekoracja nie zmienia obrysu butelki.
+  Wynik pierwotnego egzaminu nadal niezaliczony; brak eksportu do nauki,
+  treningu wag, zmiany routingu lub ogłoszenia samodzielności.
+- Testy powiązanych mechanizmów: **61 passed**, 1,29 s. Obejmują m.in.
+  niewysyłanie wzorcowych ocen, brak zaliczenia za samo `uncertain`, wykrycie
+  ręcznych podpowiedzi mimo ponownego hashowania, ochronę wszystkich pól
+  poza nagłówkiem i związanie niezależnej zgody z konkretnym obrazem.

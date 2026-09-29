@@ -1,5 +1,27 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — szybka poprawka treści i odebrany zestaw BRIAR
+
+Nowy zamrożony test recenzenta: **16/16 poprawnych ocen**, osiem poprawnych
+i osiem nieuzasadnionych nagłówków, cztery wywołania w **20,780 s**.
+Oczekiwane oceny nie były przekazane modelowi. Uzasadnienia sprawdzono
+niezależnie. To ograniczony test tekstowy, bez eksportu do nauki.
+
+Lokalny model poprawił wadliwy nagłówek BRIAR na „One Bottle”, zachowując
+wszystkie pozostałe pola sceny, rysunek, typografię i fakty. **12,974 s**:
+dwie odpowiedzi autora (pierwsza miała niedozwolone cyfry), jeden przegląd
+modelu i render. Nowy pełny zestaw `reviewed-package-inmt8m30` przeszedł
+weryfikację pochodzenia, eksportów oraz niezależny ogląd pięciu obrazów.
+Odbiór dotyczy **poprawionego znanego pakietu**, nie nowego egzaminu;
+pierwotny BRIAR nadal jest niezaliczony. Nowy ZIP dostępny w jego katalogu.
+
+Recenzent podczas poprawki zmienił ocenę niezmienionego nagłówka wymiarów
+z `supported` na `uncertain`. Niezależny odbiór uznał ten ogólny nagłówek
+za dopuszczalny, lecz niestabilność pozostaje udokumentowana. Mechanizm
+działa jako oddzielna ograniczona naprawa, bez automatycznej kwalifikacji
+lub wdrożenia recenzenta do wszystkich zleceń. Nadal brakuje pełnych
+powtarzalnych realizacji pięciu usług.
+
 ## Aktualizacja 29.09.2026 — krótsze cykle napraw na polecenie właściciela
 
 Priorytetem jest ograniczenie powtarzania pełnych generacji: diagnostyka

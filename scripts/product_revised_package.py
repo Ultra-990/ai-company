@@ -28,10 +28,14 @@ def selected_sources(package, pairs):
     seen = set()
     for report_path, judgment_path in pairs:
         report_path, judgment_path = Path(report_path), Path(judgment_path)
-        report, folder, _, _ = revision.authenticate(report_path)
-        # collect verifies the separately bound positive judgment, without
-        # exporting any training data or calling the model.
-        revision.collect(report_path, judgment_path)
+        if revision.read(report_path).get('schema') == 'product-headline-literal-repair.v1':
+            from scripts import product_headline_repair as headline
+            report, folder = headline.approved_source(report_path, judgment_path)
+        else:
+            report, folder, _, _ = revision.authenticate(report_path)
+            # collect verifies the separately bound positive judgment, without
+            # exporting any training data or calling the model.
+            revision.collect(report_path, judgment_path)
         part = report['part']
         if part not in product.PANELS or part in seen:
             raise ValueError('Unique panel revisions required; source replacements need a separate generation')
@@ -53,6 +57,12 @@ def verify(out):
     package = Path(report['original_package'])
     if product.school.checksum(revision.bounded(package/'report.json')) != report['original_report_sha256']:
         raise ValueError('Original package changed')
+    original = revision.read(package/'report.json')
+    if original['brief'] != product.BRIEF:
+        from scripts.product_full_exam import matching_case, exercise_context
+        case = matching_case(original)
+        if case is None: raise ValueError('Known synthetic assembly brief required')
+        with exercise_context(case): return verify(out)
     pairs = [(item['report'], item['judgment']) for item in report['revisions']]
     sources, bindings = selected_sources(package, pairs)
     if bindings != report['revisions']:
@@ -112,6 +122,12 @@ def verify(out):
 
 def run(package, pairs):
     package = Path(package)
+    original = revision.read(package/'report.json')
+    if original['brief'] != product.BRIEF:
+        from scripts.product_full_exam import matching_case, exercise_context
+        case = matching_case(original)
+        if case is None: raise ValueError('Known synthetic assembly brief required')
+        with exercise_context(case): return run(package, pairs)
     sources, bindings = selected_sources(package, pairs)
     product.school.check_idle()
     original = revision.read(package/'report.json')
@@ -127,7 +143,8 @@ def run(package, pairs):
     print(json.dumps({'output': str(out)}), flush=True)
     implementation = out/'implementation'; implementation.mkdir()
     for name in ('product_revised_package.py', 'product_infographic_school.py', 'product_visual_revision.py',
-                 'product_callouts.py', 'render_school_svg.py', 'vector_school_contract.py'):
+                 'product_callouts.py', 'render_school_svg.py', 'vector_school_contract.py',
+                 'product_headline_repair.py', 'product_headline_probe.py', 'product_correction_evidence.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
     try:
         delivery = out/'delivery'; delivery.mkdir()

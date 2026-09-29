@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 import pytest
 
@@ -6,6 +7,7 @@ from scripts import product_revised_package as assembly
 
 
 def setup_sources(tmp_path, monkeypatch, parts=('materials',)):
+    monkeypatch.setattr(assembly.revision, 'ROOT', tmp_path)
     package = tmp_path/'original'; package.mkdir()
     monkeypatch.setattr(assembly.product, 'verify', lambda path: {'verified': True})
     pairs, reports, folders = [], {}, {}
@@ -52,3 +54,22 @@ def test_assembly_does_not_bypass_independent_approval(tmp_path, monkeypatch):
 def test_assembly_refuses_empty_selection(tmp_path, monkeypatch):
     package, _, _, _ = setup_sources(tmp_path, monkeypatch)
     with pytest.raises(ValueError, match='One to four'): assembly.selected_sources(package, [])
+
+
+@pytest.mark.parametrize('approved', [True, False])
+def test_headline_assembly_requires_its_separate_authorship_and_independent_approval(tmp_path, monkeypatch, approved):
+    from scripts import product_headline_repair as headline
+    package, pairs, reports, folders = setup_sources(tmp_path, monkeypatch, ('capacity',))
+    report_path, judgment_path = pairs[0]
+    report_path.write_text(json.dumps({'schema': headline.CONTRACT}))
+    def checked(report, judgment):
+        assert (report, judgment) == (report_path, judgment_path)
+        if not approved: raise ValueError('Independent positive headline review required')
+        return reports[report], folders[report]
+    monkeypatch.setattr(headline, 'approved_source', checked)
+    monkeypatch.setattr(assembly.revision, 'authenticate', lambda *args: pytest.fail('Must use literal headline verifier'))
+    if approved:
+        sources, _ = assembly.selected_sources(package, pairs)
+        assert sources['capacity'] == folders[report_path]/'artwork.svg'
+    else:
+        with pytest.raises(ValueError, match='Independent'): assembly.selected_sources(package, pairs)
