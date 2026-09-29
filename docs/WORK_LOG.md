@@ -5251,3 +5251,68 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   faktów, te same limity prób, kontekstu, tokenów oraz czasu dla obu ramion.
 - Intake po pierwszej serii poprawek nadal **227/25/50**, bez nowych błędów
   lub treningu wag. Nowe egzaminy i audyty pozostają poza nauką.
+
+## 2026-09-29 — odbiór v3 i małe poprawki własnych scen
+
+- `full-exam-gasui7wi`: końcowo technicznie i wizualnie **0/3 bazowy,
+  1/3 rozumowanie**. GLEN `series-corrtzhz` niezależnie odebrany po oglądzie
+  źródła i czterech małych dostaw. Łańcuchy korekt wymiarów i pielęgnacji
+  sprawdzone bez dopisanych wskazówek. Ponowienie niepełnej odpowiedzi
+  nie jest liczone jako naprawa. Wymóg trzech różnych pakietów niespełniony.
+- SAGE `series-ehg3nnek` zatrzymał się na kolizji miarki z etykietą;
+  jego źródło miało także wcięcia przy barkach. SUMMIT `series-yhqn0mk6`
+  nie poprawił etykiety/barków i wyczerpał budżet. Bazowe źródła nadal
+  odrzucone za etykiety. Oryginały i wynik egzaminu pozostają niezmienione.
+- `product_scene_patch.py` dopuszcza 1–12 literalnych zmian geometrycznych
+  modelu, chroniąc słowa, kolory, fonty, typy i liczbę elementów.
+  `product_patch_pilot.py` ma trzy próby, zachowuje sceny przed/po, błędy,
+  odpowiedzi i implementację. Błąd składni patcha nie usuwa wcześniejszej
+  diagnozy geometrii. To osobna diagnostyka, jeszcze nie główny generator.
+- `patch-pilot-v9c3lpt0`: profil bazowy naprawił miarkę SAGE w pierwszej
+  próbie, trzema zmianami y, 137 tokenów wyjścia, 4,529 s inferencji.
+  Ogląd zaakceptował wyłącznie tę naprawę; nie cały pakiet ze złym źródłem.
+- `patch-pilot-10eqiuyp`: bazowe poprawki źródła SUMMIT niezaliczone po
+  trzech próbach. `patch-pilot-lsg06knw`: rozumowanie, sześć zmian geometrii,
+  37,032 s inferencji, pomiary v1 zaliczone, ale ogląd odrzucił wybrzuszenie,
+  przewężenie i częściowo zasłoniętą zakrętkę. Negatywny odbiór zachowany.
+- Kontur `synthetic-bottle-contour.v2` bada przewężenia w całym obrysie.
+  Wykrywa oba wadliwe źródła; przepuszcza odebrane GLEN i treningowe FIELD.
+  Historyczne pakiety pozostają weryfikowalne pod ich pierwotnym v1.
+- `product_patch_evidence.py` odtwarza każdą literalną zmianę i wszystkie
+  żądania z ponownie zmierzonych usterek. Rzeczywiste audyty
+  `patch-evidence-f943dkmr` i `patch-evidence-cxqu1f0k` potwierdziły autorstwo
+  i pomiary obu technicznie zakończonych pilotaży. Drugi nadal wizualnie
+  odrzucony; audyt nie przyznaje odbioru. Pierwsze uruchomienie audytu
+  zatrzymała piaskownica przy kontroli usług; ponowienie z uprawnieniami
+  zakończyło się poprawnie, bez zmiany usług lub wywołania modelu.
+
+## 2026-09-29 — lekcja z odebranego przykładu lokalnego modelu
+
+- `product_source_lesson.py` dopuszcza tylko oryginalne źródło z niezależnie
+  odebranej kompletnej rodziny treningowej FIELD. Weryfikuje oryginalne
+  odpowiedzi, SVG, raport, odbiór i podglądy. Odrzuca validation/test,
+  samoocenę i podmienione dane. Przy ładowaniu przywraca aktywny brief.
+- `source-lesson-probe-5glezde2`: znany SAGE, źródło zaliczone w pierwszej
+  próbie po 31,367 s całej próby. Ogląd potwierdził ciągłe barki, widoczną
+  zakrętkę, poprawną podstawę i całą etykietę. To diagnoza znanego przypadku,
+  bez eksportu treningowego, bez nowego zaliczenia egzaminu.
+- `source-lesson-probe-88e1lqbu`: znany SUMMIT nadal niezaliczony, 127,191 s,
+  kolejno za szeroka etykieta, niepełna odpowiedź i wadliwe barki. Pamięć
+  przykładu nie wystarcza do powtarzalnej jakości wszystkich proporcji/nazw.
+- Opcja `--source-lesson` dostępna też dla nowego pełnego `--run`. Raport
+  wiąże przykład z żądaniem i sprawdza, że nie zastąpił bieżącego briefu
+  lub stylu. Kontynuowanie takich pakietów jest na razie jawnie wyłączone.
+  Nie zmieniono wag, aktywnego routingu ani progu odbioru.
+- Testy po integracji lekcji i weryfikatora patchy: **82 passed**. Obejmują
+  zmianę faktów mimo odświeżonych hashy, dodatkowe wskazówki/wywołania,
+  podmianę autora, przekroczenie budżetu i zastąpienie bieżącego briefu.
+- Pełna regresja: **1883 passed, 22 skipped**, 90,95 s. Ponowny audyt
+  wszystkich trzech historycznych egzaminów zachował ich integralność
+  i wyniki odbioru: 0/0, 0/0, 0/1 dla bazowego/rozumowania.
+- Pełne ćwiczenie z lekcją `series-qo_prtfd`: 8 wywołań, 317,493 s,
+  ukończone technicznie z własnymi korektami pojemności i wymiarów.
+  Niezależny ogląd odrzucił cały pakiet: duża elipsa w kolorze korpusu
+  za butelką na panelu care zmienia jej widoczną sylwetkę. Pozostałe
+  panele i źródło czytelne. Literalne zachowanie węzłów źródła nie
+  wystarcza do ochrony wyglądu przed scalającą się dekoracją. Negatywna
+  ocena związana hashami; bez eksportu do nauki lub zmiany wyniku egzaminu.

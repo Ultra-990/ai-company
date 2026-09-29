@@ -6,7 +6,8 @@ commercial products with handles, feet, embossed rings or decorative profiles.
 """
 from PIL import Image
 
-CONTRACT = 'synthetic-bottle-contour.v1'
+LEGACY_CONTRACT = 'synthetic-bottle-contour.v1'
+CONTRACT = 'synthetic-bottle-contour.v2'
 
 
 def body_rows(image, body_color):
@@ -57,8 +58,32 @@ def contour_issues(rows):
     return issues
 
 
-def inspect(path, style):
+def full_contour_issues(rows):
+    issues = contour_issues(rows)
+    if len(rows) < 20: return issues
+    widths = [row['width'] for row in rows]
+    left_max = []; maximum = 0
+    for width in widths:
+        maximum = max(maximum, width); left_max.append(maximum)
+    right_max = []; maximum = 0
+    for width in reversed(widths):
+        maximum = max(maximum, width); right_max.append(maximum)
+    right_max.reverse()
+    tolerance = max(3, max(widths)*.035)
+    notches = [{'y': row['y'], 'width': row['width'], 'neighboring_envelope_width': min(a, b)}
+               for row, a, b in zip(rows, left_max, right_max, strict=True)
+               if min(a, b)-row['width'] > tolerance]
+    if notches and not any(issue['kind'] == 'base_contour_notch' for issue in issues):
+        worst = max(notches, key=lambda entry: entry['neighboring_envelope_width']-entry['width'])
+        issues.append({'kind': 'body_contour_notch', **worst,
+                       'required': 'The cylindrical outline must join smoothly from shoulders through body to base, without narrowing between wider neighboring sections.'})
+    return issues
+
+
+def inspect(path, style, *, contract=CONTRACT):
+    if contract not in (LEGACY_CONTRACT, CONTRACT): raise ValueError('Known source contour contract required')
     with Image.open(path) as image:
         rows = body_rows(image, style['body_color'])
-    return {'contract': CONTRACT, 'observed_body_rows': len(rows),
-            'issues': contour_issues(rows), 'visual_acceptance': False}
+    return {'contract': contract, 'observed_body_rows': len(rows),
+            'issues': contour_issues(rows) if contract == LEGACY_CONTRACT else full_contour_issues(rows),
+            'visual_acceptance': False}

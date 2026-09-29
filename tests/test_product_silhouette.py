@@ -34,6 +34,13 @@ def test_foreign_color_bands_do_not_become_false_physical_gap_findings():
     assert silhouette.contour_issues(profile) == []
 
 
+def test_new_contour_catches_shoulder_body_notches_without_changing_historical_base_check():
+    profile = rows(list(range(60, 121, 2))+[100, 108, 114]+[120]*180+list(range(118, 59, -2)))
+    assert silhouette.contour_issues(profile) == []
+    assert silhouette.full_contour_issues(profile)[0]['kind'] == 'body_contour_notch'
+    assert silhouette.full_contour_issues(rows(smooth_widths())) == []
+
+
 def test_measurement_uses_visible_body_paint_and_ignores_clear_or_foreign_pixels():
     image = Image.new('RGBA', (600, 800), (0, 0, 0, 0))
     image.putpixel((100, 100), (51, 102, 153, 255))

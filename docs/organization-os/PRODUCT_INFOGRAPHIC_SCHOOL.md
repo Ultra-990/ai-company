@@ -213,3 +213,40 @@ rzeczywiste odcinki ze stroke oraz cienkie prostokąty użyte jako kreski.
 Kontrola obejmuje poziome/pionowe odcinki o zerowej szerokości/wysokości
 geometrycznej, a nie tylko dodatnie pola prostokątów. Nie ocenia jeszcze
 znaczenia wszystkich linii wymiarowych ani poprawności wskazania materiału.
+
+## Diagnoza małymi zmianami i przykład treningowy — 29.09.2026
+
+`--repair-failed-scene KATALOG` uruchamia osobny pilotaż maksymalnie trzech
+zestawów małych zmian. Model wybiera indeks, atrybut i literalną wartość;
+narzędzie nie oblicza poprawnych współrzędnych. Chronione pozostają słowa,
+kolory, fonty, typy i liczba elementów. Każda wersja przechodzi zwykły
+kompilator, renderowanie oraz kontrole faktów, czytelności i oznaczeń.
+Domyślny patch ma 1200 tokenów bez rozumowania; wybrany jawnie profil
+`qwen-deliberate-trial.v1` ma 8192. Pakiet pierwotny nie jest modyfikowany.
+
+`product_patch_evidence.assess(katalog)` ponownie mierzy sceny, odtwarza
+żądania z diagnoz i stosuje literalne zapisane odpowiedzi. Zmiana choćby
+jednego chronionego faktu lub dodanie ręcznej wskazówki unieważnia dowód.
+To kontrola pochodzenia i pomiarów, nie niezależny odbiór estetyczny.
+Rzeczywista naprawa miarki została odebrana; technicznie zaliczona naprawa
+źródła została odrzucona po oglądzie. Tego pilotażu nie włączono automatycznie
+do głównego generatora ani do wyników zamrożonych egzaminów.
+
+`--source-contour` obecnie używa v2: wykrywa przewężenia w całym płaskim
+obrysie butelki. Historyczne v1 pozostaje obsługiwane. Pomiar dotyczy tylko
+tego syntetycznego ćwiczenia, nie dowolnych kształtów rzeczywistych produktów.
+
+`--source-lesson KATALOG_ODEBRANEGO_ZESTAWU` można połączyć ze świeżym
+`--run` albo `--probe-source-lesson KATALOG_ZNANEGO_NIEPOWODZENIA`.
+Lekcja musi pochodzić z niezależnie odebranej rodziny treningowej FIELD,
+zachowywać dokładną odpowiedź lokalnego autora i przejść kontrolę całego
+zestawu. Przykład trafia przed aktualny brief jako dane do nauki; narzędzie
+nie skaluje ani nie przepisuje go za model. Raport wiąże przykład i żądanie,
+a weryfikacja potwierdza zachowanie bieżących faktów i stylu. Wznowienia
+i rekompozycje pakietów z lekcją wymagają przyszłej obsługi pochodzenia
+i są obecnie odrzucane. To pamięć kontekstowa, nie trening wag.
+
+Ostatni pełny egzamin v3 dał **0/3 bazowy i 1/3 z rozumowaniem** po
+niezależnym oglądzie. Osobne próby lekcji na znanych SAGE/SUMMIT dały
+jedno odebrane źródło i jedno niepowodzenie. Nie są nowymi egzaminami,
+nie trafiają do treningu i nie kwalifikują modelu do samodzielnej pracy.

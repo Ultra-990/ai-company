@@ -1,5 +1,32 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — pierwszy odebrany pakiet egzaminu v3
+
+SAGE/GLEN/SUMMIT zakończone: **0/3 bazowy, 1/3 z rozumowaniem** także
+po niezależnym oglądzie źródła i wszystkich czterech paneli. GLEN 650 ma
+poprawne źródło, fakty, miarki i wskazania materiałów. Odtworzenie rozmów
+potwierdziło własne korekty wymiarów i pielęgnacji, bez dodatkowych wskazówek.
+To jeden odebrany syntetyczny pakiet, nadal za mało do samodzielnej pracy.
+
+Osobny pilotaż małych zmian geometrycznych naprawił miarkę SAGE trzema
+literalnymi zmianami modelu w 4,529 s inferencji. Odtworzenie odpowiedzi
+i ponowne renderowanie potwierdziły zachowanie faktów, kolorów i reszty
+sceny. Źródło tego pakietu nadal jest wadliwe; wynik egzaminu pozostaje
+niezaliczony. Naprawa źródła SUMMIT przeszła stare pomiary, lecz ogląd
+odrzucił wybrzuszenie i zasłonięcie zakrętki. Pomiar obrysu v2 wykrywa
+teraz przewężenia również poza podstawą; stare wyniki zachowują v1.
+
+Eksperymentalna lekcja korzysta wyłącznie z wcześniej niezależnie
+odebranego przykładu lokalnego modelu z rodziny treningowej FIELD.
+Na znanych niepowodzeniach: SAGE poprawił źródło w pierwszej próbie;
+SUMMIT nadal nie przeszedł trzech prób. Przykład może być przekazywany
+do nowego pełnego ćwiczenia, z kontrolą pochodzenia i oddzieleniem
+bieżącego briefu. To pamięć/podpowiedź, **bez treningu wag**. Egzaminy
+i ich poprawki nie stają się danymi treningowymi ani nowymi zaliczeniami.
+Pełne ćwiczenie z lekcją ukończyło wszystkie eksporty, lecz ogląd odrzucił
+panel pielęgnacji: elipsa w kolorze korpusu za butelką zmienia jej widoczną
+sylwetkę. Samo dosłowne powtórzenie źródła nie chroni przed taką dekoracją.
+
 ## Aktualizacja 29.09.2026 — odbiór egzaminu v2 i diagnostyka poprawek
 
 Egzamin COVE/MESA/PEAK ukończony: technicznie **0/3 bazowy, 1/3 z

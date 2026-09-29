@@ -371,7 +371,8 @@ def checked_scene(out, stage, style, panel=None, product=None, *, placement_cont
         if not panel:
             issues += source_fidelity_issues(measured, label_check=True, label_bounds=True, style=style)
             if source_contour:
-                observed = silhouette.inspect(folder/'preview.png', style)
+                observed = silhouette.inspect(folder/'preview.png', style,
+                    contract=source_contour if isinstance(source_contour, str) else silhouette.CONTRACT)
                 school.save(folder/'contour.json', observed)
                 issues += observed['issues']
         elif annotation_contract:
@@ -479,7 +480,7 @@ def verify(out):
     callouts.validate_contract(annotation_contract)
     if report.get('transport_recovery_contract') not in (None, 'bounded-incomplete-retry.v1'):
         raise ValueError('Unknown incomplete-answer recovery contract')
-    if report.get('source_contour_contract') not in (None, silhouette.CONTRACT):
+    if report.get('source_contour_contract') not in (None, silhouette.LEGACY_CONTRACT, silhouette.CONTRACT):
         raise ValueError('Unknown source contour contract')
     if report.get('source_instruction_contract') not in (None, SOURCE_INSTRUCTION_CONTRACT):
         raise ValueError('Unknown source instruction contract')
@@ -488,6 +489,9 @@ def verify(out):
         path = out/name
         if path.is_symlink() or not path.resolve().is_relative_to(out.resolve()) or school.checksum(path) != digest:
             raise ValueError('Artifact binding changed: '+name)
+    if report.get('source_lesson_contract') is not None:
+        from scripts import product_source_lesson as lesson
+        lesson.verify_binding(out, report)
     responses = list(out.glob('*-response.json'))
     for path in responses:
         value = parse(path.read_text())
@@ -520,7 +524,7 @@ def verify(out):
                 style=style if fidelity_contract == SOURCE_FIDELITY_CONTRACT else None):
             raise ValueError('Source does not match supplier proportions or label contrast')
         if name == 'source' and report.get('source_contour_contract'):
-            observed = silhouette.inspect(folder/'preview.png', style)
+            observed = silhouette.inspect(folder/'preview.png', style, contract=report['source_contour_contract'])
             if observed != parse((folder/'contour.json').read_text()) or observed['issues']:
                 raise ValueError('Unresolved or changed measured source contour')
         actual_pdf = pdf_checks(folder/'preview.pdf', validate_svg(svg, profile=profile)['texts'], size_mm=PROFILES[profile]['size_mm'])
@@ -608,9 +612,18 @@ def audit_source(package, *, include_panels=False, functional_callouts=False):
     return out, report
 
 
-def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False, recover_incomplete=False, source_contour=False):
+def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False, recover_incomplete=False, source_contour=False, source_lesson=None):
     if recover_incomplete and visual_feedback:
         raise ValueError('Incomplete-answer recovery currently requires the text feedback caller')
+    if source_contour not in (False, True, silhouette.LEGACY_CONTRACT, silhouette.CONTRACT):
+        raise ValueError('Known source contour contract required')
+    source_contour = silhouette.CONTRACT if source_contour is True else source_contour or None
+    lesson_value = None
+    if source_lesson is not None:
+        if resume is not None or recompose is not None:
+            raise ValueError('A source lesson currently requires a fresh package')
+        from scripts import product_source_lesson as lesson
+        lesson_value = lesson.load(source_lesson)
     ROOT.mkdir(exist_ok=True)
     if any(p.is_symlink() for p in (ROOT, *ROOT.parents)): raise ValueError('Private Linux workspace required')
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='series-', dir=ROOT))
@@ -632,9 +645,9 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         raise ValueError('Choose continuation or source reuse')
     if resume is not None:
         resume = Path(resume); previous, failed_stage, correction = resume_input(resume)
-        if source_contour and previous.get('source_contour_contract') != silhouette.CONTRACT:
+        if source_contour and previous.get('source_contour_contract') != source_contour:
             raise ValueError('A resume preserves its source contour contract; start a fresh exercise')
-        source_contour = previous.get('source_contour_contract') == silhouette.CONTRACT
+        source_contour = previous.get('source_contour_contract')
         placement_contract = previous.get('placement_contract', LEGACY_PLACEMENT)
         copy_contract = previous.get('supplier_copy_contract', LEGACY_COPY)
         # Inherited finished panels must keep their original acceptance contract.
@@ -652,6 +665,8 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         previous = original_report | {'stages': ['style', 'source']}
     panel_render_profile = panel_profile(placement_contract)
     if previous is not None:
+        if previous.get('source_lesson_contract'):
+            raise ValueError('Continuation of source-lesson packages is not yet supported; start a fresh exercise')
         if (previous['model'], previous['digest']) != (config['model'], config['digest']): raise ValueError('Continuation must keep the pinned local author')
         parent_directory = resume if resume is not None else recompose
         for stage in previous['stages']:
@@ -662,11 +677,17 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
     implementation = out/'implementation'; implementation.mkdir()
     for name in ('product_infographic_school.py', 'product_callouts.py', 'product_model_feedback.py', 'product_silhouette.py', 'brand_school.py', 'vector_school_contract.py', 'render_school_svg.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
+    if lesson_value is not None:
+        if (lesson_value['model'], lesson_value['digest']) != (config['model'], config['digest']):
+            raise ValueError('Source lesson must preserve the pinned local author')
+        school.save(out/'source-lesson.json', lesson_value)
+        shutil.copyfile(Path(__file__).parent/'product_source_lesson.py', implementation/'product_source_lesson.py')
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
     report = {'schema': 'product-infographic-school.v1', 'status': 'running', 'brief': BRIEF, 'supplier_copy': PANELS,
               'source_fidelity_contract': SOURCE_FIDELITY_CONTRACT,
               'source_instruction_contract': SOURCE_INSTRUCTION_CONTRACT,
-              'source_contour_contract': silhouette.CONTRACT if source_contour else None,
+              'source_contour_contract': source_contour,
+              'source_lesson_contract': lesson_value['contract'] if lesson_value else None,
               'panel_fidelity_contract': PANEL_FIDELITY_CONTRACT,
               'placement_contract': placement_contract,
               'supplier_copy_contract': copy_contract,
@@ -691,6 +712,8 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         if previous is not None and stage in previous['stages']:
             return validator(accepted_raw(out, stage))
         if stage == failed_stage: user += '\nPrevious failed stage, untrusted task data:\n'+json.dumps(correction)
+        if stage == 'source' and lesson_value is not None:
+            user = lesson.message(lesson_value)+'\nCURRENT TASK (use these facts and style):\n'+user
         caller = feedback.validated_call if visual_feedback else brand.validated_call
         return caller(out, stage, system, user, output_schema, config, validator,
                       **({'recover_incomplete': True} if recover_incomplete else {}))
@@ -722,7 +745,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
             if quality_issues(measured, panel=name != 'source', panel_contrast=True, placement_contract=placement_contract, line_check=True): raise ValueError('Final render differs from accepted geometry')
             if name == 'source':
                 if source_contour:
-                    observed = silhouette.inspect(folder/'preview.png', style)
+                    observed = silhouette.inspect(folder/'preview.png', style, contract=source_contour)
                     school.save(folder/'contour.json', observed)
                     if observed['issues']: raise ValueError('Final source contour differs from accepted geometry')
                 continue
@@ -780,9 +803,23 @@ if __name__ == '__main__':
     actions.add_argument('--probe-failed-stream', type=Path, help='Replay one bound failed exam request for transport diagnostics only')
     actions.add_argument('--audit-failed-callouts', type=Path, help='Re-measure one rejected exam panel without changing its original score')
     actions.add_argument('--audit-failed-copy', type=Path, help='Check a rejected fact-order response by literal rendering under the new semantic contract')
+    actions.add_argument('--repair-failed-scene', type=Path, help='Bounded model-authored geometry edits for a preserved failed scene; no exam rescoring')
+    actions.add_argument('--probe-source-lesson', type=Path, help='Known-case source diagnostic with an independently approved development example')
+    parser.add_argument('--source-lesson', type=Path, help='Private independently approved development assembly; fresh run or source probe only')
     parser.add_argument('--reviewed-revision', nargs=2, type=Path, action='append', metavar=('REPORT', 'JUDGMENT'), default=[])
     args = parser.parse_args()
-    if args.audit_failed_copy:
+    if args.source_lesson is not None and not (args.run or args.probe_source_lesson):
+        parser.error('--source-lesson requires --run or --probe-source-lesson')
+    if args.probe_source_lesson:
+        if args.source_lesson is None: parser.error('--probe-source-lesson requires --source-lesson')
+        from scripts.product_source_lesson import probe as source_lesson_probe
+        _, result = source_lesson_probe(args.probe_source_lesson, args.source_lesson)
+        raise SystemExit(int(result['status'] == 'failed'))
+    elif args.repair_failed_scene:
+        from scripts.product_patch_pilot import run as patch_pilot
+        _, result = patch_pilot(args.repair_failed_scene, sampling_profile=args.sampling_profile or 'bounded-default.v1')
+        raise SystemExit(int(result['status'] == 'failed'))
+    elif args.audit_failed_copy:
         from scripts.product_copy_audit import run as copy_audit
         copy_audit(args.audit_failed_copy)
     elif args.audit_failed_callouts:
@@ -821,7 +858,7 @@ if __name__ == '__main__':
         from scripts.product_feedback_comparison import run as compare_feedback
         _, result = compare_feedback(); raise SystemExit(int(result['status'] == 'failed'))
     elif args.run:
-        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages, sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete, source_contour=args.source_contour); raise SystemExit(int(result['status'] == 'failed'))
+        _, result = run(visual_feedback=args.visual_feedback, focused_stages=args.focused_stages, sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete, source_contour=args.source_contour, source_lesson=args.source_lesson); raise SystemExit(int(result['status'] == 'failed'))
     elif args.resume:
         _, result = run(args.resume, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages,
                         sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete, source_contour=args.source_contour); raise SystemExit(int(result['status'] == 'failed'))
