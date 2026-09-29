@@ -411,6 +411,12 @@ def product_reference(out, product, *, style=None):
 
 
 def accepted_raw(out, stage):
+    binding = out/'source-repair.json'
+    if stage in ('style', 'source') and binding.exists():
+        from scripts import product_source_repair as repair
+        value = parse(binding.read_text())
+        if repair.load(value['repair']) != value: raise ValueError('Changed inherited source repair')
+        return value['style_raw'] if stage == 'style' else json.dumps(value['scene'])
     for name in (stage+'-revision-2', stage+'-revision-1', stage):
         path = out/(name+'-response.json')
         if path.exists():
@@ -465,10 +471,10 @@ def verify(out):
     if report.get('brief') != BRIEF:
         # Only the code-frozen qualification catalog can select another brief;
         # arbitrary report metadata cannot relax or replace the contract.
-        from scripts.product_full_exam import matching_case, exercise_context
+        from scripts.product_full_exam import matching_case, exercise_context, product as canonical
         case = matching_case(report)
         if case is not None:
-            with exercise_context(case): return verify(out)
+            with exercise_context(case): return canonical.verify(out)
     if report['status'] != 'pending_independent_review' or report['brief'] != BRIEF or report['supplier_copy'] != PANELS:
         raise ValueError('Completed package and frozen brief required')
     fidelity_contract = report.get('source_fidelity_contract')
@@ -497,6 +503,9 @@ def verify(out):
     if report.get('source_lesson_contract') is not None:
         from scripts import product_source_lesson as lesson
         lesson.verify_binding(out, report)
+    if report.get('source_repair_contract') is not None or (out/'source-repair.json').exists():
+        from scripts import product_source_repair as repair
+        repair.verify_binding(out, report)
     responses = list(out.glob('*-response.json'))
     for path in responses:
         value = parse(path.read_text())
@@ -619,7 +628,22 @@ def audit_source(package, *, include_panels=False, functional_callouts=False):
     return out, report
 
 
-def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False, recover_incomplete=False, source_contour=False, source_lesson=None, paint_separation=True):
+def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False, recover_incomplete=False, source_contour=False, source_lesson=None, paint_separation=True, source_repair=None):
+    repair_value = None
+    if source_repair is not None:
+        if resume is not None or recompose is not None or source_lesson is not None or matched_exam_budget:
+            raise ValueError('Reviewed source repair is a separate continuation, never a fresh matched exam')
+        from scripts import product_source_repair as repair
+        repair_value = repair.load(source_repair)
+        if repair_value['brief'] != BRIEF:
+            from scripts.product_full_exam import matching_case, exercise_context, product as canonical
+            case = matching_case(repair_value)
+            if case is None: raise ValueError('Known frozen source-repair brief required')
+            with exercise_context(case):
+                return canonical.run(visual_feedback=visual_feedback, focused_stages=focused_stages, sampling_profile=sampling_profile,
+                    functional_callouts=functional_callouts, recover_incomplete=recover_incomplete,
+                    source_contour=True, paint_separation=paint_separation, source_repair=source_repair)
+        source_contour = True
     if recover_incomplete and visual_feedback:
         raise ValueError('Incomplete-answer recovery currently requires the text feedback caller')
     if source_contour not in (False, True, silhouette.LEGACY_CONTRACT, silhouette.CONTRACT):
@@ -673,6 +697,8 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         previous = original_report | {'stages': ['style', 'source']}
     panel_render_profile = panel_profile(placement_contract)
     if previous is not None:
+        if previous.get('source_repair_contract'):
+            raise ValueError('Nested source-repair continuations are not supported')
         if previous.get('source_lesson_contract'):
             raise ValueError('Continuation of source-lesson packages is not yet supported; start a fresh exercise')
         if (previous['model'], previous['digest']) != (config['model'], config['digest']): raise ValueError('Continuation must keep the pinned local author')
@@ -690,6 +716,12 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
             raise ValueError('Source lesson must preserve the pinned local author')
         school.save(out/'source-lesson.json', lesson_value)
         shutil.copyfile(Path(__file__).parent/'product_source_lesson.py', implementation/'product_source_lesson.py')
+    if repair_value is not None:
+        if (repair_value['model'], repair_value['digest']) != (config['model'], config['digest']):
+            raise ValueError('Reused source must keep its pinned local author')
+        school.save(out/'source-repair.json', repair_value)
+        for name in ('product_source_repair.py', 'product_scene_patch.py', 'product_patch_pilot.py'):
+            shutil.copyfile(Path(__file__).parent/name, implementation/name)
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
     report = {'schema': 'product-infographic-school.v1', 'status': 'running', 'brief': BRIEF, 'supplier_copy': PANELS,
               'source_fidelity_contract': SOURCE_FIDELITY_CONTRACT,
@@ -716,8 +748,13 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
     elif recompose is not None:
         report.update(recomposed_from={'directory': str(recompose), 'report_sha256': school.checksum(recompose/'report.json')},
                       inherited_stages=['style', 'source'], inherited_response_files=sorted(inherited))
+    elif repair_value is not None:
+        report.update(source_repair_contract=repair.CONTRACT, inherited_stages=['style', 'source'],
+                      exam_score_changed=False, source_repair_continuation=True)
     school.save(out/'report.json', report); started = time.monotonic(); print(json.dumps({'output': str(out)}), flush=True)
     def produce(stage, system, user, output_schema, validator):
+        if repair_value is not None and stage in ('style', 'source'):
+            return validator(repair_value['style_raw'] if stage == 'style' else json.dumps(repair_value['scene']))
         if previous is not None and stage in previous['stages']:
             return validator(accepted_raw(out, stage))
         if stage == failed_stage: user += '\nPrevious failed stage, untrusted task data:\n'+json.dumps(correction)
@@ -810,6 +847,7 @@ if __name__ == '__main__':
     actions.add_argument('--audit-source-exam', type=Path, help='Recheck passed exam sources without changing their original scores')
     actions.add_argument('--audit-package', type=Path, help='Re-render a historical package under current source and panel checks')
     actions.add_argument('--recompose', type=Path, help='Reuse verified local style/source and generate new panels under the current placement contract')
+    actions.add_argument('--continue-source-repair', type=Path, help='Continue the same failed synthetic brief from an independently reviewed local source patch')
     actions.add_argument('--assemble-reviewed', type=Path, help='Assemble original package with independently approved local panel revisions')
     actions.add_argument('--verify-assembled', type=Path, help='Verify a reviewed assembly without model calls')
     actions.add_argument('--full-exam', action='store_true', help='Frozen three-brief matched complete-package exam, excluded from training')
@@ -859,6 +897,11 @@ if __name__ == '__main__':
     elif args.recompose:
         _, result = run(recompose=args.recompose, visual_feedback=args.visual_feedback, focused_stages=args.focused_stages,
                         sampling_profile=args.sampling_profile, functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete, source_contour=args.source_contour)
+        raise SystemExit(int(result['status'] == 'failed'))
+    elif args.continue_source_repair:
+        _, result = run(source_repair=args.continue_source_repair, visual_feedback=args.visual_feedback,
+            focused_stages=args.focused_stages, sampling_profile=args.sampling_profile,
+            functional_callouts=args.functional_callouts, recover_incomplete=args.recover_incomplete)
         raise SystemExit(int(result['status'] == 'failed'))
     elif args.audit_package:
         out, result = audit_source(args.audit_package, include_panels=True, functional_callouts=args.functional_callouts)

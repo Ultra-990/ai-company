@@ -35,6 +35,15 @@ wobec pozostałych paneli. Oddzielna pozytywna ocena obrazu i treści pozwala
 złożyć nową paczkę przez `--assemble-reviewed`; cała paczka nadal wymaga
 własnego odbioru. Pierwotny egzamin i dane treningowe pozostają bez zmian.
 
+Naprawiony rysunek źródłowy można wykorzystać przez
+`scripts/product_infographic_school.py --continue-source-repair KATALOG`.
+Wymagane są: literalne poprawki lokalnego modelu, niezależne odtworzenie
+pomiarów i związana pozytywna ocena faktycznego obrazu źródła. Kontynuacja
+zachowuje ten sam brief, styl i poprawiony rysunek, generując tylko brakujące
+panele. Nie tworzy fikcyjnej pełnej odpowiedzi modelu: pochodzenie źródła
+wynika z oryginalnej odpowiedzi oraz zapisanych patchy. Nie wolno mieszać
+tej kontynuacji z nowym egzaminem lub lekcją do innego zadania.
+
 ## Kryterium zakończenia dla każdej usługi
 
 Pięć usług pozostaje zgodnych z `scripts/upwork_qualification.py`: przegląd

@@ -1,5 +1,20 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — źródło HIGHPOINT naprawione przez model
+
+Mała poprawka z rozumowaniem (`patch-pilot-tgk9u45n`) naprawiła etykietę
+i obrys HIGHPOINT w dwóch próbach, **45,077 s**. Model sam poszerzył
+korpus/barki/podstawę, zachowując rozmiar fontu 24. Niezależny replay
+`patch-evidence-mcc6xpuu` i ogląd potwierdziły dosłowne autorstwo, czytelny
+pełny napis i poprawne połączenia części. To odebrane źródło, nie cały pakiet.
+
+Nowe `--continue-source-repair` przejmuje dokładny poprawiony rysunek oraz
+oryginalny styl do tego samego briefu. Wymaga uwierzytelnionych pomiarów
+i pozytywnej oceny obrazu, jawnie oznacza dziedziczenie i nie fabrykuje
+odpowiedzi modelu. Kontynuacja nie jest nowym egzaminem ani lekcją.
+Testy powiązanych zmian: **104 passed**. Naprawiono również przekazywanie
+briefu między uruchomieniem CLI a kanonicznym modułem Pythona.
+
 ## Aktualizacja 29.09.2026 — szybka poprawka treści i odebrany zestaw BRIAR
 
 Nowy zamrożony test recenzenta: **16/16 poprawnych ocen**, osiem poprawnych

@@ -5480,3 +5480,34 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   niewysyłanie wzorcowych ocen, brak zaliczenia za samo `uncertain`, wykrycie
   ręcznych podpowiedzi mimo ponownego hashowania, ochronę wszystkich pól
   poza nagłówkiem i związanie niezależnej zgody z konkretnym obrazem.
+
+## 2026-09-29 — poprawiony lokalnie rysunek HIGHPOINT i kontynuacja źródła
+
+- Poprzedni obrót celu: postęp (test 16/16 nagłówków, własna poprawka
+  modelu oraz niezależnie odebrany pełny BRIAR, commit 10c8fa4).
+- `patch-pilot-tgk9u45n`: ponowiono naprawę tego samego źródła HIGHPOINT
+  w profilu rozumowania, po wcześniejszych trzech nieudanych bazowych
+  patchach. Dwie próby, **45,077 s**. Pierwsza wybrała font 23 przy minimum
+  24 i została odrzucona. Druga własna odpowiedź poszerzyła korpus,
+  dopasowała barki i promień podstawy (4 literalne zmiany); font pozostał 24.
+  Pomiary i ogląd 600×800 zaakceptowały kompletną etykietę wewnątrz
+  sylwetki, spójne barki, połączoną zakrętkę i zaokrągloną podstawę.
+  Boczne odstępy etykiety są małe, ale bez ucięcia i przy czytelnym tekście.
+- `patch-evidence-mcc6xpuu` niezależnie odtworzył oba patche oraz pomiary,
+  w tym odrzucenie fontu 23. Potwierdzono autorstwo i zachowanie słów,
+  farby i fontów. Osobna pozytywna ocena dotyczy tylko syntetycznego źródła,
+  bez zaliczenia całego pakietu, egzaminu czy eksportu do treningu.
+- `product_source_repair.py` uwierzytelnia źródło przez raport oryginału,
+  odtworzone poprawki, pomiary i niezależną ocenę z hashami obrazu.
+  `--continue-source-repair` generuje tylko cztery panele tego samego briefu;
+  styl i rysunek są dziedziczone z jawnym pochodzeniem. Nie fabrykuje nowej
+  surowej odpowiedzi źródła. Mieszanie z nowym egzaminem, lekcją lub zagnieżdżoną
+  kontynuacją jest odrzucane. Pełna nowa paczka nadal wymaga odbioru.
+- Pierwsze uruchomienie wykryło rekursję przed wywołaniem modelu:
+  polecenie uruchomione jako `__main__` nie widziało kontekstu briefu
+  zmienionego w importowanym module. Przekazanie do kanonicznego modułu
+  naprawiło kontynuację i analogiczną ścieżkę CLI `--verify` dla briefów
+  egzaminacyjnych. Test CLI potwierdza jedno przekazanie i przywrócenie
+  poprzedniego kontekstu. Rzeczywisty dawny DALE ponownie zweryfikowany.
+- Testy kontynuacji, kontraktów pakietu, patchy, lekcji, egzaminu i korekt:
+  **104 passed**, 2,22 s. Realna kontynuacja HIGHPOINT: `series-rgibz4wl`.
