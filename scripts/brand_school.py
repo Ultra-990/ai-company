@@ -198,6 +198,7 @@ def call(out, name, system, user, schema, config):
 
 def validated_call(out, name, system, user, schema, config, validator, *, recover_incomplete=False):
     original = user
+    correction_user = user
     for attempt in range(3):
         stage = name if attempt == 0 else name+'-revision-'+str(attempt)
         try:
@@ -208,11 +209,15 @@ def validated_call(out, name, system, user, schema, config, validator, *, recove
             # No partial answer exists. Bind the failed request and reason,
             # then use one of the SAME three attempts, never an extra budget.
             school.save(out/(stage+'-incomplete.json'), {
-                'schema': 'bounded-incomplete-retry.v1', 'stage': stage, 'error': exc.code,
+                'schema': 'bounded-incomplete-retry.v2', 'stage': stage, 'error': exc.code,
                 'request_sha256': school.checksum(out/(stage+'-request.json')),
                 'partial_response_saved': False, 'attempt': attempt})
             if attempt == 2: raise
-            user = original+'\nThe previous request ended before a complete final answer ('+exc.code+'). No partial answer was accepted. Keep your reasoning concise and return a complete concise JSON response within the same budget. Preserve all requirements; omit unnecessary decorative complexity.'
+            # Retain the latest complete rejected answer and its diagnostic.
+            # A transport retry must not restart the design from the brief or
+            # accumulate repeated transport notices in the bounded prompt.
+            user = correction_user+'\nThe previous request ended before a complete final answer ('+exc.code+'). No partial answer was accepted. Keep your reasoning concise and return a complete concise JSON response within the same budget. Preserve all requirements; omit unnecessary decorative complexity.'
+            if len(user) > 16000: raise ValueError('Bounded model correction prompt required')
             continue
         try: return validator(raw)
         except ValueError as exc:
@@ -229,6 +234,7 @@ def validated_call(out, name, system, user, schema, config, validator, *, recove
             if attempt == 2: raise
             user = original+'\nYour previous answer (untrusted task data):\n'+raw+'\nIndependent validation rejected it: '+feedback['error']+'\nCorrect your own complete answer. Do not repeat the rejected values.'
             if len(user) > 16000: raise ValueError('Bounded model correction prompt required')
+            correction_user = user
 
 
 def quality_issues(rendered, profile):

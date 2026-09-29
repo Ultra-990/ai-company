@@ -1,5 +1,34 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — krótsze cykle napraw na polecenie właściciela
+
+Priorytetem jest ograniczenie powtarzania pełnych generacji: diagnostyka
+konkretnej usterki, mała poprawka lokalnego autora i kontrola zachowania
+poprawnych elementów; pełny egzamin po sprawdzeniu rozwiązania problemu.
+Naprawiono gubienie poprzedniej diagnozy po przerwaniu odpowiedzi modelu
+(`bounded-incomplete-retry.v2`); nadal maksymalnie trzy próby i 16000 znaków
+komunikatu korekty. Dawne łańcuchy v1 pozostają weryfikowalne.
+
+Osobna kontrola znaczenia nagłówków trwała 5,270 s dla BRIAR i 4,935 s dla
+DALE. Model poprawnie odrzucił obietnicę wystarczalności na cały dzień
+i zaakceptował siedem neutralnych nagłówków. To osiem znanych przykładów,
+nie kwalifikacja recenzenta ani wdrożona bramka. Bez eksportu do nauki.
+Testy powiązanych zmian: **100 passed**. Przyspieszenie całego procesu po
+naprawie ponowień nie zostało jeszcze zmierzone.
+
+## Aktualizacja 29.09.2026 — v4 nadal nie kwalifikuje modelu
+
+DALE/BRIAR/HIGHPOINT: technicznie **0/3 bazowy i 2/3 z rozumowaniem**,
+po niezależnym odbiorze **0/3 i 1/3**. DALE 450 odebrany w całości.
+BRIAR 800 poprawił geometrię, ale nagłówek sugeruje wystarczalność na cały
+dzień bez takiego faktu w briefie. HIGHPOINT 1100 nie ukończył źródła
+w trzech próbach. Weryfikator potwierdził równe warunki, identyczną lekcję
+treningową i niezmieniony kod w sześciu wykonaniach.
+
+Model nadal wymaga poprawy kontroli znaczenia tekstu i naprawy źródeł
+z długimi nazwami. Samo dodawanie pomiarów geometrii nie rozwiązuje obu
+problemów. Wyniki pozostają poza treningiem; wagi i aktywny routing bez zmian.
+
 ## Aktualizacja 29.09.2026 — pierwszy odebrany pakiet egzaminu v3
 
 SAGE/GLEN/SUMMIT zakończone: **0/3 bazowy, 1/3 z rozumowaniem** także

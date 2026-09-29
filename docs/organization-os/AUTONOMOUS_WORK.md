@@ -19,6 +19,12 @@ ocenia pracę, zachowując autorstwo modelu. Szczegółowe instrukcje panelu
 klienta i panelu właściciela właściciel przekaże po ukończeniu tych etapów.
 Obecne działania nadal dotyczą pierwszego etapu, czyli gotowości modelu.
 
+Właściciel dodatkowo wymaga maksymalnego przyspieszenia prac. Stosujemy
+krótkie próby konkretnej usterki i literalne poprawki modelu, zanim ponowimy
+pełne generowanie. Niezależne lekkie odczyty wykonujemy razem, a testy
+dobieramy do zmiany. Pełne egzaminy uruchamiamy po wykazaniu poprawy
+mechanizmu. Skrócenie czasu nie zmienia kryteriów odbioru ani autorstwa.
+
 ## Kryterium zakończenia dla każdej usługi
 
 Pięć usług pozostaje zgodnych z `scripts/upwork_qualification.py`: przegląd
@@ -57,12 +63,12 @@ i korekt. Trening wag wymaga poprawnych danych, zachowania bazowych wag
 i porównania base/adapter na osobnych zadaniach. Adapter bez wykazanej
 poprawy nie jest promowany.
 
-Aktualny etap dotyczy infografik: rozdzielone instrukcje poprawiły źródła,
-ale kompletne kompozycje pozostają odrzucone. Transformacja źródła była
+Pierwsze próby infografik: rozdzielone instrukcje poprawiły źródła,
+ale ówczesne kompletne kompozycje pozostawały odrzucone. Transformacja źródła była
 ograniczona do skali 1,5 i dodatnich przesunięć, co utrudniało uzyskanie
 czytelnego dużego produktu przy pustych marginesach oryginalnego płótna.
-Nowy wersjonowany kontrakt rozszerza narzędzie bez zmiany samych kształtów;
-sprawdzamy go na tym samym źródle i stylu, z niezależnym odbiorem paneli.
+Wersjonowany kontrakt rozszerzył narzędzie bez zmiany samych kształtów;
+sprawdzono go na tym samym źródle i stylu, z niezależnym odbiorem paneli.
 
 Po pierwszych próbach rozszerzonego kontraktu i rozumowania pełny pakiet
 ma już czytelny większy produkt. Otwarte problemy to znaczenie linii
@@ -95,3 +101,22 @@ wykryć kwadratowe uskoki barków i przewężenie przy podstawie. Nie generuje
 współrzędnych ani nie poprawia grafiki. Nie ocenia pełnej estetyki, zakrętki
 czy dowolnych produktów z uchwytami/nóżkami; kolorowe pasy nie są uznawane
 za fizyczne przerwy. Historyczne pakiety zachowują swoje dawne kontrakty.
+
+Aktualizacja 29.09: v3 ma jeden niezależnie odebrany pełny pakiet w profilu
+z rozumowaniem (GLEN), wobec zera w bazowym. Weryfikacja odtworzyła własne
+korekty modelu bez dodatkowych wskazówek. Nadal brakuje trzech różnych
+odebranych zleceń. Kontur v2 obejmuje także przewężenia przy barkach;
+kontrola farby wykrywa dekorację scalającą się z wstawionym produktem.
+
+Małe literalne poprawki geometrii naprawiły jedną miarkę, ale inne
+technicznie poprawne wyniki odrzucono wizualnie. Pozostają osobną diagnozą,
+bez automatycznej promocji. Lekcja z odebranego przykładu treningowego jest
+osobno uwierzytelniana; nie jest aktualizacją wag. Pełne znane ćwiczenie
+FIELD z tą lekcją i kontrolą farby zostało odebrane. Weryfikację przeniesienia
+na nowe zadania prowadzi v4, z tą samą lekcją i budżetem dla obu profili.
+
+V4 zakończone: 0/3 bazowy, 2/3 z rozumowaniem technicznie, ale 0/3 i 1/3
+po odbiorze. DALE zaakceptowany; BRIAR odrzucony za niepotwierdzoną obietnicę
+całodziennej wystarczalności, HIGHPOINT nie ukończył źródła. Potwierdzone
+łańcuchy korekt nie zastępują odbioru całej pracy. Następne braki to
+kontrola znaczenia nagłówków i proporcje/etykiety długich nazw.

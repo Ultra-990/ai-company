@@ -91,6 +91,7 @@ def run(*, source_lesson=None):
                                      'intermediate_reasoning_saved': False},
                 'shared_controls': {'focused_stages': True, 'functional_callouts': True, 'visual_feedback': False,
                                     'recover_incomplete': True,
+                                    'transport_recovery_contract': 'bounded-incomplete-retry.v2',
                                     'placement_contract': product.PLACEMENT_CONTRACT,
                                     'source_contract': product.SOURCE_FIDELITY_CONTRACT,
                                     'source_instruction_contract': product.SOURCE_INSTRUCTION_CONTRACT,

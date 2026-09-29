@@ -65,3 +65,47 @@ def test_incomplete_response_recovery_is_not_counted_as_a_successful_defect_corr
     save(tmp_path/'source-response.json', {'content': 'invented partial answer'})
     with pytest.raises(ValueError, match='Incomplete attempt binding'):
         evidence.verify_stage(tmp_path, 'source', report)
+
+
+@pytest.mark.parametrize('failures', [
+    ['bad', 'truncated_output', 'good'],
+    ['bad', 'incomplete_stream', 'good'],
+    ['truncated_output', 'incomplete_stream', 'good'],
+    ['truncated_output', 'bad', 'good'],
+])
+def test_live_retry_chain_preserves_latest_correction_and_replays(tmp_path, monkeypatch, failures):
+    from scripts import brand_school as brand
+    from app.services.local_ollama import ModelFailure
+    monkeypatch.setattr(evidence.revision, 'ROOT', tmp_path)
+    monkeypatch.setattr(brand.school, 'check_idle', lambda: {})
+    replies = iter(failures); requests = []
+    class Provider:
+        def __init__(self, config): pass
+        def complete(self, messages):
+            requests.append(messages[-1]['content'])
+            reply = next(replies)
+            if reply in ('truncated_output', 'incomplete_stream'): raise ModelFailure(reply)
+            return {'model': 'fixture', 'digest': 'f'*64, 'content': reply}
+    monkeypatch.setattr(brand, 'OllamaProvider', Provider)
+    def validate(raw):
+        if raw == 'bad': raise ValueError('The complete label extends past the body')
+        return raw
+    assert brand.validated_call(tmp_path, 'source', 'fixed', 'brief', {},
+        {'model': 'fixture', 'digest': 'f'*64}, validate, recover_incomplete=True) == 'good'
+    assert len(requests) == 3
+    if 'bad' in failures:
+        assert 'The complete label extends past the body' in requests[-1]
+        assert 'untrusted task data):\nbad' in requests[-1]
+    assert requests[-1].count('No partial answer was accepted') <= 1
+    checksum = brand.school.checksum
+    report = {'model': 'fixture', 'digest': 'f'*64,
+              'artifacts': {p.name: checksum(p) for p in tmp_path.iterdir()}}
+    result = evidence.verify_stage(tmp_path, 'source', report)
+    assert result['requests'] == 3
+    assert len(result['corrections']) == int('bad' in failures)
+    # Hash rebinding cannot hide a lost diagnostic or an extra human hint.
+    path = tmp_path/'source-revision-2-request.json'
+    altered = json.loads(path.read_text()); altered['user'] = 'brief'
+    brand.school.save(path, altered); report['artifacts'][path.name] = checksum(path)
+    with pytest.raises(ValueError, match='unrecorded hints'):
+        evidence.verify_stage(tmp_path, 'source', report)

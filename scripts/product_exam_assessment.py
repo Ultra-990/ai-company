@@ -87,7 +87,10 @@ def assess(path):
                 if package[field] != controls[control]: raise ValueError('Case acceptance contract changed')
             if package['instruction_contract'] != 'focused-stages.v1' or package['correction_contract'] != 'legacy-text.v1':
                 raise ValueError('Case instruction or feedback arm changed')
-            recovery = 'bounded-incomplete-retry.v1' if version != exam.LEGACY_VERSION else None
+            recovery = controls.get('transport_recovery_contract',
+                'bounded-incomplete-retry.v1' if version != exam.LEGACY_VERSION else None)
+            if recovery not in (None, 'bounded-incomplete-retry.v1', 'bounded-incomplete-retry.v2'):
+                raise ValueError('Unknown incomplete-answer recovery contract')
             if package.get('transport_recovery_contract') != recovery:
                 raise ValueError('Case incomplete-answer recovery contract changed')
             requests = sorted(folder.glob('*-request.json')); responses = sorted(folder.glob('*-response.json'))

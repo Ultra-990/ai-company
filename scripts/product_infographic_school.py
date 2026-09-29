@@ -481,7 +481,7 @@ def verify(out):
     copy_contract = report.get('supplier_copy_contract', LEGACY_COPY)
     annotation_contract = report.get('annotation_contract')
     callouts.validate_contract(annotation_contract)
-    if report.get('transport_recovery_contract') not in (None, 'bounded-incomplete-retry.v1'):
+    if report.get('transport_recovery_contract') not in (None, 'bounded-incomplete-retry.v1', 'bounded-incomplete-retry.v2'):
         raise ValueError('Unknown incomplete-answer recovery contract')
     if report.get('source_contour_contract') not in (None, silhouette.LEGACY_CONTRACT, silhouette.CONTRACT):
         raise ValueError('Unknown source contour contract')
@@ -704,7 +704,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
               'correction_contract': feedback.CONTRACT if visual_feedback else 'legacy-text.v1',
               'instruction_contract': 'focused-stages.v1' if focused_stages else 'combined-stages.v1',
               'annotation_instruction_contract': 'purpose-specific-callouts.v2' if annotation_contract else None,
-              'transport_recovery_contract': 'bounded-incomplete-retry.v1' if recover_incomplete else None,
+              'transport_recovery_contract': 'bounded-incomplete-retry.v2' if recover_incomplete else None,
               'model': config['model'], 'digest': config['digest'], 'config': config, 'resources_before': resources,
               'training_started': False, 'training_exported': False, 'production_changed': False,
               'amazon_listing_approved': False, 'stages': [],

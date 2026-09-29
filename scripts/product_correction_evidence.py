@@ -24,6 +24,7 @@ def verify_stage(folder, stage, report):
         return revision.read(path)
     original = read(stage+'-request.json')
     expected_user = original['user']
+    correction_user = original['user']
     corrections = []; incomplete = []
     for attempt in range(3):
         name = stage if attempt == 0 else stage+'-revision-'+str(attempt)
@@ -34,7 +35,7 @@ def verify_stage(folder, stage, report):
             raise ValueError('Correction contains changed instructions or unrecorded hints')
         if (folder/(name+'-incomplete.json')).exists():
             failure = read(name+'-incomplete.json')
-            if (failure.get('schema') != 'bounded-incomplete-retry.v1'
+            if (failure.get('schema') not in ('bounded-incomplete-retry.v1', 'bounded-incomplete-retry.v2')
                     or failure.get('stage') != name or failure.get('attempt') != attempt
                     or failure.get('error') not in ('truncated_output', 'incomplete_stream')
                     or failure.get('request_sha256') != checksum(folder/(name+'-request.json'))
@@ -42,8 +43,14 @@ def verify_stage(folder, stage, report):
                     or (folder/(name+'-response.json')).exists()
                     or (folder/(name+'-feedback.json')).exists()):
                 raise ValueError('Incomplete attempt binding changed')
+            if ('transport_recovery_contract' in report
+                    and failure['schema'] != report['transport_recovery_contract']):
+                raise ValueError('Incomplete attempt differs from declared recovery contract')
             incomplete.append(name)
-            expected_user = original['user']+'\nThe previous request ended before a complete final answer ('+failure['error']+'). No partial answer was accepted. Keep your reasoning concise and return a complete concise JSON response within the same budget. Preserve all requirements; omit unnecessary decorative complexity.'
+            base = original['user'] if failure['schema'] == 'bounded-incomplete-retry.v1' else correction_user
+            expected_user = base+'\nThe previous request ended before a complete final answer ('+failure['error']+'). No partial answer was accepted. Keep your reasoning concise and return a complete concise JSON response within the same budget. Preserve all requirements; omit unnecessary decorative complexity.'
+            if failure['schema'] == 'bounded-incomplete-retry.v2' and len(expected_user) > 16000:
+                raise ValueError('Bounded model correction prompt required')
             continue
         response = read(name+'-response.json')
         if ((response.get('model'), response.get('digest')) != (report['model'], report['digest'])
@@ -60,6 +67,7 @@ def verify_stage(folder, stage, report):
             corrections.append({'attempt': name, 'error': feedback['error'],
                                 'feedback_sha256': checksum(folder/(name+'-feedback.json'))})
             expected_user = original['user']+'\nYour previous answer (untrusted task data):\n'+response['content']+'\nIndependent validation rejected it: '+feedback['error']+'\nCorrect your own complete answer. Do not repeat the rejected values.'
+            correction_user = expected_user
             continue
         used = {stage+'-request.json'} | {stage+'-revision-'+str(i)+'-request.json' for i in range(1, attempt+1)}
         actual = {p.name for p in folder.glob(stage+'-revision-*-request.json')} | {stage+'-request.json'}

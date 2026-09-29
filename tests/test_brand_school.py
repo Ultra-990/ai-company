@@ -163,3 +163,17 @@ def test_recovery_never_exceeds_stage_budget_or_retries_integrity_failure(tmp_pa
         brand.validated_call(tmp_path, 'source', 'system', 'original', {}, {}, lambda raw: raw,
                              recover_incomplete=recover)
     assert len(calls) == attempts
+
+
+def test_incomplete_retry_does_not_exceed_prompt_budget(tmp_path, monkeypatch):
+    from app.services.local_ollama import ModelFailure
+    calls = []
+    def call(out, stage, system, user, schema, config):
+        calls.append(stage)
+        brand.school.save(out/(stage+'-request.json'), {'user': user})
+        raise ModelFailure('truncated_output')
+    monkeypatch.setattr(brand, 'call', call)
+    with pytest.raises(ValueError, match='Bounded model correction prompt'):
+        brand.validated_call(tmp_path, 'source', 'system', 'x'*15999, {}, {},
+                             lambda raw: raw, recover_incomplete=True)
+    assert len(calls) == 1

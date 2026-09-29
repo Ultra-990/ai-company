@@ -5368,3 +5368,65 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
 - Testy katalogu, równych warunków i powiązania lekcji: **84 passed**.
   Wszystkie trzy wcześniejsze egzaminy ponownie potwierdziły historyczne
   wyniki; v3 pozostaje 0/3 bazowy i 1/3 rozumowanie po odbiorze wizualnym.
+
+## 2026-09-29 — końcowy wynik egzaminu v4
+
+- `full-exam-5rp1cyf1` ukończył wszystkie sześć wykonań. Niezależny audyt
+  potwierdził zgodność kodu, lekcji, budżetów i artefaktów między ramionami.
+  Technicznie **0/3 bazowy, 2/3 rozumowanie**; po oglądzie i ocenie treści
+  **0/3 bazowy, 1/3 rozumowanie**. Kryterium trzech odebranych zleceń nadal
+  niespełnione. Egzamin nie został wyeksportowany do nauki.
+- DALE bazowy `series-weoirzx6`: niepoprawione proporcje i etykieta,
+  4 wywołania/26,287 s. Rozumowanie `series-k84ayie5`: 8 żądań,
+  7 pełnych odpowiedzi/305,704 s, pełny pakiet niezależnie odebrany.
+  Potwierdzono własną korektę pojemności; ponowienie niepełnej odpowiedzi
+  materiałów nie jest liczone jako korekta projektu.
+- BRIAR rozumowanie `series-u7lkyy26`: 10 żądań, 9 pełnych odpowiedzi,
+  441,158 s. Odtworzono własne naprawy źródła, wymiarów i materiałów.
+  Ogląd potwierdził geometrię i czytelność, lecz odrzucił nagłówek
+  „A Full Day in One Bottle”: sam fakt 800 ml nie potwierdza wystarczalności
+  na cały dzień. Negatywna ocena obejmuje całą paczkę mimo zaliczonych
+  pomiarów. Bazowy `series-tnscluwy` nie powiązał miarki wysokości z produktem,
+  10 wywołań/78,666 s; dotarł dalej niż bazowe wykonania pozostałych rodzin.
+- HIGHPOINT bazowy `series-8fvd8l7e`: proporcje i za szeroka etykieta,
+  4 wywołania/26,298 s. Rozumowanie `series-9asrguvy`: źródło nieukończone,
+  4 żądania/3 pełne odpowiedzi/195,249 s, końcowe `truncated_output`.
+- Wszystkie opinie związane hashami z pięcioma obejrzanymi obrazami każdej
+  ukończonej paczki. `visual-assessment.json` potwierdza kompletny odbiór
+  obu technicznie zakończonych prac; jedna przyjęta, jedna odrzucona.
+
+## 2026-09-29 — przyspieszenie cyklu i zachowanie diagnozy przy ponowieniu
+
+- Właściciel poprosił o pokazanie pracy modelu i maksymalne przyspieszenie.
+  Pokazano cztery rzeczywiste PNG zaakceptowanego DALE oraz archiwum ZIP.
+  Ustalono priorytet krótkich diagnoz i poprawek zamiast powtarzania całej
+  paczki przed rozwiązaniem konkretnej przyczyny błędu.
+- `product_headline_probe.py` wykonuje jedną ograniczoną ocenę czterech
+  oryginalnych nagłówków wyłącznie względem faktów odpowiednich paneli.
+  Nie przekazuje opinii człowieka ani oczekiwanej odpowiedzi. Walidacja
+  sprawdza kompletność i dosłowne cytaty faktów, nie prawdziwość werdyktu.
+- `headline-probe-te30vc3a` (BRIAR): 5,270 s, model odrzucił obietnicę
+  wystarczalności na cały dzień, pozostałe trzy nagłówki przyjął.
+  `headline-probe-cavu9tfh` (DALE): 4,935 s, cztery neutralne nagłówki
+  przyjęte. Niezależna ocena potwierdziła osiem werdyktów i została związana
+  hashami z żądaniami oraz wynikami. To znane przypadki diagnostyczne;
+  jeden negatywny przykład nie dowodzi ogólnej skuteczności recenzenta.
+  Brak nowej bramki produkcyjnej, eksportu do treningu lub zmiany ocen.
+- `patch-pilot-bun5xpft` (HIGHPOINT): bazowe trzy poprawki źródła,
+  13,787 s, niepowodzenie. Pierwsza nie naprawiła etykiety i podstawy,
+  druga zaproponowała niedozwolony rozmiar fontu 20, trzecia niezmienioną
+  wartość. Oryginał i wszystkie próby zachowane; bez zaliczenia.
+- Naprawiono rzeczywisty błąd sterowania: po kompletnej odrzuconej
+  odpowiedzi i przerwaniu następnej próby system wracał do samego briefu,
+  tracąc modelową scenę i pełną diagnozę. Kontrakt ponowień v2 zachowuje
+  ostatnią korektę, nie kumuluje komunikatów transportowych, nadal ma
+  trzy próby i limit 16000 znaków. Nie fabrykuje częściowych odpowiedzi.
+- Niezależny weryfikator odtwarza oba historyczne/nowe kontrakty. Nowy
+  manifest zamraża wspólną wersję dla obu ramion; starsze manifesty
+  zachowują v1. Odtworzono rzeczywiste stare łańcuchy DALE (8 żądań)
+  i BRIAR (10). Ich wyniki pozostają niezmienione.
+- Testy retry/pochodzenia/egzaminu/pakietu/recenzenta: **100 passed**, 2,11 s.
+  Obejmują utrzymanie diagnozy po obu rodzajach przerwania, kolejne
+  przerwania bez wzrostu kontekstu, limit budżetu, wykrycie zmienionego
+  żądania mimo przeliczenia hashy i nierównej wersji między ramionami.
+  Zysk czasu całego zlecenia po tej poprawce nie został jeszcze zmierzony.

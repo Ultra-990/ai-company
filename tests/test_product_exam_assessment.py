@@ -57,6 +57,31 @@ def test_assessment_recounts_bound_outcomes_without_claiming_visual_or_autonomou
     assert result['independent_visual_review_required'] and not result['autonomy_qualified']
 
 
+@pytest.mark.parametrize('fault', [None, 'one_arm', 'unknown'])
+def test_retry_contract_is_frozen_equally_for_all_exam_arms(tmp_path, monkeypatch, fault):
+    out, report = fixture_exam(tmp_path, monkeypatch)
+    save = assessment.product.school.save; checksum = assessment.product.school.checksum
+    manifest = json.loads((out/'exam.json').read_text())
+    contract = 'unknown' if fault == 'unknown' else 'bounded-incomplete-retry.v2'
+    manifest['shared_controls']['transport_recovery_contract'] = contract
+    for case in report['cases']:
+        for arm, outcome in case['arms'].items():
+            folder = tmp_path/(case['id']+'-'+arm)
+            package = json.loads((folder/'report.json').read_text())
+            if fault != 'one_arm' or arm == 'deliberate':
+                package['transport_recovery_contract'] = contract
+            save(folder/'report.json', package)
+            outcome['report_sha256'] = checksum(folder/'report.json')
+    save(out/'exam.json', manifest)
+    report['exam_sha256'] = checksum(out/'exam.json')
+    report['artifacts']['exam.json'] = checksum(out/'exam.json')
+    save(out/'report.json', report)
+    if fault:
+        with pytest.raises(ValueError, match='recovery contract'): assessment.assess(out)
+    else:
+        assert assessment.assess(out)['integrity_verified']
+
+
 @pytest.mark.parametrize('fault', ['score', 'outcome', 'duplicate', 'budget', 'implementation', 'inherited'])
 def test_assessment_rejects_score_manipulation_and_unmatched_executions(tmp_path, monkeypatch, fault):
     out, report = fixture_exam(tmp_path, monkeypatch)
