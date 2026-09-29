@@ -5,7 +5,7 @@ import pytest
 from scripts import product_patch_evidence as evidence
 
 
-def pilot_fixture(tmp_path, monkeypatch):
+def pilot_fixture(tmp_path, monkeypatch, *, annotation_contract=None):
     pilot = evidence.pilot; p = pilot.product
     package = tmp_path/'original'; package.mkdir()
     save = p.school.save; checksum = p.school.checksum
@@ -38,7 +38,7 @@ def pilot_fixture(tmp_path, monkeypatch):
         save(out/(name+'-response.json'), {'content': raw, 'model': 'fixture', 'digest': 'f'*64})
         return raw
     monkeypatch.setattr(p.brand, 'call', call)
-    return pilot.run(package)[0]
+    return pilot.run(package, annotation_contract=annotation_contract)[0]
 
 
 @pytest.mark.parametrize('fault', [None, 'extra_hint', 'altered_scene', 'changed_fact', 'extra_call', 'author', 'budget'])
@@ -69,3 +69,49 @@ def test_independent_patch_replay_rejects_substitution_even_with_updated_hashes(
         _, result = evidence.assess(out)
         assert result['literal_edits_replayed'] and result['feedback_remeasured']
         assert result['unchanged_facts_paint_and_fonts'] and not result['whole_package_accepted']
+
+
+@pytest.mark.parametrize('tampered', [False, True])
+def test_visible_route_patch_feedback_replays_actual_measurements(tmp_path, monkeypatch, tampered):
+    p = evidence.product
+    out = pilot_fixture(tmp_path, monkeypatch, annotation_contract=p.callouts.ROUTE_CONTRACT)
+    if tampered:
+        request_path = out/'patch-0-request.json'
+        request = json.loads(request_path.read_text()); data = json.loads(request['user'])
+        data['measurements']['panel_line_segments'] = [{'route_product_fills': ['invented paint']}]
+        request['user'] = json.dumps(data); p.school.save(request_path, request)
+        report = json.loads((out/'report.json').read_text())
+        report['artifacts'][request_path.name] = p.school.checksum(request_path)
+        report['attempts'][0]['request_sha256'] = p.school.checksum(request_path)
+        p.school.save(out/'report.json', report)
+        with pytest.raises(ValueError): evidence.assess(out)
+    else:
+        _, result = evidence.assess(out)
+        assert result['literal_edits_replayed'] and result['feedback_remeasured']
+
+
+@pytest.mark.parametrize('fault', [None, 'negative_review', 'changed_image', 'changed_evidence'])
+def test_assembly_requires_bound_independent_geometry_review(tmp_path, monkeypatch, fault):
+    out = pilot_fixture(tmp_path, monkeypatch)
+    p = evidence.product; save, checksum = p.school.save, p.school.checksum
+    report = json.loads((out/'report.json').read_text())
+    image = report['accepted_layout']+'/preview.png'
+    (out/image).write_bytes(b'synthetic image fixture')
+    report['artifacts'][image] = checksum(out/image); save(out/'report.json', report)
+    replay, _ = evidence.assess(out)
+    judgment = {'schema': 'product-panel-patch-independent-review.v1',
+        'reviewer': 'assistant_direct_visual_review', 'decision': 'approved_targeted_panel_repair',
+        'report_sha256': checksum(out/'report.json'), 'inspected_images': {image: checksum(out/image)},
+        'evidence_report': str(replay/'report.json'), 'evidence_report_sha256': checksum(replay/'report.json'),
+        'training_exported': False}
+    if fault == 'negative_review': judgment['decision'] = 'needs_visual_revision'
+    elif fault == 'changed_image': (out/image).write_bytes(b'another fixture')
+    elif fault == 'changed_evidence':
+        value = json.loads((replay/'report.json').read_text()); value['feedback_remeasured'] = False
+        save(replay/'report.json', value); judgment['evidence_report_sha256'] = checksum(replay/'report.json')
+    save(out/'judgment.json', judgment)
+    if fault:
+        with pytest.raises(ValueError): evidence.approved_panel(out/'report.json', out/'judgment.json')
+    else:
+        actual, svg = evidence.approved_panel(out/'report.json', out/'judgment.json')
+        assert actual['part'] == 'capacity' and svg == out/'accepted.svg'

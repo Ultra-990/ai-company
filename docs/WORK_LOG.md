@@ -5511,3 +5511,35 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   poprzedniego kontekstu. Rzeczywisty dawny DALE ponownie zweryfikowany.
 - Testy kontynuacji, kontraktów pakietu, patchy, lekcji, egzaminu i korekt:
   **104 passed**, 2,22 s. Realna kontynuacja HIGHPOINT: `series-rgibz4wl`.
+- Kontynuacja ukończyła technicznie 4 panele: **9 żądań/455,141 s**,
+  własne korekty pojemności, wymiarów, materiałów i pielęgnacji. Odtworzono
+  łańcuchy tych czterech etapów bez uznania odziedziczonego źródła za nową
+  odpowiedź. Osobny recenzent nagłówków (`headline-probe-f1f27vcy`) przyjął
+  wszystkie cztery treści; niezależnie uznano je za zgodne z faktami.
+- Ogląd odrzucił cały pakiet za materiały: koniec linii trafiał w ciemną
+  zakrętkę, ale linia przechodziła pod niebieskim barkiem i stawała się
+  widoczna dopiero przy korpusie. To mylące wskazanie polipropylenu mimo
+  zaliczenia dotychczasowych pomiarów. Źródło i pozostałe panele odebrane
+  częściowo; negatywna ocena pełnego pakietu zachowana.
+- Dodano opcjonalny `functional-callouts.v6`: renderer zapisuje zbiór
+  farb produktu wzdłuż linii/cienkiego paska (krok ok. 2 jednostek, maks.
+  2049 punktów). Każdy segment wybranej ścieżki łącznika musi unikać
+  farby innej części. Brak pomiaru trasy odrzuca dowód. V1–V5 zachowane,
+  v6 nie jest po cichu włączony w stare egzaminy lub domyślną generację.
+  Weryfikator patchy odtwarza również te nowe pomiary przekazane modelowi.
+- `patch-pilot-x3k64ur0`: bazowe 3 próby/15,073 s, brak naprawy.
+  `patch-pilot-482siknm`: profil rozumowania, 2 próby/90,131 s, poprawne
+  wyprowadzenie linii z widocznej prawej krawędzi zakrętki. Pozostałe słowa,
+  fonty, kolory i produkt zachowane. `patch-evidence-9plxysut` odtworzył
+  obie próby i rzeczywiste pomiary. Ogląd zaakceptował docelowy panel.
+- Składanie obsługuje teraz takie odrębnie zaakceptowane patche geometrii,
+  ponownie odtwarza ich wartości/pomiary i wymaga związanej z obrazem
+  pozytywnej oceny. Nowy `reviewed-package-vk67ewe2` używa v6 i zawiera
+  pełne SVG/PNG/PDF/ZIP. Weryfikacja oraz ogląd źródła i wszystkich czterech
+  paneli: `approved_synthetic_repaired_package`. Drobny szew rasteryzacji
+  barków dopuszczony. To naprawa znanego egzaminu, nie nowe zaliczenie;
+  brak treningu, eksportu danych lub zmiany produkcyjnego routingu.
+- Testy powiązane: **108 passed, 1 skipped**, 2,15 s. Oddzielny prawdziwy
+  test Chrome z linią ukrytą kolejno pod zakrętką i korpusem: **23 passed**,
+  0,74 s. Sprawdzono także zakaz podstawienia pomiarów, odrzucenie zmienionej
+  opinii/obrazu i dowodu, oraz zachowanie starych kontraktów.

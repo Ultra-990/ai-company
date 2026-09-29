@@ -44,6 +44,15 @@ panele. Nie tworzy fikcyjnej pełnej odpowiedzi modelu: pochodzenie źródła
 wynika z oryginalnej odpowiedzi oraz zapisanych patchy. Nie wolno mieszać
 tej kontynuacji z nowym egzaminem lub lekcją do innego zadania.
 
+Eksperymentalne `--repair-visible-routes` w pilotażu geometrii uruchamia
+kontrakt oznaczeń v6. Sam koniec linii ukryty pod właściwą częścią nie
+wystarcza: jej dalsza trasa nie może przechodzić pod farbą innej części
+produktu, bo widoczne wskazanie byłoby mylące. Renderer próbkuje trasę
+co najwyżej w 2049 punktach; nie jest to pełny dowód widoczności dowolnych
+krzywych lub złożonych zasłonięć. V5 pozostaje historycznym/domniemanym
+kontraktem dotychczasowych przebiegów. V6 jest jawny dla napraw i złożonych
+z nich nowych pakietów; stare wyniki nie są przepisywane.
+
 ## Kryterium zakończenia dla każdej usługi
 
 Pięć usług pozostaje zgodnych z `scripts/upwork_qualification.py`: przegląd

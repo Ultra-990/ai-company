@@ -83,6 +83,20 @@ def test_leader_cycles_terminate_without_implying_proximity():
     assert not callouts.connected_to_fact(lines, callouts.paint(STYLE['body_color']), [50, 50, 100, 60])
 
 
+@pytest.mark.parametrize('fault', [None, 'cross_body', 'missing_measurement', 'later_segment'])
+def test_visible_material_route_cannot_pass_under_another_product_part(fault):
+    data = material_data()
+    body, cap = callouts.paint(STYLE['body_color']), callouts.paint(STYLE['cap_color'])
+    for line, fills in zip(data['panel_line_segments'], ([body], [], [cap])):
+        line['route_product_fills'] = fills
+    if fault == 'cross_body': data['panel_line_segments'][2]['route_product_fills'] = [cap, body]
+    elif fault == 'missing_measurement': data['panel_line_segments'][2].pop('route_product_fills')
+    elif fault == 'later_segment': data['panel_line_segments'][1]['route_product_fills'] = [cap]
+    assert callouts.issues(data, 'materials', STYLE, contract=callouts.CONTRACT) == []
+    defects = callouts.issues(data, 'materials', STYLE, contract=callouts.ROUTE_CONTRACT)
+    assert bool(defects) is bool(fault)
+
+
 def test_crossing_leaders_are_rejected_without_rewriting_historical_contract():
     data = material_data()
     data['panel_line_segments'] += [segment([900, 500], [1100, 700]), segment([900, 700], [1100, 500])]
@@ -152,6 +166,7 @@ def test_browser_endpoints_use_frontmost_part_paint_and_detect_invisible_lines(t
     svg += '<line x1="700.25" y1="650" x2="900" y2="650" stroke="#112233" stroke-width="4"/>'
     svg += '<line x1="702" y1="675" x2="900" y2="675" stroke="#112233" stroke-width="4"/>'
     svg += '<rect x="700.25" y="620" width="200" height="4" fill="#112233"/>'
+    svg += '<line x1="550" y1="550" x2="900" y2="800" stroke="#112233" stroke-width="4"/>'
     svg += '<g transform="translate(0 0) scale(1)"><rect x="500" y="500" width="200" height="200" fill="#225588"/>'
     svg += '<rect x="500" y="500" width="200" height="100" fill="#112233"/>'
     svg += text('Fixture', 1000)+'</g>'+text('Probe one', 100)+text('Probe two', 200)+text('Probe three', 300)+'</svg>'
@@ -170,3 +185,7 @@ def test_browser_endpoints_use_frontmost_part_paint_and_detect_invisible_lines(t
     assert lines[7]['product_endpoint_contact_fills'][0] == []
     assert lines[8]['product_endpoint_fills'][0] is None
     assert lines[8]['product_endpoint_contact_fills'][0] == [callouts.paint(STYLE['body_color'])]
+    assert lines[0]['route_product_fills'] == [callouts.paint(STYLE['cap_color'])]
+    assert lines[9]['product_endpoint_fills'][0] == callouts.paint(STYLE['cap_color'])
+    assert set(lines[9]['route_product_fills']) == {callouts.paint(STYLE['cap_color']), callouts.paint(STYLE['body_color'])}
+    assert lines[9]['visible_samples'] > 0

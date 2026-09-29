@@ -856,6 +856,7 @@ if __name__ == '__main__':
     actions.add_argument('--audit-failed-copy', type=Path, help='Check a rejected fact-order response by literal rendering under the new semantic contract')
     actions.add_argument('--repair-failed-scene', type=Path, help='Bounded model-authored geometry edits for a preserved failed scene; no exam rescoring')
     parser.add_argument('--repair-part', choices=tuple(PANELS), help='Recheck a panel of a technically complete package with --repair-failed-scene')
+    parser.add_argument('--repair-visible-routes', action='store_true', help='Use experimental v6 material leader occlusion checks for a geometry patch')
     actions.add_argument('--probe-source-lesson', type=Path, help='Known-case source diagnostic with an independently approved development example')
     parser.add_argument('--source-lesson', type=Path, help='Private independently approved development assembly; fresh run, full exam or source probe')
     parser.add_argument('--reviewed-revision', nargs=2, type=Path, action='append', metavar=('REPORT', 'JUDGMENT'), default=[])
@@ -871,7 +872,8 @@ if __name__ == '__main__':
         raise SystemExit(int(result['status'] == 'failed'))
     elif args.repair_failed_scene:
         from scripts.product_patch_pilot import run as patch_pilot
-        _, result = patch_pilot(args.repair_failed_scene, sampling_profile=args.sampling_profile or 'bounded-default.v1', part=args.repair_part)
+        _, result = patch_pilot(args.repair_failed_scene, sampling_profile=args.sampling_profile or 'bounded-default.v1', part=args.repair_part,
+            annotation_contract=callouts.ROUTE_CONTRACT if args.repair_visible_routes else None)
         raise SystemExit(int(result['status'] == 'failed'))
     elif args.audit_failed_copy:
         from scripts.product_copy_audit import run as copy_audit

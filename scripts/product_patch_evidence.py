@@ -66,7 +66,7 @@ def assess(folder):
     paint = report.get('product_paint_contract')
     if paint not in (None, product.paint.CONTRACT) or (paint and not is_panel):
         raise ValueError('Unknown repair paint contract')
-    if annotation != (product.callouts.CONTRACT if is_panel else None) or copy != product.COPY_CONTRACT:
+    if annotation not in ((product.callouts.CONTRACT, product.callouts.ROUTE_CONTRACT) if is_panel else (None,)) or copy != product.COPY_CONTRACT:
         raise ValueError('Unknown repair scene contracts')
     out = Path(tempfile.mkdtemp(prefix='patch-evidence-', dir=product.ROOT))
     with pilot.exam.exercise_context(case) if case else nullcontext():
@@ -97,6 +97,8 @@ def assess(folder):
                 'scene': current, 'independent_error': error,
                 'measurements': {key: measured[key] for key in ('layout', 'shape_layout', 'group_layout') if key in measured}}
             if patch_error is not None: expected['previous_patch_rejection'] = patch_error
+            if annotation == product.callouts.ROUTE_CONTRACT:
+                expected['measurements']['panel_line_segments'] = measured.get('panel_line_segments', [])
             if is_panel: expected['product_reference'] = pilot.revision.read(package/'product-reference.json')
             if (entry['attempt'] != index or entry['request_sha256'] != checksum(folder/(name+'-request.json'))
                     or entry['response_sha256'] != checksum(folder/(name+'-response.json'))
@@ -135,6 +137,33 @@ def assess(folder):
         'artifacts': {str(p.relative_to(out)): checksum(p) for p in out.rglob('*') if p.is_file()}}
     product.school.save(out/'report.json', result)
     return out, result
+
+
+def approved_panel(report_path, judgment_path):
+    """Authenticate a separately reviewed geometry patch before full assembly."""
+    report_path, judgment_path = Path(report_path), Path(judgment_path)
+    folder = report_path.parent; read = pilot.revision.read; checksum = product.school.checksum
+    report, judgment = read(report_path), read(judgment_path)
+    if (report.get('stage') not in product.DEFAULT_PANELS
+            or judgment.get('schema') != 'product-panel-patch-independent-review.v1'
+            or judgment.get('reviewer') != 'assistant_direct_visual_review'
+            or judgment.get('decision') != 'approved_targeted_panel_repair'
+            or judgment.get('report_sha256') != checksum(report_path)
+            or judgment.get('training_exported') is not False):
+        raise ValueError('Bound independent positive panel patch review required')
+    image = report['accepted_layout']+'/preview.png'
+    if judgment.get('inspected_images') != {image: checksum(pilot.revision.bounded(folder/image))}:
+        raise ValueError('Reviewed panel patch image changed')
+    evidence_path = pilot.revision.bounded(Path(judgment['evidence_report']))
+    if judgment.get('evidence_report_sha256') != checksum(evidence_path):
+        raise ValueError('Independent geometry evidence changed')
+    recorded = read(evidence_path)
+    _, current = assess(folder)
+    for key in ('schema', 'report_sha256', 'source_report_sha256', 'stage', 'attempts',
+                'literal_edits_replayed', 'feedback_remeasured', 'local_author_verified',
+                'unchanged_facts_paint_and_fonts'):
+        if recorded.get(key) != current[key]: raise ValueError('Panel geometry evidence no longer replays')
+    return report | {'part': report['stage'], 'package': report['source_package']}, folder/'accepted.svg'
 
 
 if __name__ == '__main__':

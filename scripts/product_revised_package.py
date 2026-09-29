@@ -28,21 +28,27 @@ def selected_sources(package, pairs):
     seen = set()
     for report_path, judgment_path in pairs:
         report_path, judgment_path = Path(report_path), Path(judgment_path)
-        if revision.read(report_path).get('schema') == 'product-headline-literal-repair.v1':
+        revision_schema = revision.read(report_path).get('schema')
+        if revision_schema == 'product-geometry-patch-pilot.v1':
+            from scripts import product_patch_evidence as geometry
+            report, selected_svg = geometry.approved_panel(report_path, judgment_path)
+        elif revision_schema == 'product-headline-literal-repair.v1':
             from scripts import product_headline_repair as headline
             report, folder = headline.approved_source(report_path, judgment_path)
+            selected_svg = folder/'artwork.svg'
         else:
             report, folder, _, _ = revision.authenticate(report_path)
             # collect verifies the separately bound positive judgment, without
             # exporting any training data or calling the model.
             revision.collect(report_path, judgment_path)
+            selected_svg = folder/'artwork.svg'
         part = report['part']
         if part not in product.PANELS or part in seen:
             raise ValueError('Unique panel revisions required; source replacements need a separate generation')
         if Path(report['package']).resolve() != package.resolve():
             raise ValueError('Every revision must belong to this exact original package')
         seen.add(part)
-        sources[part] = folder/'artwork.svg'
+        sources[part] = selected_svg
         bindings.append({'part': part, 'report': str(report_path), 'report_sha256': product.school.checksum(report_path),
                          'judgment': str(judgment_path), 'judgment_sha256': product.school.checksum(judgment_path),
                          'svg_sha256': product.school.checksum(sources[part])})
@@ -73,7 +79,7 @@ def verify(out):
             raise ValueError('Assembly artifact changed')
     original = revision.read(package/'report.json')
     if ((report['model'], report['digest']) != (original['model'], original['digest'])
-            or report['annotation_contract'] not in ('functional-callouts.v2', 'functional-callouts.v3', 'functional-callouts.v4', 'functional-callouts.v5')):
+            or report['annotation_contract'] not in ('functional-callouts.v2', 'functional-callouts.v3', 'functional-callouts.v4', 'functional-callouts.v5', 'functional-callouts.v6')):
         raise ValueError('Assembly model and annotation contract must remain bound')
     placement = original.get('placement_contract', product.LEGACY_PLACEMENT)
     style = product.style_value(product.accepted_raw(package, 'style'))
@@ -133,9 +139,11 @@ def run(package, pairs):
     original = revision.read(package/'report.json')
     placement = original.get('placement_contract', product.LEGACY_PLACEMENT)
     out = Path(tempfile.mkdtemp(prefix='reviewed-package-', dir=product.ROOT))
+    annotation = (product.callouts.ROUTE_CONTRACT if any(revision.read(Path(item['report'])).get('annotation_contract')
+        == product.callouts.ROUTE_CONTRACT for item in bindings) else product.callouts.CONTRACT)
     report = {'schema': SCHEMA, 'status': 'running', 'original_package': str(package),
               'original_report_sha256': product.school.checksum(package/'report.json'), 'revisions': bindings,
-              'annotation_contract': product.callouts.CONTRACT, 'placement_contract': placement,
+              'annotation_contract': annotation, 'placement_contract': placement,
               'model': original['model'], 'digest': original['digest'],
               'model_called': False, 'training_started': False, 'production_changed': False,
               'commercial_approved': False, 'full_visual_acceptance': False}
@@ -146,6 +154,9 @@ def run(package, pairs):
                  'product_callouts.py', 'render_school_svg.py', 'vector_school_contract.py',
                  'product_headline_repair.py', 'product_headline_probe.py', 'product_correction_evidence.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
+    if annotation == product.callouts.ROUTE_CONTRACT:
+        for name in ('product_patch_evidence.py', 'product_patch_pilot.py', 'product_scene_patch.py'):
+            shutil.copyfile(Path(__file__).parent/name, implementation/name)
     try:
         delivery = out/'delivery'; delivery.mkdir()
         for part, source in sources.items():

@@ -49,11 +49,14 @@ def inputs(package, *, part=None):
     return report, case, stage, path, product.parse(answer['content'])
 
 
-def run(package, *, sampling_profile='bounded-default.v1', part=None):
+def run(package, *, sampling_profile='bounded-default.v1', part=None, annotation_contract=None):
     if sampling_profile not in ('bounded-default.v1', 'qwen-deliberate-trial.v1'):
         raise ValueError('Known bounded repair profile required')
     package = Path(package)
+    if annotation_contract not in (None, product.callouts.CONTRACT, product.callouts.ROUTE_CONTRACT):
+        raise ValueError('Known patch annotation contract required')
     previous, case, stage, input_path, current = inputs(package, part=part) if part is not None else inputs(package)
+    annotation_contract = (annotation_contract or product.callouts.CONTRACT) if stage != 'source' else None
     resources = product.school.check_idle()
     out = Path(tempfile.mkdtemp(prefix='patch-pilot-', dir=product.ROOT))
     thinking = sampling_profile == 'qwen-deliberate-trial.v1'
@@ -66,7 +69,7 @@ def run(package, *, sampling_profile='bounded-default.v1', part=None):
         'explicit_panel': part,
         'product_paint_contract': product.paint.CONTRACT if stage != 'source' else None,
         'source_contour_contract': product.silhouette.CONTRACT if stage == 'source' else None,
-        'annotation_contract': product.callouts.CONTRACT if stage != 'source' else None,
+        'annotation_contract': annotation_contract,
         'supplier_copy_contract': product.COPY_CONTRACT,
         'training_exported': False, 'exam_score_changed': False, 'whole_package_accepted': False,
         'production_changed': False, 'independent_visual_review_required': True}
@@ -86,7 +89,7 @@ def run(package, *, sampling_profile='bounded-default.v1', part=None):
             source = product.compile_scene(product.accepted_raw(package, 'source'), style) if is_panel else None
             placement = previous['placement_contract']
             validate = product.checked_scene(out, 'repair', style, panel=stage if is_panel else None,
-                product=source, placement_contract=placement, annotation_contract=product.callouts.CONTRACT if is_panel else None,
+                product=source, placement_contract=placement, annotation_contract=annotation_contract,
                 source_contour=not is_panel, copy_contract=product.COPY_CONTRACT, paint_separation=is_panel)
             # Syntax defects need a different operation; only a rendered,
             # measured failure is a valid starting point for geometry patches.
@@ -109,6 +112,8 @@ def run(package, *, sampling_profile='bounded-default.v1', part=None):
                     'scene': current, 'independent_error': error,
                     'measurements': {key: measured[key] for key in ('layout', 'shape_layout', 'group_layout') if key in measured}}
                 if patch_error is not None: data['previous_patch_rejection'] = patch_error
+                if annotation_contract == product.callouts.ROUTE_CONTRACT:
+                    data['measurements']['panel_line_segments'] = measured.get('panel_line_segments', [])
                 if is_panel: data['product_reference'] = revision.read(package/'product-reference.json')
                 user = json.dumps(data)
                 if len(user) > 16000: raise ValueError('Bounded geometry repair input required')

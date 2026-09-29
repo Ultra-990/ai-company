@@ -1,5 +1,25 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — pełny HIGHPOINT odebrany po lokalnych poprawkach
+
+`reviewed-package-vk67ewe2` zawiera odebrany komplet HIGHPOINT: naprawione
+źródło, cztery infografiki oraz SVG/PNG/PDF/ZIP. Model był autorem wszystkich
+zmian. Kontynuacja ze źródła (`series-rgibz4wl`, 9 żądań/455,141 s) poprawiła
+własne układy, ale ogląd odrzucił linię zakrętki schowaną pod korpusem.
+Sama zgodność ukrytego końca linii z kolorem części była niewystarczająca.
+
+Eksperymentalny kontrakt oznaczeń v6 sprawdza także farbę części na całej
+trasie linii. Bazowy patch nie naprawił problemu w 3 próbach/15,073 s;
+rozumowanie naprawiło go w 2 próbach/90,131 s. Odtworzenie wartości i pomiarów
+oraz ogląd końcowego pełnego zestawu potwierdziły poprawkę bez zmiany słów,
+rysunku lub stylu. Stary v5 i jego historyczne wyniki pozostają zachowane;
+v6 dostępny w pilotażu naprawy i nowych zestawach z taką poprawką.
+
+To odebrana naprawa znanego przypadku, nadal **bez nowej kwalifikacji**.
+Testy zmian: 108 passed, 1 skipped; osobny test rzeczywistego renderera:
+23 passed. Potrzebne jest włączenie sprawdzonych mechanizmów do pełnego
+przebiegu oraz nowy egzamin i analogiczna praca nad pozostałymi usługami.
+
 ## Aktualizacja 29.09.2026 — źródło HIGHPOINT naprawione przez model
 
 Mała poprawka z rozumowaniem (`patch-pilot-tgk9u45n`) naprawiła etykietę
