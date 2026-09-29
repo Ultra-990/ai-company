@@ -173,3 +173,63 @@ Poprawki znanych pakietów i test recenzenta nie zastępują nowego egzaminu
 całej usługi. Potrzebne są bardziej jednoznaczne fakty o strukturze wariantów,
 pełne krótkie uzasadnienia oraz kontrola zgodności opisów konceptów z obrazem.
 Bez eksportu do treningu, zmiany wag i automatycznej kwalifikacji.
+
+## Kontrola całego opisu na podstawie SVG i nowe pełne przebiegi
+
+Jawne `--revise-plan-text KATALOG` używa `brand-plan-factual-review.v2`.
+Model otrzymuje pełne zweryfikowane SVG, liczby węzłów tekstu/kształtów,
+atrybuty tekstu i listy plików bez kształtów lub bez tekstu. To strukturalne
+fakty XML, nie dowód widoczności dowolnego SVG. Ocenia sześć pól: cztery
+zasady oraz dwa opisy konceptów. Uzasadnienie ma być krótkie, kompletne
+i zakończone interpunkcją. Tolerancja subiektywnego opisu symbolu nie
+usprawiedliwia błędnego fontu lub położenia; zastosowanie cyfrowe nie wymaga
+wymyślonego testu drukarskiego.
+
+Patch może zmienić tylko zakwestionowane pola; schema odpowiedzi ogranicza
+ich indeksy i liczbę już podczas generowania. Wagi, geometria, kolory, fonty,
+tagline i pozostałe treści pozostają zachowane. V1 i jego historyczne dowody
+są nadal odtwarzalne; nowy kontrakt jest jawny w raporcie.
+
+Pierwszy znany Tide (`guide-revision-q6bj69t8`, 11,913 s) odrzucono, ponieważ
+autor zwrócił także niezakwestionowane pola. Po ograniczeniu schemy nowa
+próba `guide-revision-ytbe8bt0`, 18,844 s, poprawiła 700/400 w instrukcji,
+700 w koncepcie A, niepotwierdzone 22 mm i położenie napisu w koncepcie B.
+Literalna weryfikacja i niezależny odbiór poprawionego syntetycznego pakietu
+zachowane; terminologia „horizontal lockup” pozostała luźna przy jednoznacznym
+opisie napisu pod symbolem. Bez kwalifikacji lub zmiany starego egzaminu.
+
+`--plan-review-exam` zamraża nowe 24 twierdzenia (12 poprawnych, 12 błędnych)
+na podstawie istniejących grafik modelu. `guide-holdout-vik_1i_u`: 24/24,
+23,988 s, wszystkie uzasadnienia sprawdzone niezależnie i kompletne.
+To nowe teksty na znanych rysunkach, nie nowe zlecenia projektowe.
+
+`--workflow-exam` tworzy trzy całkowicie nowe źródłowe pakiety: Cedar Lunch,
+Copper Oven, Harbor Plate. Dwa warianty kontroli opisów otrzymują ten sam
+niezmieniony pakiet źródłowy w każdej parze i jednakowy limit trzech wywołań
+(8192 kontekstu, 1800 odpowiedzi, 90 s). Wspólna generacja ma standardowy
+limit trzech prób na etap; kolejność wariantów jest naprzemienna. Jest to
+porównanie par na wspólnym źródle, nie sześć niezależnych generacji. Zamrażane
+są briefy, budżety i kod; brak ręcznych podpowiedzi i danych do nauki.
+
+`workflow-exam-savnqkh9`, 148,161 s: technicznie 2/3 w obu wariantach,
+po niezależnym oglądzie i kontroli opisów **0/3 w obu**. Weryfikator
+`brand_workflow_exam.verify` potwierdził źródła, wspólne pary, budżety,
+niezmieniony kod, dosłowne poprawki i wynik; nie zatwierdza wizualnie paczek.
+
+- Cedar Lunch: jednokolorowy eksport wypełnił jasne wycięcie liścia i zmienił
+  znak w pełne koło. Rozszerzona kontrola poprawiła nieprawdziwy opis liścia
+  w literze C, lecz grafika pozostaje wadliwa; „beside” jest mniej precyzyjne
+  niż rzeczywiste położenie osobnego symbolu ponad lewą częścią napisu.
+- Copper Oven: generacja wyczerpała poprawki nakładających się napisów
+  „Copper Oven” i „Baked together”; żaden wariant kontroli nie naprawia
+  niekompletnego źródła ani nie tworzy z niego fałszywej dostawy.
+- Harbor Plate: obrazy są czytelne, lecz opis mówi o fali pod napisem
+  i okręgu otaczającym tekst, podczas gdy oba symbole leżą nad napisem.
+  V2 zatwierdził błędne twierdzenia, nawet przy uzasadnieniu, które jednemu
+  z nich wprost przeczy. V1 również nie odrzucił całego pakietu.
+
+Wniosek z pełnego przebiegu: dobry wynik izolowanego przeglądu tekstu nie
+wystarcza. Potrzebna jest kontrola zgodności znaku po konwersji monochromowej,
+przekazywanie rzeczywistych pomiarów kolizji autorowi oraz deterministyczne
+sprawdzenie deklarowanych relacji przestrzennych względem pomiarów renderera.
+Sam werdykt modelu nie może uchylać takiego stwierdzonego konfliktu.

@@ -1,5 +1,30 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — pełny nowy test marki nadal 0/3
+
+Nowa kontrola v2 korzysta z rzeczywistych SVG i obejmuje zasady oraz opisy
+obu konceptów. Patch jest ograniczony do zakwestionowanych indeksów już
+w schemie odpowiedzi. Znany Tide `guide-revision-ytbe8bt0` poprawiony
+w 18,844 s; wcześniejszą próbę zwracającą niedozwolone pola zachowano jako
+odrzuconą. Nowy izolowany test: **24/24**, 23,988 s, pełne krótkie uzasadnienia
+sprawdzone niezależnie. Historyczne v1 i wyniki pozostają odtwarzalne.
+
+Następnie wykonano trzy świeże pełne zlecenia w 148,161 s
+(`workflow-exam-savnqkh9`). Każde źródło wspólne dla dwóch kontroli tekstu,
+te same budżety, bez ręcznych podpowiedzi. Technicznie 2/3 w obu wariantach,
+po niezależnym odbiorze **0/3 w obu**. Cedar traci wycięcie liścia przy
+konwersji monochromowej; Copper nie usuwa kolizji tekstów wizytówki;
+Harbor ma poprawne grafiki, lecz obie kontrole przepuszczają sprzeczne
+opisy położenia symboli. V2 potrafi wskazać sprzeczność w uzasadnieniu
+i mimo to zwrócić `supported`.
+
+74 testy kodu przeszły, a rzeczywisty weryfikator pełnego przebiegu
+potwierdził zamrożone warunki, autorstwo i eksporty. Nadal brak kwalifikacji
+usługi. Następna poprawa musi oprzeć relacje przestrzenne na pomiarach,
+sprawdzać zachowanie znaku w monochromie i przekazywać rzeczywiste ramki
+tekstów do korekt układu. Bez treningu, zmiany wag, eksportu egzaminów do
+nauki lub promocji modelu do samodzielnej pracy.
+
 ## Aktualizacja 29.09.2026 — lokalne poprawki zasad marki, ograniczenia recenzenta
 
 Model sam rozpoznał i poprawił dwie usterki instrukcji: niezweryfikowane

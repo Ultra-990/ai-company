@@ -5622,3 +5622,54 @@ chronione grafiki, nowe testy recenzenta, istniejący generator i pełny egzamin
 Oba nowe kompletne ZIP-y rzeczywiście zweryfikowano. Osobne związane hashami
 przeglądy zachowane przy poprawkach i teście. Bez ręcznego pisania produktów,
 SFT, eksportu egzaminów do nauki, zmiany wag/routingu lub statusu kwalifikacji.
+
+## 2026-09-29 — fakty SVG, 24 twierdzenia i trzy pełne nowe zlecenia marki
+
+Poprzedni obrót był postępem: rzeczywiste lokalne poprawki, ich odtworzenie
+oraz wykryte błędy recenzenta. Potwierdzono czyste repozytorium przed pracą.
+Dodano jawny brand-plan-factual-review.v2: rzeczywiste SVG, fakty o węzłach
+tekstu/kształtów, fontach i ścieżkach tekstowych, sześć ocenianych pól oraz
+krótkie kompletne uzasadnienia. V1 i jego stare dowody pozostają odtwarzalne.
+
+Pierwszy Tide `guide-revision-q6bj69t8` odrzucony po 11,913 s: autor zwrócił
+również niezakwestionowane pola. Rozszerzony patch otrzymał schemę z dokładnym
+zbiorem dozwolonych indeksów i liczbą zmian, bez podpowiadania treści.
+Nowa próba `guide-revision-ytbe8bt0`, 18,844 s, poprawiła fonty w zasadzie
+oraz opisie konceptu A, niezweryfikowane 22 mm i opis napisu w koncepcie B.
+Dosłowne odtworzenie, identyczne grafiki i ZIP zweryfikowane; odbiór poprawionej
+syntetycznej paczki z ograniczeniem luźnej terminologii horizontal lockup.
+Poprzednie wyniki nie zostały zmienione.
+
+Nowy test 24 twierdzeń (12 poprawnych, 12 błędnych) na zachowanych rysunkach
+modelu: `guide-holdout-vik_1i_u`, 24/24 w 23,988 s. Zamrożono także kompletne
+wejścia przed wywołaniami, oczekiwania poza żądaniami. Weryfikator i niezależny
+ogląd uzasadnień potwierdzają wynik i kompletność tekstów. To test nowych
+tekstów na istniejących obrazach, nie nowy pełny projekt.
+
+Następnie `workflow-exam-savnqkh9`: trzy całkowicie nowe briefy, wspólne
+źródło w każdej parze, stara/rozszerzona kontrola tekstu z równym budżetem
+trzech wywołań i naprzemienną kolejnością. Kod/budżety/briefy zamrożone,
+brak doraźnych wskazówek. Całość 148,161 s. Technicznie 2/3 w obu wariantach,
+niezależny końcowy odbiór 0/3 w obu. Weryfikator pełnego przebiegu potwierdził
+pochodzenie, budżety, kod, dosłowne poprawki i kandydatów.
+
+- Cedar `identity-9mmr6k9n`: źródło 30,584 s. V1 nie żąda poprawki (5,367 s),
+  v2 poprawia opis konceptu (16,098 s, `guide-revision-0nsmbm30`). Ogląd
+  ujawnia utratę jasnego wycięcia liścia w monochromie: zostaje pełny dysk.
+  Tekst poprawiony częściowo, lecz obraz wadliwy w obu pakietach.
+- Copper `identity-8e3u5dk7`: 44,111 s, nieusunięta kolizja tekstów wizytówki
+  Copper Oven/Baked together po wyczerpaniu prób. Brak oceny metadanych
+  niekompletnego źródła i brak fałszywej dostawy.
+- Harbor `identity-cboli0ey`: 39,222 s. Obie kontrole nie żądają zmian
+  (5,962/5,747 s). Obejrzane pięć obrazów jest czytelne, ale koncepcje mówią
+  o fali pod tekstem i okręgu otaczającym napis; oba są nad napisem. V2 nawet
+  wyjaśnia powyższy konflikt dla konceptu B, zwracając błędne supported.
+
+Zapisano związane hashami niezależne oceny i wynik pełnego przebiegu bez
+zmiany raportów technicznych. Kierunek następnej poprawy: mierzone relacje
+przestrzenne zamiast samego werdyktu modelu, zachowanie znaku w monochromie,
+pełne ramki pomiarowe w informacji zwrotnej o kolizjach. Nie uznano 24/24
+za kwalifikację. Testy powiązanego kodu: 74 passed. Ponowna weryfikacja obu
+starszych poprawionych paczek i starego testu 15/16 przeszła. Bez SFT,
+eksportu testów do nauki, zmiany oryginalnych wag/routingu lub samodzielnej
+kwalifikacji którejkolwiek z pięciu usług na podstawie tego obrotu.

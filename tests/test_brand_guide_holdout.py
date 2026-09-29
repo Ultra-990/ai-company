@@ -4,25 +4,30 @@ from scripts import brand_guide_holdout as holdout
 
 
 @pytest.fixture
-def completed(tmp_path, monkeypatch):
+def completed(tmp_path, monkeypatch, request):
     b = holdout.guide.brand
     monkeypatch.setattr(b, 'ROOT', tmp_path)
     monkeypatch.setattr(b.school, 'check_idle', lambda: {})
     monkeypatch.setattr(b, 'configuration', lambda: {'model': 'fixture', 'digest': 'f'*64})
+    expanded = getattr(request, 'param', False)
+    suite = holdout
+    if expanded:
+        from scripts import brand_plan_holdout as suite
+        monkeypatch.setattr(suite, 'data', lambda case: {'case': case[0], 'fields': case[1]})
     calls = []
     class Provider:
         def __init__(self, config): pass
         def complete(self, messages):
-            case = holdout.CASES[len(calls)]
+            case = suite.CASES[len(calls)]
             payload = json.loads(messages[1]['content'])
-            assert payload == holdout.data(case)
+            assert payload == suite.data(case)
             assert 'expected_flags' not in payload and 'reviews' not in payload
             calls.append(payload)
             review = {'reviews': [{'index': i, 'verdict': 'unsupported' if flag else 'supported',
                                   'reason': 'A specific fixture justification.'} for i, flag in enumerate(case[2])]}
             return {'model': 'fixture', 'digest': 'f'*64, 'content': json.dumps(review)}
     monkeypatch.setattr(b, 'OllamaProvider', Provider)
-    out, report = holdout.run()
+    out, report = holdout.run(expanded=expanded)
     assert len(calls) == 4
     return out, report
 
@@ -32,6 +37,14 @@ def test_frozen_holdout_recounts_all_sixteen_labels_without_qualification(comple
     assert result['correct'] == result['total'] == 16
     assert result['expected_flags_withheld'] and not result['autonomy_qualified']
     assert sum(sum(c[2]) for c in holdout.CASES) == 8
+
+
+@pytest.mark.parametrize('completed', [True], indirect=True)
+def test_expanded_holdout_freezes_sources_and_counts_twenty_four_claims(completed):
+    out, _ = completed
+    result = holdout.verify(out)
+    assert result['correct'] == result['total'] == 24 and not result['autonomy_qualified']
+    assert len(json.loads((out/'exam.json').read_text())['inputs']) == 4
 
 
 @pytest.mark.parametrize('fault', ['label', 'hint', 'score', 'author'])

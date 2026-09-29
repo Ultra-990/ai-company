@@ -361,8 +361,23 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     actions = parser.add_mutually_exclusive_group(); actions.add_argument('--run', action='store_true'); actions.add_argument('--full-exam', action='store_true')
     actions.add_argument('--revise-guide', type=Path)
+    actions.add_argument('--revise-plan-text', type=Path)
     actions.add_argument('--guide-review-exam', action='store_true')
+    actions.add_argument('--plan-review-exam', action='store_true')
+    actions.add_argument('--workflow-exam', action='store_true')
     args = parser.parse_args()
+    if args.workflow_exam:
+        from scripts.brand_workflow_exam import run as workflow_exam
+        _, report = workflow_exam()
+        raise SystemExit(int(report['status'] != 'completed'))
+    if args.plan_review_exam:
+        from scripts.brand_guide_holdout import run as plan_exam
+        _, report = plan_exam(expanded=True)
+        raise SystemExit(int(report['status'] != 'completed'))
+    if args.revise_plan_text:
+        from scripts.brand_guide_revision import run as revise_plan
+        _, report = revise_plan(args.revise_plan_text, expanded=True)
+        raise SystemExit(int(report['status'] != 'pending_independent_review'))
     if args.guide_review_exam:
         from scripts.brand_guide_holdout import run as guide_exam
         _, report = guide_exam()

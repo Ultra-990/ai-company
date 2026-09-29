@@ -52,12 +52,15 @@ def test_review_requires_four_distinct_bounded_findings(fault):
 
 
 @pytest.fixture
-def revised(tmp_path, monkeypatch):
+def revised(tmp_path, monkeypatch, request):
     brand = guide.brand; monkeypatch.setattr(brand, 'ROOT', tmp_path)
     source = tmp_path/'source'; delivery = source/'delivery'; delivery.mkdir(parents=True)
     original = {'model': 'fixture', 'digest': 'f'*64, 'selection': {'selected': 'a', 'reason': 'Model choice.'}}
     brand.school.save(source/'report.json', original)
     data = {'restaurant': 'Fixture', 'plan': deepcopy(PLAN)}
+    expanded = getattr(request, 'param', False)
+    if expanded:
+        data['plan'].update(concept_a='A false original concept description.', concept_b='A preserved second concept description.')
     brand.school.save(delivery/'style-plan.json', PLAN)
     (delivery/'brand-guide.md').write_text(guide.guide_text('Fixture', PLAN, original['selection']))
     (delivery/'logo.svg').write_text('<svg>protected fixture</svg>')
@@ -66,14 +69,20 @@ def revised(tmp_path, monkeypatch):
     monkeypatch.setattr(guide, 'inputs', lambda p: (original, deepcopy(data)))
     monkeypatch.setattr(brand, 'configuration', lambda: {'model': 'fixture', 'digest': 'f'*64})
     monkeypatch.setattr(brand.school, 'check_idle', lambda: {})
-    answers = iter([verdict(), PATCH, verdict(())])
+    first, patch, final = verdict(), deepcopy(PATCH), verdict(())
+    if expanded:
+        for value in (first, final):
+            value['reviews'].extend([{'index': i, 'verdict': 'supported', 'reason': 'A matching concept description.'} for i in (4, 5)])
+        first['reviews'][4]['verdict'] = 'unsupported'
+        patch['replacements'].append({'index': 4, 'text': 'A corrected description from the local model.'})
+    answers = iter([first, patch, final])
     class Provider:
         def __init__(self, config): pass
         def complete(self, messages):
             assert 'independent-review' not in json.dumps(messages)
             return {'content': json.dumps(next(answers)), 'model': 'fixture', 'digest': 'f'*64}
     monkeypatch.setattr(brand, 'OllamaProvider', Provider)
-    out, report = guide.run(source)
+    out, report = guide.run(source, expanded=expanded)
     assert report['status'] == 'pending_independent_review'
     return out, report
 
@@ -82,6 +91,15 @@ def test_complete_revision_replays_three_model_calls_and_protects_artwork(revise
     result = guide.verify(revised[0])
     assert result['literal_authorship_verified'] and result['protected_artwork_unchanged']
     assert not result['autonomy_qualified'] and not result['exam_score_changed']
+
+
+@pytest.mark.parametrize('revised', [True], indirect=True)
+def test_expanded_revision_replays_structure_and_changed_concept(revised):
+    out, report = revised
+    assert report['review_contract'] == 'brand-plan-factual-review.v2'
+    result = guide.verify(out)
+    assert result['literal_authorship_verified'] and result['protected_artwork_unchanged']
+    assert json.loads((out/'revised-plan.json').read_text())['concept_a'] == 'A corrected description from the local model.'
 
 
 @pytest.mark.parametrize('fault', ['artwork', 'guide', 'author', 'hint', 'extra', 'qualify'])

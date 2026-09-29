@@ -108,8 +108,12 @@ def guide_text(name, plan, selection):
     return text+'\n\n'+'\n'.join('- '+s for s in plan['guidelines'])+'\n\n'+selection['reason']+'\n'
 
 
-def run(package):
+def run(package, *, expanded=False):
     package = Path(package); original, data = inputs(package)
+    protocol = sys.modules[__name__]
+    if expanded:
+        from scripts import brand_plan_review as protocol
+        data = protocol.expand(data, package)
     config = brand.configuration() | {'sampling_profile': 'bounded-default.v1', 'think': False,
         'num_ctx': 8192, 'num_predict': 1800, 'num_thread': 4, 'timeout_seconds': 90}
     if (config['model'], config['digest']) != (original['model'], original['digest']):
@@ -119,25 +123,28 @@ def run(package):
     code = out/'implementation'; code.mkdir()
     for name in ('brand_guide_revision.py', 'brand_school.py', 'verify_brand_package.py'):
         shutil.copyfile(Path(__file__).parent/name, code/name)
+    if expanded: shutil.copyfile(Path(__file__).parent/'brand_plan_review.py', code/'brand_plan_review.py')
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', code/'local_ollama.py')
     report = {'schema': CONTRACT, 'status': 'running', 'package': str(package),
         'source_report_sha256': brand.school.checksum(package/'report.json'), 'config': config,
         'model': config['model'], 'digest': config['digest'], 'resources_before': resources,
         'max_model_calls': 3, 'training_exported': False, 'exam_score_changed': False,
         'production_changed': False, 'autonomy_qualified': False, 'independent_review_required': True}
+    if expanded: report['review_contract'] = protocol.CONTRACT
     started = time.monotonic(); print(json.dumps({'output': str(out)}), flush=True)
     try:
-        review = review_value(brand.call(out, 'review', REVIEW_SYSTEM, json.dumps(data), REVIEW_SCHEMA, config))
+        review = protocol.review_value(brand.call(out, 'review', protocol.REVIEW_SYSTEM, json.dumps(data), protocol.REVIEW_SCHEMA, config))
         brand.school.save(out/'review.json', review)
         if all(r['verdict'] == 'supported' for r in review['reviews']):
             report['status'] = 'no_repair_requested'
         else:
             writer_data = {'assets': data, 'review': review}
-            raw = brand.call(out, 'writer', WRITER_SYSTEM, json.dumps(writer_data), PATCH_SCHEMA, config)
-            changed = apply(data['plan'], raw, review)
+            writer_schema = protocol.patch_schema(review) if expanded else protocol.PATCH_SCHEMA
+            raw = brand.call(out, 'writer', protocol.WRITER_SYSTEM, json.dumps(writer_data), writer_schema, config)
+            changed = protocol.apply(data['plan'], raw, review)
             brand.school.save(out/'revised-plan.json', changed)
             updated = data | {'plan': changed}
-            final = review_value(brand.call(out, 'final-review', REVIEW_SYSTEM, json.dumps(updated), REVIEW_SCHEMA, config))
+            final = protocol.review_value(brand.call(out, 'final-review', protocol.REVIEW_SYSTEM, json.dumps(updated), protocol.REVIEW_SCHEMA, config))
             brand.school.save(out/'final-review.json', final)
             report['status'] = 'needs_revision'
             if all(r['verdict'] == 'supported' for r in final['reviews']):
@@ -176,6 +183,11 @@ def verify(out):
         if name not in report['artifacts']: raise ValueError('Unbound revision evidence')
         return evidence.read(out/name)
     package = Path(report['package']); original, data = inputs(package)
+    protocol = sys.modules[__name__]
+    if 'review_contract' in report:
+        from scripts import brand_plan_review as protocol
+        if report['review_contract'] != protocol.CONTRACT: raise ValueError('Unknown text review contract')
+        data = protocol.expand(data, package)
     if (brand.school.checksum(package/'report.json') != report['source_report_sha256']
             or (report['model'], report['digest']) != (original['model'], original['digest'])):
         raise ValueError('Original package or author changed')
@@ -188,9 +200,10 @@ def verify(out):
         if (value['model'], value['digest']) != (original['model'], original['digest']):
             raise ValueError('Revision author changed')
         return value['content']
-    review = review_value(response('review', REVIEW_SYSTEM, data, REVIEW_SCHEMA))
-    changed = apply(data['plan'], response('writer', WRITER_SYSTEM, {'assets': data, 'review': review}, PATCH_SCHEMA), review)
-    final = review_value(response('final-review', REVIEW_SYSTEM, data | {'plan': changed}, REVIEW_SCHEMA))
+    review = protocol.review_value(response('review', protocol.REVIEW_SYSTEM, data, protocol.REVIEW_SCHEMA))
+    writer_schema = protocol.patch_schema(review) if 'review_contract' in report else protocol.PATCH_SCHEMA
+    changed = protocol.apply(data['plan'], response('writer', protocol.WRITER_SYSTEM, {'assets': data, 'review': review}, writer_schema), review)
+    final = protocol.review_value(response('final-review', protocol.REVIEW_SYSTEM, data | {'plan': changed}, protocol.REVIEW_SCHEMA))
     if (review != read('review.json') or final != read('final-review.json') or any(r['verdict'] != 'supported' for r in final['reviews'])
             or changed != read('revised-plan.json') or changed != read('delivery/style-plan.json')):
         raise ValueError('Guide revision differs from literal reviewed output')
