@@ -252,6 +252,13 @@ def quality_issues(rendered, profile):
     return issues
 
 
+def measured_feedback(rendered, profile):
+    return {'issues': quality_issues(rendered, profile),
+            'coordinate_system': 'Rendered pixels, origin top-left; bbox is x,y,width,height; SVG text y is baseline.',
+            'text_layout': rendered['layout'], 'shape_layout': rendered.get('shape_layout', []),
+            'group_layout': rendered.get('group_layout', [])}
+
+
 def checked_scene(out, name, plan, kind, logo=None):
     attempt = 0
     def validate(raw):
@@ -274,6 +281,39 @@ def selected_value(raw):
             or value['reason'] != value['reason'].strip() or value['reason'][-1] not in '.!?'):
         raise ValueError('Select a or b with ONE SHORT COMPLETE sentence explaining your choice')
     return value
+
+
+def assemble(out, plan, logos, selection, card, report):
+    chosen = logos[selection['selected']]
+    mono = monochrome(chosen, plan['monochrome_ink'])
+    assets = {'logo-a': (logos['a'], 'brand_logo', 1), 'logo-b': (logos['b'], 'brand_logo', 1),
+              'logo-selected': (chosen, 'brand_logo', 1), 'logo-monochrome': (mono, 'brand_logo', 1),
+              'logo-small': (chosen, 'brand_logo', .4), 'business-card': (card, 'brand_card', 1)}
+    delivery = out/'delivery'; delivery.mkdir()
+    for name, (svg, profile, scale) in assets.items():
+        folder = out/name; folder.mkdir(); (folder/'artwork.svg').write_text(svg)
+        school.check_idle(); rendered = asyncio.run(render(svg, folder, profile=profile, png_scale=scale))
+        from PIL import Image
+        with Image.open(folder/'preview.png') as preview:
+            if preview.size != (int(PROFILES[profile]['width']*scale), int(PROFILES[profile]['height']*scale)):
+                raise ValueError('Actual preview dimensions differ from requested scale')
+        school.save(folder/'render.json', rendered)
+        issues = quality_issues(rendered, profile)
+        report['checks'][name] = {'issues': issues, 'pdf': rendered['pdf']}
+        for source_name, extension in (('artwork.svg', 'svg'), ('preview.png', 'png'), ('preview.pdf', 'pdf')):
+            shutil.copyfile(folder/source_name, delivery/(name+'.'+extension))
+    guide = '# '+BRIEF['restaurant_name']+'\n\n'+plan['positioning']+'\n\n'+plan['tagline']+'\n\n'
+    guide += '\n'.join(f'- {k}: {plan[k]}' for k in ('ink', 'paper', 'accent', 'heading_font', 'body_font', 'monochrome_ink'))
+    guide += '\n\n'+'\n'.join('- '+s for s in plan['guidelines'])+'\n\n'+selection['reason']+'\n'
+    (delivery/'brand-guide.md').write_text(guide); school.save(delivery/'style-plan.json', plan)
+    manifest = {'schema': 'synthetic-brand-package.v1', 'restaurant': BRIEF['restaurant_name'], 'model': report['model'],
+        'digest': report['digest'], 'files': {p.name: school.checksum(p) for p in sorted(delivery.iterdir())},
+        'business_card_mm': [85, 55], 'synthetic': True, 'print_ready': False, 'commercial_delivery_approved': False,
+        'authorship': 'Local model scene values; literal XML serialization, selected-logo reuse and model-directed monochrome conversion.'}
+    school.save(delivery/'manifest.json', manifest)
+    with zipfile.ZipFile(out/'brand-package.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
+        for path in sorted(delivery.iterdir()): archive.write(path, path.name)
+    report['status'] = 'needs_revision' if any(c['issues'] for c in report['checks'].values()) else 'pending_independent_visual_review'
 
 
 def run(*, sampling_profile=None, matched_exam_budget=False):
@@ -318,35 +358,7 @@ def run(*, sampling_profile=None, matched_exam_budget=False):
             'chosen_logo_svg': chosen, 'task': 'Design the 85x55mm business card. Choose the placement of the existing logo and all four other lines yourself.'}), scene_schema('card', plan), config,
             checked_scene(out, 'card', plan, 'card', logo=chosen))
         report['stages'].append('card')
-        mono = monochrome(chosen, plan['monochrome_ink'])
-        assets = {'logo-a': (logos['a'], 'brand_logo', 1), 'logo-b': (logos['b'], 'brand_logo', 1),
-                  'logo-selected': (chosen, 'brand_logo', 1), 'logo-monochrome': (mono, 'brand_logo', 1),
-                  'logo-small': (chosen, 'brand_logo', .4), 'business-card': (card, 'brand_card', 1)}
-        delivery = out/'delivery'; delivery.mkdir()
-        for name, (svg, profile, scale) in assets.items():
-            folder = out/name; folder.mkdir(); (folder/'artwork.svg').write_text(svg)
-            school.check_idle(); rendered = asyncio.run(render(svg, folder, profile=profile, png_scale=scale))
-            from PIL import Image
-            with Image.open(folder/'preview.png') as preview:
-                if preview.size != (int(PROFILES[profile]['width']*scale), int(PROFILES[profile]['height']*scale)):
-                    raise ValueError('Actual preview dimensions differ from requested scale')
-            school.save(folder/'render.json', rendered)
-            issues = quality_issues(rendered, profile)
-            report['checks'][name] = {'issues': issues, 'pdf': rendered['pdf']}
-            for source_name, extension in (('artwork.svg', 'svg'), ('preview.png', 'png'), ('preview.pdf', 'pdf')):
-                shutil.copyfile(folder/source_name, delivery/(name+'.'+extension))
-        guide = '# '+BRIEF['restaurant_name']+'\n\n'+plan['positioning']+'\n\n'+plan['tagline']+'\n\n'
-        guide += '\n'.join(f'- {k}: {plan[k]}' for k in ('ink', 'paper', 'accent', 'heading_font', 'body_font', 'monochrome_ink'))
-        guide += '\n\n'+'\n'.join('- '+s for s in plan['guidelines'])+'\n\n'+selection['reason']+'\n'
-        (delivery/'brand-guide.md').write_text(guide); school.save(delivery/'style-plan.json', plan)
-        manifest = {'schema': 'synthetic-brand-package.v1', 'restaurant': BRIEF['restaurant_name'], 'model': config['model'],
-            'digest': config['digest'], 'files': {p.name: school.checksum(p) for p in sorted(delivery.iterdir())},
-            'business_card_mm': [85, 55], 'synthetic': True, 'print_ready': False, 'commercial_delivery_approved': False,
-            'authorship': 'Local model scene values; literal XML serialization, selected-logo reuse and model-directed monochrome conversion.'}
-        school.save(delivery/'manifest.json', manifest)
-        with zipfile.ZipFile(out/'brand-package.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
-            for path in sorted(delivery.iterdir()): archive.write(path, path.name)
-        report['status'] = 'needs_revision' if any(c['issues'] for c in report['checks'].values()) else 'pending_independent_visual_review'
+        assemble(out, plan, logos, selection, card, report)
     except Exception as exc:
         report.update(status='failed', error_type=type(exc).__name__, error=str(exc)[:400])
     finally:
@@ -361,18 +373,31 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     actions = parser.add_mutually_exclusive_group(); actions.add_argument('--run', action='store_true'); actions.add_argument('--full-exam', action='store_true')
     actions.add_argument('--revise-guide', type=Path)
+    actions.add_argument('--repair-artwork', type=Path)
     actions.add_argument('--revise-plan-text', type=Path)
     actions.add_argument('--revise-spatial-text', type=Path)
     actions.add_argument('--revise-spatial-subjects', type=Path)
+    actions.add_argument('--revise-alignment-text', type=Path)
     actions.add_argument('--guide-review-exam', action='store_true')
     actions.add_argument('--plan-review-exam', action='store_true')
     actions.add_argument('--spatial-claim-exam', action='store_true')
     actions.add_argument('--spatial-subject-exam', action='store_true')
     actions.add_argument('--workflow-exam', action='store_true')
     parser.add_argument('--warm-revision', action='store_true', help='Reuse the local model for one bounded guide revision')
+    parser.add_argument('--artwork-reasoning', action='store_true', help='Use the bounded reasoning profile for artwork repair')
     args = parser.parse_args()
-    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects)):
+    if args.artwork_reasoning and not args.repair_artwork:
+        parser.error('--artwork-reasoning requires --repair-artwork')
+    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects, args.revise_alignment_text)):
         parser.error('--warm-revision requires a guide/plan/spatial revision')
+    if args.repair_artwork:
+        from scripts.brand_artwork_repair import run as repair_artwork
+        _, report = repair_artwork(args.repair_artwork, deliberate=args.artwork_reasoning)
+        raise SystemExit(int(report['status'] != 'pending_independent_visual_review'))
+    if args.revise_alignment_text:
+        from scripts.brand_guide_revision import run as revise_alignment
+        _, report = revise_alignment(args.revise_alignment_text, spatial='alignment', warm=args.warm_revision)
+        raise SystemExit(int(report['status'] != 'pending_independent_review'))
     if args.spatial_subject_exam:
         from scripts.brand_spatial_holdout import run as subject_exam
         _, report = subject_exam(subjects=True)

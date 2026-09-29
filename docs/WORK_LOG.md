@@ -5759,3 +5759,74 @@ Testy: 150 passed (adapter, krótkie serie, odmowa nowych konfliktów zasobów,
 przerwania, naturalne wygaśnięcie, autorstwo, manipulacja retencją, istniejące
 poprawki/generator/egzaminy). Zapisano osobne zweryfikowane raporty i odbiory,
 bez zmiany historycznych niepowodzeń, wag, danych treningowych czy kwalifikacji.
+
+## 2026-09-29 — naprawa grafik, kontrole monochromu i dwa odebrane pakiety
+
+Poprzedni obrót był postępem: rzeczywiste przyspieszenie poprawki i przyjęte
+artefakty. Na początku pracy repozytorium było czyste (b8c3624). Odczytano
+oryginalne niepowodzenia Copper/Cedar oraz kryteria pełnej kwalifikacji.
+
+Dodano opcjonalny pomiar udziału kształtów w render_school_svg. Dla każdego
+kształtu renderer tymczasowo ukrywa wyłącznie ten węzeł, wykonuje diagnostyczny
+PNG i przywraca węzeł przed PDF. Źródło i dostarczany PNG pozostają niezmienione.
+Liczony jest faktyczny wpływ na piksele (dowolny kanał >=20). Przy konwersji
+na jeden kolor zgłaszany jest element, który wpływał na >=16 pikseli, a potem
+na mniej niż max(2, 5% pierwotnej liczby). To kontrola zanikania składników na
+białym podkładzie, nie dowód pełnej wierności semantycznej, estetyki ani druku.
+Niezależny weryfikator ponownie liczy wartości z zachowanych PNG, sprawdza
+zgodność źródła, zaakceptowanego logo i monochromu oraz pełną paczkę.
+
+brand_artwork_repair czyta i uwierzytelnia wcześniejsze sceny/odpowiedzi.
+Pozwala kontynuować oryginalną kompletną paczkę albo zatrzymanie po trzech
+próbach karty. Nie maskuje wyczerpanego budżetu: zapisuje osobny repair-origin,
+przywrócone etapy, maksymalnie sześć dodatkowych wywołań oraz fresh_exam=false.
+Zmieniać można tylko wybrane logo i scenę karty. Plan, drugi koncept i wybór
+pozostają odpowiedziami pierwotnego autora. Bounded validated_call zapewnia
+maksymalnie trzy próby na scenę. Wspólne składanie eksportów wydzielono do
+assemble i sprawdzono również na całym pierwotnym przebiegu w testach.
+
+Rzeczywiste początkowe próby v1:
+- artwork-repair-z7tpqb7n, Copper, 38,023 s: kontrola wykryła zanik dwóch
+  elementów (6555->0 i 5111->20 pikseli). Autor poprawił znak na drugiej
+  odpowiedzi, ale trzy razy powtórzył kolizję tych samych tekstów na karcie.
+  Brak zaakceptowanej dostawy; oryginał i wszystkie próby zachowane.
+- artwork-repair-o26yllq6, Cedar, 18,248 s: dwie odpowiedzi powtarzają znak,
+  trzecia zmienia tylko kolor. Liść nadal znika (ok. 3679->0); zatrzymano.
+
+V2 usuwa z instrukcji napraw sugestię sztywnych baz 330/390/435/480; model
+ma korzystać z pomierzonych granic. Identyczna scena zwraca zachowany błąd
+bez kolejnego renderu. Jawne --artwork-reasoning włącza istniejący profil
+qwen-deliberate-trial.v1 (16384 kontekstu, 8192 wyjścia, 180 s, 4 wątki),
+bez zmiany wag, globalnego routingu ani oryginałów.
+
+Rzeczywiste v2 z rozumowaniem:
+- Copper artwork-repair-jjnu2lnl, 69,369 s, dwa wywołania: wybrany znak to
+  pierścień i dysk, rozdzielne także po konwersji; karta ma widoczny odstęp
+  między nazwą i tagline. Zachowano plan, wybór i koncept B. Techniczny
+  weryfikator odtworzył wszystkie sceny, kopie, PDF-y i 21 plików ZIP,
+  pochodzenie, dodatkowe dwa wywołania i diagnostyczne PNG. Obejrzano pięć
+  grafik oraz opis i zasady. Odebrany poprawiony syntetyczny pakiet.
+- Cedar artwork-repair-_4zjh2lf, 52,945 s, jedno wywołanie: obrys koła oraz
+  osobny liść zachowane w monochromie i małym podglądzie. Scena wizytówki
+  ponownie użyta, wstawia dosłownie nowe logo. Grafikę odebrano po oglądzie
+  pięciu PNG i weryfikacji; dawny opis liścia w literze C nadal błędny.
+
+Cedar guide-revision-sgr1lvt0, v3 warm, 13,739 s: technicznie poprawna
+zmiana tekstu, ale model dopisał nieprawdziwe centered layout. Niezależny
+odbiór needs_revision zachowano osobno od technicznego sukcesu. Dodano jawny
+brand-measured-alignment-review.v5 i --revise-alignment-text: centered/centred
+przy różnicy poziomych środków >2 px wymaga wyjaśnienia; autor nie ma dopisywać
+nowych twierdzeń o wyrównaniu. Kontrakt v3/v4 i stare żądania niezmienione.
+
+V5 guide-revision-lgszr89w, 13,565 s warm: model opisał osobny zielony znak
+nad napisem oraz podał prawdziwe środki x=160 i x=300. Pełna weryfikacja oraz
+nowy izolowany render spatial-proof-xqdu5gwi potwierdziły te liczby. Wszystkie
+grafiki identyczne z obejrzaną poprawką. Odebrano końcowy syntetyczny Cedar;
+liczbowe brzmienie opisu jest techniczne, lecz zgodne z dostarczonym projektem.
+
+Obie pary nie są porównaniem z równym budżetem: zmieniono instrukcje i profil.
+To znane naprawy, a nie świeże zlecenia ani dowód autonomii. Wszystkie wcześniejsze
+niepowodzenia i brak kwalifikacji pozostają. Bez SFT, danych egzaminu w treningu,
+ręcznego pisania produktu, zmiany wag lub cudzych procesów. Testy powiązanego
+kodu obejmują pełne składanie, pochodzenie, ingerencję w feedback/etapy/retencję,
+piksele, wyrównanie, starsze egzaminy oraz wspólne kontrakty wektorowe.

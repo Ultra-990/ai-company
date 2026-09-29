@@ -1,5 +1,34 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — naprawione pełne pakiety Copper i Cedar
+
+Dodano naprawę zachowanego projektu `--repair-artwork KATALOG`. Model sam
+zmienia wadliwy wybrany znak lub wizytówkę; wcześniejsze poprawne etapy są
+uwierzytelniane i ponownie używane. Nowe próby nie są dopisywane do budżetu
+starego egzaminu. Kontrola monochromu mierzy rzeczywisty udział każdego
+kształtu w obrazie przed i po konwersji; kolizje otrzymują pełne ramki tekstów.
+
+Pierwsze próby bez rozumowania nie ukończyły paczek (38,023/18,248 s): Copper
+naprawił znak, lecz powtórzył kolizję wizytówki; Cedar zmienił tylko kolor
+nadal znikającego liścia. Po usunięciu sugestii stałych pozycji tekstów z
+instrukcji napraw i włączeniu ograniczonego profilu rozumowania:
+
+- Copper `artwork-repair-jjnu2lnl`: 69,369 s, dwa nowe wywołania, logo i karta
+  poprawione. Pełne 21 plików ZIP, PDF-y, pochodzenie i ogląd pięciu PNG
+  zweryfikowane; odebrany poprawiony syntetyczny pakiet.
+- Cedar `artwork-repair-_4zjh2lf`: 52,945 s, jedno nowe wywołanie poprawiło
+  logo; układ karty i drugi koncept zachowane. Opis drugiego konceptu wymagał
+  osobnej korekty. Pierwszy tekst v3 odrzucono za fałszywe „centered”. V5
+  `guide-revision-lgszr89w`, 13,565 s w trybie warm, ma zgodny opis i rzeczywiste
+  środki x=160/300. Ponowny render i identyczność grafik potwierdzone;
+  końcowy syntetyczny pakiet odebrany.
+
+To poprawki znanych błędów, przy zmienionych instrukcjach i większym budżecie
+rozumowania, nie kontrolowany dowód przewagi profilu ani świeży egzamin.
+Historyczny pełny wynik marki nadal 0/3 w obu ramionach. Następnie potrzebny
+jest nowy zamrożony pełny przebieg z równymi budżetami i niezależnym odbiorem.
+Bez zmiany wag, eksportu egzaminów do treningu ani kwalifikacji pięciu usług.
+
 ## Aktualizacja 29.09.2026 — pełna poprawka opisu o 42,6% krócej
 
 Dodano `--warm-revision`: jedna ograniczona seria zachowuje model w pamięci

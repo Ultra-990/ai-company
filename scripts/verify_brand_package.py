@@ -72,6 +72,10 @@ def verify(folder):
         path = bounded(folder/name)
         if not path.resolve().is_relative_to(folder.resolve()) or brand.school.checksum(path) != digest:
             raise ValueError('Brand artifact changed')
+    repair = None
+    if 'repair_contract' in report:
+        from scripts.brand_artwork_repair import verify_origin
+        repair = verify_origin(folder, report)
     def bound_read(name):
         if name not in report['artifacts']: raise ValueError('Missing bound brand artifact')
         return read(folder/name)
@@ -128,10 +132,12 @@ def verify(folder):
         if Counter(archive.namelist()) != Counter(names): raise ValueError('Exact ZIP entries required')
         for name in names:
             if archive.read(name) != (folder/'delivery'/name).read_bytes(): raise ValueError('ZIP differs from delivery')
-    return {'schema': 'brand-package-verification.v1', 'report_sha256': brand.school.checksum(folder/'report.json'),
+    result = {'schema': 'brand-package-verification.v1', 'report_sha256': brand.school.checksum(folder/'report.json'),
         'literal_authorship_verified': True, 'pdf_and_delivery_verified': True, 'stages': chains,
         'model_requests': sum(c['requests'] for c in chains), 'zip_files': len(names),
         'independent_visual_review_required': True, 'autonomy_qualified': False, 'training_exported': False}
+    if repair is not None: result['repair_origin'] = repair
+    return result
 
 
 if __name__ == '__main__':

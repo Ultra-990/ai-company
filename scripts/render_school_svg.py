@@ -224,10 +224,12 @@ def export_assessment(path, texts, purpose, *, size_mm=(148, 210)):
                 'purpose': 'controlled_fault_input'}
 
 
-async def render(source, output, *, purpose='deliverable', profile='leaflet', png_scale=1):
+async def render(source, output, *, purpose='deliverable', profile='leaflet', png_scale=1, measure_shape_contribution=False):
     if purpose not in {'deliverable', 'controlled_fault_input'}:
         raise ValueError('Explicit render purpose required')
     if png_scale not in (1, .4): raise ValueError('Fixed preview scales required')
+    if measure_shape_contribution and (profile != 'brand_logo' or png_scale != 1):
+        raise ValueError('Shape contribution requires a full-size brand logo')
     validated = validate_svg(source, profile=profile); spec = PROFILES[profile]
     wrapper = document(source, profile=profile)
     measurement = MEASURE
@@ -303,6 +305,29 @@ async def render(source, output, *, purpose='deliverable', profile='leaflet', pn
                     png = base64.b64decode(screenshot['data'], validate=True)
                     if len(png) > 4*1024*1024: raise ValueError('PNG output limit')
                     (output/'preview.png').write_bytes(png)
+                    contributions = None
+                    if measure_shape_contribution:
+                        # Diagnostic ablation only; restore every node before PDF
+                        # export. Neither source nor deliverable pixels are edited.
+                        from PIL import Image, ImageChops
+                        import io
+                        baseline = Image.open(io.BytesIO(png)).convert('RGB')
+                        contributions = []
+                        for index, shape in enumerate(shape_layout):
+                            selector = "document.querySelectorAll('svg rect,svg circle,svg ellipse,svg line,svg path')["+str(index)+"]"
+                            await call('Runtime.evaluate', {'expression': selector+".style.visibility='hidden'"}, session)
+                            try:
+                                hidden = await call('Page.captureScreenshot', {'format': 'png', 'captureBeyondViewport': False}, session)
+                                data = base64.b64decode(hidden['data'], validate=True)
+                                if len(data) > 4*1024*1024: raise ValueError('Ablation PNG output limit')
+                                (output/('shape-removed-'+str(index)+'.png')).write_bytes(data)
+                                variant = Image.open(io.BytesIO(data)).convert('RGB')
+                                diff = ImageChops.difference(baseline, variant)
+                                red, green, blue = diff.split()
+                                count = sum(ImageChops.lighter(ImageChops.lighter(red, green), blue).histogram()[20:])
+                                contributions.append({'index': index, 'tag': shape['tag'], 'changed_pixels': count})
+                            finally:
+                                await call('Runtime.evaluate', {'expression': selector+".style.removeProperty('visibility')"}, session)
                     exported = await call('Page.printToPDF', {'printBackground': True, 'displayHeaderFooter': False,
                         'paperWidth': spec['size_mm'][0]/25.4, 'paperHeight': spec['size_mm'][1]/25.4, 'marginTop': 0, 'marginBottom': 0,
                         'marginLeft': 0, 'marginRight': 0, 'preferCSSPageSize': True, 'scale': 1}, session)
@@ -318,6 +343,9 @@ async def render(source, output, *, purpose='deliverable', profile='leaflet', pn
                     if profile == 'product_source': result['source_shape_visibility'] = source_shape_visibility
                     if panel_lines is not None: result['panel_line_segments'] = panel_lines
                     if group_layout is not None: result['group_layout'] = group_layout
+                    if contributions is not None:
+                        result['shape_contributions'] = contributions
+                        result['shape_contribution_threshold'] = {'channel_difference': 20, 'background': 'renderer_default_white'}
         finally:
             stop_owned_chrome(process)
         result['own_browser_stopped'] = process.poll() is not None

@@ -280,3 +280,34 @@ Jedna para rzeczywistych poprawek Harbor: warm 13,478 s vs cold 23,499 s,
 pierwszym ramieniem, nie uniwersalna gwarancja szybkości ani egzamin usługi.
 Retencja nie zapewnia wyłączności GPU wobec zewnętrznych klientów; obcy
 lub nieznany stan wykryty przed następnym krokiem zatrzymuje generację.
+
+## Naprawa zachowanego projektu i zanikających szczegółów
+
+`--repair-artwork KATALOG` tworzy osobny przebieg z oryginalnej paczki albo
+ze źródła zatrzymanego po wyczerpaniu poprawek wizytówki. Uwierzytelnia
+odpowiedzi i kopiuje etapy ponownie używane; może zmienić tylko wybrane logo
+oraz kartę. Poprawny plan, drugi koncept i wybór autora zostają zachowane.
+Raport jawnie liczy do sześciu dodatkowych wywołań, nie zmienia starego
+budżetu/oceny i ma fresh_exam=false. Zagnieżdżone naprawy nie są źródłem.
+
+Kolizje są zwracane wraz z rzeczywistymi ramkami tekstów, kształtów i grup.
+Wybrany znak renderowany jest w kolorze i monochromie. Diagnostyczne ukrycie
+każdego kształtu mierzy jego wpływ na obraz; zanik składnika blokuje wynik.
+Wszystkie węzły są przywracane przed eksportem. Progi: kanał >=20, co najmniej
+16 zmienionych pikseli w kolorze i mniej niż max(2, 5%) po konwersji.
+Kontrola dotyczy białego podkładu i nie zastępuje wizualnego odbioru ani testu druku.
+Weryfikator odtwarza również liczbę pikseli z zachowanych obrazów diagnostycznych.
+
+`--artwork-reasoning` wybiera ograniczony istniejący profil rozumowania;
+nie trenuje modelu. V2 nie narzuca przykładów baz tekstowych w naprawie,
+a identyczny odrzucony JSON używa już zapisanych pomiarów. Copper poprawiony
+w dwóch wywołaniach (69,369 s); Cedar w jednym (52,945 s). Próby bez
+rozumowania zachowane jako failed. Warunki różniły się, więc nie wyciągamy
+wniosku o przewadze modelu na kontrolowanym nowym egzaminie.
+
+`--revise-alignment-text KATALOG --warm-revision` to jawne v5 kontroli opisów.
+Dziedziczy v3 i dodaje konserwatywną kontrolę centered/centred przy odległych
+środkach poziomych; nie jest ogólnym parserem znaczenia i nie dowodzi estetyki.
+Cedar wymagał tej poprawki po odrzuconym „centered layout”. Końcowy opis
+ma zgodne z rendererem x=160/300; cały poprawiony syntetyczny pakiet odebrano.
+Stare wyniki, w tym pełny egzamin 0/3 w obu ramionach, pozostają niezmienione.

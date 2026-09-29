@@ -61,12 +61,13 @@ def revised(tmp_path, monkeypatch, request):
     expanded = getattr(request, 'param', False)
     warm = expanded == 'warm'
     if warm: expanded = False
-    spatial = expanded in ('spatial', 'subject')
+    spatial = expanded in ('spatial', 'subject', 'alignment')
     if expanded:
         data['plan'].update(concept_a='A false original concept description.', concept_b='A preserved second concept description.')
     if spatial:
         from scripts import brand_spatial_review as measured
         if expanded == 'subject': from scripts import brand_spatial_subject_review as measured
+        if expanded == 'alignment': from scripts import brand_spatial_alignment_review as measured
         data['plan'].update(concept_a='A wave sits below the wordmark.', concept_b='A circle surrounds the wordmark.')
         from scripts.brand_spatial_review import geometry as measure
         geometry = measure({'layout': [{'bbox': [100, 250, 300, 60]}], 'shape_layout': [{'bbox': [200, 100, 100, 80]}]})
@@ -114,7 +115,7 @@ def revised(tmp_path, monkeypatch, request):
         monkeypatch.setattr(batch, 'OllamaProvider', Provider)
         monkeypatch.setattr(batch, 'check_resources', lambda *args: {})
         monkeypatch.setattr(batch, 'resident_models', lambda: [])
-    out, report = guide.run(source, expanded=bool(expanded), spatial='subject' if expanded == 'subject' else spatial, warm=warm)
+    out, report = guide.run(source, expanded=bool(expanded), spatial=expanded if expanded in ('subject', 'alignment') else spatial, warm=warm)
     assert report['status'] == 'pending_independent_review'
     return out, report
 
@@ -146,7 +147,7 @@ def test_expanded_revision_replays_structure_and_changed_concept(revised):
     assert json.loads((out/'revised-plan.json').read_text())['concept_a'] == 'A corrected description from the local model.'
 
 
-@pytest.mark.parametrize('revised', ['spatial', 'subject'], indirect=True)
+@pytest.mark.parametrize('revised', ['spatial', 'subject', 'alignment'], indirect=True)
 def test_spatial_revision_overrides_false_model_approval_and_replays_five_calls(revised):
     out, report = revised
     assert report['max_model_calls'] == 5
