@@ -5316,3 +5316,38 @@ braku 70 rekordów train, porównania base/adapter i planu rollbacku.
   panele i źródło czytelne. Literalne zachowanie węzłów źródła nie
   wystarcza do ochrony wyglądu przed scalającą się dekoracją. Negatywna
   ocena związana hashami; bez eksportu do nauki lub zmiany wyniku egzaminu.
+
+## 2026-09-29 — ochrona widocznego produktu przed dekoracją
+
+- `product_paint_separation.py` wykrywa duże dekoracje w kolorze korpusu
+  lub zakrętki przecinające zmierzoną ramkę wstawionego produktu. Wąskie
+  oznaczenia i małe punkty końcowe pozostają dozwolone. Nowe pełne serie
+  dostają jawny kontrakt i instrukcję; stare pakiety/wznowienia zachowują
+  wcześniejszy kontrakt. Walidator nie przestawia ani nie usuwa elementów.
+- Audyt oryginalnego `series-qo_prtfd` wskazał dokładnie wadliwą elipsę
+  care, bez usterek pozostałych paneli. Odebrany egzaminacyjny GLEN
+  przechodzi wszystkie cztery kontrole. Dziewięć nowych testów obejmuje
+  także poprawne linie, punkty, oddzielne pasy i brak danych pomiarowych.
+- Pilotaż może sprawdzić jawnie wybrany panel technicznie ukończonego
+  pakietu; oryginał musi przejść weryfikację, a scena mieć aktualnie
+  zmierzoną usterkę. Brak usterki nie uruchamia generacji poprawek.
+- `patch-pilot-wp3ygjis`: trzy bazowe próby, 14,123 s. Pierwsza zostawiła
+  nakładanie, druga powtórzyła niezmienioną wartość, trzecia odsunęła
+  elipsę. Nowa lokalna kontrola zaliczona, ale ogląd odrzucił dominujący,
+  ucięty kształt w prawym dolnym rogu. Poprawa jednego błędu nie daje
+  odbioru kompozycji. Negatywna ocena i wszystkie wersje zachowane.
+- Testy integracji kontraktu: **71 passed**; po rozszerzeniu diagnostyki
+  **29 passed** i **10 passed**, w tym wymaganie weryfikacji oryginału
+  oraz brak zmiany jego technicznego statusu.
+- Pełna regresja po integracji ochrony wyglądu: **1893 passed,
+  22 skipped**, 92,04 s.
+- `series-ueizbp9p`: nowe pełne ćwiczenie treningowej rodziny FIELD z lekcją
+  i ochroną farby ukończone w 388,476 s, 9 żądań/8 pełnych odpowiedzi.
+  Źródło, pojemność i wymiary za pierwszym razem; materiały po jednej
+  niepełnej odpowiedzi i korekcie, care po korekcie uciętego tekstu PDF.
+  Odtworzono oba łańcuchy poprawek. Ogląd źródła i wszystkich czterech
+  dostaw zaakceptował **syntetyczny pakiet rozwojowy**: pełne czytelne fakty,
+  poprawne oznaczenia, dekoracja oddzielona od produktu. Drobne dodatkowe
+  kreski/kropki i szew rasteryzacji nie blokują odbioru tego ćwiczenia.
+  To znana rodzina treningowa, nie nowy egzamin lub kwalifikacja; bez SFT
+  i automatycznego eksportu do nauki.

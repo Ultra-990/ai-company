@@ -28,6 +28,7 @@ from scripts import vector_structured_source as scene
 from scripts import product_model_feedback as feedback
 from scripts import product_callouts as callouts
 from scripts import product_silhouette as silhouette
+from scripts import product_paint_separation as paint
 from scripts.prepare_training_data import unique_object
 from scripts.render_school_svg import render, pdf_checks
 from scripts.vector_school_contract import NS, PROFILES, validate_svg, layout_issues
@@ -351,7 +352,7 @@ identify the body/lid on the drawing. You choose all shapes and coordinates.'''
         if placement_contract == PLACEMENT_CONTRACT else '')
 
 
-def checked_scene(out, stage, style, panel=None, product=None, *, placement_contract=LEGACY_PLACEMENT, annotation_contract=None, source_contour=False, copy_contract=LEGACY_COPY):
+def checked_scene(out, stage, style, panel=None, product=None, *, placement_contract=LEGACY_PLACEMENT, annotation_contract=None, source_contour=False, copy_contract=LEGACY_COPY, paint_separation=False):
     callouts.validate_contract(annotation_contract)
     attempt = 0
     def validate(raw):
@@ -377,6 +378,8 @@ def checked_scene(out, stage, style, panel=None, product=None, *, placement_cont
                 issues += observed['issues']
         elif annotation_contract:
             issues += callouts.issues(measured, panel, style, contract=annotation_contract)
+        if panel and paint_separation:
+            issues += paint.issues(svg, measured, style)
         if issues: raise feedback.SceneFailure('Correct your own measured layout: '+json.dumps(issues), folder, measured)
         return svg
     return validate
@@ -484,6 +487,8 @@ def verify(out):
         raise ValueError('Unknown source contour contract')
     if report.get('source_instruction_contract') not in (None, SOURCE_INSTRUCTION_CONTRACT):
         raise ValueError('Unknown source instruction contract')
+    if report.get('product_paint_contract') not in (None, paint.CONTRACT):
+        raise ValueError('Unknown product paint contract')
     panel_render_profile = panel_profile(placement_contract)
     for name, digest in report['artifacts'].items():
         path = out/name
@@ -518,6 +523,8 @@ def verify(out):
             raise ValueError('Unresolved measured layout defect')
         if name != 'source' and annotation_contract and callouts.issues(measured, name, style, contract=annotation_contract):
             raise ValueError('Unresolved functional annotation defect')
+        if name != 'source' and report.get('product_paint_contract') and paint.issues(svg, measured, style):
+            raise ValueError('Decoration changes the apparent product silhouette')
         if name == 'source' and fidelity_contract and source_fidelity_issues(
                 measured, label_check=fidelity_contract != 'bottle-proportions.v1',
                 label_bounds=fidelity_contract in ('bottle-proportions-label.v3', SOURCE_FIDELITY_CONTRACT),
@@ -612,7 +619,7 @@ def audit_source(package, *, include_panels=False, functional_callouts=False):
     return out, report
 
 
-def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False, recover_incomplete=False, source_contour=False, source_lesson=None):
+def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=None, sampling_profile=None, functional_callouts=False, matched_exam_budget=False, recover_incomplete=False, source_contour=False, source_lesson=None, paint_separation=True):
     if recover_incomplete and visual_feedback:
         raise ValueError('Incomplete-answer recovery currently requires the text feedback caller')
     if source_contour not in (False, True, silhouette.LEGACY_CONTRACT, silhouette.CONTRACT):
@@ -656,6 +663,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
             raise ValueError('Recompose to introduce functional annotations; a resume preserves prior contracts')
         annotation_contract = previous_annotations
         callouts.validate_contract(annotation_contract)
+        paint_separation = previous.get('product_paint_contract') == paint.CONTRACT
     elif recompose is not None:
         recompose = Path(recompose)
         verify(recompose)
@@ -675,7 +683,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
                     shutil.copyfile(path, out/path.name)
                     if path.name.endswith('-response.json'): inherited.append(path.name)
     implementation = out/'implementation'; implementation.mkdir()
-    for name in ('product_infographic_school.py', 'product_callouts.py', 'product_model_feedback.py', 'product_silhouette.py', 'brand_school.py', 'vector_school_contract.py', 'render_school_svg.py'):
+    for name in ('product_infographic_school.py', 'product_callouts.py', 'product_model_feedback.py', 'product_silhouette.py', 'product_paint_separation.py', 'brand_school.py', 'vector_school_contract.py', 'render_school_svg.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
     if lesson_value is not None:
         if (lesson_value['model'], lesson_value['digest']) != (config['model'], config['digest']):
@@ -688,6 +696,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
               'source_instruction_contract': SOURCE_INSTRUCTION_CONTRACT,
               'source_contour_contract': source_contour,
               'source_lesson_contract': lesson_value['contract'] if lesson_value else None,
+              'product_paint_contract': paint.CONTRACT if paint_separation else None,
               'panel_fidelity_contract': PANEL_FIDELITY_CONTRACT,
               'placement_contract': placement_contract,
               'supplier_copy_contract': copy_contract,
@@ -714,6 +723,8 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
         if stage == failed_stage: user += '\nPrevious failed stage, untrusted task data:\n'+json.dumps(correction)
         if stage == 'source' and lesson_value is not None:
             user = lesson.message(lesson_value)+'\nCURRENT TASK (use these facts and style):\n'+user
+        if stage in PANELS and paint_separation:
+            system += '\n'+paint.INSTRUCTION
         caller = feedback.validated_call if visual_feedback else brand.validated_call
         return caller(out, stage, system, user, output_schema, config, validator,
                       **({'recover_incomplete': True} if recover_incomplete else {}))
@@ -733,7 +744,7 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
                 ('\n'+callouts.stage_rules(panel) if annotation_contract else ''), json.dumps({'brief': BRIEF, 'style': style,
                 'product_reference': reference, 'communication_goal': panel, 'supplier_lines': facts, 'previous_headlines': headlines,
                 'task': 'ACTIVE STAGE: PANEL ONLY, 1500x1500. Design a complete infographic around the inserted product. Do not output a product drawing or repeat its printed name. Your texts are a NEW nonnumeric purpose-specific headline and the TWO EXACT supplier lines. Choose background/decorative shapes and product placement, not additional product shapes.'}),
-                schema('panel', style), checked_scene(out, panel, style, panel, product, placement_contract=placement_contract, annotation_contract=annotation_contract, copy_contract=copy_contract))
+                schema('panel', style), checked_scene(out, panel, style, panel, product, placement_contract=placement_contract, annotation_contract=annotation_contract, copy_contract=copy_contract, paint_separation=paint_separation))
             headlines.append(validate_svg(assets[panel], profile=panel_render_profile)['texts'][1])
             report['stages'].append(panel)
         if len(set(headlines)) != 4: raise ValueError('Four distinct communication headlines required')
@@ -750,10 +761,12 @@ def run(resume=None, *, visual_feedback=False, focused_stages=True, recompose=No
                     if observed['issues']: raise ValueError('Final source contour differs from accepted geometry')
                 continue
             if annotation_contract and callouts.issues(measured, name, style, contract=annotation_contract): raise ValueError('Final functional annotation check failed')
+            if paint_separation and paint.issues(svg, measured, style): raise ValueError('Final product paint separation failed')
             small = folder/'small'; small.mkdir(); school.check_idle()
             preview = asyncio.run(render(svg, small, profile=profile, png_scale=.4)); school.save(small/'render.json', preview)
             if quality_issues(preview, panel=True, panel_contrast=True, placement_contract=placement_contract, line_check=True): raise ValueError('Small preview geometry failed')
             if annotation_contract and callouts.issues(preview, name, style, contract=annotation_contract): raise ValueError('Small preview functional annotation check failed')
+            if paint_separation and paint.issues(svg, preview, style): raise ValueError('Small preview product paint separation failed')
             for filename, target in [('artwork.svg', name+'.svg'), ('preview.png', name+'.png'), ('preview.pdf', name+'.pdf'), ('small/preview.png', name+'-small.png')]:
                 shutil.copyfile(folder/filename, delivery/target)
         school.save(delivery/'style.json', style)
@@ -804,12 +817,15 @@ if __name__ == '__main__':
     actions.add_argument('--audit-failed-callouts', type=Path, help='Re-measure one rejected exam panel without changing its original score')
     actions.add_argument('--audit-failed-copy', type=Path, help='Check a rejected fact-order response by literal rendering under the new semantic contract')
     actions.add_argument('--repair-failed-scene', type=Path, help='Bounded model-authored geometry edits for a preserved failed scene; no exam rescoring')
+    parser.add_argument('--repair-part', choices=tuple(PANELS), help='Recheck a panel of a technically complete package with --repair-failed-scene')
     actions.add_argument('--probe-source-lesson', type=Path, help='Known-case source diagnostic with an independently approved development example')
     parser.add_argument('--source-lesson', type=Path, help='Private independently approved development assembly; fresh run or source probe only')
     parser.add_argument('--reviewed-revision', nargs=2, type=Path, action='append', metavar=('REPORT', 'JUDGMENT'), default=[])
     args = parser.parse_args()
     if args.source_lesson is not None and not (args.run or args.probe_source_lesson):
         parser.error('--source-lesson requires --run or --probe-source-lesson')
+    if args.repair_part and not args.repair_failed_scene:
+        parser.error('--repair-part requires --repair-failed-scene')
     if args.probe_source_lesson:
         if args.source_lesson is None: parser.error('--probe-source-lesson requires --source-lesson')
         from scripts.product_source_lesson import probe as source_lesson_probe
@@ -817,7 +833,7 @@ if __name__ == '__main__':
         raise SystemExit(int(result['status'] == 'failed'))
     elif args.repair_failed_scene:
         from scripts.product_patch_pilot import run as patch_pilot
-        _, result = patch_pilot(args.repair_failed_scene, sampling_profile=args.sampling_profile or 'bounded-default.v1')
+        _, result = patch_pilot(args.repair_failed_scene, sampling_profile=args.sampling_profile or 'bounded-default.v1', part=args.repair_part)
         raise SystemExit(int(result['status'] == 'failed'))
     elif args.audit_failed_copy:
         from scripts.product_copy_audit import run as copy_audit

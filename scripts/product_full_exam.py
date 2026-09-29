@@ -84,6 +84,7 @@ def run():
                                     'source_contract': product.SOURCE_FIDELITY_CONTRACT,
                                     'source_instruction_contract': product.SOURCE_INSTRUCTION_CONTRACT,
                                     'source_contour_contract': product.silhouette.CONTRACT,
+                                    'product_paint_contract': product.paint.CONTRACT,
                                     'supplier_copy_contract': product.COPY_CONTRACT,
                                     'panel_contract': product.PANEL_FIDELITY_CONTRACT,
                                     'annotation_contract': product.callouts.CONTRACT},
@@ -93,7 +94,7 @@ def run():
     product.school.save(out/'exam.json', manifest)
     implementation = out/'implementation'; implementation.mkdir()
     for name in ('product_full_exam.py', 'product_infographic_school.py', 'product_callouts.py',
-                 'product_model_feedback.py', 'product_silhouette.py', 'brand_school.py', 'render_school_svg.py', 'vector_school_contract.py'):
+                 'product_model_feedback.py', 'product_silhouette.py', 'product_paint_separation.py', 'brand_school.py', 'render_school_svg.py', 'vector_school_contract.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
     report = {'schema': 'product-full-package-exam-result.v1', 'status': 'running', 'cases': [],

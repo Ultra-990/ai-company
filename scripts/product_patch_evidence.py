@@ -8,7 +8,9 @@ from contextlib import nullcontext
 import json
 from pathlib import Path
 import tempfile
+import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts import product_patch_pilot as pilot
 
 product = pilot.product
@@ -32,7 +34,8 @@ def assess(folder):
     package = Path(report['source_package'])
     if checksum(pilot.revision.bounded(package/'report.json')) != report['source_report_sha256']:
         raise ValueError('Original package binding changed')
-    previous, case, stage, response_path, initial = pilot.inputs(package)
+    previous, case, stage, response_path, initial = (pilot.inputs(package, part=report['explicit_panel'])
+        if report.get('explicit_panel') is not None else pilot.inputs(package))
     if (stage != report['stage'] or response_path.name != report['source_response']
             or checksum(response_path) != report['source_response_sha256']
             or read('initial-scene.json') != initial):
@@ -60,6 +63,9 @@ def assess(folder):
         raise ValueError('Unknown source contour contract')
     annotation = report.get('annotation_contract', product.callouts.CONTRACT if is_panel else None)
     copy = report.get('supplier_copy_contract', product.COPY_CONTRACT)
+    paint = report.get('product_paint_contract')
+    if paint not in (None, product.paint.CONTRACT) or (paint and not is_panel):
+        raise ValueError('Unknown repair paint contract')
     if annotation != (product.callouts.CONTRACT if is_panel else None) or copy != product.COPY_CONTRACT:
         raise ValueError('Unknown repair scene contracts')
     out = Path(tempfile.mkdtemp(prefix='patch-evidence-', dir=product.ROOT))
@@ -69,7 +75,7 @@ def assess(folder):
         placement = previous['placement_contract']
         validate = product.checked_scene(out, 'replay', style, panel=stage if is_panel else None,
             product=source, placement_contract=placement, annotation_contract=annotation,
-            source_contour=contour if not is_panel else False, copy_contract=copy)
+            source_contour=contour if not is_panel else False, copy_contract=copy, paint_separation=bool(paint))
         current = initial
         try:
             validate(json.dumps(current))
@@ -129,3 +135,12 @@ def assess(folder):
         'artifacts': {str(p.relative_to(out)): checksum(p) for p in out.rglob('*') if p.is_file()}}
     product.school.save(out/'report.json', result)
     return out, result
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('pilot', type=Path)
+    args = parser.parse_args()
+    output, result = assess(args.pilot)
+    print(json.dumps({'output': str(output), **{k: v for k, v in result.items() if k != 'artifacts'}}))

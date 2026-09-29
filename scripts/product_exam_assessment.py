@@ -60,12 +60,13 @@ def assess(path):
             for name in ('product_infographic_school.py', 'product_callouts.py', 'brand_school.py',
                          'product_model_feedback.py', 'render_school_svg.py', 'vector_school_contract.py',
                          *(('product_silhouette.py',) if manifest['shared_controls'].get('source_instruction_contract') else ()),
+                         *(('product_paint_separation.py',) if manifest['shared_controls'].get('product_paint_contract') else ()),
                          *(('local_ollama.py',) if version != exam.LEGACY_VERSION else ())):
                 if (revision.bounded(folder/'implementation'/name).read_bytes()
                         != revision.bounded(path/'implementation'/name).read_bytes()):
                     raise ValueError('Implementation changed during the frozen exam')
             controls = manifest['shared_controls']
-            for field in ('source_instruction_contract', 'source_contour_contract'):
+            for field in ('source_instruction_contract', 'source_contour_contract', 'product_paint_contract'):
                 if package.get(field) != controls.get(field): raise ValueError('Case source controls changed')
             if package.get('supplier_copy_contract', product.LEGACY_COPY) != controls.get('supplier_copy_contract', product.LEGACY_COPY):
                 raise ValueError('Case supplier copy contract changed')

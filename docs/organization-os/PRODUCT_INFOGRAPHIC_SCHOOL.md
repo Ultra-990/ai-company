@@ -250,3 +250,23 @@ Ostatni pełny egzamin v3 dał **0/3 bazowy i 1/3 z rozumowaniem** po
 niezależnym oglądzie. Osobne próby lekcji na znanych SAGE/SUMMIT dały
 jedno odebrane źródło i jedno niepowodzenie. Nie są nowymi egzaminami,
 nie trafiają do treningu i nie kwalifikują modelu do samodzielnej pracy.
+
+Nowe pełne ćwiczenia mają `product-paint-separation.v1`. Duże wypełnione
+dekoracje w kolorze korpusu lub zakrętki muszą pozostawać poza zmierzoną
+ramką produktu. Dotychczas dokładna kopia źródła mogła optycznie scalić
+się z elipsą w tle, dając inną sylwetkę. Kontrola obejmuje źródłowe węzły
+dekoracji i rzeczywiste ramki renderera; nie zmienia żadnej geometrii.
+Wąskie oznaczenia i drobne punkty końcowe (do 16 jednostek krótszego
+wymiaru) są wyłączone. To konserwatywna reguła tego ćwiczenia, nie pełne
+rozpoznawanie wyglądu produktu. Stare pakiety i wznowienia zachowują swój
+pierwotny kontrakt, a osobny audyt nie zmienia historycznego wyniku.
+
+`--repair-failed-scene KATALOG --repair-part care` może teraz ponownie
+sprawdzić wybrany panel technicznie ukończonego pakietu. Pełna weryfikacja
+oryginału jest wymagana, a poprawki zaczynają się tylko po rzeczywistej
+odmowie bieżącego pomiaru. Usunięcie lokalnej kolizji nie zatwierdza całej
+kompozycji. Weryfikator jest dostępny również jako:
+
+```bash
+.venv/bin/python scripts/product_patch_evidence.py KATALOG_PILOTAZU
+```

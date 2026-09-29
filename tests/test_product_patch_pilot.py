@@ -52,3 +52,24 @@ def test_bounded_pilot_uses_model_edits_and_preserves_defect_when_patch_is_inval
         assert result['accepted_layout'] == 'repair-layout-1'
         saved = json.loads((out/'accepted-scene.json').read_text())
         assert saved['texts'][0] == {'text': 'Protected fact', 'attributes': {'y': '80'}}
+
+
+def test_explicit_completed_panel_requires_verification_and_does_not_relabel_original(tmp_path, monkeypatch):
+    p = pilot.product; save = p.school.save
+    monkeypatch.setattr(pilot.revision, 'ROOT', tmp_path)
+    monkeypatch.setattr(p, 'configuration', lambda: {'model': 'fixture', 'digest': 'f'*64})
+    report = {'status': 'pending_independent_review', 'brief': p.DEFAULT_BRIEF, 'supplier_copy': p.DEFAULT_PANELS,
+              'stages': ['style', 'source', *p.DEFAULT_PANELS], 'model': 'fixture', 'digest': 'f'*64}
+    save(tmp_path/'care-response.json', {'model': 'fixture', 'digest': 'f'*64, 'content': '{"fixture":true}'})
+    report['artifacts'] = {'care-response.json': p.school.checksum(tmp_path/'care-response.json')}
+    save(tmp_path/'report.json', report)
+    verified = []
+    monkeypatch.setattr(p, 'verify', lambda path: verified.append(path))
+    _, _, stage, _, scene = pilot.inputs(tmp_path, part='care')
+    assert stage == 'care' and scene == {'fixture': True} and verified == [tmp_path]
+    assert json.loads((tmp_path/'report.json').read_text()) == report
+    with pytest.raises(ValueError, match='failed source or panel'): pilot.inputs(tmp_path)
+    with pytest.raises(ValueError, match='explicit panel'): pilot.inputs(tmp_path, part='source')
+    def reject(path): raise ValueError('Original package failed verification')
+    monkeypatch.setattr(p, 'verify', reject)
+    with pytest.raises(ValueError, match='failed verification'): pilot.inputs(tmp_path, part='care')

@@ -20,17 +20,23 @@ from scripts import product_visual_revision as revision
 product = exam.product
 
 
-def inputs(package):
+def inputs(package, *, part=None):
     package = Path(package); report = revision.read(package/'report.json')
     case = exam.matching_case(report)
-    if (report.get('status') != 'failed' or (case is None and
+    if (report.get('status') not in ('failed', 'pending_independent_review') or (case is None and
             (report['brief'] != product.DEFAULT_BRIEF or report['supplier_copy'] != product.DEFAULT_PANELS))):
         raise ValueError('Known failed synthetic package required')
     assessment.bound_artifacts(package, report)
     stages = ['style', 'source', *product.DEFAULT_PANELS]; completed = report['stages']
-    if completed != stages[:len(completed)] or not 1 <= len(completed) < len(stages):
-        raise ValueError('A failed source or panel stage required')
-    stage = stages[len(completed)]
+    if part is not None:
+        if part not in product.DEFAULT_PANELS or completed != stages or report['status'] != 'pending_independent_review':
+            raise ValueError('An explicit panel of a technically complete synthetic package required')
+        product.verify(package)
+        stage = part
+    else:
+        if report['status'] != 'failed' or completed != stages[:len(completed)] or not 1 <= len(completed) < len(stages):
+            raise ValueError('A failed source or panel stage required')
+        stage = stages[len(completed)]
     paths = [package/(name+'-response.json') for name in (stage+'-revision-2', stage+'-revision-1', stage)]
     path = next((p for p in paths if p.is_file()), None)
     if path is None or path.name not in report['artifacts']: raise ValueError('Bound complete rejected response required')
@@ -43,11 +49,11 @@ def inputs(package):
     return report, case, stage, path, product.parse(answer['content'])
 
 
-def run(package, *, sampling_profile='bounded-default.v1'):
+def run(package, *, sampling_profile='bounded-default.v1', part=None):
     if sampling_profile not in ('bounded-default.v1', 'qwen-deliberate-trial.v1'):
         raise ValueError('Known bounded repair profile required')
     package = Path(package)
-    previous, case, stage, input_path, current = inputs(package)
+    previous, case, stage, input_path, current = inputs(package, part=part) if part is not None else inputs(package)
     resources = product.school.check_idle()
     out = Path(tempfile.mkdtemp(prefix='patch-pilot-', dir=product.ROOT))
     thinking = sampling_profile == 'qwen-deliberate-trial.v1'
@@ -57,6 +63,8 @@ def run(package, *, sampling_profile='bounded-default.v1'):
         'source_package': str(package), 'source_report_sha256': product.school.checksum(package/'report.json'),
         'source_response': input_path.name, 'source_response_sha256': product.school.checksum(input_path),
         'stage': stage, 'config': config, 'resources_before': resources, 'attempts': [],
+        'explicit_panel': part,
+        'product_paint_contract': product.paint.CONTRACT if stage != 'source' else None,
         'source_contour_contract': product.silhouette.CONTRACT if stage == 'source' else None,
         'annotation_contract': product.callouts.CONTRACT if stage != 'source' else None,
         'supplier_copy_contract': product.COPY_CONTRACT,
@@ -64,7 +72,7 @@ def run(package, *, sampling_profile='bounded-default.v1'):
         'production_changed': False, 'independent_visual_review_required': True}
     implementation = out/'implementation'; implementation.mkdir()
     for name in ('product_patch_pilot.py', 'product_scene_patch.py', 'product_infographic_school.py',
-                 'product_callouts.py', 'product_silhouette.py', 'brand_school.py', 'render_school_svg.py', 'vector_school_contract.py'):
+                 'product_callouts.py', 'product_silhouette.py', 'product_paint_separation.py', 'brand_school.py', 'render_school_svg.py', 'vector_school_contract.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
     product.school.save(out/'initial-scene.json', current)
@@ -79,7 +87,7 @@ def run(package, *, sampling_profile='bounded-default.v1'):
             placement = previous['placement_contract']
             validate = product.checked_scene(out, 'repair', style, panel=stage if is_panel else None,
                 product=source, placement_contract=placement, annotation_contract=product.callouts.CONTRACT if is_panel else None,
-                source_contour=not is_panel, copy_contract=product.COPY_CONTRACT)
+                source_contour=not is_panel, copy_contract=product.COPY_CONTRACT, paint_separation=is_panel)
             # Syntax defects need a different operation; only a rendered,
             # measured failure is a valid starting point for geometry patches.
             try:
@@ -148,10 +156,11 @@ if __name__ == '__main__':
     parser.add_argument('package', type=Path)
     parser.add_argument('--sampling-profile', choices=('bounded-default.v1', 'qwen-deliberate-trial.v1'), default='bounded-default.v1')
     parser.add_argument('--run', action='store_true')
+    parser.add_argument('--part', choices=tuple(product.DEFAULT_PANELS), help='Recheck an explicit panel of a technically complete package')
     args = parser.parse_args()
     if args.run:
-        _, result = run(args.package, sampling_profile=args.sampling_profile)
+        _, result = run(args.package, sampling_profile=args.sampling_profile, part=args.part)
         raise SystemExit(int(result['status'] == 'failed'))
     else:
-        _, _, stage, _, _ = inputs(args.package)
+        _, _, stage, _, _ = inputs(args.package, part=args.part)
         print(json.dumps({'model_called': False, 'repair_stage': stage, 'contract': patch.CONTRACT}))

@@ -26,6 +26,13 @@ i ich poprawki nie stają się danymi treningowymi ani nowymi zaliczeniami.
 Pełne ćwiczenie z lekcją ukończyło wszystkie eksporty, lecz ogląd odrzucił
 panel pielęgnacji: elipsa w kolorze korpusu za butelką zmienia jej widoczną
 sylwetkę. Samo dosłowne powtórzenie źródła nie chroni przed taką dekoracją.
+Nowy pomiar wykrywa ten przypadek; jest domyślny w nowych pełnych seriach.
+Osobna mała poprawka usunęła lokalne nakładanie, ale pogorszyła kompozycję
+dużą uciętą elipsą z boku — nadal odrzucona po oglądzie.
+Kolejne pełne ćwiczenie z lekcją i kontrolą farby (`series-ueizbp9p`)
+zostało niezależnie odebrane: źródło, cztery panele i eksporty, z własnymi
+poprawkami materiałów i pielęgnacji. To sukces na znanej rodzinie FIELD,
+nie nowy wynik egzaminu. Powtarzalność trzeba sprawdzić na nowych briefach.
 
 ## Aktualizacja 29.09.2026 — odbiór egzaminu v2 i diagnostyka poprawek
 
