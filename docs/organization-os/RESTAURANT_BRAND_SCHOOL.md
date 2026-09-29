@@ -128,3 +128,48 @@ rozumowanie obiecuje inny mały wariant i inne grubości fontu niż faktycznie
 dostarczone, a bazowy Ember zaleca ciemny tusz na ciemnym papierze i ma
 bardzo słaby kontrast alternatywnego symbolu. Dłuższe rozumowanie nie
 zapewniło poprawnego pełnego pakietu. Recenzje zapisano obok artefaktów.
+
+## Ograniczone poprawki instrukcji przez lokalny model
+
+`scripts/brand_school.py --revise-guide KATALOG` sprawdza źródłowy kompletny
+pakiet i przekazuje recenzentowi rzeczywiste teksty/fonty z SVG, katalog
+plików, identyczność małego SVG z wybranym logo i brak zweryfikowanego
+minimum drukarskiego. Nie przekazuje ludzkiej diagnozy. Lokalny autor może
+zmienić tylko indeksy zasad zakwestionowane przez lokalnego recenzenta.
+Pozostałe pola planu i wszystkie 18 plików grafik pozostają identyczne.
+Limit: jedna ocena, jeden patch i jedna ponowna ocena; maksymalnie 3 wywołania.
+
+Nowy ZIP powstaje tylko przy pozytywnej ponownej ocenie, a jego status nadal
+wymaga niezależnego odbioru. `scripts/brand_guide_revision.py --verify KATALOG`
+odtwarza trzy żądania i odpowiedzi, literalne zmiany, tekst instrukcji,
+manifest i ZIP; ponownie weryfikuje źródło, z którym porównuje chronione
+grafiki. Oryginalne paczki i wyniki egzaminu pozostają bez zmian.
+
+Wyniki 29.09:
+
+- `guide-revision-skdhoi3t`: 14,573 s, usunięte niezweryfikowane minimum
+  12 mm w bazowym Tide & Hearth. Niezależnie odebrany poprawiony pakiet
+  syntetyczny; pole ochronne pozostaje opisane jakościowo, bez gotowości
+  drukarskiej. Ogląd niezmienionych obrazów dziedziczony przez identyczne hashe.
+- `guide-revision-wssvw5dq`: 16,472 s, `needs_revision`. Autor poprawił
+  wagi fontu na faktyczne 700/400, ale recenzent je odrzucił mimo zgodnych
+  danych i żądał dowodów drukarskich dla porady o podglądzie cyfrowym.
+  Występują też ucięte uzasadnienia. Nie złożono nowego ZIP-a ani nie
+  zastąpiono nieudanej oceny ręcznym sukcesem.
+- `guide-revision-um5vc3r4`: 14,415 s, poprawione użycie ciemnego tuszu
+  w Ember Yard na warunkowe użycie przy wystarczającym kontraście.
+  Odebrana sama poprawka zasad; cały pakiet nadal wymaga zmiany bladego
+  alternatywnego symbolu i niespójnych opisów konceptów w planie.
+
+`scripts/brand_school.py --guide-review-exam` zamraża cztery nowe syntetyczne
+zestawy metadanych: 16 zasad, osiem poprawnych i osiem wadliwych. Oczekiwane
+oceny nie są w żądaniach. `guide-holdout-1er2kor3`: 15/16 trafnych oznaczeń
+w 22,759 s. Błąd: utożsamienie wybranego logo z nieistniejącym osobnym SVG
+samego napisu. Dwa poprawne oznaczenia mają ucięte uzasadnienia. Weryfikator
+odtworzył wynik i rozdzielenie oczekiwań; niezależny przegląd nie kwalifikuje
+recenzenta. Nie wdrożono go jako samodzielnej bramki pełnej realizacji.
+
+Poprawki znanych pakietów i test recenzenta nie zastępują nowego egzaminu
+całej usługi. Potrzebne są bardziej jednoznaczne fakty o strukturze wariantów,
+pełne krótkie uzasadnienia oraz kontrola zgodności opisów konceptów z obrazem.
+Bez eksportu do treningu, zmiany wag i automatycznej kwalifikacji.

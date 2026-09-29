@@ -360,7 +360,17 @@ def run(*, sampling_profile=None, matched_exam_budget=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     actions = parser.add_mutually_exclusive_group(); actions.add_argument('--run', action='store_true'); actions.add_argument('--full-exam', action='store_true')
+    actions.add_argument('--revise-guide', type=Path)
+    actions.add_argument('--guide-review-exam', action='store_true')
     args = parser.parse_args()
+    if args.guide_review_exam:
+        from scripts.brand_guide_holdout import run as guide_exam
+        _, report = guide_exam()
+        raise SystemExit(int(report['status'] != 'completed'))
+    if args.revise_guide:
+        from scripts.brand_guide_revision import run as revise_guide
+        _, report = revise_guide(args.revise_guide)
+        raise SystemExit(int(report['status'] != 'pending_independent_review'))
     if args.full_exam:
         from scripts.brand_full_exam import run as full_exam
         _, report = full_exam(); raise SystemExit(int(report['status'] != 'completed'))

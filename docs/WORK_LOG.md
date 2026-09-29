@@ -5582,3 +5582,43 @@ również przeszedł nowy weryfikator. Bez SFT, eksportu testów do nauki,
 zmiany wag, routingu lub kwalifikacji samodzielnej usługi. Kolejny krok:
 użyć krótkiej retencji w kontrolowanych pełnych przebiegach i ograniczonych
 poprawkach modelu, mierząc rzeczywistą oszczędność oraz jakość.
+
+## 2026-09-29 — ograniczone lokalne poprawki zasad użycia marki
+
+Poprzedni obrót był postępem: zmierzony pilotaż retencji oraz nowe rzeczywiste
+pakiety i niezależne oceny. Potwierdzono czysty stan repozytorium przed pracą.
+Dodano `brand_guide_revision`: lokalny recenzent otrzymuje fakty z prawdziwych
+SVG i listy dostarczonych plików, bez ludzkiego werdyktu; lokalny autor zmienia
+wyłącznie zakwestionowane zasady, po czym recenzent sprawdza całość ponownie.
+Limit trzy wywołania, pozostały plan i wszystkie grafiki chronione. Weryfikator
+odtwarza dokładne wejścia, odpowiedzi i zmiany, ponownie sprawdza źródło,
+manifest oraz 21 plików ZIP. Brak pozytywnego werdyktu nie tworzy dostawy.
+
+Rzeczywiste próby:
+- `guide-revision-skdhoi3t`: 14,573 s, poprawka niepotwierdzonego minimum
+  12 mm w bazowym Tide. Niezależny odbiór poprawionego syntetycznego pakietu;
+  pole ochronne pozostaje jakościowe. Zachowane obrazy sprawdzono hashami
+  względem wcześniejszego bezpośredniego oglądu, bez ponownej generacji.
+- `guide-revision-wssvw5dq`: 16,472 s, needs_revision. Pierwsza ocena trafna,
+  autor zmienił wagi fontu na rzeczywiste 700/400, lecz ponowny recenzent
+  odrzucił je mimo przytoczenia zgodnych faktów oraz żądał potwierdzenia
+  rozmiaru drukarskiego dla zastosowania cyfrowego. Zachowano błąd; brak ZIP-a.
+- `guide-revision-um5vc3r4`: 14,415 s, lokalny recenzent rozpoznał ciemny
+  tusz na ciemnym papierze. Autor zastąpił zasadę warunkową przy wystarczającym
+  kontraście. Literalna poprawka i eksport zweryfikowane; odebrano samą
+  poprawkę. Cały Ember nadal wymaga zmiany bladego symbolu i niespójnych
+  opisów konceptów, które ten mechanizm celowo chroni przed modyfikacją.
+
+Nowy zamrożony test `brand_guide_holdout`: cztery niezależne syntetyczne
+zestawy metadanych, osiem poprawnych i osiem wadliwych zasad, oczekiwania
+niewidoczne dla modelu. `guide-holdout-1er2kor3`: 15/16 oznaczeń, 22,759 s.
+Weryfikator potwierdził wynik i rozdzielenie oczekiwań. Własny przegląd
+uzasadnień wykazał błędne utożsamienie logo-selected.svg z oddzielnym plikiem
+samego napisu oraz dwa powody ucięte na limicie 350 znaków. Recenzent nadal
+niekwalifikowany; nie wdrożono samodzielnego odbioru całych realizacji.
+
+Testy: 59 passed (poprawki i ich odtworzenie, manipulacja źródłami/autorami,
+chronione grafiki, nowe testy recenzenta, istniejący generator i pełny egzamin).
+Oba nowe kompletne ZIP-y rzeczywiście zweryfikowano. Osobne związane hashami
+przeglądy zachowane przy poprawkach i teście. Bez ręcznego pisania produktów,
+SFT, eksportu egzaminów do nauki, zmiany wag/routingu lub statusu kwalifikacji.

@@ -1,5 +1,27 @@
 # Stan projektu AI Company
 
+## Aktualizacja 29.09.2026 — lokalne poprawki zasad marki, ograniczenia recenzenta
+
+Model sam rozpoznał i poprawił dwie usterki instrukcji: niezweryfikowane
+minimum 12 mm w Tide & Hearth (14,573 s) oraz ciemny tusz na ciemnym papierze
+w Ember Yard (14,415 s). Odtworzenie trzech wywołań na poprawkę, literalnych
+wartości, manifestów i ZIP-ów potwierdziło zachowanie wszystkich grafik.
+Tide `guide-revision-skdhoi3t` odebrano jako poprawiony syntetyczny pakiet.
+W Ember odebrano poprawkę zasad; cały pakiet ma nadal słaby alternatywny
+symbol i niespójne opisy konceptów.
+
+Drugi Tide `guide-revision-wssvw5dq` zakończył się `needs_revision`
+(16,472 s): recenzent odrzucił poprawne wagi 700/400 i wprowadził zbędne
+wymaganie dowodów drukarskich dla podglądu cyfrowego. Nie podmieniono wyniku.
+Osobny zamrożony test nowych metadanych `guide-holdout-1er2kor3`: 15/16
+trafnych oznaczeń, 22,759 s, oczekiwania poza żądaniami. Recenzent pomylił
+wybrane logo z osobnym plikiem samego napisu; dwa uzasadnienia są ucięte.
+
+59 testów powiązanego kodu przeszło. To postęp w ograniczonych poprawkach,
+nie gotowość autonomicznej bramki, nowy pełny egzamin ani kwalifikacja pięciu
+usług. Kolejna praca: faktyczna struktura wariantów, zwięzłe kompletne
+uzasadnienia i zgodność opisów konceptów z dostarczonymi grafikami.
+
 ## Aktualizacja 29.09.2026 — zmierzone przyspieszenie krótkich serii
 
 Pilotaż `batch-speed-s9_mzxji`: trzy zadania z ponownym ładowaniem modelu
