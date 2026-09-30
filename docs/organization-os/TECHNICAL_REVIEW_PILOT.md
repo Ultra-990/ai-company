@@ -175,3 +175,49 @@ Przed poprawnym przebiegiem jedna próba poprawki została odrzucona przed
 inferencją przez porównanie kluczy int/string po JSON roundtrip rubryki;
 naprawiono i objęto testem. Jedno wywołanie pytest miało nieistniejącą nazwę
 pliku, więc nie uruchomiło testów; poprawione wywołanie jest wynikiem powyżej.
+
+## Odtwarzalny protokół korekt i granica odbioru — 30.09.2026
+
+Audyt starego holdoutu ujawnił trzy błędy infrastruktury: druga dozwolona
+korekta nie była sprawdzana po otrzymaniu, korekty pomijały kontrolę zasobów,
+a osobny assessor wybierał zawsze pierwszą korektę i wywodził parytet
+z obecności słów kluczowych. Te proxy nie dowodzą prawdziwości argumentów,
+poprawnego użycia źródeł ani kompletnego odbioru. Historyczne pliki ocen
+pozostają zachowane; ich stare deklaracje parytetu nie kwalifikują usługi.
+
+`technical_review_protocol.py` zapisuje nowy `technical-review-replay.v2`:
+artykuł, źródła, konfigurację, początkowe żądanie i kopie kodu przed pierwszą
+inferencją; następnie wszystkie literalne odpowiedzi, żądania korekt i błędy
+walidacji. Każde z maksymalnie trzech wywołań poprzedza preflight. Ostatnia
+odpowiedź również podlega walidacji; wyczerpanie budżetu i błąd infrastruktury
+mają jawny status końcowy. JSON i Markdown wynikają dokładnie z przyjętej
+odpowiedzi modelu. Weryfikacja odtwarza cały łańcuch bez inferencji.
+
+```bash
+.venv/bin/python scripts/technical_review_holdout.py
+.venv/bin/python scripts/assess_technical_review_holdout.py /path/to/replay-v2-run
+```
+
+Znany artykuł jest teraz jawnie próbą rozwojową, nie nowym egzaminem.
+Assessor v2 zapisuje osobny `proxy-assessment-v2.json`; nie zmienia starych
+`semantic-assessment.json`. Rozpoznaje krytykę poprawnych zdań kontrolnych,
+ale nawet komplet zielonych proxy pozostawia `accepted=false`,
+`parity_proven=false` i konieczność niezależnego odbioru merytorycznego.
+Trzy nowe pełne zlecenia z dopasowaną bazą i dwa zamrożone sprawdziany
+rzeczywistych korekt nadal są wymagane przez `AUTONOMOUS_WORK.md`.
+
+Rzeczywisty `replay-v2-9wo0u6n8`: dwa wywołania, **28,159 s**. Pierwszy wynik
+miał błędną kotwicę cytowania; model poprawił ją po literalnym komunikacie
+walidatora. Odtworzono żądania, odpowiedzi i eksport bez zmian produktu.
+Odbiór niezależny: **needs_revision**. Model wykrył cztery główne błędy
+artykułu, lecz nadal krytykował poprawne zdania, dopisał nieudowodniony
+ranking kosztów fine-tuningu/RAG i przewagę rozwiązania hybrydowego.
+Brak słowa kluczowego „leak” obniżył proxy mimo poprawnego rozpoznania
+biasu wyboru checkpointu — dodatkowy przykład, dlaczego proxy nie jest oceną
+merytoryczną. Dowód naprawy kotwicy jest rozwojowy, nie nową kwalifikacją.
+
+Raport SHA256: `362fd63ac87c56315559743790536c83809fdc61afa29c27c9fb0bff44b28786`.
+Niezależna ocena SHA256: `3d7dd63362ace6271fc1e62baff6c571ff8991acac0e6cd6d77b98a9a7c6b5a3`.
+Testy recenzenta, szkoły i protokołu: **32 passed, 3 skipped, 0,75 s**.
+Pomijane próby wymagają osobnego jawnego uruchomienia modelu; nie są sukcesami.
+Wagi, źródła i wcześniejsze wyniki niezmienione, brak eksportu do nauki.

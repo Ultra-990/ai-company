@@ -1,23 +1,33 @@
 import json
-from pathlib import Path
 
 from scripts import assess_technical_review_holdout as assessor
+from tests.test_technical_review_holdout import content, run_fixture
 
 
-def test_assessor_requires_all_holdout_findings_and_rejects_fenced_json(tmp_path):
-    # The fixture uses a real model-shaped response, but remains synthetic and
-    # does not invoke a model or touch a private workspace.
-    from scripts.technical_review_holdout import ARTICLE, SOURCES
-    from scripts.check_technical_reviewer import messages_for
-    run = tmp_path
-    (run/'report.json').write_text(json.dumps({'status':'structurally_valid'}))
-    content = json.dumps({'comments': [
-        {'line':3,'quote':ARTICLE.splitlines()[2],'severity':'critical','issue':'future change RAG','recommendation':'future change RAG','source_ids':['pilot']},
-        {'line':4,'quote':ARTICLE.splitlines()[3],'severity':'critical','issue':'QLoRA base adapter','recommendation':'QLoRA base adapter','source_ids':['qlora']},
-        {'line':5,'quote':ARTICLE.splitlines()[4],'severity':'critical','issue':'checkpoint test leak','recommendation':'checkpoint test leak','source_ids':['pilot']},
-        {'line':6,'quote':ARTICLE.splitlines()[5],'severity':'critical','issue':'cost retrieval comparison','recommendation':'cost retrieval comparison','source_ids':['pilot']},
-    ],'top_fixes':['fix'],'citation_needs':[],'additions':['example'],'verdict':'needs_technical_revision','reader_intent':'intent','uncertainty':'limits'})
-    (run/'correction-response-1.json').write_text(json.dumps({'content':'```json\n'+content+'\n```'}))
-    result = assessor.assess(run)
-    assert result['candidate_score'] == result['reference_score'] - 1
-    assert result['parity_proven'] is False
+def test_keyword_stuffing_never_proves_semantics_or_parity(tmp_path, monkeypatch):
+    path, _, _, _ = run_fixture(tmp_path, monkeypatch, [content()])
+    historical = path/'semantic-assessment.json'
+    historical.write_text('Historical evidence is immutable')
+    result = assessor.assess(path)
+    assert result['proxy_checks_passed'] == result['proxy_checks_total']
+    assert result['parity_proven'] is result['accepted'] is result['matched_baseline'] is False
+    assert result['semantic_decision'] == 'pending_independent_review'
+    assert historical.read_text() == 'Historical evidence is immutable'
+
+
+def test_assessor_uses_last_validated_answer(tmp_path, monkeypatch):
+    path, _, _, _ = run_fixture(tmp_path, monkeypatch, ['{}', '{}', content()])
+    result = assessor.assess(path)
+    assert result['final_response'] == 'response-2.json'
+    assert result['checks']['structurally_valid'] is True
+
+
+def test_assessor_exposes_unjustified_control_criticism(tmp_path, monkeypatch):
+    review = json.loads(content())
+    review['comments'].append({'line': 7, 'quote': assessor.ARTICLE.splitlines()[6],
+                              'severity': 'major', 'issue': 'invented issue',
+                              'recommendation': 'unnecessary correction', 'source_ids': []})
+    path, _, _, _ = run_fixture(tmp_path, monkeypatch, [json.dumps(review)])
+    result = assessor.assess(path)
+    assert result['checks']['correct_controls_not_criticized'] is False
+    assert result['accepted'] is False
