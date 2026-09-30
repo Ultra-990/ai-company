@@ -383,6 +383,7 @@ if __name__ == '__main__':
     actions.add_argument('--spatial-claim-exam', action='store_true')
     actions.add_argument('--spatial-subject-exam', action='store_true')
     actions.add_argument('--workflow-exam', action='store_true')
+    actions.add_argument('--delivery-exam', action='store_true')
     parser.add_argument('--warm-revision', action='store_true', help='Reuse the local model for one bounded guide revision')
     parser.add_argument('--artwork-reasoning', action='store_true', help='Use the bounded reasoning profile for artwork repair')
     args = parser.parse_args()
@@ -394,6 +395,10 @@ if __name__ == '__main__':
         from scripts.brand_artwork_repair import run as repair_artwork
         _, report = repair_artwork(args.repair_artwork, deliberate=args.artwork_reasoning)
         raise SystemExit(int(report['status'] != 'pending_independent_visual_review'))
+    if args.delivery_exam:
+        from scripts.brand_delivery_exam import run as delivery_exam
+        _, report = delivery_exam()
+        raise SystemExit(int(report['status'] != 'completed'))
     if args.revise_alignment_text:
         from scripts.brand_guide_revision import run as revise_alignment
         _, report = revise_alignment(args.revise_alignment_text, spatial='alignment', warm=args.warm_revision)

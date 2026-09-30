@@ -209,7 +209,32 @@ def run(package, *, expanded=False, spatial=False, warm=False):
     return out, report
 
 
-def verify(out):
+def recorded_render(out, package, data):
+    """Read-only reuse of a prior independent render; never claims a fresh run."""
+    from PIL import Image, ImageChops
+    from scripts.brand_spatial_review import geometry
+    previous = evidence.read(out/'verification.json')
+    if previous.get('report_sha256') != brand.school.checksum(out/'report.json'):
+        raise ValueError('Prior render belongs to a different report')
+    proof = previous['independent_spatial_render']; folder = Path(proof['directory'])
+    measured = evidence.read(folder/'measurements.json')
+    if brand.school.checksum(folder/'measurements.json') != proof['measurements_sha256']:
+        raise ValueError('Prior render measurements changed')
+    expected = deepcopy(data['spatial_measurements'])
+    for value in expected.values(): value['necessary_conditions'].pop('inside', None)
+    if measured != expected: raise ValueError('Prior render differs from bound source geometry')
+    for key in ('a', 'b'):
+        if evidence.bounded(folder/key/'artwork.svg').read_bytes() != evidence.bounded(package/'delivery'/('logo-'+key+'.svg')).read_bytes():
+            raise ValueError('Prior rendered SVG differs from source')
+        if geometry(evidence.read(folder/key/'render.json')) != measured[key]:
+            raise ValueError('Prior renderer output differs from recorded measurements')
+        with Image.open(evidence.bounded(folder/key/'preview.png')) as a, Image.open(evidence.bounded(package/'delivery'/('logo-'+key+'.png'))) as b:
+            if a.size != b.size or ImageChops.difference(a.convert('RGB'), b.convert('RGB')).getbbox() is not None:
+                raise ValueError('Prior rendered pixels differ from delivered source')
+    return proof
+
+
+def verify(out, *, use_recorded_render=False):
     out = Path(out); report = evidence.read(out/'report.json')
     spatial = report.get('review_contract') in ('brand-measured-spatial-review.v3', 'brand-subject-spatial-review.v4', 'brand-measured-alignment-review.v5')
     if (report.get('schema') != CONTRACT or report.get('status') != 'pending_independent_review'
@@ -299,7 +324,9 @@ def verify(out):
     result = {'schema': CONTRACT, 'report_sha256': brand.school.checksum(out/'report.json'),
         'literal_authorship_verified': True, 'protected_artwork_unchanged': True, 'zip_files': len(expected_names),
         'independent_review_required': True, 'autonomy_qualified': False, 'exam_score_changed': False}
-    if spatial: result['independent_spatial_render'] = protocol.remeasure(package, data)
+    if spatial:
+        result['independent_spatial_render'] = recorded_render(out, package, data) if use_recorded_render else protocol.remeasure(package, data)
+        if use_recorded_render: result['render_evidence_mode'] = 'prior_recorded_render_rechecked_without_browser'
     return result
 
 
@@ -307,4 +334,6 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--verify', type=Path, required=True)
-    print(json.dumps(verify(parser.parse_args().verify), indent=2))
+    parser.add_argument('--use-recorded-render', action='store_true')
+    args = parser.parse_args()
+    print(json.dumps(verify(args.verify, use_recorded_render=args.use_recorded_render), indent=2))

@@ -1,5 +1,33 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — nowy pełny egzamin: technicznie 3/3, odbiór 2/3
+
+Zamrożony delivery-exam-4ps4ytf9 wykonał trzy nowe briefy: Orchard Counter,
+Saffron Courtyard i North Pier. Całość 211,241 s. W każdej parze wspólne
+nowe źródło; oba profile napraw mają identyczny budżet 16384/8192, do sześciu
+wywołań, a potem tę samą kontrolę tekstu v5 z retencją modelu. Naprzemienna
+kolejność ramion, zapisane briefy, kod, żądania, odpowiedzi i pochodzenie.
+
+Technicznie **3/3 w obu ramionach**. Niezależny ogląd pięciu obrazów każdego
+projektu, porównanie hashy kopii i odczyt obu wersji opisów: **2/3 w obu**.
+Orchard i North odebrane jako syntetyczne pełne pakiety. Saffron odrzucony:
+dodatkowa dekoracja karty wchodzi w obszar nazwy; instrukcja dopuszcza ciemny
+tusz na ciemnym tle. Kontrola poprawiła opis położenia symbolu, ale przepuściła
+te dwie usterki. W żadnym ramieniu nie uruchomiono dodatkowego autora grafik
+(zero napraw); eksperyment nie dowodzi przewagi profilu rozumowania.
+
+Weryfikacje etapów w trakcie egzaminu wykonały rzeczywiste ponowne rendery.
+Dodatkowa zbiorcza weryfikacja przez nową przeglądarkę była blokowana przez
+sandbox; dwie eskalowane próby zostały przerwane bez wyniku. Odczytowy audyt
+powtórzył kontrolę kompletnego przebiegu oraz sprawdził wcześniejsze dowody:
+hash raportu/pomiarów, dokładne SVG, geometrię i zgodne piksele podglądów.
+Raport jawnie oznacza użycie wcześniejszych renderów, bez twierdzenia o nowym.
+
+Brak kwalifikacji: wymagane trzy pełne odbiory oraz niezależne próby korekt.
+Następna poprawa: kontrola dekoracji karty wobec tekstu i pełnego znaczenia
+instrukcji tła/kontrastu, bez zmiany zamrożonego wyniku. Pięć usług i oryginalne
+kryteria pozostają aktywne; bez SFT, eksportu egzaminów i zmiany wag.
+
 ## Aktualizacja 29.09.2026 — naprawione pełne pakiety Copper i Cedar
 
 Dodano naprawę zachowanego projektu `--repair-artwork KATALOG`. Model sam

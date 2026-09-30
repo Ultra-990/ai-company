@@ -311,3 +311,26 @@ Dziedziczy v3 i dodaje konserwatywną kontrolę centered/centred przy odległych
 Cedar wymagał tej poprawki po odrzuconym „centered layout”. Końcowy opis
 ma zgodne z rendererem x=160/300; cały poprawiony syntetyczny pakiet odebrano.
 Stare wyniki, w tym pełny egzamin 0/3 w obu ramionach, pozostają niezmienione.
+
+## Pełny egzamin dostawy v2
+
+`--delivery-exam` zamraża trzy nowe briefy i kod. Wspólne źródło każdej pary
+ma zwykły budżet generowania; obie naprawy grafik mają równy kontekst,
+limit odpowiedzi, czas i do sześciu wywołań. Potem obie używają kontroli
+opisów v5 w trybie warm. To porównanie napraw na wspólnych źródłach, nie
+sześć niezależnych generacji i nie automatyczne potwierdzenie gotowości.
+
+Pierwszy delivery-exam-4ps4ytf9: 211,241 s, technicznie 3/3 w obu ramionach,
+niezależnie 2/3 w obu. Orchard Counter i North Pier odebrane, Saffron
+odrzucony za dekorację wchodzącą w tekst oraz ciemny tusz zalecany na ciemnym
+tle. Żaden etap naprawy grafik nie wywołał modelu: ten przebieg nie pozwala
+ocenić przewagi profilu rozumowania. Podczas generowania Saffron lokalny
+model sam poprawił kolizję drugiego logo; to zachowany dowód konkretnej korekty.
+
+Weryfikacja: `python -m scripts.brand_delivery_exam --verify KATALOG`.
+Dodanie `--use-recorded-render` wykonuje audyt bez nowej przeglądarki:
+używa wcześniej zapisanych rzeczywistych dowodów renderowania, po sprawdzeniu
+powiązania z raportem, hashy, źródeł SVG, geometrii i identyczności pikseli.
+Raport wyraźnie oznacza ten tryb. Brak wcześniejszego dowodu zatrzymuje audyt.
+Domyślnie wykonywane są nowe rendery. Ten sam przełącznik jest dostępny przy
+`scripts/brand_guide_revision.py --verify KATALOG`.

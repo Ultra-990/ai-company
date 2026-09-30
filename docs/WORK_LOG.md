@@ -5830,3 +5830,68 @@ niepowodzenia i brak kwalifikacji pozostają. Bez SFT, danych egzaminu w trening
 ręcznego pisania produktu, zmiany wag lub cudzych procesów. Testy powiązanego
 kodu obejmują pełne składanie, pochodzenie, ingerencję w feedback/etapy/retencję,
 piksele, wyrównanie, starsze egzaminy oraz wspólne kontrakty wektorowe.
+
+## 2026-09-29/30 — nowe kompletne zlecenia i niezależny wynik 2/3
+
+Dodano brand-complete-delivery-exam.v2 / --delivery-exam. Nowe zamrożone
+rodziny Orchard Counter, Saffron Courtyard, North Pier nie są danymi nauki.
+Każdy nowy projekt źródłowy powstaje raz; jest współdzielony między ramionami
+napraw. Autor grafik ma w obu 16384 kontekstu, 8192 odpowiedzi, 180 s,
+4 wątki i do sześciu dodatkowych wywołań. Baza i rozumowanie różnią się
+wyłącznie profilem na tym etapie. Wspólna kontrola tekstu v5: 8192/1800,
+90 s, do pięciu wywołań i krótkie zachowanie modelu w pamięci. Kod i warunki
+zapisano przed inferencją; kolejność ramion naprzemienna. Kontynuacja
+niekompletnego źródła jest możliwa tylko w uprzednio obsługiwanym zatrzymaniu
+karty; nie zwiększa się doraźnie budżetów ani nie wprowadza podpowiedzi.
+
+Pierwszy start zatrzymał preflight active_containers przed utworzeniem
+przebiegu. Dwa kolejne odczyty docker ps były puste, GPU bezczynne; ponowny
+pełny preflight przeszedł. Nie zatrzymano żadnego kontenera ani usługi.
+
+Przebieg delivery-exam-4ps4ytf9 ukończony w 211,241 s: technicznie 3/3 w obu
+ramionach. Wszystkie dodatkowe etapy naprawy grafik miały repaired_stages=[];
+kontrola nie uruchomiła żadnego nowego autora grafik. Dlatego równy wynik
+nie jest dowodem równoważności lub przewagi profili. Różnice tekstów są
+wynikami odrębnych wywołań wspólnego recenzenta/pisarza.
+
+- Orchard Counter: źródło identity-0ft64fzc. Baza kończy na
+  artwork-repair-6bijzwm2; drugi wariant guide-revision-szk233hl doprecyzował
+  wagi 700/400. Obejrzano oba logo, kartę, monochrom i mały podgląd. W obu
+  spójna faktyczna hierarchia; bazowa ogólna reguła consistent weight jest
+  mniej precyzyjna, lecz nie traktowano jej jako jednoznacznego nakazu jednej
+  liczbowej wagi dla wszystkich ról. Oba syntetyczne pakiety odebrane.
+- Saffron Courtyard: źródło identity-0gb6zp2s poprawiło kolizję logo B w
+  jednej własnej rewizji. Kandydaci guide-revision-2gd65fw9 i taxnb3mg mają
+  poprawione opisy położenia; pierwszy zachował interpretację archway,
+  drugi opisał dosłowniej siatkę kwadratów. Oba odrzucone: dodatkowe kwadraty
+  karty wchodzą w ramkę nazwy restauracji, a instrukcja rekomenduje ciemny
+  #2B2B2B na ciemnych tłach. Recenzent ocenił sam poprawny kolor monochromu,
+  pomijając warunek tła. Pomiary środków liter nie wykryły wadliwej dekoracji.
+- North Pier: źródło identity-h1fa012b. Kandydaci guide-revision-hod9etog
+  i 9zyliqg4 poprawiają nad/pod oraz stacked/single-line. Obejrzane pięć
+  grafik jest czytelnych i zgodnych z opisami; monochrom zachowuje falę,
+  a dodatkowa dekoracja karty znajduje się poza tekstami. Oba odebrane.
+
+Oddzielne związane hashami przeglądy sześciu kandydatów oraz
+independent-review.json egzaminu: **2/3 w obu ramionach**. Obrazy odpowiadające
+parom sprawdzono przez identyczność hashy, a opisy odczytano osobno. Oryginalne
+raporty techniczne i poprzednie niepowodzenia pozostały niezmienione.
+
+Zbiorczy verify początkowo zatrzymał się na uruchomieniu nowego Chrome
+w sandboxie. Dwie eskalowane próby zostały przerwane, bez ukończonego wyniku
+ani podanego powodu odmowy. Nie uznano tego za żywy proces lub nowy render.
+Dodano jawny use_recorded_render: cała weryfikacja rozmów, scen, pochodzenia,
+budżetów, kodu i ZIP pozostaje; zamiast uruchamiać przeglądarkę odczytujemy
+wcześniejszy wykonany dowód związany z tym samym raportem. Sprawdzane są
+hash pomiarów, identyczne SVG, wynik geometrii i piksele obu podglądów.
+To bezpieczny odczyt, bez obejścia ograniczeń przeglądarki. Zapisano
+verification-recorded-render.json z wyraźnym trybem wcześniejszych renderów.
+Domyślny weryfikator nadal wykonuje nowe rendery. Brak użytecznego starego
+dowodu oznacza błąd, a nie pominięcie sprawdzenia.
+
+Testy przed uruchomieniem: 62 passed. Po dodaniu odczytowego sprawdzania
+renderów: 69 passed, w tym manipulacja raportem, SVG, pikselami, pomiarami,
+źródłem, budżetem, kodem i kandydatem. Sprawdzono też rzeczywisty kompletny
+przebieg odczytowo. Bez kwalifikacji, treningu, eksportu egzaminu, zmiany wag
+lub ręcznych poprawek produktu. Następne braki: dekoracje wobec tekstów
+oraz cała instrukcja tła/kontrastu, następnie nowe pełne zadania.

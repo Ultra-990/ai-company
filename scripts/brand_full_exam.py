@@ -41,7 +41,9 @@ def exercise_context(brief):
     if brief != brand.DEFAULT_BRIEF and brief not in [definition(c) for c in CASES]:
         from scripts import brand_workflow_exam as workflow
         if brief not in [workflow.definition(c) for c in workflow.CASES]:
-            raise ValueError('Known frozen synthetic brand brief required')
+            from scripts import brand_delivery_exam as delivery
+            if brief not in [delivery.definition(c) for c in delivery.CASES]:
+                raise ValueError('Known frozen synthetic brand brief required')
     previous = brand.BRIEF
     brand.BRIEF = deepcopy(brief)
     try: yield

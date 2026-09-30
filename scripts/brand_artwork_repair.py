@@ -116,12 +116,14 @@ def payload(brief, plan, raw, findings, chosen=None):
     return json.dumps(data)
 
 
-def run(source, *, deliberate=False):
+def run(source, *, deliberate=False, matched_budget=False):
     source = Path(source); original, raw, plan, logos, selection = source_values(source)
     resources = b.school.check_idle()
     config = b.configuration() | {'num_ctx': 8192, 'num_predict': 4096, 'num_thread': 4, 'timeout_seconds': 180}
     if deliberate:
         config.update(sampling_profile='qwen-deliberate-trial.v1', think=True, num_ctx=16384, num_predict=8192)
+    elif matched_budget:
+        config.update(sampling_profile='bounded-default.v1', think=False, num_ctx=16384, num_predict=8192)
     if (config['model'], config['digest']) != (original['model'], original['digest']):
         raise ValueError('Original local model must author the repair')
     out = Path(tempfile.mkdtemp(prefix='artwork-repair-', dir=b.ROOT))
