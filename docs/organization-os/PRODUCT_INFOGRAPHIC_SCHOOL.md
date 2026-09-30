@@ -381,3 +381,23 @@ Mechanizm przygotowano na podstawie zachowanej próby
 dotycząca niezmienionego „Compact Daily Profile” jest jedynie przykładem
 późnego veto. Sam odczyt `independent-review-agent.json` nie zatwierdza panelu
 ani nie zastępuje nowej pełnej recenzji i niezależnego odbioru kandydata.
+
+Pierwszy i jedyny znany pilotaż v2, `delivery-correction-b93evuld`, zakończył
+się `pending_independent_review` po 28,395 s. Wykorzystał dwa wywołania autora,
+jedną kontrolę panelu i jedną wspólną kontrolę, czyli cztery nowe wywołania
+i dziewięć łącznie z v1. Pierwsza odpowiedź „27 by 8 cm” została odrzucona
+przez zamrożony kontrakt bez cyfr; druga literalna odpowiedź lokalnego autora,
+„Tall and Slim”, przeszła kontrolę panelu. Wspólna recenzja zaakceptowała
+wszystkie cztery faktycznie wybrane nagłówki. Nie wykonywano ponownej próby.
+
+Odczytowe `--verify-delivery-correction` przeszło dla kompletnego kandydata
+`reviewed-package-mhy9ixwb`: odtworzono autorstwo, wcześniejsze „One Bottle”,
+chronione panele, pomiary, manifest oraz ZIP z 19 plikami. Niezależnie obejrzano
+źródło, cztery pełne PNG oraz małe rendery dimensions i care. Pełne dane rendera
+potwierdziły, że ramki obu nagłówków pozostają wewnątrz marginesu 50 px;
+pozorne przycięcie w przeskalowanym podglądzie narzędzia nie występowało
+w plikach źródłowych. Całą syntetyczną paczkę rozwojową przyjęto wizualnie
+i semantycznie. Nie oznacza to odbioru komercyjnego, zgodności marketplace,
+świeżego egzaminu ani kwalifikacji autonomii. Osobna ocena, zapisana poza
+katalogami workflow i kandydata, wiąże raporty, weryfikację, ZIP i obejrzane
+obrazy bez naruszenia dokładnego zestawu artefaktów v2.
