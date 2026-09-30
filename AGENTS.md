@@ -1,5 +1,14 @@
 # Zasady pracy w repozytorium AI Company
 
+## Zmiana modelu prowadzącego — 2026-09-30
+
+- Właściciel polecił przekazać zadania GPT-5.6 („Terra”) i zmienić model
+  ze względu na limit. To zastępuje wcześniejszy wymóg pracy wyłącznie
+  Astry i zakaz delegowania do GPT-5.6. Dostępny identyfikator narzędzia
+  agentów to `gpt-5.6-sol`; nie potwierdzono jego równoważności z „Terra”.
+- Zachowaj dotychczasowe wyniki, autorstwo lokalnych modeli i kryteria
+  niezależnego odbioru. Zmiana agenta nie zmienia oceny gotowości usług.
+
 ## Autorstwo realizacji i nauka modeli — 2026-09-20
 
 - Do ukończenia projektu realizacje użytkowe (strony, demonstracje i inne

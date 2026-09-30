@@ -1,5 +1,50 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — kontrola rozmiaru odpowiedzi i pełnego odbioru
+
+V11 ujawniło ograniczenie adaptera: schemat pewnych poprawnych opisów miał
+20208 znaków i przekraczał dopuszczalny rozmiar. Przygotowane v12 zachowuje
+wszystkie opcje tekstowe, lecz pozwala modelowi wybierać krótkie identyfikatory;
+narzędzie odtwarza dokładne cytaty do dotychczasowego walidatora. Schemat
+tego przypadku ma 1102 znaki, a test maksymalnego katalogu 1718 znaków.
+125 testów przeszło przed przekazaniem. Rzeczywisty pilot v12
+`guide-revision-1qlblh2u` zakończył się `no_repair_requested` po 10,929 s
+i dwóch wywołaniach, ale niezależna kontrola odrzuciła ten wynik: ekstraktor
+pominął opis „stacked wordmark”, mimo że widoczny napis Reed Bay ma jeden
+wiersz. Brak nowej poprawki; pełny egzamin v2 nie został uruchomiony.
+Historyczny odebrany Reed v11 i stare wyniki pozostają bez zmian.
+
+Pełna ścieżka infografik BRIAR zakończyła się `needs_revision` po 30,957 s
+i pięciu wywołaniach. Model zastąpił niepopartą obietnicę nagłówkiem
+„One Bottle”, zgodnym z danymi dostawcy. Końcowy przegląd zakwestionował
+jednak wcześniej zaakceptowany, niezmieniony nagłówek „Compact Daily Profile”.
+Nie powstała nowa kompletna paczka. Niezależny ogląd potwierdził literalną
+poprawkę i zachowanie pozostałych materiałów; nie oznacza to odbioru całego
+zlecenia ani zmiany wyniku egzaminu.
+
+Na polecenie właściciela zadania przejęli trzej agenci `gpt-5.6-sol`:
+branding, recenzja techniczna i infografiki. Po zakończonym pilocie brandingu slot
+przekazano recenzji technicznej. Inferencje pozostają sekwencyjne, a kod
+i testy pozostałych torów powstają równolegle. Żadna z pięciu
+usług nie spełnia jeszcze pełnych kryteriów samodzielnej pracy.
+
+## Aktualizacja 30.09.2026 — Reed odebrany po literalnej ekstrakcji
+
+V11 ogranicza cytaty i podmioty do tekstu opisu, zachowując decyzję modelu
+o znaczeniu oraz osobną kontrolę geometrii. Nie podaje oczekiwanej odpowiedzi
+na podstawie obrazu. `guide-revision-5a85vcjg`: 17,881 s, pięć wywołań,
+pełna poprawka, model zwolniony. Niezależny ogląd pięciu PNG, opisów i
+instrukcji oraz świeży render i kontrola 21 plików ZIP potwierdziły całość.
+Odebrana poprawka **znanego** Reed Bay; bez zmiany wyniku starego egzaminu
+i bez kwalifikacji usługi. 104 testy przed próbą; 105 po przygotowaniu
+nowego pełnego porównania v2 z osobnymi briefami i tym samym budżetem.
+
+Tor techniczny: audyt własnych zaleceń, jedna poprawka i końcowy audyt
+zatrzymały recenzję jako needs_revision po 108,325 s / trzech wywołaniach.
+Pełny niezależny odbiór odrzucony: wspólna ocena całego komentarza ukryła
+nieudowodnione zalecenie pod trafną diagnozą. 52 testy passed, 3 skipped.
+Wagi, historyczne wyniki i dane egzaminów pozostają bez zmian.
+
 ## Aktualizacja 30.09.2026 — odzyskany podmiot relacji, recenzent nadal zawodny
 
 Jawne v9 łączy pominiętą wcześniej kontrolę podmiotu v4 z v8; v10 wymusza

@@ -1,5 +1,124 @@
 # Dziennik budowy AI Company
 
+## 2026-09-30 — przekazanie zadań GPT-5.6 na polecenie właściciela
+
+Poprzedni obrót celu był postępem: zapisano przekazanie i nowe polecenie
+w AGENTS.md oraz rzeczywiście uruchomiono trzech agentów GPT-5.6. Kolejny
+obrót potwierdził ich aktywność i ponownie sprawdził pełne kryteria pięciu
+usług w AUTONOMOUS_WORK.md. Nie zawężono celu do pojedynczej poprawki.
+
+GPT-5.6 przygotował osobną `technical-review-source-self-correction.v2`:
+komentarz ma niezależne oceny diagnozy, zalecenia, istotności i powiązania
+ze źródłami. Ochrona trafnej diagnozy nie blokuje korekty błędnego zalecenia.
+Przegląd prowadzącego znalazł brak snapshotu importowanego modułu v1 oraz
+KeyError przy usunięciu chronionego komentarza, uniemożliwiający odtworzenie
+porażki. Oba poprawiono i dodano test rzeczywistej ścieżki run/verify na
+kontrolowanych odpowiedziach. Instrukcja autora wyjaśnia, że ochrona
+source_grounding dotyczy samych source_ids. 65 testów passed, 3 skipped;
+v1 i jego nieudana próba pozostały niezmienione. Kod opublikowano w ec7a0b5.
+Dalsza kontrola realnego wejścia (30 elementów audytu) doprowadziła do
+deterministycznego skrócenia wspartych ocen w żądaniu autora, przy zachowaniu
+pełnego audytu i wszystkich pól zastrzeżeń. 66 passed, 3 skipped; zmiana
+opublikowana w a97b5fc. Oba commity przeszły skany staged i historii wysyłanej
+do origin, bez sekretów. Inferencja v2 jeszcze nie została uruchomiona,
+więc nie jest to dowód poprawy jakości recenzji.
+
+Znany pilot brandingu v12 `guide-revision-1qlblh2u`: 10,929 s, dwa wywołania,
+`no_repair_requested`, naturalne zwolnienie modelu zapisane w retained-batch.
+Prowadzący odczytał surowe odpowiedzi i obejrzał delivery/logo-b.png:
+jednowierszowy napis przeczy opisowi „stacked wordmark”, a ekstraktor zwrócił
+wordmark_lines=unspecified. Lokalna zgoda jest więc fałszywie pozytywna;
+nie powstała poprawka. Nowy pełny egzamin v2 nie jest uruchamiany na podstawie
+tej próby. Historyczny odebrany Reed v11 pozostaje niezależnym dowodem.
+
+Właściciel poprosił o przekazanie pracy GPT-5.6 („Terra”) z powodu limitu.
+Narzędzie udostępnia `gpt-5.6-sol`, bez potwierdzonego aliasu Terra.
+Nowa zgoda zastępuje poprzednie ograniczenie do Astry w AGENTS.md.
+Nie ma narzędzia do przełączenia modelu głównej rozmowy; delegowanie
+nie oznacza takiego przełączenia. Stan kwalifikacji pozostaje 0/5.
+
+Punkt przekazania: HEAD 447bea1, gałąź
+`chore/roadmap-bootstrap-20260909T122313Z`, bieżące zmiany niezatwierdzone.
+Poprzedni agenci oddali pliki; nie pozostawili aktywnej inferencji.
+
+- Branding: v12 (`brand_compact_review.py`) i wiring gotowe, 125 testów
+  przeszło. Schemat problematycznego przypadku zmalał z 20208 do 1102 znaków;
+  test maksymalnego katalogu ma 1718 znaków i przechodzi rzeczywisty adapter.
+  Inferencji v12 jeszcze nie było. Następne kroki: niezależny przegląd,
+  przełączenie NIEURUCHOMIONEGO generation-exam v2 na compact/v12 wraz
+  ze snapshotem modułu, testy i jeden znany pilot Reed. Dopiero po odbiorze
+  pilota można uruchomić świeży egzamin v2; v1 i historyczne wyniki zachować.
+  Reed v11 `guide-revision-5a85vcjg` został niezależnie odebrany jako znana
+  naprawa rozwojowa, nie nowy egzamin.
+- Recenzja techniczna: `self-correction-xappp25s` zakończyła się
+  `needs_revision`, 108,325 s, 3 wywołania. Rozdzielić ocenę diagnozy,
+  rekomendacji i istotności: obecna ochrona całego komentarza utrwala
+  niepoparte zalecenie ukryte obok poprawnej diagnozy. Zachować stary kontrakt
+  i dowody; przygotować nową wersję oraz testy bez GPU.
+- Infografiki: `complete-delivery-juc56yyo`, 30,957 s, 5 wywołań,
+  `needs_revision`, brak nowej kompletnej paczki. Naprawa „One Bottle”
+  zgodna ze źródłem; końcowy recenzent zakwestionował wcześniej zaakceptowane
+  „Compact Daily Profile”. Niezależny ogląd zapisano w
+  `independent-review-agent.json`, SHA256
+  `6aae43613630829c729367e28b17cfb9d265a5b7844491efde2e9c427d8bd531`.
+  Przygotować wersjonowaną, ograniczoną korektę po końcowym przeglądzie;
+  nie obniżać kryteriów ani nadpisywać tej nieudanej próby.
+
+GPU ma jednego właściciela (tor brandingu), pozostałe tory pracują bez
+inferencji. Przed obciążeniem sprawdzić obce kontenery, ComfyUI i zasoby.
+Produkty nadal tworzą wyłącznie lokalne modele. Nie zmieniać wag, ocen
+starych egzaminów ani chronionych materiałów. Publikacja dopiero po przeglądzie
+zakresu, testach i skanach sekretów; żadnego automatycznego stagingu całości.
+
+## 2026-09-30 — kolejny etap: literalna ekstrakcja i pełny odbiór Reed
+
+Poprzedni obrót celu sklasyfikowano jako postęp: kod i testy systemu,
+pełny egzamin i nowe dowody zmieniły stan oraz wskazały następny ruch.
+Aktualny cel pięciu usług pozostaje aktywny i w pełnym zakresie. Równolegle
+przydzielono tor recenzji technicznej i pełnych infografik; GPU ma kolejkę.
+
+Nowe v11 nie każe modelowi swobodnie przepisywać cytatów: schemat jest
+budowany z pełnych opisów oraz rzeczowników i relacji dopuszczanych przez
+istniejący tekstowy walidator v4. Katalog używa wyłącznie opisów, bez
+renderów, geometrycznych odpowiedzi wzorcowych czy odbiorów. Model wybiera
+interpretację; późniejsza geometria i niezależny ogląd nadal są konieczne.
+Wybranie niewłaściwej semantyki jest możliwe, a unknown vocabulary może
+pozostać niepewne. Stare kontrakty niezmienione. 104 passed / 3,41 s.
+
+Rzeczywiste Reed `guide-revision-5a85vcjg`: pending_independent_review,
+17,881 s, pięć wywołań, idle_after=true. Raport SHA256
+3a5b7be3dc475b5daa82e48046e5f9e4620f522ecd14fe41f7daf0a9a3720cb1.
+Autor poprawił opisy, bez zmiany grafik. Pełny literalny verify z nowym
+izolowanym renderem `spatial-proof-yr0wjdu8` przeszedł: 21 plików ZIP;
+hash pomiarów 053950f1cee3f005c9e48bb4f3653d44bc6cda7d2c657545c0224cdc18ed7e97.
+Root obejrzał pięć PNG i przeczytał guide/plan. Odbiór całej syntetycznej
+poprawionej paczki zaakceptowany; zalecenie 18 mm nie jest certyfikacją
+wydruku. Osobna ocena SHA256
+4417b7a0ef7a1515a5532f87b001dc2a47e48ff751c6424a6c0d645edd97fa1b.
+To znany przypadek, nie nowy egzamin, trening lub kwalifikacja.
+
+Przygotowano v2 porównania generowania: Poppy Wharf, Olive Bench,
+Juniper Hearth, sześć osobnych źródeł, te same budżety i wspólne v11.
+Audyt odtwarza dynamiczne schematy i komplet modułów. 105 passed / 3,48 s;
+stary rzeczywisty v1 ponownie sprawdzony odczytowo, nadal 0/3 wobec 0/3.
+
+Techniczny `self-correction-xappp25s`: 108,325 s, trzy wywołania,
+needs_revision, zwolnienie modelu potwierdzone. Lokalny audyt, autor i
+końcowa recenzja zachowują źródła i poprawne komentarze. Niestety pierwszy
+audyt uznał cały komentarz za supported dzięki trafnej diagnozie, pomijając
+niepoparte zalecenie kosztowe; ochrona poprawnych pól utrwaliła błąd.
+Usunięto jeden superlatyw, ale dodano odniesienie do wcześniejszej recenzji
+w komentarzu o artykule. Końcowy audyt prawidłowo zatrzymał wynik, a pełny
+odbiór niezależny odrzucono. Verify przeszedł, 52 passed / 3 skipped.
+Raport SHA256 8aa5945ac71a7a4e0cd09620132c9e1670e239e528bd7494db264c92611b0bc5,
+odbiór ce81ac00c27ef4de5f9687bd700a4b510ffc1d36eb9918066c146bdbe85adca9.
+Brak świeżego egzaminu technicznego, bo poprawa całości niepotwierdzona.
+
+Na pytanie o procent całości podano roboczy szacunek około 60%, wyraźnie
+oddzielony od pomiaru i czasu pozostałej pracy. Żadna z pięciu usług nie
+spełnia jeszcze całego kryterium kwalifikacji. Stare progress.yaml/STATUS
+nie są aktualnym pomiarem kompletnego celu; nie zmieniano ich ręcznie.
+
 ## 2026-09-30 — złożenie kontroli podmiotu i dwie jawnie nieudane próby
 
 Przyczyna regresji Reed: v5 importowało v3 z pominięciem bocznego v4;
