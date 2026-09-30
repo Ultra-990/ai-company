@@ -417,6 +417,7 @@ if __name__ == '__main__':
     actions.add_argument('--revise-alignment-text', type=Path)
     actions.add_argument('--revise-background-text', type=Path)
     actions.add_argument('--revise-wordmark-text', type=Path)
+    actions.add_argument('--revise-reference-text', type=Path)
     actions.add_argument('--guide-review-exam', action='store_true')
     actions.add_argument('--plan-review-exam', action='store_true')
     actions.add_argument('--spatial-claim-exam', action='store_true')
@@ -442,7 +443,7 @@ if __name__ == '__main__':
         parser.error('--complete-scene-checks requires --repair-artwork')
     if args.visible_shape_checks and not (args.repair_artwork or args.run):
         parser.error('--visible-shape-checks requires --run or --repair-artwork')
-    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects, args.revise_alignment_text, args.revise_background_text, args.revise_wordmark_text)):
+    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects, args.revise_alignment_text, args.revise_background_text, args.revise_wordmark_text, args.revise_reference_text)):
         parser.error('--warm-revision requires a guide/plan/spatial revision')
     if args.repair_artwork:
         from scripts.brand_artwork_repair import run as repair_artwork
@@ -460,6 +461,10 @@ if __name__ == '__main__':
         from scripts.brand_guide_revision import run as revise_background
         _, report = revise_background(args.revise_background_text, spatial='background', warm=args.warm_revision)
         raise SystemExit(int(report['status'] != 'pending_independent_review'))
+    if args.revise_reference_text:
+        from scripts.brand_guide_revision import run as revise_reference
+        _, report = revise_reference(args.revise_reference_text, spatial='reference', warm=args.warm_revision)
+        raise SystemExit(int(report['status'] not in ('pending_independent_review', 'no_repair_requested')))
     if args.revise_wordmark_text:
         from scripts.brand_guide_revision import run as revise_wordmark
         _, report = revise_wordmark(args.revise_wordmark_text, spatial='wordmark', warm=args.warm_revision)

@@ -1,5 +1,43 @@
 # Dziennik budowy AI Company
 
+## 2026-09-30 — rozróżnienie ramki/środka i ślepa obserwacja obrazu
+
+- `brand-spatial-reference-review.v8` / `--revise-reference-text`: jawna
+  referencja bounds/centers z dosłownym cytatem; stare warunki ramek nie
+  są stosowane do porównania środków. Błędny kierunek nadal jest odrzucany.
+  Pozostały kontrole liczby wierszy, kontrastu/tła i autorstwa. Pięć wywołań
+  warm, bez dodatkowej inferencji dla obliczeń środków. V1–V7 bez zmian.
+- Pierwszy prototyp `guide-revision-5x62wm0v`: 14,852 s, needs_revision.
+  Ekstraktor poprawnie rozróżnił referencję, lecz lokalny recenzent błędnie
+  uznał symbol za wyśrodkowany. Zachowano komplet odpowiedzi i kodu.
+  W wersji finalnej v8 dodano do wejścia recenzenta jawne środki obliczone
+  z ramek: Maple B symbol x=140, nazwa x=300. Nie dopisano tekstu produktu.
+- `guide-revision-8tdn562z`: 15,5 s, pending_independent_review. Świeży
+  audyt obu logo i literalnych pięciu wywołań przeszedł; 18 eksportów grafik
+  zachowanych, ZIP 21 plików. Po oglądzie pięciu PNG niezależny odbiór nadal
+  nie przyznany: „maple leaf shape” nie jest poparte widocznym wielokątem
+  bez charakterystycznych klap. Osobna ocena nie zmienia raportu modelu.
+- Dodano diagnostyczny `python -m scripts.brand_visual_observation --run
+  KATALOG`: dwie obserwacje PNG przez istniejący lokalny adapter wizyjny,
+  bez draftu, briefu i sugerowanej tożsamości symbolu. Napis restauracji
+  pozostaje w samym obrazie; nie twierdzimy, że całkowicie usunięto kontekst.
+  8192/1200/4/90, think=false; zero zmian produktu i brak zatwierdzania
+  z własnego opisu. `--verify` wiąże źródło, PNG, żądania i odpowiedzi.
+- `visual-observation-95y9expo`: 7,609 s; A opisany jako pomarańczowy
+  prostokątny znak z liniami, B jako pomarańczowy hexagon na lewo od tekstu.
+  Odczytowy audyt autorstwa przeszedł. B ma siedem wierzchołków, a obserwacja
+  pomija położenie nad tekstem. Własna obserwacja modelu nie jest więc
+  niezależnym dowodem poprawności jego semantycznych opisów. Zapisano ocenę.
+- Preflight przed inferencją: Docker pusty, RTX5090 1227/32607 MiB, 15%;
+  istniejący preflight ponawiany między żądaniami. Bez ingerencji w usługi.
+  82 testy recenzji i 4 obserwacji przeszły; obejmują referencje/cytaty,
+  błędny kierunek, zachowanie dawnych reguł, autorstwo i podmianę PNG/promptu.
+- Na pytanie o czas wyjaśniono brak wiarygodnego terminu samodzielności.
+  Czas inferencji jest krótki, lecz jakość nadal blokuje pełny odbiór.
+  Nie deklarowano sukcesu całej paczki, nowego egzaminu, kwalifikacji usług
+  ani treningu wag. Następne próby powinny mierzyć kompletne zadania po
+  zmianie mechanizmu, nie jedynie zwiększać liczbę lokalnych poprawek.
+
 ## 2026-09-30 — mierzalna widoczność elementów i celowana naprawa Maple
 
 - Zdiagnozowano lukę poprzedniej kontroli: kolor=0 i monochrom=0 pikseli

@@ -1,5 +1,33 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — relacje do środka poprawione, semantyka nadal blokuje odbiór
+
+V8 `--revise-reference-text` rozdziela relacje do całej ramki i jawne
+porównanie środków. Ekstraktor musi wskazać dosłowny cytat dla odniesienia
+do środka. Recenzent dostaje obliczone z pomiarów środki obu obiektów;
+nie dodano nowych wywołań do pięciokrokowej serii warm.
+
+Pierwszy prototyp `guide-revision-5x62wm0v` (14,852 s) zatrzymał się:
+ekstrakcja prawidłowa, ale recenzent błędnie uznał znak za wyśrodkowany.
+Po dodaniu jawnych środków `guide-revision-8tdn562z` (15,5 s) przeszedł
+kontrole techniczne i świeże renderowanie, z 18 grafikami bez zmian.
+Niezależny odbiór nadal nie przyznany: opis nazywa mały wielokąt liściem
+klonu, choć brak rozpoznawalnych klap takiego liścia. Poprawa położenia
+nie rozwiązuje całej zgodności opisów z obrazami.
+
+`brand_visual_observation` sprawdza opis samego obrazu, bez planu i briefu
+w żądaniu. Dwie obserwacje `visual-observation-95y9expo`: 7,609 s.
+Model opisuje B geometrycznie, ale myli liczbę boków (hexagon wobec siedmiu
+wierzchołków) i podaje niepełne położenie. To obiecująca zmiana wejścia,
+nie dowód niezawodnej recenzji. Obserwacje nie zatwierdzają ani nie zmieniają
+produktu. Autorstwo i wejściowe PNG potwierdzone oddzielnym weryfikatorem.
+
+82 testy recenzji oraz 4 obserwacji przeszły. Użytkownik zapytał o czas:
+nie ma wiarygodnego terminu pełnej samodzielności. Ostatni pełny egzamin
+nadal 1/3; pięć usług niezakwalifikowanych. Kolejna ocena powinna mierzyć
+pełne zlecenia i rzeczywistą zmianę sposobu generowania, zamiast kolejnych
+powtórzeń identycznego źródła. Bez treningu wag i danych egzaminu w nauce.
+
 ## Aktualizacja 30.09.2026 — widoczność symboli i poprawka Maple w 19,593 s
 
 Dodano `--visible-shape-checks`: naprawa v5 sprawdza oba logo, a nowe

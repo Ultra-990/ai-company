@@ -6,6 +6,27 @@ plan stylu, dwa koncepty logo, uzasadnia wybór i projektuje wizytówkę.
 Asystent rozwija wymagania, narzędzia i niezależną ocenę; nie rysuje logo
 ani nie poprawia współrzędnych za model.
 
+## Referencje przestrzenne i obserwacja obrazu — 30.09.2026
+
+`--revise-reference-text KATALOG --warm-revision` wybiera v8: model
+rozróżnia relacje do ramek i do środków, z dosłownym cytatem referencji.
+Środki są wyliczane z pomiarów renderera i podawane recenzentowi wprost.
+Nie zwiększa to liczby wywołań. Stare kontrakty i pełne egzaminy zachowują
+swoje reguły. Świeży audyt poprawki i review-only obsługują v8.
+
+Maple: pierwsza próba 14,852 s nie powiodła się przez błędną recenzję
+wyśrodkowania; po uzupełnieniu wejścia o obliczone środki druga 15,5 s
+przeszła weryfikację techniczną. Niezależny odbiór nadal nie przyznany:
+szczegółowa nazwa kształtu („maple leaf”) nie odpowiada rozpoznawalnym
+cechom obrazu. Kontrola współrzędnych nie dowodzi tożsamości symbolu.
+
+`python -m scripts.brand_visual_observation --run KATALOG` wykonuje dwie
+obserwacje samych PNG, bez opisu projektu. To diagnostyka bez zmian produktu;
+`--verify` sprawdza autorstwo i powiązanie obrazu. Pierwsza para 7,609 s:
+obserwator odszedł od sugerowanej nazwy, ale pomylił liczbę boków i podał
+niepełną relację. Nie jest automatycznym odbiorem jakości. 82 testy recenzji
+i 4 obserwacji przeszły; brak nowej kwalifikacji lub treningu.
+
 ## Widoczność elementów obu logo — 30.09.2026
 
 `--repair-artwork KATALOG --visible-shape-checks --artwork-reasoning`

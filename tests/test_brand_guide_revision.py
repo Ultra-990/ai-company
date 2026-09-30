@@ -61,7 +61,7 @@ def revised(tmp_path, monkeypatch, request):
     expanded = getattr(request, 'param', False)
     warm = expanded == 'warm'
     if warm: expanded = False
-    spatial = expanded in ('spatial', 'subject', 'alignment', 'background', 'wordmark')
+    spatial = expanded in ('spatial', 'subject', 'alignment', 'background', 'wordmark', 'reference')
     if expanded:
         data['plan'].update(concept_a='A false original concept description.', concept_b='A preserved second concept description.')
     if spatial:
@@ -70,6 +70,7 @@ def revised(tmp_path, monkeypatch, request):
         if expanded == 'alignment': from scripts import brand_spatial_alignment_review as measured
         if expanded == 'background': from scripts import brand_background_review as measured
         if expanded == 'wordmark': from scripts import brand_wordmark_review as measured
+        if expanded == 'reference': from scripts import brand_reference_review as measured
         data['plan'].update(concept_a='A wave sits below the wordmark.', concept_b='A circle surrounds the wordmark.')
         from scripts.brand_spatial_review import geometry as measure
         geometry = measure({'layout': [{'bbox': [100, 250, 300, 60]}], 'shape_layout': [{'bbox': [200, 100, 100, 80]}]})
@@ -99,9 +100,13 @@ def revised(tmp_path, monkeypatch, request):
             return {'concepts': [{'id': key, 'claims': [{'relation': relation, 'quote': quote}]} for key, relation, quote in phase]}
         before = claims([('a', 'below', 'below the wordmark'), ('b', 'surrounds', 'surrounds the wordmark')])
         after = claims([('a', 'above', 'above the wordmark'), ('b', 'above', 'above the wordmark')])
-        if expanded == 'wordmark':
+        if expanded in ('wordmark', 'reference'):
             for value in (before, after):
                 for row in value['concepts']: row['wordmark_lines'] = {'relation': 'unspecified', 'quote': ''}
+        if expanded == 'reference':
+            for value in (before, after):
+                for row in value['concepts']:
+                    for c in row['claims']: c.update(reference='bounds', reference_quote='')
         if expanded == 'subject':
             for value in (before, after):
                 for row in value['concepts']:
@@ -120,7 +125,7 @@ def revised(tmp_path, monkeypatch, request):
         monkeypatch.setattr(batch, 'OllamaProvider', Provider)
         monkeypatch.setattr(batch, 'check_resources', lambda *args: {})
         monkeypatch.setattr(batch, 'resident_models', lambda: [])
-    out, report = guide.run(source, expanded=bool(expanded), spatial=expanded if expanded in ('subject', 'alignment', 'background', 'wordmark') else spatial, warm=warm)
+    out, report = guide.run(source, expanded=bool(expanded), spatial=expanded if expanded in ('subject', 'alignment', 'background', 'wordmark', 'reference') else spatial, warm=warm)
     assert report['status'] == 'pending_independent_review'
     return out, report
 
@@ -161,7 +166,7 @@ def test_expanded_revision_replays_structure_and_changed_concept(revised):
     assert json.loads((out/'revised-plan.json').read_text())['concept_a'] == 'A corrected description from the local model.'
 
 
-@pytest.mark.parametrize('revised', ['spatial', 'subject', 'alignment', 'background', 'wordmark'], indirect=True)
+@pytest.mark.parametrize('revised', ['spatial', 'subject', 'alignment', 'background', 'wordmark', 'reference'], indirect=True)
 def test_spatial_revision_overrides_false_model_approval_and_replays_five_calls(revised):
     out, report = revised
     assert report['max_model_calls'] == 5
