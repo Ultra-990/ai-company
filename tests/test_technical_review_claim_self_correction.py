@@ -87,6 +87,20 @@ def test_writer_prompt_exposes_claim_audit_without_teacher_answer():
     assert 'a correct diagnosis does not' in repair.CRITIC
 
 
+def test_writer_projection_compacts_only_supported_claims_and_keeps_failure_provenance():
+    original = review(); value = claim_audit(original, bad='comment:3:recommendation')
+    failed = next(row for row in value['assessments'] if row['id'] == 'comment:3:recommendation')
+    failed['reason'] = 'The recommendation needs the exact source-bounded correction.'
+    failed['evidence_quotes'] = [{'source_id': 'pilot', 'quote': 'Fictional exercise only'}]
+    audit = repair.audit_value(json.dumps(value), original, holdout.SOURCES)
+    projected = repair.writer_audit(audit)
+    supported = next(row for row in projected if row['id'] == 'comment:3:diagnosis')
+    rejected = next(row for row in projected if row['id'] == 'comment:3:recommendation')
+    assert supported == {'id': 'comment:3:diagnosis', 'verdict': 'supported'}
+    assert rejected == failed
+    assert audit.model_dump()['assessments'][0]['reason']  # full audit remains intact
+
+
 def test_historical_v1_module_and_failed_pilot_replay_are_unchanged():
     pilot = Path('/home/marcin/ai-company-workspaces/technical-review-holdout/self-correction-xappp25s')
     if not pilot.exists(): pytest.skip('preserved local pilot is not available')
@@ -100,6 +114,8 @@ def test_historical_v1_module_and_failed_pilot_replay_are_unchanged():
 def test_bounded_claim_protocol_runs_and_replays_literal_authorship(tmp_path, monkeypatch):
     source, _, _, _ = run_fixture(tmp_path/'source', monkeypatch, [content()])
     original = review(); first = claim_audit(original, bad='comment:3:recommendation')
+    first['assessments'][1]['evidence_quotes'] = [
+        {'source_id': 'pilot', 'quote': 'Fictional exercise only'}]
     changed = original.model_copy(deep=True)
     changed.comments[0].recommendation = 'Use a bounded, source-grounded correction.'
     final = claim_audit(changed)
@@ -130,6 +146,11 @@ def test_bounded_claim_protocol_runs_and_replays_literal_authorship(tmp_path, mo
     writer = v1.base.load(out/'writer-request.json')
     payload = json.loads(writer['user'])
     assert payload['claim_audit']['assessments'][1]['id'] == 'comment:3:recommendation'
+    assert payload['claim_audit']['assessments'][0] == {
+        'id': 'comment:3:diagnosis', 'verdict': 'supported'}
+    assert payload['claim_audit']['assessments'][1]['evidence_quotes'] == [
+        {'source_id': 'pilot', 'quote': 'Fictional exercise only'}]
+    assert v1.base.load(out/'audit.json')['assessments'][0]['reason']
     assert v1.base.load(out/'review.json')['comments'][0]['issue'] == original.comments[0].issue
 
 

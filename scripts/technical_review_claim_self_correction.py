@@ -39,7 +39,10 @@ their own verdicts. Claims are independent: retain a supported diagnosis while r
 unsupported recommendation, severity, or source list. Remove unsupported assertions and
 make uncertainty explicit. Do not add empirical comparisons, rankings, browsing, testing, or
 revision history. Do not delete accurate major findings or replace useful advice with generic
-requests. Correct article statements need no criticism; optional additions are suggestions.'''
+requests. Correct article statements need no criticism; optional additions are suggestions.
+The writer audit is a deterministic projection of the preserved full audit: supported records
+omit their verbose rationale and evidence, while non-supported records remain complete. Omission
+is context compaction, not a new semantic judgment or permission to change supported claims.'''
 
 
 class EvidenceQuote(v1.lab.StrictModel):
@@ -111,19 +114,26 @@ def protected_value(review, claim):
 
 def revision_value(raw, original, audit, article, sources):
     changed = v1.lab.check_response(raw, article, sources)
-    protected = {row.id for row in audit.assessments if row.verdict == 'supported'}
-    changed_claims = {claim for claim in protected
-                      if protected_value(original, claim) != protected_value(changed, claim)}
+    protected = [row.id for row in audit.assessments if row.verdict == 'supported']
+    changed_claims = [claim for claim in protected
+                      if protected_value(original, claim) != protected_value(changed, claim)]
     if changed_claims:
-        raise ValueError('Preserve claims that the source audit marked supported: '+', '.join(sorted(changed_claims)))
+        raise ValueError('Preserve claims that the source audit marked supported: '+', '.join(changed_claims))
     return changed
+
+
+def writer_audit(audit):
+    """Compact supported rationale only; retain every actionable audit field."""
+    return [({'id': row.id, 'verdict': row.verdict} if row.verdict == 'supported'
+             else row.model_dump()) for row in audit.assessments]
 
 
 def messages(stage, article, sources, review, audit=None):
     payload = {'article_lines': [{'line': number, 'text': text} for number, text in enumerate(article.splitlines(), 1)],
                'source_cards': sources}
     if stage == 'writer':
-        payload.update(previous_review=review.model_dump(), claim_audit=audit.model_dump())
+        payload.update(previous_review=review.model_dump(),
+                       claim_audit={'assessments': writer_audit(audit)})
         system, schema = WRITER, v1.lab.Review.model_json_schema()
     else:
         payload['review_claims'] = claim_units(review)

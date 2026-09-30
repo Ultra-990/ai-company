@@ -298,6 +298,12 @@ wiążąco odtwarzane przez `--verify`. Wynik pozostaje
 `accepted=false`, `autonomy_qualified=false` i wymaga niezależnego odbioru;
 protokół nie jest świeżym egzaminem ani treningiem.
 
+Pełny audyt wraz z uzasadnieniami i cytatami pozostaje w `audit.json`.
+Do żądania autora trafia jego deterministyczna projekcja: elementy wspierane
+zawierają tylko `id` i `verdict`, natomiast wszystkie pola elementów
+`needs_revision` i `uncertain` pozostają bez zmian. Ogranicza to kontekst bez
+nowej oceny semantycznej; weryfikator odtwarza projekcję z pełnego audytu.
+
 ```bash
 .venv/bin/python scripts/technical_review_claim_self_correction.py --run /path/to/replay-v2-run
 .venv/bin/python scripts/technical_review_claim_self_correction.py --verify /path/to/claim-self-correction-run
@@ -309,3 +315,9 @@ pełny trzyetapowy replay i odrzucenie fałszywego odbioru. Test historyczny
 porównuje v1 bajtowo ze snapshotem nieudanej próby i ponownie odtwarza jej
 wynik `needs_revision`. Przygotowanie v2 było wyłącznie CPU; modelu nie
 uruchomiono i nie powstał nowy wynik merytoryczny.
+
+Kontrola rzeczywistego wejścia przed pilotem wykazała 30 ocenianych elementów
+i ryzyko nadmiernego powtórzenia pozytywnych uzasadnień w żądaniu autora.
+Testy po wprowadzeniu projekcji: **66 passed, 3 skipped**.
+Oszacowanie długości kontekstu na podstawie
+liczby znaków nie jest dokładnym pomiarem tokenów; pilota jeszcze nie wykonano.
