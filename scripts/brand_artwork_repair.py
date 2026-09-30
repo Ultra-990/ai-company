@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import time
+import xml.etree.ElementTree as ET
 from PIL import Image, ImageChops
 
 from scripts import brand_school as b, verify_brand_package as evidence
@@ -13,6 +14,7 @@ from scripts.brand_full_exam import exercise_context
 
 CONTRACT = 'brand-measured-artwork-repair.v2'
 LEGACY_CONTRACT = 'brand-measured-artwork-repair.v1'
+CARD_CONTRACT = 'brand-measured-artwork-repair.v3'
 TASK = 'Correct your previous scene using the independent measured findings. Preserve the brief, approved copy and palette. Return your complete corrected scene, with no invented output files or claims. Positions and geometry remain your responsibility.'
 REPAIR_RULES = b.SCENE_RULES.replace('use roughly 330, 390, 435 and 480\nfor the four centered lines unless a different safe spacing is clearly needed.',
     'choose baselines from actual measured text extents and the transformed logo bounds.\nDo not copy a rejected placement unchanged.')
@@ -99,9 +101,49 @@ def verify_contributions(folder, measured):
             raise ValueError('Shape contribution differs from actual PNG evidence')
 
 
-def diagnose(svg, folder, plan, kind):
+def card_decoration_findings(svg, measured, paper):
+    """Conservative text exclusion boxes for card-only shapes, not glyph hit tests.
+
+    Compiled card decorations are direct children in untransformed card units.
+    The inserted logo is protected; a full paper-colored rectangle is background.
+    Bounding-box intersections require review even for a hollow shape or curve.
+    """
+    from scripts.brand_spatial_review import box
+    root = ET.fromstring(svg)
+    tags = {'rect', 'circle', 'ellipse', 'line', 'path'}
+    shapes = [e for e in root.iter() if e.tag.rsplit('}', 1)[-1] in tags]
+    if len(shapes) != len(measured['shape_layout']):
+        raise ValueError('Exact shape-to-render mapping required')
+    direct = set(root); findings = []
+    for index, (element, shape) in enumerate(zip(shapes, measured['shape_layout'])):
+        tag = element.tag.rsplit('}', 1)[-1]
+        if tag != shape['tag']: raise ValueError('Measured shape order changed')
+        if element not in direct: continue
+        if element.get('transform'): raise ValueError('Untransformed card decorations required')
+        bounds = box(shape['bbox'])
+        fill, stroke = element.get('fill', 'black'), element.get('stroke', 'none')
+        if fill == 'none' and stroke == 'none': continue
+        if tag == 'rect' and bounds == [0, 0, 850, 550] and fill.lower() == paper.lower() and stroke == 'none':
+            continue
+        width = float(element.get('stroke-width', '1')) / 2 if stroke != 'none' else 0
+        left, top, right, bottom = bounds
+        bounds = [left-width, top-width, right+width, bottom+width]
+        for row in measured['layout']:
+            x, y, u, v = box(row['bbox'])
+            overlap = [max(bounds[0], x), max(bounds[1], y), min(bounds[2], u), min(bounds[3], v)]
+            if overlap[2] > overlap[0] and overlap[3] > overlap[1]:
+                findings.append({'kind': 'card_decoration_in_text_bounds', 'shape_index': index,
+                    'shape_bounds': bounds, 'text': row['text'], 'text_bounds': [x, y, u, v],
+                    'intersection_bounds': overlap,
+                    'measurement': 'Decoration bounding box enters a text exclusion box; curve/glyph intersection is not asserted.'})
+    return findings
+
+
+def diagnose(svg, folder, plan, kind, *, strict_card=False):
     color = measure(svg, folder, 'brand_'+kind, contribution=kind == 'logo')
     feedback = b.measured_feedback(color, 'brand_'+kind)
+    if kind == 'card' and strict_card:
+        feedback['issues'] += card_decoration_findings(svg, color, plan['paper'])
     if kind == 'logo':
         mono = measure(b.monochrome(svg, plan['monochrome_ink']), folder/'monochrome', 'brand_logo', contribution=True)
         feedback['issues'] += monochrome_findings(color, mono)
@@ -116,7 +158,7 @@ def payload(brief, plan, raw, findings, chosen=None):
     return json.dumps(data)
 
 
-def run(source, *, deliberate=False, matched_budget=False):
+def run(source, *, deliberate=False, matched_budget=False, strict_card=False):
     source = Path(source); original, raw, plan, logos, selection = source_values(source)
     resources = b.school.check_idle()
     config = b.configuration() | {'num_ctx': 8192, 'num_predict': 4096, 'num_thread': 4, 'timeout_seconds': 180}
@@ -131,11 +173,12 @@ def run(source, *, deliberate=False, matched_budget=False):
     for name in ('brand_artwork_repair.py', 'brand_school.py', 'verify_brand_package.py', 'render_school_svg.py', 'vector_school_contract.py', 'vector_structured_source.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
     shutil.copyfile(Path(__file__).parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
-    record = {'schema': CONTRACT, 'source': str(source), 'source_report_sha256': b.school.checksum(source/'report.json'),
+    contract = CARD_CONTRACT if strict_card else CONTRACT
+    record = {'schema': contract, 'source': str(source), 'source_report_sha256': b.school.checksum(source/'report.json'),
               'reused_stages': [], 'repaired_stages': [], 'max_additional_model_calls': 6, 'fresh_exam': False}
     report = {key: original[key] for key in ('schema', 'brief', 'brief_sha256', 'model', 'digest')}
     report.update(status='running', config=config, resources_before=resources, selection=selection,
-        stages=['plan', 'logo-a', 'logo-b'], checks={}, repair_contract=CONTRACT,
+        stages=['plan', 'logo-a', 'logo-b'], checks={}, repair_contract=contract,
         training_started=False, training_exported=False, production_changed=False, print_ready=False,
         commercial_delivery_approved=False, autonomy_qualified=False, exam_score_changed=False,
         implementation_sha256=b.school.checksum(Path(b.__file__)))
@@ -155,7 +198,7 @@ def run(source, *, deliberate=False, matched_budget=False):
             if key in cache and cache[key]['issues']:
                 raise ValueError(json.dumps(cache[key]))
             folder = out/(stage+'-layout-'+str(attempt)); attempt += 1
-            feedback = diagnose(svg, folder, plan, kind)
+            feedback = diagnose(svg, folder, plan, kind, strict_card=strict_card)
             cache[key] = feedback
             if feedback['issues']:
                 raise ValueError(json.dumps(feedback))
@@ -177,7 +220,7 @@ def run(source, *, deliberate=False, matched_budget=False):
                 (out/('logo-'+key+'.svg')).write_text(logos[key])
             chosen = logos[selected]
             card = b.compile_scene(raw['card'], plan, kind='card', logo=chosen)
-            findings = diagnose(card, out/'initial-card', plan, 'card')
+            findings = diagnose(card, out/'initial-card', plan, 'card', strict_card=strict_card)
             b.school.save(out/'initial-card-feedback.json', findings)
             if findings['issues'] or original['status'] == 'failed':
                 card = repair('card', 'card', findings, chosen)
@@ -198,7 +241,7 @@ def run(source, *, deliberate=False, matched_budget=False):
 def verify_origin(out, report):
     record = evidence.read(out/'repair-origin.json'); source = Path(record['source'])
     original, raw, plan, logos, selection = source_values(source)
-    if (record.get('schema') not in (LEGACY_CONTRACT, CONTRACT) or report['repair_contract'] != record['schema']
+    if (record.get('schema') not in (LEGACY_CONTRACT, CONTRACT, CARD_CONTRACT) or report['repair_contract'] != record['schema']
             or record.get('fresh_exam') is not False or record.get('max_additional_model_calls') != 6
             or b.school.checksum(source/'report.json') != record['source_report_sha256']
             or any(report[k] != original[k] for k in ('brief', 'model', 'digest', 'selection'))
@@ -245,7 +288,18 @@ def verify_origin(out, report):
             raise ValueError('Accepted logo still loses monochrome features or has layout defects')
         if evidence.bounded(out/'initial-card/artwork.svg').read_text() != b.compile_scene(raw['card'], plan, kind='card', logo=local_logo):
             raise ValueError('Initial measured card differs from original scene with current logo')
-        if b.measured_feedback(evidence.read(out/'initial-card/render.json'), 'brand_card') != evidence.read(out/'initial-card-feedback.json'):
+        card_measurements = evidence.read(out/'initial-card/render.json')
+        card_feedback = b.measured_feedback(card_measurements, 'brand_card')
+        if record['schema'] == CARD_CONTRACT:
+            card_feedback['issues'] += card_decoration_findings(
+                evidence.bounded(out/'initial-card/artwork.svg').read_text(), card_measurements, plan['paper'])
+            card_raw, _ = evidence.chain(out, 'card', report)
+            final_card = b.compile_scene(card_raw, plan, kind='card', logo=local_logo)
+            if evidence.bounded(out/'business-card/artwork.svg').read_text() != final_card:
+                raise ValueError('Final measured card differs from local author')
+            if card_decoration_findings(final_card, evidence.read(out/'business-card/render.json'), plan['paper']):
+                raise ValueError('Card decoration still enters text bounds')
+        if card_feedback != evidence.read(out/'initial-card-feedback.json'):
             raise ValueError('Initial card diagnostic changed')
         for stage in repaired:
             kind = 'card' if stage == 'card' else 'logo'

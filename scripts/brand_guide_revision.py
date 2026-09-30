@@ -117,6 +117,7 @@ def run(package, *, expanded=False, spatial=False, warm=False):
         if spatial: from scripts import brand_spatial_review as protocol
         if spatial == 'subject': from scripts import brand_spatial_subject_review as protocol
         if spatial == 'alignment': from scripts import brand_spatial_alignment_review as protocol
+        if spatial == 'background': from scripts import brand_background_review as protocol
         data = protocol.expand(data, package)
     config = brand.configuration() | {'sampling_profile': 'bounded-default.v1', 'think': False,
         'num_ctx': 8192, 'num_predict': 1800, 'num_thread': 4, 'timeout_seconds': 90}
@@ -132,7 +133,8 @@ def run(package, *, expanded=False, spatial=False, warm=False):
         for name in ('brand_spatial_review.py', 'render_school_svg.py', 'vector_school_contract.py'):
             shutil.copyfile(Path(__file__).parent/name, code/name)
         if spatial == 'subject': shutil.copyfile(Path(__file__).parent/'brand_spatial_subject_review.py', code/'brand_spatial_subject_review.py')
-        if spatial == 'alignment': shutil.copyfile(Path(__file__).parent/'brand_spatial_alignment_review.py', code/'brand_spatial_alignment_review.py')
+        if spatial in ('alignment', 'background'): shutil.copyfile(Path(__file__).parent/'brand_spatial_alignment_review.py', code/'brand_spatial_alignment_review.py')
+        if spatial == 'background': shutil.copyfile(Path(__file__).parent/'brand_background_review.py', code/'brand_background_review.py')
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', code/'local_ollama.py')
     batch = None
     if warm:
@@ -236,7 +238,7 @@ def recorded_render(out, package, data):
 
 def verify(out, *, use_recorded_render=False):
     out = Path(out); report = evidence.read(out/'report.json')
-    spatial = report.get('review_contract') in ('brand-measured-spatial-review.v3', 'brand-subject-spatial-review.v4', 'brand-measured-alignment-review.v5')
+    spatial = report.get('review_contract') in ('brand-measured-spatial-review.v3', 'brand-subject-spatial-review.v4', 'brand-measured-alignment-review.v5', 'brand-background-evidence-review.v6')
     if (report.get('schema') != CONTRACT or report.get('status') != 'pending_independent_review'
             or report.get('max_model_calls') != (5 if spatial else 3)
             or any(report.get(k) is not False for k in ('training_exported', 'exam_score_changed', 'production_changed', 'autonomy_qualified'))):
@@ -255,6 +257,7 @@ def verify(out, *, use_recorded_render=False):
         if spatial: from scripts import brand_spatial_review as protocol
         if report['review_contract'] == 'brand-subject-spatial-review.v4': from scripts import brand_spatial_subject_review as protocol
         if report['review_contract'] == 'brand-measured-alignment-review.v5': from scripts import brand_spatial_alignment_review as protocol
+        if report['review_contract'] == 'brand-background-evidence-review.v6': from scripts import brand_background_review as protocol
         if report['review_contract'] != protocol.CONTRACT: raise ValueError('Unknown text review contract')
         data = protocol.expand(data, package)
     if (brand.school.checksum(package/'report.json') != report['source_report_sha256']

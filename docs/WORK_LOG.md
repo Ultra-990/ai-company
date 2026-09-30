@@ -1,5 +1,34 @@
 # Dziennik budowy AI Company
 
+## 2026-09-30 — selektywna naprawa Saffron i ponowne użycie modelu
+
+- Zasoby sprawdzone poza sandboxem: brak kontenerów, RTX 5090, 839 MiB
+  zajęte, 0% obciążenia. Błąd odczytu NVIDIA/Docker w sandboxie nie był
+  awarią sterownika. Nie zmieniano hosta ani usług.
+- Opcjonalne `--strict-card`, kontrakt napraw v3: ramki dekoracji karty
+  porównywane z ramkami tekstu, z uwzględnieniem obrysu. Pomijane wyłącznie
+  pełne tło w kolorze papieru oraz chroniony wstawiony znak. To ostrożna
+  kontrola ramki, nie twierdzenie o przecięciu dokładnych krzywych/glifów.
+- Opcjonalne `--revise-background-text`, kontrakt v6: arytmetyka palety
+  i odrzucenie automatycznego zatwierdzenia nieokreślonego ciemnego tła
+  przy ciemnym tuszu. Wzorzec językowy ograniczony do angielskiego;
+  negacja również wymaga doprecyzowania, bez przypisywania jej błędu.
+  Obie kontrole nie dodają wywołań modelu ani przebiegów renderowania.
+  Starsze kontrakty i domyślne egzaminowanie pozostawiono odtwarzalne.
+- `artwork-repair-y1jftr7b`: 55,206 s, jedno nowe wywołanie autora karty,
+  dwie zmierzone kolizje usunięte. Obydwa znaki, plan i wybór zachowane.
+  `guide-revision-cliptb8z`: 16,125 s, warm, pięć wywołań, poprawiony
+  kierunek konceptu B oraz monochrom na konkretnym jasnym papierze.
+- Niezależna weryfikacja przeszła z rzeczywistym świeżym renderem logo
+  (`spatial-proof-3v6po_7q`); pełny ZIP 21 plików, dosłowne autorstwo,
+  pięć PNG obejrzanych i opisy przeczytane. Odebrany poprawiony pakiet.
+  Raport SHA-256 `62ec7894a3074cf3cdc20b0d0bb9d3ab67a47d911af3d81a4f32fb32b3f45bd0`.
+- 86 testów regresji przeszło (3,04 s), w tym kompletny przebieg v3/v6,
+  próba ponownego wprowadzenia kolizji, obrys linii i odtwarzanie starszych
+  kontraktów. Zachowano wcześniejsze odpowiedzi i wynik egzaminu 2/3.
+  Suma etapów 71,331 s nie obejmuje późniejszej niezależnej oceny i nie
+  stanowi porównawczego benchmarku przyspieszenia. Bez zmian wag.
+
 ## 2026-09-23 — rzeczywisty eksperyment adaptera obraz–tekst
 
 - Trener QLoRA przeprowadził 21 aktualizacji na 84 unikalnych rekordach po

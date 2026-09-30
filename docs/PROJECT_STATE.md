@@ -1,5 +1,31 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — Saffron poprawiony bez ponownego generowania całego egzaminu
+
+Model poprawił samą wizytówkę w jednej próbie: `artwork-repair-y1jftr7b`,
+55,206 s wraz z pomiarami i eksportem. Plan, wybór i oba koncepty ponownie
+wykorzystano bez zmian. Nowa kontrola v3 znalazła dwie dekoracje w ramce
+nazwy; model sam przeniósł dekoracje poza tekst. Kontrola korzysta z już
+wykonywanych pomiarów, bez dodatkowych wywołań modelu.
+
+Opis v6 `guide-revision-cliptb8z` w trybie warm: 16,125 s, pięć wywołań.
+Model sam poprawił kierunek drugiego konceptu i zalecenie monochromu:
+ciemny tusz wyłącznie na dostarczonym jasnym papierze. Razem zapisane etapy
+71,331 s; to nie obejmuje późniejszego odbioru i nie jest porównaniem czasu
+identycznych przebiegów. Wykorzystano istniejącą retencję zamiast kolejnych
+pełnych generacji poprawnych projektów Orchard i North.
+
+Dosłowne autorstwo, 21 plików ZIP, niezmienność grafik w korekcie opisów,
+nowy niezależny render obu logo oraz ogląd pięciu PNG i opisów potwierdzone.
+Saffron odebrany jako poprawiony syntetyczny pakiet. 86 powiązanych testów
+przeszło. Kontrola tła jest konserwatywnym angielskim filtrem: także negację
+odsyła do doprecyzowania; nie udaje pełnego rozumienia języka.
+
+Historyczny nowy egzamin nadal 2/3; znana poprawka nie zwiększa jego wyniku.
+Brak kwalifikacji do samodzielnej pracy, treningu wag i eksportu egzaminów.
+Następny krok: nowe zamrożone zadania z obiema kontrolami, z ograniczoną
+liczbą prób i niezależnym odbiorem; bez powtarzania odebranych projektów.
+
 ## Aktualizacja 30.09.2026 — nowy pełny egzamin: technicznie 3/3, odbiór 2/3
 
 Zamrożony delivery-exam-4ps4ytf9 wykonał trzy nowe briefy: Orchard Counter,

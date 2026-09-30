@@ -378,6 +378,7 @@ if __name__ == '__main__':
     actions.add_argument('--revise-spatial-text', type=Path)
     actions.add_argument('--revise-spatial-subjects', type=Path)
     actions.add_argument('--revise-alignment-text', type=Path)
+    actions.add_argument('--revise-background-text', type=Path)
     actions.add_argument('--guide-review-exam', action='store_true')
     actions.add_argument('--plan-review-exam', action='store_true')
     actions.add_argument('--spatial-claim-exam', action='store_true')
@@ -386,14 +387,17 @@ if __name__ == '__main__':
     actions.add_argument('--delivery-exam', action='store_true')
     parser.add_argument('--warm-revision', action='store_true', help='Reuse the local model for one bounded guide revision')
     parser.add_argument('--artwork-reasoning', action='store_true', help='Use the bounded reasoning profile for artwork repair')
+    parser.add_argument('--strict-card', action='store_true', help='Check decoration bounds against card text during artwork repair')
     args = parser.parse_args()
     if args.artwork_reasoning and not args.repair_artwork:
         parser.error('--artwork-reasoning requires --repair-artwork')
-    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects, args.revise_alignment_text)):
+    if args.strict_card and not args.repair_artwork:
+        parser.error('--strict-card requires --repair-artwork')
+    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects, args.revise_alignment_text, args.revise_background_text)):
         parser.error('--warm-revision requires a guide/plan/spatial revision')
     if args.repair_artwork:
         from scripts.brand_artwork_repair import run as repair_artwork
-        _, report = repair_artwork(args.repair_artwork, deliberate=args.artwork_reasoning)
+        _, report = repair_artwork(args.repair_artwork, deliberate=args.artwork_reasoning, strict_card=args.strict_card)
         raise SystemExit(int(report['status'] != 'pending_independent_visual_review'))
     if args.delivery_exam:
         from scripts.brand_delivery_exam import run as delivery_exam
@@ -402,6 +406,10 @@ if __name__ == '__main__':
     if args.revise_alignment_text:
         from scripts.brand_guide_revision import run as revise_alignment
         _, report = revise_alignment(args.revise_alignment_text, spatial='alignment', warm=args.warm_revision)
+        raise SystemExit(int(report['status'] != 'pending_independent_review'))
+    if args.revise_background_text:
+        from scripts.brand_guide_revision import run as revise_background
+        _, report = revise_background(args.revise_background_text, spatial='background', warm=args.warm_revision)
         raise SystemExit(int(report['status'] != 'pending_independent_review'))
     if args.spatial_subject_exam:
         from scripts.brand_spatial_holdout import run as subject_exam

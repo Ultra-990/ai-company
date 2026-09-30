@@ -6,6 +6,28 @@ plan stylu, dwa koncepty logo, uzasadnia wybór i projektuje wizytówkę.
 Asystent rozwija wymagania, narzędzia i niezależną ocenę; nie rysuje logo
 ani nie poprawia współrzędnych za model.
 
+## Selektywne poprawki z kontrolą dekoracji i tła — 30.09.2026
+
+`--repair-artwork KATALOG --strict-card --artwork-reasoning` włącza
+kontrakt v3: dekoracje spoza wstawionego logo nie mogą wchodzić w ramki
+tekstu wizytówki. Uwzględnia grubość obrysu, pomija pełne tło w kolorze
+papieru, uwierzytelnia kolejność kształtów i sprawdza również końcowy eksport.
+Kontrola ramki jest konserwatywna dla pustych figur i krzywych; nie zastępuje
+oglądu. Model otrzymuje pomiary, sam wybiera rozwiązanie i współrzędne.
+
+`--revise-background-text KATALOG --warm-revision` włącza kontrakt v6
+nad v5. Zestawia tusz z dostarczonym papierem i nie przepuszcza automatycznie
+angielskich odniesień do nieokreślonego ciemnego tła przy ciemnym tuszu.
+Także negacje trafiają do doprecyzowania: filtr nie rozstrzyga ich zakresu.
+Autor sam pisze zasadę opartą na dostarczonej palecie. Maksymalnie pięć
+wywołań, krótka istniejąca retencja; bez nowych wywołań i renderów dla tych
+dwóch kontroli. Wszystkie starsze kontrakty nadal dostępne bez zmian znaczenia.
+
+Rzeczywisty Saffron: jedna poprawka karty, 55,206 s; opis 16,125 s.
+Pełny poprawiony syntetyczny pakiet przeszedł niezależny odbiór i świeży
+render kontrolny. To znana naprawa, nie nowy egzamin; pierwotne 2/3 pozostaje.
+86 powiązanych testów przeszło. Pakiet prywatny `guide-revision-cliptb8z`.
+
 ## Zakres pierwszego briefu
 
 Juniper Table jest fikcyjną restauracją o sezonowym, roślinnym menu,

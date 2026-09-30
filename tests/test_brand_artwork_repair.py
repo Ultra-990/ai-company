@@ -1,5 +1,6 @@
 from copy import deepcopy
 import json
+import xml.etree.ElementTree as ET
 from PIL import Image
 import pytest
 
@@ -29,7 +30,8 @@ def test_collision_feedback_includes_actual_geometry_without_proposed_solution()
 
 
 @pytest.fixture
-def repaired(tmp_path, monkeypatch):
+def repaired(tmp_path, monkeypatch, request):
+    strict = getattr(request, 'param', False)
     monkeypatch.setattr(b, 'ROOT', tmp_path)
     monkeypatch.setattr(b.school, 'check_idle', lambda: {})
     monkeypatch.setattr(b, 'configuration', lambda: {'model': 'fixture', 'digest': 'f'*64})
@@ -45,7 +47,10 @@ def repaired(tmp_path, monkeypatch):
         'logo_placement': {'x': '40', 'y': '40', 'scale': '0.5'},
         'texts': [text(v, 300+i*45) for i, v in enumerate([plan['tagline'], *b.BRIEF['contacts']])]}
     corrected = deepcopy(a); corrected['shapes'][0]['attributes']['r'] = '24'
-    values = iter([plan, a, other, {'selected': 'a', 'reason': 'A synthetic fixture selection.'}, card, corrected])
+    corrected_card = deepcopy(card)
+    if strict:
+        card['shapes'].append({'tag': 'rect', 'attributes': {'x': '40', 'y': '40', 'width': '8', 'height': '8', 'fill': plan['accent']}})
+    values = iter([plan, a, other, {'selected': 'a', 'reason': 'A synthetic fixture selection.'}, card, corrected, corrected_card])
     class Provider:
         def __init__(self, config): pass
         def complete(self, messages):
@@ -57,6 +62,14 @@ def repaired(tmp_path, monkeypatch):
         (output/'preview.pdf').write_bytes(b'%PDF-fixture')
         texts = b.validate_svg(svg, profile=profile)['texts']
         result = {'layout': [{'text': v, 'bbox': [40, 40+i*60, 100, 40]} for i,v in enumerate(texts)], 'shape_layout': [{'tag': 'circle', 'bbox': [40, 380, 20, 20]}], 'pdf': {'fixture': True}}
+        if profile == 'brand_card':
+            result['shape_layout'] = []
+            for element in ET.fromstring(svg).iter():
+                tag = element.tag.rsplit('}', 1)[-1]
+                if tag == 'rect':
+                    result['shape_layout'].append({'tag': tag, 'bbox': [float(element.get(k)) for k in ('x', 'y', 'width', 'height')]})
+                elif tag == 'circle':
+                    result['shape_layout'].append({'tag': tag, 'bbox': [40, 380, 20, 20]})
         if measure_shape_contribution:
             pixels = 0 if output.name == 'monochrome' and output.parent.name == 'initial-logo' else 100
             result.update(contributions(pixels))
@@ -67,7 +80,7 @@ def repaired(tmp_path, monkeypatch):
     monkeypatch.setattr(evidence, 'pdf_checks', lambda *a, **kw: {})
     source, original = b.run()
     assert original['status'] == 'pending_independent_visual_review'
-    out, report = repair.run(source)
+    out, report = repair.run(source, strict_card=strict)
     assert report['status'] == 'pending_independent_visual_review'
     return source, out, report
 
@@ -80,6 +93,24 @@ def test_repair_reuses_protected_stages_and_exports_full_literal_package(repaire
     assert verified['repair_origin']['repaired_stages'] == ['logo-a']
     assert (source/'plan-response.json').read_bytes() == (out/'plan-response.json').read_bytes()
     assert not verified['repair_origin']['fresh_exam']
+
+
+@pytest.mark.parametrize('repaired', [True], indirect=True)
+def test_strict_card_repair_replays_authorship_and_rejects_reintroduced_decoration(repaired):
+    source, out, report = repaired
+    verified = evidence.verify(out)
+    assert verified['repair_origin']['schema'] == repair.CARD_CONTRACT
+    assert verified['repair_origin']['repaired_stages'] == ['logo-a', 'card']
+    assert verified['repair_origin']['additional_model_calls'] == 2
+    # Even rebinding the report cannot hide an invalid final measured layout.
+    name = 'business-card/render.json'
+    measured = evidence.read(out/name)
+    measured['shape_layout'][0]['bbox'] = [40, 40, 8, 8]
+    b.school.save(out/name, measured)
+    report['artifacts'][name] = b.school.checksum(out/name)
+    b.school.save(out/'report.json', report)
+    with pytest.raises(ValueError, match='still enters text bounds'):
+        evidence.verify(out)
 
 
 @pytest.mark.parametrize('fault', ['diagnostic', 'protected', 'extra_hint', 'source', 'qualify'])
