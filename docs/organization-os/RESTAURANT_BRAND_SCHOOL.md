@@ -63,6 +63,32 @@ pełny egzamin v2 pozostaje nieuruchomiony. Nie zmieniono historycznego wyniku
 v11 ani kodu v12 po wykonaniu pilota; następna wersja wymaga osobnej,
 testowalnej kontroli znaczenia „stacked wordmark”.
 
+## Jawne twierdzenia o liczbie wierszy v13 — 30.09.2026
+
+Opcjonalne `--revise-explicit-lines-text KATALOG --warm-revision` dodaje
+kontrakt `brand-explicit-lines-review.v13`. Zachowuje pełny kompaktowy katalog
+relacji v12, a obok niego buduje wyłącznie ze źródłowego opisu osobny katalog
+twierdzeń o liczbie wierszy napisu. Jawne „stacked wordmark”, „two-line name”
+lub „single-line wordmark” nie może zniknąć jako `unspecified`: model wybiera
+dopuszczalną interpretację albo uczciwe `uncertain`, które zatrzymuje odbiór.
+Symbol ustawiony nad lub pod jednowierszową nazwą nie staje się przez to
+wielowierszowym napisem. Negacje „not stacked”, „not two-line” i „not
+single-line” nie są zamieniane na dodatnie twierdzenia. Katalog nie otrzymuje grafiki, pomiarów ani oczekiwanej
+odpowiedzi; geometria nadal służy dopiero późniejszej kontroli wybranego sensu.
+
+Przygotowany CPU-only `python -m scripts.brand_line_claim_exam --run` zamraża
+dziesięć zdań spoza briefów pełnego egzaminu. Obejmuje trzy sformułowania
+wielowierszowe, dwa jednowierszowe, dwie kompozycje symbol–nazwa bez deklaracji
+liczby, dwie negacje oraz opis bez liczby wierszy. Profile bounded i deliberate
+mają identyczne budżety; oczekiwania są zapisane poza promptami, a audyt
+odtwarza każde żądanie, odpowiedź i wynik. Egzamin ekstrakcji nie został jeszcze
+uruchomiony. Po jego niezależnym odbiorze następny i jedyny pilot produktowy ma
+użyć znanego Reed `artwork-repair-88vybuf1`, dokładnie komendy:
+`.venv/bin/python scripts/brand_school.py --revise-explicit-lines-text
+/home/marcin/ai-company-workspaces/brand-school/artwork-repair-88vybuf1
+--warm-revision`. Bez dodatkowych prób ad hoc; generation-exam v2 pozostaje na
+v12 do czasu osobnego odbioru tego pilota.
+
 ## Złożona kontrola podmiotu i referencji v9 — 30.09.2026
 
 `--revise-composed-text KATALOG --warm-revision` jawnie wybiera nowy

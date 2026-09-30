@@ -129,6 +129,7 @@ def run(package, *, expanded=False, spatial=False, warm=False):
         if spatial == 'constrained': from scripts import brand_constrained_review as protocol
         if spatial == 'literal': from scripts import brand_literal_review as protocol
         if spatial == 'compact': from scripts import brand_compact_review as protocol
+        if spatial == 'explicit-lines': from scripts import brand_explicit_lines_review as protocol
         data = protocol.expand(data, package)
     config = brand.configuration() | {'sampling_profile': 'bounded-default.v1', 'think': False,
         'num_ctx': 8192, 'num_predict': 1800, 'num_thread': 4, 'timeout_seconds': 90}
@@ -143,15 +144,16 @@ def run(package, *, expanded=False, spatial=False, warm=False):
     if spatial:
         for name in ('brand_spatial_review.py', 'render_school_svg.py', 'vector_school_contract.py'):
             shutil.copyfile(Path(__file__).parent/name, code/name)
-        if spatial in ('subject', 'composed', 'constrained', 'literal', 'compact'): shutil.copyfile(Path(__file__).parent/'brand_spatial_subject_review.py', code/'brand_spatial_subject_review.py')
-        if spatial in ('alignment', 'background', 'wordmark', 'reference', 'composed', 'constrained', 'literal', 'compact'): shutil.copyfile(Path(__file__).parent/'brand_spatial_alignment_review.py', code/'brand_spatial_alignment_review.py')
-        if spatial in ('background', 'wordmark', 'reference', 'composed', 'constrained', 'literal', 'compact'): shutil.copyfile(Path(__file__).parent/'brand_background_review.py', code/'brand_background_review.py')
-        if spatial in ('wordmark', 'reference', 'composed', 'constrained', 'literal', 'compact'): shutil.copyfile(Path(__file__).parent/'brand_wordmark_review.py', code/'brand_wordmark_review.py')
-        if spatial in ('reference', 'composed', 'constrained', 'literal', 'compact'): shutil.copyfile(Path(__file__).parent/'brand_reference_review.py', code/'brand_reference_review.py')
-        if spatial in ('composed', 'constrained', 'literal', 'compact'): shutil.copyfile(Path(__file__).parent/'brand_composed_review.py', code/'brand_composed_review.py')
-        if spatial in ('constrained', 'literal', 'compact'): shutil.copyfile(Path(__file__).parent/'brand_constrained_review.py', code/'brand_constrained_review.py')
-        if spatial in ('literal', 'compact'): shutil.copyfile(Path(__file__).parent/'brand_literal_review.py', code/'brand_literal_review.py')
-        if spatial == 'compact': shutil.copyfile(Path(__file__).parent/'brand_compact_review.py', code/'brand_compact_review.py')
+        if spatial in ('subject', 'composed', 'constrained', 'literal', 'compact', 'explicit-lines'): shutil.copyfile(Path(__file__).parent/'brand_spatial_subject_review.py', code/'brand_spatial_subject_review.py')
+        if spatial in ('alignment', 'background', 'wordmark', 'reference', 'composed', 'constrained', 'literal', 'compact', 'explicit-lines'): shutil.copyfile(Path(__file__).parent/'brand_spatial_alignment_review.py', code/'brand_spatial_alignment_review.py')
+        if spatial in ('background', 'wordmark', 'reference', 'composed', 'constrained', 'literal', 'compact', 'explicit-lines'): shutil.copyfile(Path(__file__).parent/'brand_background_review.py', code/'brand_background_review.py')
+        if spatial in ('wordmark', 'reference', 'composed', 'constrained', 'literal', 'compact', 'explicit-lines'): shutil.copyfile(Path(__file__).parent/'brand_wordmark_review.py', code/'brand_wordmark_review.py')
+        if spatial in ('reference', 'composed', 'constrained', 'literal', 'compact', 'explicit-lines'): shutil.copyfile(Path(__file__).parent/'brand_reference_review.py', code/'brand_reference_review.py')
+        if spatial in ('composed', 'constrained', 'literal', 'compact', 'explicit-lines'): shutil.copyfile(Path(__file__).parent/'brand_composed_review.py', code/'brand_composed_review.py')
+        if spatial in ('constrained', 'literal', 'compact', 'explicit-lines'): shutil.copyfile(Path(__file__).parent/'brand_constrained_review.py', code/'brand_constrained_review.py')
+        if spatial in ('literal', 'compact', 'explicit-lines'): shutil.copyfile(Path(__file__).parent/'brand_literal_review.py', code/'brand_literal_review.py')
+        if spatial in ('compact', 'explicit-lines'): shutil.copyfile(Path(__file__).parent/'brand_compact_review.py', code/'brand_compact_review.py')
+        if spatial == 'explicit-lines': shutil.copyfile(Path(__file__).parent/'brand_explicit_lines_review.py', code/'brand_explicit_lines_review.py')
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', code/'local_ollama.py')
     batch = None
     if warm:
@@ -255,7 +257,7 @@ def recorded_render(out, package, data):
 
 def verify(out, *, use_recorded_render=False):
     out = Path(out); report = evidence.read(out/'report.json')
-    spatial = report.get('review_contract') in ('brand-measured-spatial-review.v3', 'brand-subject-spatial-review.v4', 'brand-measured-alignment-review.v5', 'brand-background-evidence-review.v6', 'brand-wordmark-lines-review.v7', 'brand-spatial-reference-review.v8', 'brand-composed-spatial-review.v9', 'brand-constrained-spatial-review.v10', 'brand-literal-spatial-review.v11', 'brand-compact-spatial-review.v12')
+    spatial = report.get('review_contract') in ('brand-measured-spatial-review.v3', 'brand-subject-spatial-review.v4', 'brand-measured-alignment-review.v5', 'brand-background-evidence-review.v6', 'brand-wordmark-lines-review.v7', 'brand-spatial-reference-review.v8', 'brand-composed-spatial-review.v9', 'brand-constrained-spatial-review.v10', 'brand-literal-spatial-review.v11', 'brand-compact-spatial-review.v12', 'brand-explicit-lines-review.v13')
     if (report.get('schema') != CONTRACT or report.get('status') != 'pending_independent_review'
             or report.get('max_model_calls') != (5 if spatial else 3)
             or any(report.get(k) is not False for k in ('training_exported', 'exam_score_changed', 'production_changed', 'autonomy_qualified'))):
@@ -281,6 +283,7 @@ def verify(out, *, use_recorded_render=False):
         if report['review_contract'] == 'brand-constrained-spatial-review.v10': from scripts import brand_constrained_review as protocol
         if report['review_contract'] == 'brand-literal-spatial-review.v11': from scripts import brand_literal_review as protocol
         if report['review_contract'] == 'brand-compact-spatial-review.v12': from scripts import brand_compact_review as protocol
+        if report['review_contract'] == 'brand-explicit-lines-review.v13': from scripts import brand_explicit_lines_review as protocol
         if report['review_contract'] != protocol.CONTRACT: raise ValueError('Unknown text review contract')
         data = protocol.expand(data, package)
     if (brand.school.checksum(package/'report.json') != report['source_report_sha256']
@@ -371,6 +374,8 @@ def verify_review_only(out):
         from scripts import brand_literal_review as protocol
     if report.get('review_contract') == 'brand-compact-spatial-review.v12':
         from scripts import brand_compact_review as protocol
+    if report.get('review_contract') == 'brand-explicit-lines-review.v13':
+        from scripts import brand_explicit_lines_review as protocol
     if (report.get('schema') != CONTRACT or report.get('status') != 'no_repair_requested'
             or report.get('review_contract') != protocol.CONTRACT or report.get('max_model_calls') != 5
             or report.get('retained_batch_contract') != 'local-retained-batch.v1'
