@@ -851,6 +851,11 @@ if __name__ == '__main__':
     actions.add_argument('--assemble-reviewed', type=Path, help='Assemble original package with independently approved local panel revisions')
     actions.add_argument('--verify-assembled', type=Path, help='Verify a reviewed assembly without model calls')
     actions.add_argument('--full-exam', action='store_true', help='Frozen three-brief matched complete-package exam, excluded from training')
+    actions.add_argument('--complete-delivery', action='store_true', help='Generate or finish a complete package with bounded factual headline review, repair and candidate assembly')
+    actions.add_argument('--verify-delivery', type=Path, help='Replay complete headline-reviewed delivery without inference')
+    actions.add_argument('--correct-delivery', type=Path, help='Run one bounded v2 correction cycle after a v1 final common-review veto')
+    actions.add_argument('--verify-delivery-correction', type=Path, help='Replay a v2 late correction without inference')
+    parser.add_argument('--delivery-source', type=Path, help='Existing complete synthetic package to finish with --complete-delivery')
     actions.add_argument('--probe-failed-stream', type=Path, help='Replay one bound failed exam request for transport diagnostics only')
     actions.add_argument('--audit-failed-callouts', type=Path, help='Re-measure one rejected exam panel without changing its original score')
     actions.add_argument('--audit-failed-copy', type=Path, help='Check a rejected fact-order response by literal rendering under the new semantic contract')
@@ -861,11 +866,28 @@ if __name__ == '__main__':
     parser.add_argument('--source-lesson', type=Path, help='Private independently approved development assembly; fresh run, full exam or source probe')
     parser.add_argument('--reviewed-revision', nargs=2, type=Path, action='append', metavar=('REPORT', 'JUDGMENT'), default=[])
     args = parser.parse_args()
-    if args.source_lesson is not None and not (args.run or args.full_exam or args.probe_source_lesson):
-        parser.error('--source-lesson requires --run, --full-exam or --probe-source-lesson')
+    if args.source_lesson is not None and not (args.run or args.full_exam or args.probe_source_lesson or args.complete_delivery):
+        parser.error('--source-lesson requires --run, --full-exam, --probe-source-lesson or --complete-delivery')
+    if args.delivery_source is not None and not args.complete_delivery:
+        parser.error('--delivery-source requires --complete-delivery')
     if args.repair_part and not args.repair_failed_scene:
         parser.error('--repair-part requires --repair-failed-scene')
-    if args.probe_source_lesson:
+    if args.complete_delivery:
+        from scripts.product_delivery_workflow import run as complete_delivery
+        _, result = complete_delivery(args.delivery_source,
+            sampling_profile=args.sampling_profile or 'qwen-deliberate-trial.v1', source_lesson=args.source_lesson)
+        raise SystemExit(int(result['status'] != 'pending_independent_review'))
+    elif args.verify_delivery:
+        from scripts.product_delivery_workflow import verify as verify_delivery
+        print(json.dumps(verify_delivery(args.verify_delivery), indent=2))
+    elif args.correct_delivery:
+        from scripts.product_delivery_correction import run as correct_delivery
+        _, result = correct_delivery(args.correct_delivery)
+        raise SystemExit(int(result['status'] != 'pending_independent_review'))
+    elif args.verify_delivery_correction:
+        from scripts.product_delivery_correction import verify as verify_delivery_correction
+        print(json.dumps(verify_delivery_correction(args.verify_delivery_correction), indent=2))
+    elif args.probe_source_lesson:
         if args.source_lesson is None: parser.error('--probe-source-lesson requires --source-lesson')
         from scripts.product_source_lesson import probe as source_lesson_probe
         _, result = source_lesson_probe(args.probe_source_lesson, args.source_lesson)

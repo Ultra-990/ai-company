@@ -276,3 +276,108 @@ Pełny egzamin v4 ma nowe rodziny DALE/BRIAR/HIGHPOINT. Opcjonalne
 rodziny treningowej dla obu profili przed pierwszym wywołaniem. Pakiety
 wiążą ją z własnym żądaniem źródła; zmiana przykładu między ramionami
 unieważnia porównanie. Nie wolno zastępować lekcji przykładem testowym.
+
+## Pełny przebieg z kontrolą nagłówków — 30.09.2026
+
+`--complete-delivery` uruchamia opcjonalny kontrakt
+`product-complete-delivery-workflow.v1`: pełne generowanie, kontrolę faktów
+czterech nagłówków, istniejącą ograniczoną naprawę odrzuconych nagłówków,
+wspólną kontrolę wszystkich faktycznie wybranych nagłówków i złożenie nowej
+paczki. `--delivery-source KATALOG` zaczyna od uwierzytelnionego kompletnego
+oryginału, bez ponownego generowania. Niedokończone źródło kończy przebieg;
+ta zmiana nie naprawia kształtu butelki ani brakujących paneli HIGHPOINT.
+
+```bash
+.venv/bin/python scripts/product_infographic_school.py --complete-delivery
+.venv/bin/python scripts/product_infographic_school.py --complete-delivery --delivery-source KATALOG_ORYGINALU
+.venv/bin/python scripts/product_infographic_school.py --verify-delivery KATALOG_PRZEBIEGU
+```
+
+Limit pozostaje jawny: najwyżej 18 wywołań generatora (sześć etapów po trzy),
+jedna wstępna recenzja oraz na każdy z czterech paneli najwyżej trzy odpowiedzi
+autora i trzy recenzje, po czym jedna recenzja całego wybranego zestawu.
+Daje to najwyżej 26 wywołań kontroli/naprawy nagłówków. Jeśli już pierwszy
+przegląd uzna wszystkie nagłówki za zgodne, zachowany oryginał zostaje
+kandydatem po jednym wywołaniu. Nieudana końcowa kontrola zatrzymuje proces
+przed składaniem; nie uruchamia dodatkowej rundy poprawek. Odpowiedzi i
+niepowodzenia pozostają zapisane. Generator zachowuje istniejące profile;
+naprawa/recenzje mają 8192 kontekstu, 512/2048 odpowiedzi, cztery wątki,
+90 sekund na wywołanie, bez rozumowania.
+
+`product-headline-candidate-assembly.v1` jest odrębne od historycznego
+`--assemble-reviewed`: nie udaje niezależnego odbioru poszczególnych paneli.
+Odtwarza literalne zmiany lokalnego autora i kopiuje wybrane SVG. Źródło,
+pozostałe panele, pozostałe teksty, styl, brief i kontrakty pozostają związane
+z oryginałem. Eksport zawiera SVG, duże i małe PNG oraz PDF wszystkich
+czterech paneli, metadane, manifest i ZIP. Weryfikacja kontroluje wybór,
+kopie, rzeczywiste PDF, rozmiary PNG, hashe i rozmowy bez nowych wywołań
+modelu. Snapshots kodu oraz raporty etapów pozostają osobno związane.
+
+Wynik to wyłącznie `pending_independent_review`, nie automatyczny odbiór
+estetyki lub znaczenia. Stare egzaminy i ścieżka wymagająca niezależnych
+panelowych ocen nie zmieniają się. Nie ma eksportu treningowego, promocji
+modelu ani zmiany historycznej punktacji. Testy infrastruktury wykorzystują
+syntetyczny transport/render i potwierdzają kolejność, pochodzenie, budżet
+oraz odrzucanie podmiany chronionych danych; nie mierzą jakości recenzenta.
+Przewidziana pierwsza próba dotyczy oryginalnego znanego błędu BRIAR, więc
+jej ewentualny sukces będzie próbą rozwojową, nie świeżą kwalifikacją.
+
+Pierwsza rzeczywista próba tego przebiegu na oryginalnym BRIAR zakończyła
+się `needs_revision` po **30,957 s i pięciu wywołaniach**. Model sam wykrył
+nieuzasadnioną całodzienną wystarczalność. Pierwszy proponowany nagłówek
+z liczbą odrzucił istniejący kontrakt; druga odpowiedź, „One Bottle”, przeszła
+kontrolę i zachowała resztę panelu. Wspólna końcowa recenzja zaakceptowała
+naprawę, ale zmieniła wcześniejszą ocenę niezmienionego „Compact Daily Profile”
+z `supported` na `uncertain`. System zgodnie z kontraktem zatrzymał składanie:
+**nie powstała końcowa kandydacka paczka ani jej nowy ZIP**.
+
+Odczytowe odtworzenie odpowiedzi, literalnej naprawy, wszystkich wybranych
+nagłówków i hashy przeszło. Niezależnie obejrzano źródło, cztery oryginalne
+panele oraz poprawiony capacity. Potwierdzono usunięcie wadliwej obietnicy;
+niezależny ogląd części nie zastępuje brakującej kompletnej paczki. Rozbieżna
+ocena jakościowego określenia w dimensions pozostaje ograniczeniem lokalnej
+recenzji. Nie wykonano ponownej próby, dodatkowych korekt ani świeżego egzaminu.
+Raport próby SHA-256:
+`0566197de154e94df833c43ea50a5f08b5f73ef7b9fd610dffc86cca65fd7c38`.
+
+## Ograniczona korekta po końcowej recenzji — wersja 2
+
+Osobny kontrakt `product-complete-delivery-correction.v2` obsługuje wyłącznie
+przypadek, w którym ukończony przebieg v1 zatrzymał się na wspólnej końcowej
+recenzji z `needs_revision` i nie złożył kandydata. Nie zmienia zachowania v1,
+jego raportu ani historycznych odpowiedzi. Uruchomienie i odtworzenie są jawne:
+
+```bash
+.venv/bin/python scripts/product_infographic_school.py --correct-delivery KATALOG_PRZEBIEGU_V1
+.venv/bin/python scripts/product_infographic_school.py --verify-delivery-correction KATALOG_KOREKTY_V2
+```
+
+V2 dopuszcza dokładnie jeden cykl. Naprawia tylko panele oznaczone jako
+`unsupported` lub `uncertain` przez związaną końcową recenzję v1. Ten sam
+przypięty lokalny model tworzy literalny nowy nagłówek; najwyżej trzy odpowiedzi
+autora i trzy panelowe kontrole przypadają na panel. Po lokalnych poprawkach
+zawsze następuje jedna nowa wspólna recenzja wszystkich czterech faktycznie
+wybranych nagłówków. Jej jakiekolwiek veto zatrzymuje przebieg bez paczki.
+Zaliczenie panelowej kontroli nie jest konsensusem ani odbiorem: nie może
+ominąć wspólnej recenzji lub niezależnego oglądu kompletnej paczki.
+
+Budżet korekty jest zapisany w raporcie: jeden cykl, maksymalnie cztery panele,
+po trzy wywołania autora i recenzenta na panel, jedna pełna recenzja, najwyżej
+25 nowych wywołań oraz 51 łącznie z maksymalnym budżetem v1. Przekroczenie
+którejkolwiek granicy kończy się jawnie błędem. Brak pewności albo wyczerpanie
+prób nie obniża kryteriów i nie uruchamia kolejnej rundy.
+
+Panele niewskazane przez końcową recenzję są chronione. Kandydat musi kopiować
+ich SVG bajtowo z wybranego stanu v1, w tym wcześniejsze literalne naprawy;
+źródło, dane dostawcy, styl, kontrakty i pozostałe pola scen także pozostają
+związane. Weryfikator odtwarza zakres, budżet, pełny prompt recenzji, hashe
+starego przebiegu i źródła wszystkich paneli. Nawet po przejściu tych kontroli
+wynik ma status `pending_independent_review`, `whole_package_accepted=false`
+i nie zmienia egzaminu, produkcji, wag ani danych treningowych.
+
+Mechanizm przygotowano na podstawie zachowanej próby
+`complete-delivery-juc56yyo`, ale jej nie wznowiono ani nie uruchomiono ponownie.
+„One Bottle” pozostaje uwierzytelnioną wcześniejszą poprawką, a rozbieżność
+dotycząca niezmienionego „Compact Daily Profile” jest jedynie przykładem
+późnego veto. Sam odczyt `independent-review-agent.json` nie zatwierdza panelu
+ani nie zastępuje nowej pełnej recenzji i niezależnego odbioru kandydata.

@@ -1,4 +1,4 @@
-"""Assemble independently reviewed local revisions without editing any artwork.
+"""Assemble authenticated local revisions without editing any artwork.
 
 Targeted approval permits assembly only. The complete new package still needs
 its own independent visual review; nothing is published or promoted here.
@@ -16,6 +16,34 @@ from scripts import product_infographic_school as product
 from scripts import product_visual_revision as revision
 
 SCHEMA = 'product-reviewed-assembly.v1'
+CANDIDATE_SCHEMA = 'product-headline-candidate-assembly.v1'
+
+
+def headline_sources(package, folder):
+    """Select authenticated literal repairs for assembly, without claiming approval."""
+    from scripts import product_headline_repair as headline
+    package, folder = Path(package), Path(folder)
+    product.verify(package)
+    report = revision.read(folder/'report.json')
+    if report.get('schema') == 'product-headline-late-correction.v2':
+        from scripts import product_delivery_correction as correction
+        return correction.selected_sources(package, folder)
+    headline.verify(folder)
+    if Path(report['package']).resolve() != package.resolve():
+        raise ValueError('Headline candidate belongs to another original package')
+    sources = {name: package/name/'artwork.svg' for name in ('source', *product.PANELS)}
+    bindings = []; seen = set()
+    for entry in report['panels']:
+        part = entry['panel']
+        if part not in product.PANELS or part in seen:
+            raise ValueError('Unique repaired panels required')
+        seen.add(part); sources[part] = folder/part/'artwork.svg'
+        bindings.append({'part': part, 'report': str(folder/'report.json'),
+            'report_sha256': product.school.checksum(folder/'report.json'),
+            'svg_sha256': product.school.checksum(revision.bounded(sources[part])),
+            'independently_approved': False})
+    if not bindings: raise ValueError('At least one authenticated headline repair required')
+    return sources, bindings
 
 
 def selected_sources(package, pairs):
@@ -58,7 +86,7 @@ def selected_sources(package, pairs):
 def verify(out):
     out = Path(out)
     report = revision.read(out/'report.json')
-    if report.get('schema') != SCHEMA or report.get('status') != 'pending_independent_review':
+    if report.get('schema') not in (SCHEMA, CANDIDATE_SCHEMA) or report.get('status') != 'pending_independent_review':
         raise ValueError('Completed reviewed assembly required')
     package = Path(report['original_package'])
     if product.school.checksum(revision.bounded(package/'report.json')) != report['original_report_sha256']:
@@ -69,8 +97,17 @@ def verify(out):
         case = matching_case(original)
         if case is None: raise ValueError('Known synthetic assembly brief required')
         with exercise_context(case): return verify(out)
-    pairs = [(item['report'], item['judgment']) for item in report['revisions']]
-    sources, bindings = selected_sources(package, pairs)
+    if report['schema'] == CANDIDATE_SCHEMA:
+        if any(report.get(key) is not False for key in ('commercial_approved', 'full_visual_acceptance', 'independent_panel_approval', 'training_exported')):
+            raise ValueError('Candidate assembly cannot claim independent approval')
+        if (report['annotation_contract'] != original['annotation_contract']
+                or report['placement_contract'] != original.get('placement_contract', product.LEGACY_PLACEMENT)
+                or report.get('protected_contracts') != {k: v for k, v in original.items() if k.endswith('_contract')}):
+            raise ValueError('Candidate must preserve original annotation and placement contracts')
+        sources, bindings = headline_sources(package, Path(report['candidate_headlines']))
+    else:
+        pairs = [(item['report'], item['judgment']) for item in report['revisions']]
+        sources, bindings = selected_sources(package, pairs)
     if bindings != report['revisions']:
         raise ValueError('Revision evidence changed')
     for name, digest in report['artifacts'].items():
@@ -91,6 +128,10 @@ def verify(out):
             raise ValueError('Assembled artwork differs from authenticated local answer')
         profile = 'product_source' if part == 'source' else product.panel_profile(placement)
         measured = revision.read(folder/'render.json')
+        if report['schema'] == CANDIDATE_SCHEMA:
+            with Image.open(folder/'preview.png') as image:
+                if image.size != (product.PROFILES[profile]['width'], product.PROFILES[profile]['height']):
+                    raise ValueError('Candidate full PNG size changed')
         issues = product.quality_issues(measured, panel=part != 'source', panel_contrast=part != 'source',
                                        placement_contract=placement, line_check=part != 'source')
         if part == 'source':
@@ -121,32 +162,42 @@ def verify(out):
         if len(archive.namelist()) != len(names) or set(archive.namelist()) != names: raise ValueError('Exact ZIP entries required')
         for name in names:
             if archive.read(name) != (out/'delivery'/name).read_bytes(): raise ValueError('ZIP copy changed')
-    return {'schema': 'product-reviewed-assembly-verification.v1', 'report_sha256': product.school.checksum(out/'report.json'),
+    return {'schema': ('product-headline-candidate-verification.v1' if report['schema'] == CANDIDATE_SCHEMA
+                      else 'product-reviewed-assembly-verification.v1'), 'report_sha256': product.school.checksum(out/'report.json'),
             'verified': True, 'checks': checks, 'model_called': False, 'commercial_approved': False,
             'full_visual_acceptance': False, 'training_exported': False}
 
 
-def run(package, pairs):
+def run(package, pairs=(), *, candidate_headlines=None):
     package = Path(package)
     original = revision.read(package/'report.json')
     if original['brief'] != product.BRIEF:
         from scripts.product_full_exam import matching_case, exercise_context
         case = matching_case(original)
         if case is None: raise ValueError('Known synthetic assembly brief required')
-        with exercise_context(case): return run(package, pairs)
-    sources, bindings = selected_sources(package, pairs)
+        with exercise_context(case): return run(package, pairs, candidate_headlines=candidate_headlines)
+    if candidate_headlines is not None and pairs:
+        raise ValueError('Candidate repair and independently reviewed revisions cannot be mixed')
+    sources, bindings = (headline_sources(package, candidate_headlines) if candidate_headlines is not None
+                         else selected_sources(package, pairs))
     product.school.check_idle()
     original = revision.read(package/'report.json')
     placement = original.get('placement_contract', product.LEGACY_PLACEMENT)
     out = Path(tempfile.mkdtemp(prefix='reviewed-package-', dir=product.ROOT))
     annotation = (product.callouts.ROUTE_CONTRACT if any(revision.read(Path(item['report'])).get('annotation_contract')
         == product.callouts.ROUTE_CONTRACT for item in bindings) else product.callouts.CONTRACT)
-    report = {'schema': SCHEMA, 'status': 'running', 'original_package': str(package),
+    if candidate_headlines is not None:
+        annotation = original['annotation_contract']
+    schema = CANDIDATE_SCHEMA if candidate_headlines is not None else SCHEMA
+    report = {'schema': schema, 'status': 'running', 'original_package': str(package),
               'original_report_sha256': product.school.checksum(package/'report.json'), 'revisions': bindings,
               'annotation_contract': annotation, 'placement_contract': placement,
               'model': original['model'], 'digest': original['digest'],
               'model_called': False, 'training_started': False, 'production_changed': False,
               'commercial_approved': False, 'full_visual_acceptance': False}
+    if candidate_headlines is not None:
+        report.update(candidate_headlines=str(candidate_headlines), independent_panel_approval=False, training_exported=False,
+            protected_contracts={k: v for k, v in original.items() if k.endswith('_contract')})
     product.school.save(out/'report.json', report)
     print(json.dumps({'output': str(out)}), flush=True)
     implementation = out/'implementation'; implementation.mkdir()
@@ -154,6 +205,8 @@ def run(package, pairs):
                  'product_callouts.py', 'render_school_svg.py', 'vector_school_contract.py',
                  'product_headline_repair.py', 'product_headline_probe.py', 'product_correction_evidence.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
+    if candidate_headlines is not None and revision.read(Path(candidate_headlines)/'report.json').get('schema') == 'product-headline-late-correction.v2':
+        shutil.copyfile(Path(__file__).with_name('product_delivery_correction.py'), implementation/'product_delivery_correction.py')
     if annotation == product.callouts.ROUTE_CONTRACT:
         for name in ('product_patch_evidence.py', 'product_patch_pilot.py', 'product_scene_patch.py'):
             shutil.copyfile(Path(__file__).parent/name, implementation/name)
@@ -173,9 +226,10 @@ def run(package, pairs):
                 shutil.copyfile(folder/local, delivery/(part+target))
         for name in ('style.json', 'supplier-brief.json'):
             shutil.copyfile(package/'delivery'/name, delivery/name)
-        product.school.save(delivery/'manifest.json', {'schema': SCHEMA, 'files': {p.name: product.school.checksum(p) for p in delivery.iterdir()},
+        product.school.save(delivery/'manifest.json', {'schema': schema, 'files': {p.name: product.school.checksum(p) for p in delivery.iterdir()},
             'synthetic': True, 'actual_product_photo': False, 'commercial_approved': False,
-            'authorship': 'Literal copies of authenticated local model artwork, with separately reviewed panel replacements.'})
+            'authorship': ('Literal copies of authenticated local model artwork and headline repairs; independent whole-package review pending.'
+                if candidate_headlines is not None else 'Literal copies of authenticated local model artwork, with separately reviewed panel replacements.')})
         with zipfile.ZipFile(out/'infographics.zip', 'w', zipfile.ZIP_DEFLATED) as archive:
             for path in sorted(delivery.iterdir()): archive.write(path, path.name)
         report['status'] = 'pending_independent_review'
