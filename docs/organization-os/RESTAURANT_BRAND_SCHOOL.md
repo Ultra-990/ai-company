@@ -6,6 +6,63 @@ plan stylu, dwa koncepty logo, uzasadnia wybór i projektuje wizytówkę.
 Asystent rozwija wymagania, narzędzia i niezależną ocenę; nie rysuje logo
 ani nie poprawia współrzędnych za model.
 
+## Kompaktowe wybory v12 i odebrana poprawka Reed — 30.09.2026
+
+`--revise-compact-text KATALOG --warm-revision` podaje modelowi pełny
+katalog dopuszczalnych analiz leksykalnych v11 pod krótkimi identyfikatorami.
+Model wybiera identyfikatory, a kod odtwarza z nich niezmienione twierdzenia
+v11 wraz z dokładnymi cytatami i przepuszcza je przez ten sam walidator.
+Katalog nadal powstaje wyłącznie z dwóch opisów: nie zawiera grafiki,
+pomiarów, ocen ani oczekiwanej geometrii i nie usuwa wariantów na podstawie
+wyniku. Schemat v12 mieści się w ograniczeniu adaptera także dla pełnego
+katalogu; krótkie identyfikatory nie zmieniają semantyki wyboru.
+
+Historyczne przebiegi i kontrakt v11 pozostają odtwarzane bez zmian.
+Poniższy opis v11 dokumentuje jego źródłową gramatykę i odebraną poprawkę.
+
+`--revise-literal-text KATALOG --warm-revision` buduje schemat ekstrakcji
+z samych dwóch opisów. Cytat jest pełnym oryginalnym opisem; możliwe
+podmioty są jego dosłownymi rzeczownikami, a kierunki przechodzą istniejące
+tekstowe ograniczenia v4. Model wybiera interpretację spośród dopuszczalnych
+wariantów. Ten katalog nie zna obrazów, pomiarów ani oczekiwanej odpowiedzi;
+obecność wariantu nie oznacza, że jest semantycznie prawdziwy. Późniejsza
+geometria może go obalić. Pozostaje możliwość zgłoszenia niepewności.
+
+Gramatyka i odczytowy audyt używają tego samego dynamicznego schematu.
+Weryfikowane są zarówno ścieżki poprawki, jak i braku żądania zmian.
+Starsze kontrakty zachowują stałe schematy. Nie poprawiamy tekstu produktu
+za autora. Ograniczony angielski słownik i reguły nie zastępują rozumienia
+dowolnego języka ani niezależnego odbioru całej paczki.
+
+Reed `guide-revision-5a85vcjg`: 17,881 s, pięć wywołań, model zwolniony.
+Model poprawił opis położenia i liczby wierszy. Sprawdzenie autorstwa,
+21 plików ZIP i świeży render `spatial-proof-yr0wjdu8` przeszły. Niezależnie
+obejrzano pięć PNG, instrukcję i plan: **odebrano poprawioną znaną paczkę**.
+Wszystkie grafiki zachowane; nie zmieniono pierwotnego egzaminu 0/3 ani
+kwalifikacji. 104 testy przed próbą przeszły.
+
+Przygotowany, jeszcze nieuruchomiony
+`python -m scripts.brand_generation_exam --literal-exam` wybiera
+kontrakt v2: osobne świeże briefy Poppy Wharf, Olive Bench i Juniper Hearth,
+po jednym źródle na profil. Budżety generowania i napraw pozostają takie
+jak v1; wspólna recenzja używa kompaktowego v12 dekodowanego do v11. Audyt
+odtwarza dynamiczne schematy i wymaga snapshotu wszystkich modułów ich
+pochodzenia, w tym `brand_compact_review.py`. V1 zachowuje pierwotne briefy,
+kontrolę v8 i wynik; jego rzeczywisty przebieg ponownie zweryfikowano.
+Pełny v2 wolno uruchomić dopiero po niezależnym odbiorze ograniczonego pilota
+v12 na znanym przypadku Reed.
+
+Ograniczony pilot v12 `guide-revision-1qlblh2u` zakończył się technicznie
+`no_repair_requested` w 10,929 s i dwóch wywołaniach, z poprawnym zwolnieniem
+modelu. Odczytowy replay, pochodzenie paczki i świeży render geometrii przeszły,
+ale niezależny odbiór odrzucono. Opis B mówi „centered stacked wordmark”,
+podczas gdy widoczny napis „Reed Bay” ma jeden wiersz. Ekstraktor zwrócił
+`wordmark_lines: unspecified`, a recenzent błędnie zatwierdził cały opis.
+To regresja semantyczna względem odebranej poprawki v11, więc przygotowany
+pełny egzamin v2 pozostaje nieuruchomiony. Nie zmieniono historycznego wyniku
+v11 ani kodu v12 po wykonaniu pilota; następna wersja wymaga osobnej,
+testowalnej kontroli znaczenia „stacked wordmark”.
+
 ## Złożona kontrola podmiotu i referencji v9 — 30.09.2026
 
 `--revise-composed-text KATALOG --warm-revision` jawnie wybiera nowy

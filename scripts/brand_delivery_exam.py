@@ -105,7 +105,7 @@ def check_no_text_repair(folder, source, *, strict=False, protocol=None):
     read = evidence.read; report = read(folder/'report.json')
     original, data = text_repair.inputs(source); data = text_protocol.expand(data, source)
     expected = [('review', text_protocol.REVIEW_SYSTEM, data, text_protocol.REVIEW_SCHEMA),
-                ('spatial', text_protocol.CLAIM_SYSTEM, text_protocol.claim_input(data), text_protocol.CLAIM_SCHEMA)]
+                ('spatial', text_protocol.CLAIM_SYSTEM, text_protocol.claim_input(data), text_repair.extraction_schema(text_protocol, text_protocol.claim_input(data)))]
     values = []
     if {p.name for p in folder.glob('*-request.json')} != {'review-request.json', 'spatial-request.json'}:
         raise ValueError('Exactly two reviews required for unchanged text')

@@ -264,7 +264,7 @@ def artwork(folder, report, source_folder):
     return audit
 
 
-def guide(folder, report, package):
+def guide(folder, report, package, *, protocol=protocol):
     record = Record(folder, report); failure = None; status = None
     _, data = text.inputs(package); data = protocol.expand(data, package)
     def call(stage, system, payload, schema, validator):
@@ -274,7 +274,7 @@ def guide(folder, report, package):
         raw = call('review', protocol.REVIEW_SYSTEM, data, protocol.REVIEW_SCHEMA, protocol.review_value)
         record.require('raw-review.json', raw)
         texts = protocol.claim_input(data)
-        claims = call('spatial', protocol.CLAIM_SYSTEM, texts, protocol.CLAIM_SCHEMA,
+        claims = call('spatial', protocol.CLAIM_SYSTEM, texts, text.extraction_schema(protocol, texts),
                       lambda value: protocol.claims_value(value, texts))
         record.require('spatial.json', claims)
         review, findings = protocol.combine(raw, claims, data)
@@ -287,7 +287,7 @@ def guide(folder, report, package):
             raw = call('final-review', protocol.REVIEW_SYSTEM, updated, protocol.REVIEW_SCHEMA, protocol.review_value)
             record.require('raw-final-review.json', raw)
             texts = protocol.claim_input(updated)
-            claims = call('final-spatial', protocol.CLAIM_SYSTEM, texts, protocol.CLAIM_SCHEMA,
+            claims = call('final-spatial', protocol.CLAIM_SYSTEM, texts, text.extraction_schema(protocol, texts),
                           lambda value: protocol.claims_value(value, texts))
             record.require('final-spatial.json', claims)
             final, findings = protocol.combine(raw, claims, updated)

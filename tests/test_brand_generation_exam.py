@@ -6,7 +6,9 @@ from scripts import brand_generation_exam as exam
 
 
 @pytest.fixture
-def completed(tmp_path, monkeypatch):
+def completed(tmp_path, monkeypatch, request):
+    literal = getattr(request, "param", False)
+    selected_protocol = exam.review_protocol(literal)
     b = exam.b; config = {'model': 'fixture', 'digest': 'f'*64}
     monkeypatch.setattr(b, 'ROOT', tmp_path)
     monkeypatch.setattr(b.school, 'check_idle', lambda: {})
@@ -17,14 +19,15 @@ def completed(tmp_path, monkeypatch):
     monkeypatch.setattr(exam.delivery, 'check_no_text_repair', lambda *a, **kw: None)
     monkeypatch.setattr(exam.text, 'inputs', lambda _: ({}, {}))
     monkeypatch.setattr(exam.text, 'recorded_render', lambda *a: {})
-    monkeypatch.setattr(exam.protocol, 'expand', lambda *a: {})
+    monkeypatch.setattr(selected_protocol, 'expand', lambda *a: {})
     for name in ('source', 'artwork', 'guide'):
-        monkeypatch.setattr(exam.audit, name, lambda *a: {'mocked': True})
+        monkeypatch.setattr(exam.audit, name, lambda *a, **kw: {'mocked': True})
     counter = 0; calls = []
     def output(kind):
         nonlocal counter
         counter += 1; path = tmp_path/str(counter); (path/'implementation').mkdir(parents=True)
-        for name in exam.audit.IMPLEMENTATION[kind]:
+        required = exam.audit.IMPLEMENTATION[kind] | (exam.V2_REVIEW_FILES if literal and kind == 'text' else set())
+        for name in required:
             source = Path(b.__file__).parent/name if name != 'local_ollama.py' else Path(b.__file__).parents[1]/'app/services/local_ollama.py'
             shutil.copyfile(source, path/'implementation'/name)
         return path
@@ -46,13 +49,13 @@ def completed(tmp_path, monkeypatch):
         return finish(path, config | {'config': config | exam.BUDGET | {'sampling_profile': exam.ARMS['baseline'], 'think': False},
             'brief': original['brief'], 'repair_contract': exam.art.VISIBLE_CONTRACT, 'status': 'pending_independent_visual_review'})
     def revise(source, *, spatial, warm):
-        assert spatial == 'reference' and warm
+        assert spatial == ('compact' if literal else 'reference') and warm
         path = output('text')
         return finish(path, config | {'config': config | exam.delivery.TEXT | {'sampling_profile': exam.ARMS['baseline'], 'think': False},
             'package': str(source), 'source_report_sha256': b.school.checksum(source/'report.json'),
-            'review_contract': exam.protocol.CONTRACT, 'max_model_calls': 5, 'status': 'no_repair_requested'})
+            'review_contract': selected_protocol.CONTRACT, 'max_model_calls': 5, 'status': 'no_repair_requested'})
     monkeypatch.setattr(b, 'run', generate); monkeypatch.setattr(exam.art, 'run', repair); monkeypatch.setattr(exam.text, 'run', revise)
-    path, report = exam.run()
+    path, report = exam.run(literal=literal)
     assert [profile for _, profile in calls] == [exam.ARMS[k] for k in ('baseline', 'deliberate', 'deliberate', 'baseline', 'baseline', 'deliberate')]
     return path, report
 
@@ -64,6 +67,25 @@ def test_complete_comparison_actually_generates_six_sources_with_matched_budgets
     assert result['independent_sources'] == 6
     assert result['technical_scores'] == {'baseline': 3, 'deliberate': 3}
     assert result['independent_review_required'] and not result['autonomy_qualified']
+
+
+@pytest.mark.parametrize('completed', [True], indirect=True)
+def test_v2_exam_uses_six_fresh_sources_and_compact_dynamic_review(completed):
+    path, report = completed
+    frozen = exam.evidence.read(path/'exam.json')
+    assert report['schema'] == exam.LITERAL_CONTRACT
+    assert frozen['text_contract'] == exam.review_protocol(True).CONTRACT
+    assert frozen['text_contract'] == 'brand-compact-spatial-review.v12'
+    assert 'brand_compact_review.py' in exam.V2_REVIEW_FILES
+    assert not {c['name'] for c in exam.CASES} & {c['restaurant_name'] for c in frozen['briefs']}
+    assert frozen['generation_budget'] == exam.BUDGET
+    assert exam.verify(path)['technical_scores'] == {'baseline': 3, 'deliberate': 3}
+    frozen['text_contract'] = exam.protocol.CONTRACT
+    exam.b.school.save(path/'exam.json', frozen)
+    report['exam_sha256'] = exam.b.school.checksum(path/'exam.json')
+    report['artifacts']['exam.json'] = report['exam_sha256']
+    exam.b.school.save(path/'report.json', report)
+    with pytest.raises(ValueError): exam.verify(path)
 
 
 @pytest.mark.parametrize('fault', ['shared_source', 'profile', 'budget', 'visibility', 'code', 'candidate', 'score'])
@@ -114,7 +136,7 @@ def test_nonpassing_downstream_stages_must_also_pass_literal_audit(completed, mo
     outcome.update(status=status, candidate=None)
     if kind == 'artwork': outcome['text'] = None
     report['technical_scores']['baseline'] = 2; exam.b.school.save(path/'report.json', report)
-    def reject(*args): raise ValueError('Independent terminal audit rejects changed evidence')
+    def reject(*args, **kwargs): raise ValueError('Independent terminal audit rejects changed evidence')
     monkeypatch.setattr(exam.audit, 'artwork' if kind == 'artwork' else 'guide', reject)
     with pytest.raises(ValueError, match='terminal audit'): exam.verify(path)
 

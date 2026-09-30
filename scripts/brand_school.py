@@ -420,6 +420,8 @@ if __name__ == '__main__':
     actions.add_argument('--revise-reference-text', type=Path)
     actions.add_argument('--revise-composed-text', type=Path)
     actions.add_argument('--revise-constrained-text', type=Path)
+    actions.add_argument('--revise-literal-text', type=Path)
+    actions.add_argument('--revise-compact-text', type=Path)
     actions.add_argument('--guide-review-exam', action='store_true')
     actions.add_argument('--plan-review-exam', action='store_true')
     actions.add_argument('--spatial-claim-exam', action='store_true')
@@ -445,7 +447,7 @@ if __name__ == '__main__':
         parser.error('--complete-scene-checks requires --repair-artwork')
     if args.visible_shape_checks and not (args.repair_artwork or args.run):
         parser.error('--visible-shape-checks requires --run or --repair-artwork')
-    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects, args.revise_alignment_text, args.revise_background_text, args.revise_wordmark_text, args.revise_reference_text, args.revise_composed_text, args.revise_constrained_text)):
+    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects, args.revise_alignment_text, args.revise_background_text, args.revise_wordmark_text, args.revise_reference_text, args.revise_composed_text, args.revise_constrained_text, args.revise_literal_text, args.revise_compact_text)):
         parser.error('--warm-revision requires a guide/plan/spatial revision')
     if args.repair_artwork:
         from scripts.brand_artwork_repair import run as repair_artwork
@@ -470,6 +472,14 @@ if __name__ == '__main__':
     if args.revise_composed_text:
         from scripts.brand_guide_revision import run as revise_composed
         _, report = revise_composed(args.revise_composed_text, spatial='composed', warm=args.warm_revision)
+        raise SystemExit(int(report['status'] not in ('pending_independent_review', 'no_repair_requested')))
+    if args.revise_compact_text:
+        from scripts.brand_guide_revision import run as revise_compact
+        _, report = revise_compact(args.revise_compact_text, spatial='compact', warm=args.warm_revision)
+        raise SystemExit(int(report['status'] not in ('pending_independent_review', 'no_repair_requested')))
+    if args.revise_literal_text:
+        from scripts.brand_guide_revision import run as revise_literal
+        _, report = revise_literal(args.revise_literal_text, spatial='literal', warm=args.warm_revision)
         raise SystemExit(int(report['status'] not in ('pending_independent_review', 'no_repair_requested')))
     if args.revise_constrained_text:
         from scripts.brand_guide_revision import run as revise_constrained

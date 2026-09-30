@@ -12,6 +12,7 @@ from scripts import brand_generation_audit as audit
 
 b, art, text, evidence = delivery.b, delivery.artwork, delivery.text_repair, delivery.evidence
 CONTRACT = 'brand-generation-delivery-exam.v1'
+LITERAL_CONTRACT = 'brand-generation-delivery-exam.v2'
 ARMS = {'baseline': 'bounded-default.v1', 'deliberate': 'qwen-deliberate-trial.v1'}
 CASES = (
     {'id': 'cinder-corner', 'name': 'Cinder Corner',
@@ -25,36 +26,60 @@ CASES = (
      'audience': 'Families and neighbors gathering for relaxed breakfast or lunch.'},
 )
 BUDGET = {'num_ctx': 16384, 'num_predict': 8192, 'num_thread': 4, 'timeout_seconds': 180}
+LITERAL_CASES = (
+    {'id': 'poppy-wharf', 'name': 'Poppy Wharf',
+     'concept': 'Fictional waterside cafe serving seed bread, soup and fresh vegetable bowls. Friendly and practical, with a restrained seed or water motif; no luxury crests or fork/knife clip art.',
+     'audience': 'Local residents and visitors stopping for a relaxed lunch.'},
+    {'id': 'olive-bench', 'name': 'Olive Bench',
+     'concept': 'Fictional neighborhood restaurant serving roasted vegetables, fish and warm flatbread. Calm and welcoming, with a restrained olive or branch motif; no luxury crests or fork/knife clip art.',
+     'audience': 'Neighbors and small groups sharing informal evening meals.'},
+    {'id': 'juniper-hearth', 'name': 'Juniper Hearth',
+     'concept': 'Fictional small restaurant serving baked roots, mushroom soup and grain plates. Warm and approachable, with a restrained juniper or hearth motif; no luxury crests or fork/knife clip art.',
+     'audience': 'Local families and workers gathering for an unhurried meal.'},
+)
+V2_REVIEW_FILES = {'brand_spatial_subject_review.py', 'brand_composed_review.py',
+                   'brand_constrained_review.py', 'brand_literal_review.py',
+                   'brand_compact_review.py'}
 
 
-def definition(case):
-    if case not in CASES: raise ValueError('Frozen generation-comparison case required')
+def review_protocol(literal=False):
+    if literal:
+        from scripts import brand_compact_review
+        return brand_compact_review
+    return protocol
+
+
+def definition(case, *, literal=False):
+    if case not in (LITERAL_CASES if literal else CASES): raise ValueError('Frozen generation-comparison case required')
     result = deepcopy(b.DEFAULT_BRIEF); domain = case['id'].replace('-', '')+'.example'
-    result.update(restaurant_name=case['name'], family='brand-generation-v1-'+case['id'],
-        split='test', concept=case['concept'], audience=case['audience'], qualification_exam=CONTRACT,
+    result.update(restaurant_name=case['name'], family=('brand-generation-v2-' if literal else 'brand-generation-v1-')+case['id'],
+        split='test', concept=case['concept'], audience=case['audience'], qualification_exam=LITERAL_CONTRACT if literal else CONTRACT,
         contacts=['Reservations by email', 'hello@'+domain, domain])
     return result
 
 
-def manifest(config):
-    return {'schema': CONTRACT, 'briefs': [definition(c) for c in CASES], 'profiles': ARMS,
+def manifest(config, *, literal=False):
+    return {'schema': LITERAL_CONTRACT if literal else CONTRACT,
+        'briefs': [definition(c, literal=literal) for c in (LITERAL_CASES if literal else CASES)], 'profiles': ARMS,
         'model': config['model'], 'digest': config['digest'], 'generation_budget': BUDGET,
         'artwork_budget': BUDGET, 'artwork_profile': ARMS['baseline'], 'text_budget': delivery.TEXT,
         'max_generation_calls': 15, 'max_artwork_calls': 9, 'max_text_calls': 5,
         'source_contract': 'brand-scoped-scene.v1', 'visibility_contract': art.SOURCE_VISIBLE_CONTRACT,
-        'artwork_contract': art.VISIBLE_CONTRACT, 'text_contract': protocol.CONTRACT,
+        'artwork_contract': art.VISIBLE_CONTRACT, 'text_contract': review_protocol(literal).CONTRACT,
         'independent_source_per_arm': True, 'manual_hints_allowed': False, 'training_export_allowed': False}
 
 
-def run():
+def run(*, literal=False):
     from scripts.brand_full_exam import exercise_context
-    resources = b.school.check_idle(); frozen = manifest(b.configuration())
+    resources = b.school.check_idle(); frozen = manifest(b.configuration(), literal=literal)
     out = Path(tempfile.mkdtemp(prefix='generation-exam-', dir=b.ROOT))
     b.school.save(out/'exam.json', frozen); code = out/'implementation'; code.mkdir()
-    for name in (*delivery.implementation_files(complete=True), 'brand_generation_exam.py', 'brand_reference_review.py'):
+    files = set(delivery.implementation_files(complete=True)) | {'brand_generation_exam.py', 'brand_reference_review.py', 'brand_generation_audit.py'}
+    if literal: files |= V2_REVIEW_FILES
+    for name in sorted(files):
         path = Path(__file__).parent/name if name != 'local_ollama.py' else Path(__file__).parents[1]/'app/services/local_ollama.py'
         shutil.copyfile(path, code/name)
-    report = {'schema': CONTRACT, 'status': 'running', 'resources_before': resources,
+    report = {'schema': frozen['schema'], 'status': 'running', 'resources_before': resources,
         'exam_sha256': b.school.checksum(out/'exam.json'), 'cases': [], 'training_exported': False,
         'production_changed': False, 'autonomy_qualified': False}
     started = time.monotonic()
@@ -81,7 +106,7 @@ def run():
                     outcome.update(artwork=str(package), artwork_report_sha256=b.school.checksum(package/'report.json'), status=result['status'])
                     if result['status'] == 'pending_independent_visual_review':
                         b.school.save(package/'verification.json', evidence.verify(package))
-                        folder, result = text.run(package, spatial='reference', warm=True)
+                        folder, result = text.run(package, spatial='compact' if literal else 'reference', warm=True)
                         outcome.update(text=str(folder), text_report_sha256=b.school.checksum(folder/'report.json'), status=result['status'])
                         if result['status'] == 'pending_independent_review':
                             b.school.save(folder/'verification.json', text.verify(folder)); outcome['candidate'] = str(folder)
@@ -99,8 +124,10 @@ def run():
 def verify(out):
     out = Path(out); read, checksum = evidence.read, b.school.checksum
     report, frozen = read(out/'report.json'), read(out/'exam.json')
-    if (report.get('schema') != CONTRACT or report.get('status') != 'completed'
-            or frozen != manifest(frozen) or checksum(out/'exam.json') != report['exam_sha256']
+    literal = report.get('schema') == LITERAL_CONTRACT
+    selected_protocol = review_protocol(literal)
+    if (report.get('schema') not in (CONTRACT, LITERAL_CONTRACT) or report.get('status') != 'completed'
+            or frozen != manifest(frozen, literal=literal) or checksum(out/'exam.json') != report['exam_sha256']
             or any(report.get(k) is not False for k in ('training_exported', 'production_changed', 'autonomy_qualified'))
             or [c['family'] for c in report['cases']] != [c['family'] for c in frozen['briefs']]):
         raise ValueError('Complete frozen generation comparison required')
@@ -122,6 +149,7 @@ def verify(out):
             raise ValueError('Equal budgets and pinned declared profiles required')
         files = list((folder/'implementation').iterdir())
         required = audit.IMPLEMENTATION[kind]
+        if literal and kind == 'text': required = required | V2_REVIEW_FILES
         if ({p.name for p in files} != required or
                 {name.removeprefix('implementation/') for name in value['artifacts'] if name.startswith('implementation/')} != required):
             raise ValueError('Complete contract-specific implementation snapshot required')
@@ -161,16 +189,16 @@ def verify(out):
                     evidence.verify(package)
                     folder, result = stage(outcome['text'], outcome['text_report_sha256'], delivery.TEXT, ARMS['baseline'], False, 'text')
                     if (Path(result['package']).resolve() != package.resolve() or result['source_report_sha256'] != outcome['artwork_report_sha256']
-                            or result['review_contract'] != protocol.CONTRACT or result['max_model_calls'] != 5):
+                            or result['review_contract'] != selected_protocol.CONTRACT or result['max_model_calls'] != 5):
                         raise ValueError('Common bounded downstream text stage required')
-                    checked['text'] = audit.guide(folder, result, package)
+                    checked['text'] = audit.guide(folder, result, package, protocol=selected_protocol)
                     status = result['status']
                     if status == 'pending_independent_review':
                         text.verify(folder, use_recorded_render=True); candidate = str(folder)
                     elif status == 'no_repair_requested':
-                        delivery.check_no_text_repair(folder, package, protocol=protocol)
+                        delivery.check_no_text_repair(folder, package, protocol=selected_protocol)
                         _, data = text.inputs(package)
-                        text.recorded_render(folder, package, protocol.expand(data, package)); candidate = str(package)
+                        text.recorded_render(folder, package, selected_protocol.expand(data, package)); candidate = str(package)
                     elif status not in ('failed', 'needs_revision'): raise ValueError('Terminal text stage required')
                 elif status not in ('failed', 'needs_revision') or outcome['text'] is not None:
                     raise ValueError('Terminal artwork stage required')
@@ -180,7 +208,7 @@ def verify(out):
                 raise ValueError('Generation comparison outcome changed')
             scores[arm] += int(candidate is not None)
     if report['technical_scores'] != scores: raise ValueError('Generation comparison score changed')
-    return {'schema': CONTRACT, 'report_sha256': checksum(out/'report.json'), 'technical_scores': scores,
+    return {'schema': frozen['schema'], 'report_sha256': checksum(out/'report.json'), 'technical_scores': scores,
         'post_run_audit': {'schema': audit.CONTRACT, 'stages': audited,
             'auditor_implementation_sha256': {Path(__file__).name: checksum(Path(__file__)),
                 Path(audit.__file__).name: checksum(Path(audit.__file__))},
@@ -192,8 +220,8 @@ def verify(out):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group(required=True)
-    action.add_argument('--run', action='store_true'); action.add_argument('--verify', type=Path)
+    action.add_argument('--run', action='store_true'); action.add_argument('--literal-exam', action='store_true'); action.add_argument('--verify', type=Path)
     args = parser.parse_args()
     if args.verify: print(json.dumps(verify(args.verify), indent=2))
     else:
-        _, result = run(); raise SystemExit(int(result['status'] != 'completed'))
+        _, result = run(literal=args.literal_exam); raise SystemExit(int(result['status'] != 'completed'))
