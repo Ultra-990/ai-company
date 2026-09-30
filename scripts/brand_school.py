@@ -259,16 +259,25 @@ def measured_feedback(rendered, profile):
             'group_layout': rendered.get('group_layout', [])}
 
 
-def checked_scene(out, name, plan, kind, logo=None):
+def checked_scene(out, name, plan, kind, logo=None, *, scoped_scenes=False):
     attempt = 0
     def validate(raw):
         nonlocal attempt
-        svg = compile_scene(raw, plan, kind=kind, logo=logo)
+        if scoped_scenes:
+            from scripts import brand_scene_contract as scoped
+            svg = scoped.compile_scene(raw, plan, kind=kind, brief=BRIEF, logo=logo)
+        else:
+            svg = compile_scene(raw, plan, kind=kind, logo=logo)
         folder = out/(name+'-layout-'+str(attempt)); attempt += 1; folder.mkdir()
         (folder/'artwork.svg').write_text(svg); school.check_idle()
         measured = asyncio.run(render(svg, folder, profile='brand_'+kind))
         school.save(folder/'render.json', measured)
         issues = quality_issues(measured, 'brand_'+kind)
+        if scoped_scenes:
+            issues += scoped.margin_findings(svg, measured, kind, plan['paper'])
+            if kind == 'card':
+                from scripts.brand_artwork_repair import card_decoration_findings
+                issues += card_decoration_findings(svg, measured, plan['paper'])
         if issues: raise ValueError('Correct the measured layout defects yourself: '+json.dumps(issues))
         return svg
     return validate
@@ -299,6 +308,12 @@ def assemble(out, plan, logos, selection, card, report):
                 raise ValueError('Actual preview dimensions differ from requested scale')
         school.save(folder/'render.json', rendered)
         issues = quality_issues(rendered, profile)
+        if report.get('scene_contract') == 'brand-scoped-scene.v1':
+            from scripts.brand_scene_contract import margin_findings
+            issues += margin_findings(svg, rendered, 'card' if profile == 'brand_card' else 'logo', plan['paper'])
+            if profile == 'brand_card':
+                from scripts.brand_artwork_repair import card_decoration_findings
+                issues += card_decoration_findings(svg, rendered, plan['paper'])
         report['checks'][name] = {'issues': issues, 'pdf': rendered['pdf']}
         for source_name, extension in (('artwork.svg', 'svg'), ('preview.png', 'png'), ('preview.pdf', 'pdf')):
             shutil.copyfile(folder/source_name, delivery/(name+'.'+extension))
@@ -316,7 +331,8 @@ def assemble(out, plan, logos, selection, card, report):
     report['status'] = 'needs_revision' if any(c['issues'] for c in report['checks'].values()) else 'pending_independent_visual_review'
 
 
-def run(*, sampling_profile=None, matched_exam_budget=False):
+def run(*, sampling_profile=None, matched_exam_budget=False, scoped_scenes=False):
+    from scripts import brand_scene_contract as scoped
     ROOT.mkdir(exist_ok=True)
     if any(p.is_symlink() for p in (ROOT, *ROOT.parents)): raise ValueError('Private Linux workspace required')
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='identity-', dir=ROOT))
@@ -332,11 +348,15 @@ def run(*, sampling_profile=None, matched_exam_budget=False):
     for name in ('brand_school.py', 'render_school_svg.py', 'vector_structured_source.py', 'vector_school_contract.py'):
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
+    if scoped_scenes:
+        for name in ('brand_scene_contract.py', 'brand_artwork_repair.py', 'brand_spatial_review.py'):
+            shutil.copyfile(Path(__file__).parent/name, implementation/name)
     report = {'schema': 'restaurant-brand-school.v1', 'status': 'running', 'brief': BRIEF,
         'brief_sha256': sha256(json.dumps(BRIEF, sort_keys=True).encode()).hexdigest(), 'model': config['model'],
         'digest': config['digest'], 'config': config, 'resources_before': resources, 'training_started': False,
         'training_exported': False, 'production_changed': False, 'print_ready': False, 'commercial_delivery_approved': False,
         'stages': [], 'checks': {}, 'implementation_sha256': school.checksum(Path(__file__))}
+    if scoped_scenes: report['scene_contract'] = scoped.CONTRACT
     school.save(out/'report.json', report); started = time.monotonic(); print(json.dumps({'output': str(out)}), flush=True)
     try:
         plan = validated_call(out, 'plan', INSTRUCTION, json.dumps(BRIEF)+'\nDevelop two distinct logo directions and a concise coherent style plan. Write ONE SHORT COMPLETE SENTENCE per positioning, concept and guideline field: aim for 100 characters, never more than 160. Tagline: a complete phrase of at most24characters. Do not write paragraphs or fill the schema limit. ink, paper, accent and monochrome_ink MUST be literal seven-character #RRGGBB hexadecimal strings, not names. Four guidelines: palette roles, typography, clear space/small use, monochrome use. Both logo concepts MUST use heading_font; vary symbols/layout instead of contradicting that font selection. Describe only assets we produce: two concepts, a selected logo with its wordmark, a monochrome version, a small full-logo preview, and one 85x55mm card. Do not promise extra symbol-only files, wordmark-only variants, legibility on every background, or printer-specific readiness.', Plan.model_json_schema(), config, plan_value)
@@ -344,8 +364,10 @@ def run(*, sampling_profile=None, matched_exam_budget=False):
         logos = {}
         for name in ('a', 'b'):
             prompt = json.dumps({'brief': BRIEF, 'plan': plan, 'task': 'Develop logo concept '+name.upper(), 'direction': plan['concept_'+name]})
-            logos[name] = validated_call(out, 'logo-'+name, INSTRUCTION+'\n'+SCENE_RULES, prompt, scene_schema('logo', plan), config,
-                                        checked_scene(out, 'logo-'+name, plan, 'logo'))
+            rules = scoped.rules('logo') if scoped_scenes else SCENE_RULES
+            schema = scoped.schema('logo', plan, BRIEF) if scoped_scenes else scene_schema('logo', plan)
+            logos[name] = validated_call(out, 'logo-'+name, INSTRUCTION+'\n'+rules, prompt, schema, config,
+                                        checked_scene(out, 'logo-'+name, plan, 'logo', scoped_scenes=scoped_scenes))
             report['stages'].append('logo-'+name)
             (out/('logo-'+name+'.svg')).write_text(logos[name])
         if logos['a'] == logos['b']: raise ValueError('Two distinct logo concepts required')
@@ -354,9 +376,11 @@ def run(*, sampling_profile=None, matched_exam_budget=False):
         selection = validated_call(out, 'selection', INSTRUCTION, json.dumps({'brief': BRIEF, 'plan': plan, 'logo_sources': logos,
             'task': 'Select one concept and explain in ONE SHORT COMPLETE sentence (aim <=120 characters). Selection is based on scene data; independent visual approval is separate.'}), selection_schema, config, selected_value)
         chosen = logos[selection['selected']]; report['selection'] = selection
-        card = validated_call(out, 'card', INSTRUCTION+'\n'+SCENE_RULES, json.dumps({'brief': BRIEF, 'plan': plan,
-            'chosen_logo_svg': chosen, 'task': 'Design the 85x55mm business card. Choose the placement of the existing logo and all four other lines yourself.'}), scene_schema('card', plan), config,
-            checked_scene(out, 'card', plan, 'card', logo=chosen))
+        rules = scoped.rules('card') if scoped_scenes else SCENE_RULES
+        schema = scoped.schema('card', plan, BRIEF) if scoped_scenes else scene_schema('card', plan)
+        card = validated_call(out, 'card', INSTRUCTION+'\n'+rules, json.dumps({'brief': BRIEF, 'plan': plan,
+            'chosen_logo_svg': chosen, 'task': 'Design the 85x55mm business card. Choose the placement of the existing logo and all four other lines yourself.'}), schema, config,
+            checked_scene(out, 'card', plan, 'card', logo=chosen, scoped_scenes=scoped_scenes))
         report['stages'].append('card')
         assemble(out, plan, logos, selection, card, report)
     except Exception as exc:
@@ -379,6 +403,7 @@ if __name__ == '__main__':
     actions.add_argument('--revise-spatial-subjects', type=Path)
     actions.add_argument('--revise-alignment-text', type=Path)
     actions.add_argument('--revise-background-text', type=Path)
+    actions.add_argument('--revise-wordmark-text', type=Path)
     actions.add_argument('--guide-review-exam', action='store_true')
     actions.add_argument('--plan-review-exam', action='store_true')
     actions.add_argument('--spatial-claim-exam', action='store_true')
@@ -389,16 +414,22 @@ if __name__ == '__main__':
     parser.add_argument('--warm-revision', action='store_true', help='Reuse the local model for one bounded guide revision')
     parser.add_argument('--artwork-reasoning', action='store_true', help='Use the bounded reasoning profile for artwork repair')
     parser.add_argument('--strict-card', action='store_true', help='Check decoration bounds against card text during artwork repair')
+    parser.add_argument('--complete-scene-checks', action='store_true', help='Check both logos and all shape margins with stage-specific repair requirements')
+    parser.add_argument('--scoped-scenes', action='store_true', help='Use stage-specific text requirements and complete shape margins for new generation')
     args = parser.parse_args()
+    if args.scoped_scenes and not args.run:
+        parser.error('--scoped-scenes requires --run')
     if args.artwork_reasoning and not args.repair_artwork:
         parser.error('--artwork-reasoning requires --repair-artwork')
     if args.strict_card and not args.repair_artwork:
         parser.error('--strict-card requires --repair-artwork')
-    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects, args.revise_alignment_text, args.revise_background_text)):
+    if args.complete_scene_checks and not args.repair_artwork:
+        parser.error('--complete-scene-checks requires --repair-artwork')
+    if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects, args.revise_alignment_text, args.revise_background_text, args.revise_wordmark_text)):
         parser.error('--warm-revision requires a guide/plan/spatial revision')
     if args.repair_artwork:
         from scripts.brand_artwork_repair import run as repair_artwork
-        _, report = repair_artwork(args.repair_artwork, deliberate=args.artwork_reasoning, strict_card=args.strict_card)
+        _, report = repair_artwork(args.repair_artwork, deliberate=args.artwork_reasoning, strict_card=args.strict_card, full_scene=args.complete_scene_checks)
         raise SystemExit(int(report['status'] != 'pending_independent_visual_review'))
     if args.delivery_exam or args.delivery_exam_strict:
         from scripts.brand_delivery_exam import run as delivery_exam
@@ -411,6 +442,10 @@ if __name__ == '__main__':
     if args.revise_background_text:
         from scripts.brand_guide_revision import run as revise_background
         _, report = revise_background(args.revise_background_text, spatial='background', warm=args.warm_revision)
+        raise SystemExit(int(report['status'] != 'pending_independent_review'))
+    if args.revise_wordmark_text:
+        from scripts.brand_guide_revision import run as revise_wordmark
+        _, report = revise_wordmark(args.revise_wordmark_text, spatial='wordmark', warm=args.warm_revision)
         raise SystemExit(int(report['status'] != 'pending_independent_review'))
     if args.spatial_subject_exam:
         from scripts.brand_spatial_holdout import run as subject_exam
@@ -452,5 +487,5 @@ if __name__ == '__main__':
         from scripts.brand_full_exam import run as full_exam
         _, report = full_exam(); raise SystemExit(int(report['status'] != 'completed'))
     if args.run:
-        _, report = run(); raise SystemExit(int(report['status'] == 'failed'))
+        _, report = run(scoped_scenes=args.scoped_scenes); raise SystemExit(int(report['status'] == 'failed'))
     print(json.dumps({'model_called': False, 'training_started': False, 'brief': BRIEF}))

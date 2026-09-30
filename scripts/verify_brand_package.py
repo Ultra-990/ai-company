@@ -76,6 +76,14 @@ def verify(folder):
     if 'repair_contract' in report:
         from scripts.brand_artwork_repair import verify_origin
         repair = verify_origin(folder, report)
+    recovery = None
+    if 'scene_recovery_contract' in report:
+        if repair is not None: raise ValueError('Separate recovery and artwork repair origins required')
+        from scripts.brand_scene_recovery import verify_origin as verify_recovery
+        recovery = verify_recovery(folder, report)
+    if 'scene_contract' in report:
+        from scripts import brand_scene_contract as scoped
+        if report['scene_contract'] != scoped.CONTRACT: raise ValueError('Unknown original scene contract')
     def bound_read(name):
         if name not in report['artifacts']: raise ValueError('Missing bound brand artifact')
         return read(folder/name)
@@ -103,6 +111,12 @@ def verify(folder):
                     raise ValueError('Delivered brand artwork differs from model-authored scene')
             measured = bound_read(name+'/render.json')
             if brand.quality_issues(measured, profile): raise ValueError('Unresolved measured brand layout defects')
+            if 'scene_contract' in report:
+                if scoped.margin_findings(svg, measured, 'card' if profile == 'brand_card' else 'logo', plan['paper']):
+                    raise ValueError('Scoped source has unresolved shape margins')
+                if profile == 'brand_card':
+                    from scripts.brand_artwork_repair import card_decoration_findings
+                    if card_decoration_findings(svg, measured, plan['paper']): raise ValueError('Scoped source card has text decoration collisions')
             texts = brand.validate_svg(svg, profile=profile)['texts']
             pdf_checks(folder/name/'preview.pdf', texts, size_mm=brand.PROFILES[profile]['size_mm'])
             scale = .4 if name == 'logo-small' else 1
@@ -137,6 +151,7 @@ def verify(folder):
         'model_requests': sum(c['requests'] for c in chains), 'zip_files': len(names),
         'independent_visual_review_required': True, 'autonomy_qualified': False, 'training_exported': False}
     if repair is not None: result['repair_origin'] = repair
+    if recovery is not None: result['scene_recovery_origin'] = recovery
     return result
 
 

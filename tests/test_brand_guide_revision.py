@@ -61,7 +61,7 @@ def revised(tmp_path, monkeypatch, request):
     expanded = getattr(request, 'param', False)
     warm = expanded == 'warm'
     if warm: expanded = False
-    spatial = expanded in ('spatial', 'subject', 'alignment', 'background')
+    spatial = expanded in ('spatial', 'subject', 'alignment', 'background', 'wordmark')
     if expanded:
         data['plan'].update(concept_a='A false original concept description.', concept_b='A preserved second concept description.')
     if spatial:
@@ -69,11 +69,12 @@ def revised(tmp_path, monkeypatch, request):
         if expanded == 'subject': from scripts import brand_spatial_subject_review as measured
         if expanded == 'alignment': from scripts import brand_spatial_alignment_review as measured
         if expanded == 'background': from scripts import brand_background_review as measured
+        if expanded == 'wordmark': from scripts import brand_wordmark_review as measured
         data['plan'].update(concept_a='A wave sits below the wordmark.', concept_b='A circle surrounds the wordmark.')
         from scripts.brand_spatial_review import geometry as measure
         geometry = measure({'layout': [{'bbox': [100, 250, 300, 60]}], 'shape_layout': [{'bbox': [200, 100, 100, 80]}]})
         if expanded == 'subject': geometry['necessary_conditions']['inside'] = False
-        monkeypatch.setattr(measured, 'expand', lambda data, p: data | {'spatial_measurements': {'a': geometry, 'b': geometry}})
+        monkeypatch.setattr(measured, 'expand', lambda data, p: data | {'spatial_measurements': {'a': geometry, 'b': geometry}, 'wordmark_line_counts': {'a': 1, 'b': 1}})
         monkeypatch.setattr(measured, 'remeasure', lambda p, data: {'fixture_only': True})
     brand.school.save(delivery/'style-plan.json', PLAN)
     (delivery/'brand-guide.md').write_text(guide.guide_text('Fixture', PLAN, original['selection']))
@@ -98,6 +99,9 @@ def revised(tmp_path, monkeypatch, request):
             return {'concepts': [{'id': key, 'claims': [{'relation': relation, 'quote': quote}]} for key, relation, quote in phase]}
         before = claims([('a', 'below', 'below the wordmark'), ('b', 'surrounds', 'surrounds the wordmark')])
         after = claims([('a', 'above', 'above the wordmark'), ('b', 'above', 'above the wordmark')])
+        if expanded == 'wordmark':
+            for value in (before, after):
+                for row in value['concepts']: row['wordmark_lines'] = {'relation': 'unspecified', 'quote': ''}
         if expanded == 'subject':
             for value in (before, after):
                 for row in value['concepts']:
@@ -116,7 +120,7 @@ def revised(tmp_path, monkeypatch, request):
         monkeypatch.setattr(batch, 'OllamaProvider', Provider)
         monkeypatch.setattr(batch, 'check_resources', lambda *args: {})
         monkeypatch.setattr(batch, 'resident_models', lambda: [])
-    out, report = guide.run(source, expanded=bool(expanded), spatial=expanded if expanded in ('subject', 'alignment', 'background') else spatial, warm=warm)
+    out, report = guide.run(source, expanded=bool(expanded), spatial=expanded if expanded in ('subject', 'alignment', 'background', 'wordmark') else spatial, warm=warm)
     assert report['status'] == 'pending_independent_review'
     return out, report
 
@@ -125,6 +129,15 @@ def test_complete_revision_replays_three_model_calls_and_protects_artwork(revise
     result = guide.verify(revised[0])
     assert result['literal_authorship_verified'] and result['protected_artwork_unchanged']
     assert not result['autonomy_qualified'] and not result['exam_score_changed']
+
+
+@pytest.mark.parametrize('revised', ['wordmark'], indirect=True)
+def test_review_only_audit_refuses_to_hide_a_writer_and_final_review(revised):
+    out, report = revised
+    report.update(status='no_repair_requested', retained_batch_contract='local-retained-batch.v1')
+    guide.brand.school.save(out/'report.json', report)
+    with pytest.raises(ValueError, match='Exactly two reviews'):
+        guide.verify_review_only(out)
 
 
 @pytest.mark.parametrize('revised', ['warm'], indirect=True)
@@ -148,7 +161,7 @@ def test_expanded_revision_replays_structure_and_changed_concept(revised):
     assert json.loads((out/'revised-plan.json').read_text())['concept_a'] == 'A corrected description from the local model.'
 
 
-@pytest.mark.parametrize('revised', ['spatial', 'subject', 'alignment', 'background'], indirect=True)
+@pytest.mark.parametrize('revised', ['spatial', 'subject', 'alignment', 'background', 'wordmark'], indirect=True)
 def test_spatial_revision_overrides_false_model_approval_and_replays_five_calls(revised):
     out, report = revised
     assert report['max_model_calls'] == 5

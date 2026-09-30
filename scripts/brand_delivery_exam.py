@@ -78,9 +78,9 @@ def manifest(config, *, strict=False):
         'warm_text': True, 'manual_hints_allowed': False, 'training_export_allowed': False}
 
 
-def check_no_text_repair(folder, source, *, strict=False):
+def check_no_text_repair(folder, source, *, strict=False, protocol=None):
     """Replay both original reviews, including geometry veto and warm release."""
-    text_protocol = protocol_for(strict)
+    text_protocol = protocol or protocol_for(strict)
     read = evidence.read; report = read(folder/'report.json')
     original, data = text_repair.inputs(source); data = text_protocol.expand(data, source)
     expected = [('review', text_protocol.REVIEW_SYSTEM, data, text_protocol.REVIEW_SCHEMA),

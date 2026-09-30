@@ -1,5 +1,45 @@
 # Dziennik budowy AI Company
 
+## 2026-09-30 — lokalny autor naprawił Willow, Stone i Tide
+
+- `brand-scoped-scene.v1`: osobne instrukcje i wymagane teksty etapów,
+  schema enum nazwy/hasła/kontaktów z rzeczywistych danych, jednoznaczny
+  raport expected/observed zamiast ogólnego błędu. Geometria pozostaje
+  wyborem modelu; usunięto wspólne sugestie pozycji i sprzeczne wskazówki
+  dotyczące logo/karty. Opcjonalne `--run --scoped-scenes` obejmuje także
+  nową generację, eksport i późniejszą weryfikację źródła.
+- Naprawa v4 `--complete-scene-checks`: oba logo (również niewybrane),
+  marginesy kształtów i karta; do trzech prób na każdy z trzech etapów,
+  maksymalnie dziewięć dodatkowych wywołań. Zachowano odtwarzanie v1–v3.
+  Marginesy: ramka przeglądarki plus połowa obrysu, z uwzględnieniem skali
+  logo na karcie i wyłączeniem tła papieru. Nie jest to dokładna obwiednia
+  dowolnego ostrego łączenia miter; ocena wzrokowa pozostaje konieczna.
+- Tide `artwork-repair-b9ob52x4`: 22,606 s, jedno wywołanie, naprawione
+  wyłącznie logo B. Końcowa linia y=299..311; autor sam zmienił położenie
+  napisu i linii. Cztery inne podglądy zgodne bajtowo ze źródłem. Dosłowna
+  weryfikacja ZIP/PDF i obu znaków przeszła; niezależny odbiór pozytywny.
+- Recenzja v7 `--revise-wordmark-text` dodaje do istniejącego wywołania
+  odczyt twierdzeń single/multiple/unspecified/uncertain z dosłownymi
+  cytatami. Liczba wierszy pochodzi z faktycznego pojedynczego prostego
+  tekstu SVG; rozszerzenia wieloliniowe są odrzucane bez zgadywania.
+  Stone `guide-revision-uri7cdej`: 15,073 s, pięć wywołań warm. Złapano
+  fałszywe „stacked wordmark”, oba opisy poprawione, 18 grafik zachowanych.
+  Świeży render, autentyczność i niezależny odbiór potwierdzone.
+- `brand_scene_recovery.py`: osobne dokończenie źródła po wyczerpaniu
+  trzech prób drugiego logo. Chroni plan/logo A i wszystkie stare próby;
+  daje nowy jawny budżet rozwojowy, nie nadpisuje egzaminu. Willow
+  `scene-recovery-5xj6n1nh`: 69,112 s, trzy dodatkowe wywołania, każde
+  zaakceptowane od razu (logo B, wybór, karta). Pełny ZIP 21 plików.
+- Willow v7 `guide-revision-s1_ok8jw`: 11,477 s, dwa wywołania bez potrzeby
+  korekty. Dodano audyt `--verify KATALOG --review-only`: kompletne wiązanie
+  raportu, źródła, żądań i retencji oraz rzeczywisty niezależny render.
+  Pięć obrazów Willow obejrzano, treść sprawdzono; paczka odebrana.
+- 104 testy przeszły w 4,13 s, obejmując nowe źródła, oba naprawiane logo,
+  zmianę marginesów, ochronę wcześniejszych etapów, zakaz pozornego egzaminu
+  oraz odrzucenie ukrywania wywołań piszących jako recenzji bez zmian.
+  Sprawdzone zasoby bez kontenerów; bez ingerencji w cudze procesy, treningu
+  wag i przenoszenia egzaminów do nauki. Ostatni pełny wynik pozostaje 0/3.
+
 ## 2026-09-30 — zamrożony egzamin v3 i kontynuacja po krótkim teście zasobów
 
 - Nowe trzy briefy Willow Hearth / Stone Market / Tide Garden; oba ramiona

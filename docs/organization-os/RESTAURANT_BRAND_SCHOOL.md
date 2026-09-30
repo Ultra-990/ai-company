@@ -6,6 +6,37 @@ plan stylu, dwa koncepty logo, uzasadnia wybór i projektuje wizytówkę.
 Asystent rozwija wymagania, narzędzia i niezależną ocenę; nie rysuje logo
 ani nie poprawia współrzędnych za model.
 
+## Wymagania etapów, oba logo i liczba wierszy — 30.09.2026
+
+Nowa generacja: `--run --scoped-scenes`. Kontrakt `brand-scoped-scene.v1`
+podaje osobno zadanie logo oraz karty i wiąże tekst w schemacie z danymi
+briefu/planu. Błędny tekst daje dokładne expected/observed. Model sam
+wybiera kształty i układ; nie otrzymuje gotowych współrzędnych. Marginesy
+obejmują kształty i grubość obrysu; eksport i weryfikacja egzekwują kontrakt.
+
+Naprawa ukończonego źródła: `--repair-artwork KATALOG --complete-scene-checks
+--artwork-reasoning`. V4 sprawdza oba logo i kartę, nie tylko wybrany znak.
+Budżet to trzy próby na etap, do dziewięciu dodatkowych wywołań. Kontrole
+monochromu, chronionych etapów, kopii dostawy i autorstwa pozostają aktywne.
+Ramki powiększone o połowę obrysu nie dowodzą obwiedni wszystkich łączeń miter.
+
+Poprawka treści: `--revise-wordmark-text KATALOG --warm-revision`. V7
+uzupełnia dotychczasowy odczyt relacji o twierdzenia dotyczące liczby wierszy
+samej nazwy. Model musi podać dokładny cytat, a wynik porównywany jest z
+rzeczywistą strukturą SVG. Nie dodaje wywołań do pięciokrokowej serii.
+Recenzję v7 bez korekty sprawdza `brand_guide_revision.py --verify KATALOG
+--review-only`, ze świeżym renderem obu logo i weryfikacją dwóch wywołań.
+
+`python -m scripts.brand_scene_recovery --run KATALOG` służy do osobnego
+rozwojowego dokończenia źródła zatrzymanego po trzech błędnych próbach logo B.
+Plan/logo A są chronione, wcześniejsze odpowiedzi i wynik pozostają zachowane.
+Nowy budżet jest jawny, niezależny od wyczerpanego egzaminu; nie kwalifikuje usługi.
+
+Rzeczywiste poprawki Tide (22,606 s), Stone (15,073 s), Willow (69,112 s
+plus 11,477 s recenzji) odebrane jako kompletne syntetyczne pakiety.
+104 testy przeszły. Historyczny egzamin nadal 0/3; potrzebny nowy zamrożony
+pełny przebieg oraz oddzielne dowody korekt. Nie zmieniono oryginalnych wag.
+
 ## Egzamin v3 i wznawianie po preflight zasobów
 
 `--delivery-exam-strict` zamraża trzy nowe briefy: Willow Hearth, Stone

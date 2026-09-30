@@ -118,6 +118,7 @@ def run(package, *, expanded=False, spatial=False, warm=False):
         if spatial == 'subject': from scripts import brand_spatial_subject_review as protocol
         if spatial == 'alignment': from scripts import brand_spatial_alignment_review as protocol
         if spatial == 'background': from scripts import brand_background_review as protocol
+        if spatial == 'wordmark': from scripts import brand_wordmark_review as protocol
         data = protocol.expand(data, package)
     config = brand.configuration() | {'sampling_profile': 'bounded-default.v1', 'think': False,
         'num_ctx': 8192, 'num_predict': 1800, 'num_thread': 4, 'timeout_seconds': 90}
@@ -133,8 +134,9 @@ def run(package, *, expanded=False, spatial=False, warm=False):
         for name in ('brand_spatial_review.py', 'render_school_svg.py', 'vector_school_contract.py'):
             shutil.copyfile(Path(__file__).parent/name, code/name)
         if spatial == 'subject': shutil.copyfile(Path(__file__).parent/'brand_spatial_subject_review.py', code/'brand_spatial_subject_review.py')
-        if spatial in ('alignment', 'background'): shutil.copyfile(Path(__file__).parent/'brand_spatial_alignment_review.py', code/'brand_spatial_alignment_review.py')
-        if spatial == 'background': shutil.copyfile(Path(__file__).parent/'brand_background_review.py', code/'brand_background_review.py')
+        if spatial in ('alignment', 'background', 'wordmark'): shutil.copyfile(Path(__file__).parent/'brand_spatial_alignment_review.py', code/'brand_spatial_alignment_review.py')
+        if spatial in ('background', 'wordmark'): shutil.copyfile(Path(__file__).parent/'brand_background_review.py', code/'brand_background_review.py')
+        if spatial == 'wordmark': shutil.copyfile(Path(__file__).parent/'brand_wordmark_review.py', code/'brand_wordmark_review.py')
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', code/'local_ollama.py')
     batch = None
     if warm:
@@ -238,7 +240,7 @@ def recorded_render(out, package, data):
 
 def verify(out, *, use_recorded_render=False):
     out = Path(out); report = evidence.read(out/'report.json')
-    spatial = report.get('review_contract') in ('brand-measured-spatial-review.v3', 'brand-subject-spatial-review.v4', 'brand-measured-alignment-review.v5', 'brand-background-evidence-review.v6')
+    spatial = report.get('review_contract') in ('brand-measured-spatial-review.v3', 'brand-subject-spatial-review.v4', 'brand-measured-alignment-review.v5', 'brand-background-evidence-review.v6', 'brand-wordmark-lines-review.v7')
     if (report.get('schema') != CONTRACT or report.get('status') != 'pending_independent_review'
             or report.get('max_model_calls') != (5 if spatial else 3)
             or any(report.get(k) is not False for k in ('training_exported', 'exam_score_changed', 'production_changed', 'autonomy_qualified'))):
@@ -258,6 +260,7 @@ def verify(out, *, use_recorded_render=False):
         if report['review_contract'] == 'brand-subject-spatial-review.v4': from scripts import brand_spatial_subject_review as protocol
         if report['review_contract'] == 'brand-measured-alignment-review.v5': from scripts import brand_spatial_alignment_review as protocol
         if report['review_contract'] == 'brand-background-evidence-review.v6': from scripts import brand_background_review as protocol
+        if report['review_contract'] == 'brand-wordmark-lines-review.v7': from scripts import brand_wordmark_review as protocol
         if report['review_contract'] != protocol.CONTRACT: raise ValueError('Unknown text review contract')
         data = protocol.expand(data, package)
     if (brand.school.checksum(package/'report.json') != report['source_report_sha256']
@@ -333,10 +336,38 @@ def verify(out, *, use_recorded_render=False):
     return result
 
 
+def verify_review_only(out):
+    """Authenticate a v7 no-change review and freshly remeasure the source logos."""
+    from scripts import brand_wordmark_review as protocol
+    from scripts.brand_delivery_exam import check_no_text_repair
+    out = Path(out); report = evidence.read(out/'report.json')
+    if (report.get('schema') != CONTRACT or report.get('status') != 'no_repair_requested'
+            or report.get('review_contract') != protocol.CONTRACT or report.get('max_model_calls') != 5
+            or report.get('retained_batch_contract') != 'local-retained-batch.v1'
+            or any(report.get(k) is not False for k in ('training_exported', 'exam_score_changed', 'production_changed', 'autonomy_qualified'))):
+        raise ValueError('Bounded v7 review-only result required')
+    for name, digest in report['artifacts'].items():
+        path = evidence.bounded(out/name)
+        if not path.resolve().is_relative_to(out.resolve()) or brand.school.checksum(path) != digest:
+            raise ValueError('Review-only evidence changed')
+    package = Path(report['package']); original, data = inputs(package)
+    if (brand.school.checksum(package/'report.json') != report['source_report_sha256']
+            or (report['model'], report['digest']) != (original['model'], original['digest'])):
+        raise ValueError('Review-only source changed')
+    check_no_text_repair(out, package, protocol=protocol)
+    return {'schema': CONTRACT, 'report_sha256': brand.school.checksum(out/'report.json'),
+        'status': 'no_repair_requested', 'source': str(package), 'source_report_sha256': report['source_report_sha256'],
+        'review_authorship_verified': True, 'source_package_verified': True,
+        'independent_spatial_render': protocol.remeasure(package, protocol.expand(data, package)),
+        'independent_review_required': True, 'autonomy_qualified': False}
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--verify', type=Path, required=True)
     parser.add_argument('--use-recorded-render', action='store_true')
+    parser.add_argument('--review-only', action='store_true')
     args = parser.parse_args()
-    print(json.dumps(verify(args.verify, use_recorded_render=args.use_recorded_render), indent=2))
+    if args.review_only and args.use_recorded_render: parser.error('Review-only verification requires a fresh render')
+    print(json.dumps(verify_review_only(args.verify) if args.review_only else verify(args.verify, use_recorded_render=args.use_recorded_render), indent=2))

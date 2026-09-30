@@ -1,5 +1,34 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — trzy zachowane projekty poprawione przez model
+
+Dodano kontrakt scen v1: osobne instrukcje logo/karty, wymagane teksty
+z briefu/planu w schemacie i diagnostyce oraz pomiary marginesów kształtów.
+Nie narzuca gotowych współrzędnych ani położenia symbolu powyżej napisu.
+Nowe generowanie może go używać przez `--run --scoped-scenes`; starsze
+przebiegi zachowują swoje reguły. Naprawa v4 sprawdza oba koncepty i kartę,
+do dziewięciu dodatkowych wywołań, oraz monochromatyczną czytelność znaków.
+
+- Tide `artwork-repair-b9ob52x4`: jedna poprawka logo B, 22,606 s.
+  Podkreślenie kończy ramkę na y=311 zamiast 351; z obrysem mieści się
+  w marginesie. Cztery pozostałe obrazy identyczne z wcześniejszymi.
+- Stone `guide-revision-uri7cdej`: pięć wywołań warm, 15,073 s. Kontrakt v7
+  oddzielnie odczytuje twierdzenia o liczbie wierszy i porównuje je z SVG.
+  Oba opisy poprawione, wszystkie grafiki niezmienione; świeży render
+  kontrolny i dosłowne autorstwo potwierdzone.
+- Willow `scene-recovery-5xj6n1nh`: trzy dodatkowe wywołania, 69,112 s.
+  Zachowane plan i logo A, lokalny autor dokończył logo B z właściwą nazwą,
+  wybór oraz wizytówkę. Osobny kontrakt rozwojowy v1 nie resetuje egzaminu.
+  Przegląd v7 `guide-revision-s1_ok8jw`: 11,477 s, bez żądania zmian.
+  Dwa wywołania recenzji uwierzytelniono; wykonano świeży render obu logo.
+
+Wszystkie trzy poprawione syntetyczne paczki odebrane po oglądzie grafik
+i treści; 104 powiązane testy przeszły. Kontrola geometrii uwzględnia połowę
+obrysu, nie stanowi ogólnego dowodu obwiedni dowolnych ostrych łączeń.
+Nie zmieniano wag, wcześniejszych odpowiedzi ani wyniku ostatniego egzaminu
+0/3. Następna ocena musi zamrozić nowe briefy i pełną ścieżkę z tymi
+mechanizmami oraz oddzielne próby korekt. Brak kwalifikacji pięciu usług.
+
 ## Aktualizacja 30.09.2026 — nowy egzamin v3: 2/3 technicznie, 0/3 po pełnym odbiorze
 
 Zamrożono nowe briefy Willow Hearth, Stone Market i Tide Garden z kontrolą

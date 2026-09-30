@@ -32,6 +32,9 @@ def test_collision_feedback_includes_actual_geometry_without_proposed_solution()
 @pytest.fixture
 def repaired(tmp_path, monkeypatch, request):
     strict = getattr(request, 'param', False)
+    source_scoped = strict == 'scoped-source'
+    if source_scoped: strict = False
+    full = strict == 'full'
     monkeypatch.setattr(b, 'ROOT', tmp_path)
     monkeypatch.setattr(b.school, 'check_idle', lambda: {})
     monkeypatch.setattr(b, 'configuration', lambda: {'model': 'fixture', 'digest': 'f'*64})
@@ -50,7 +53,10 @@ def repaired(tmp_path, monkeypatch, request):
     corrected_card = deepcopy(card)
     if strict:
         card['shapes'].append({'tag': 'rect', 'attributes': {'x': '40', 'y': '40', 'width': '8', 'height': '8', 'fill': plan['accent']}})
-    values = iter([plan, a, other, {'selected': 'a', 'reason': 'A synthetic fixture selection.'}, card, corrected, corrected_card])
+    corrected_other = deepcopy(other); corrected_other['shapes'][0]['attributes']['r'] = '28'
+    answers = [plan, a, other, {'selected': 'a', 'reason': 'A synthetic fixture selection.'}, card, corrected]
+    if full: answers.append(corrected_other)
+    values = iter(answers+[corrected_card])
     class Provider:
         def __init__(self, config): pass
         def complete(self, messages):
@@ -62,6 +68,8 @@ def repaired(tmp_path, monkeypatch, request):
         (output/'preview.pdf').write_bytes(b'%PDF-fixture')
         texts = b.validate_svg(svg, profile=profile)['texts']
         result = {'layout': [{'text': v, 'bbox': [40, 40+i*60, 100, 40]} for i,v in enumerate(texts)], 'shape_layout': [{'tag': 'circle', 'bbox': [40, 380, 20, 20]}], 'pdf': {'fixture': True}}
+        if profile == 'brand_logo':
+            result['shape_layout'][0]['bbox'] = [200, 341 if full and 'r="30"' in svg else 100, 20, 20]
         if profile == 'brand_card':
             result['shape_layout'] = []
             for element in ET.fromstring(svg).iter():
@@ -78,9 +86,9 @@ def repaired(tmp_path, monkeypatch, request):
         return result
     monkeypatch.setattr(b, 'render', render)
     monkeypatch.setattr(evidence, 'pdf_checks', lambda *a, **kw: {})
-    source, original = b.run()
+    source, original = b.run(scoped_scenes=source_scoped)
     assert original['status'] == 'pending_independent_visual_review'
-    out, report = repair.run(source, strict_card=strict)
+    out, report = repair.run(source, strict_card=bool(strict), full_scene=full)
     assert report['status'] == 'pending_independent_visual_review'
     return source, out, report
 
@@ -93,6 +101,15 @@ def test_repair_reuses_protected_stages_and_exports_full_literal_package(repaire
     assert verified['repair_origin']['repaired_stages'] == ['logo-a']
     assert (source/'plan-response.json').read_bytes() == (out/'plan-response.json').read_bytes()
     assert not verified['repair_origin']['fresh_exam']
+
+
+@pytest.mark.parametrize('repaired', ['scoped-source'], indirect=True)
+def test_new_generation_applies_scoped_copy_and_margins_before_acceptance(repaired):
+    source, _, _ = repaired
+    assert evidence.read(source/'report.json')['scene_contract'] == 'brand-scoped-scene.v1'
+    assert evidence.verify(source)['literal_authorship_verified']
+    schema = evidence.read(source/'logo-b-request.json')['format']
+    assert schema['properties']['texts']['items']['properties']['text']['enum'] == [b.BRIEF['restaurant_name']]
 
 
 @pytest.mark.parametrize('repaired', [True], indirect=True)
@@ -111,6 +128,54 @@ def test_strict_card_repair_replays_authorship_and_rejects_reintroduced_decorati
     b.school.save(out/'report.json', report)
     with pytest.raises(ValueError, match='still enters text bounds'):
         evidence.verify(out)
+
+
+@pytest.mark.parametrize('repaired', ['full'], indirect=True)
+def test_complete_scene_checks_repair_alternate_logo_and_replay_all_three_stages(repaired):
+    source, out, report = repaired
+    verified = evidence.verify(out)
+    assert verified['repair_origin']['schema'] == repair.FULL_CONTRACT
+    assert verified['repair_origin']['repaired_stages'] == ['logo-a', 'logo-b', 'card']
+    assert verified['repair_origin']['additional_model_calls'] == 3
+    name = 'logo-b/render.json'; data = evidence.read(out/name)
+    data['shape_layout'][0]['bbox'][1] = 341
+    b.school.save(out/name, data)
+    report['artifacts'][name] = b.school.checksum(out/name); b.school.save(out/'report.json', report)
+    with pytest.raises(ValueError, match='violates margins'): evidence.verify(out)
+
+
+def test_exhausted_second_logo_can_be_completed_as_separate_development_work(repaired, monkeypatch):
+    from scripts import brand_scene_recovery as recovery
+    import shutil
+    source, _, _ = repaired
+    original=evidence.read(source/'report.json')
+    failed=source.parent/'failed-second-logo';failed.mkdir()
+    for stage in ('plan','logo-a'):
+        for p in source.glob(stage+'*-*.json'): shutil.copyfile(p,failed/p.name)
+    shutil.copyfile(source/'plan.json',failed/'plan.json')
+    plan=evidence.read(source/'plan.json')
+    second=json.loads(evidence.chain(source,'logo-b',original)[0])
+    wrong=deepcopy(second);wrong['texts'][0]['text']='Wrong tagline'
+    replies=iter([wrong,wrong,wrong])
+    class Provider:
+        def __init__(self,config): pass
+        def complete(self,messages):
+            return {'model':'fixture','digest':'f'*64,'content':json.dumps(next(replies))}
+    monkeypatch.setattr(b,'OllamaProvider',Provider)
+    with pytest.raises(ValueError):
+        b.validated_call(failed,'logo-b','fixture','fixture',{},original['config'],lambda raw:b.compile_scene(raw,plan,kind='logo'))
+    stopped=original|{'status':'failed','stages':['plan','logo-a']}
+    stopped['artifacts']={str(p.relative_to(failed)):b.school.checksum(p) for p in failed.rglob('*') if p.is_file()}
+    b.school.save(failed/'report.json',stopped)
+    replies=iter([second,json.loads(evidence.chain(source,'selection',original)[0]),json.loads(evidence.chain(source,'card',original)[0])])
+    out,report=recovery.run(failed)
+    assert report['status']=='pending_independent_visual_review'
+    result=evidence.verify(out)
+    assert result['scene_recovery_origin']['additional_model_calls']==3
+    assert not result['scene_recovery_origin']['fresh_exam']
+    assert (out/'logo-a-response.json').read_bytes()==(failed/'logo-a-response.json').read_bytes()
+    report['fresh_exam']=True;b.school.save(out/'report.json',report)
+    with pytest.raises(ValueError,match='nonqualification boundary'):evidence.verify(out)
 
 
 @pytest.mark.parametrize('fault', ['diagnostic', 'protected', 'extra_hint', 'source', 'qualify'])
