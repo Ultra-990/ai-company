@@ -221,3 +221,91 @@ Niezależna ocena SHA256: `3d7dd63362ace6271fc1e62baff6c571ff8991acac0e6cd6d77b9
 Testy recenzenta, szkoły i protokołu: **32 passed, 3 skipped, 0,75 s**.
 Pomijane próby wymagają osobnego jawnego uruchomienia modelu; nie są sukcesami.
 Wagi, źródła i wcześniejsze wyniki niezmienione, brak eksportu do nauki.
+
+## Ograniczona samokorekta względem źródeł
+
+`technical_review_self_correction.py` dodaje osobny kontrakt
+`technical-review-source-self-correction.v1`. Przyjmuje zweryfikowaną recenzję
+z zachowanego replay v2 i wykonuje najwyżej trzy nowe wywołania: lokalny audyt
+każdego komentarza oraz pozostałych części recenzji, pełną poprawkę autora,
+a następnie ponowny audyt. Nie dostarcza modelowi niezależnej oceny nauczyciela
+ani odpowiedzi wzorcowej. Cytaty z recenzji i kart źródeł muszą być literalne;
+każda część wymaga osobnej oceny. Komentarze oznaczone jako wsparte muszą
+zostać zachowane bez zmian. Identyczna poprawka, wadliwa struktura lub
+nieusunięte zastrzeżenia mają jawny status końcowy, bez dodatkowych prób.
+
+Wszystkie wywołania używają przypiętego modelu i profilu deliberate,
+16384 tokenów kontekstu, do 8192 tokenów generowania, czterech wątków
+i limitu 180 s na wywołanie. Krótka retencja modelu wynosi trzy sekundy,
+ostatnie żądanie zwalnia model naturalnie. Zasoby są kontrolowane przed
+rozpoczęciem i przy każdym żądaniu; brak stop/unload, treningu lub zmian wag.
+
+```bash
+.venv/bin/python scripts/technical_review_self_correction.py --run /path/to/replay-v2-run
+.venv/bin/python scripts/technical_review_self_correction.py --verify /path/to/self-correction-run
+```
+
+Weryfikacja odtwarza źródło, prompty, kolejność i limity wywołań, literalne
+odpowiedzi, oceny, eksport Markdown/JSON i zwolnienie krótkiej partii.
+Zgoda lokalnego audytora pozostawia `accepted=false` i wymaga niezależnego
+przeglądu merytorycznego całego wyniku. Ten mechanizm nie zamienia znanego
+materiału w świeży egzamin i nie zmienia poprzednich protokołów ani ocen.
+
+Pierwsza rzeczywista próba `self-correction-xappp25s`: **108,325 s**, trzy
+wywołania, naturalne zwolnienie modelu potwierdzone. Lokalny końcowy audyt
+zwrócił `needs_revision`; niezależny pełny odbiór również **odrzucony**.
+Zachowano cztery trafne rozpoznania błędów artykułu i usunięto niepotwierdzoną
+przewagę hybrydy z zalecenia. Pozostały jednak nieudowodniony ranking kosztów,
+nieuprawniona ocena wielkości próby i krytyka poprawnych zdań. Poprawka
+dodatkowo wprowadziła historię wcześniejszej recenzji jako rzekomy problem
+samego artykułu; końcowy lokalny audyt wykrył ten nowy błąd.
+
+Przyczyna niepowodzenia mechanizmu: jeden werdykt dla całego komentarza
+pozwolił trafnej diagnozie zamaskować błędne zalecenie. Ochrona komentarzy
+oznaczonych `supported` utrwaliła przeoczony błąd. Następny osobny protokół
+powinien rozdzielić kontrolę diagnozy i zaleceń, zachowując dokładnie te
+fragmenty, które rzeczywiście sprawdzono. V1 pozostaje zapisem nieudanej
+próby rozwojowej; nie stanowi podstawy do nowego egzaminu kwalifikacyjnego.
+
+Weryfikacja literalnego pochodzenia i wszystkich trzech wywołań przeszła.
+Raport SHA256: `8aa5945ac71a7a4e0cd09620132c9e1670e239e528bd7494db264c92611b0bc5`.
+Testy: **52 passed, 3 skipped, 1,27 s**. Pierwsze uruchomienie terminala
+zatrzymał sandbox na odczycie lokalnego stanu, zanim powstał katalog próby
+i zanim użyto modelu; właściwy pilot wykonano raz po uzyskaniu wymaganych
+uprawnień. Nie uruchomiono kolejnej inferencji ani świeżych egzaminów.
+
+## Wersjonowana samokorekta na poziomie twierdzeń
+
+Osobny moduł `technical_review_claim_self_correction.py` wprowadza kontrakt
+`technical-review-source-self-correction.v2`. Nie zmienia kontraktu v1 ani
+zachowanego przebiegu `self-correction-xappp25s`. Każdy komentarz jest
+przekazywany audytorowi jako cztery literalnie związane elementy: diagnoza
+(`line`, `quote`, `issue`), rekomendacja, istotność oraz lista identyfikatorów
+źródeł. Pozostałe pola recenzji nadal są oceniane oddzielnie.
+
+Werdykt dotyczy jednego elementu. Poprawna diagnoza nie może więc oznaczyć
+rekomendacji ani poziomu istotności jako wspartych. Autor może zmienić tylko
+elementy `needs_revision` lub `uncertain`; każdy element `supported` jest
+porównywany z wynikiem literalnie i musi pozostać identyczny. Cytat błędu musi
+pochodzić dokładnie z ocenianego elementu, a każdy cytat dowodowy z `notes`
+lub `scope` wskazanej karty. Osobna kontrola listy źródeł zapobiega zachowaniu
+błędnego przypisania tylko dlatego, że sama diagnoza była trafna.
+
+Budżet nadal wynosi najwyżej trzy wywołania: audyt twierdzeń, pełna poprawka
+autora i ponowny audyt twierdzeń. Konfiguracja, przypięty autor, żądania,
+odpowiedzi, implementacja, artefakty, krótka retencja i końcowe zwolnienie są
+wiążąco odtwarzane przez `--verify`. Wynik pozostaje
+`accepted=false`, `autonomy_qualified=false` i wymaga niezależnego odbioru;
+protokół nie jest świeżym egzaminem ani treningiem.
+
+```bash
+.venv/bin/python scripts/technical_review_claim_self_correction.py --run /path/to/replay-v2-run
+.venv/bin/python scripts/technical_review_claim_self_correction.py --verify /path/to/claim-self-correction-run
+```
+
+Test mieszany potwierdza, że niepoparta rekomendacja może zostać wymieniona
+bez zmiany trafnej diagnozy. Osobne testy chronią każdy z czterech elementów,
+pełny trzyetapowy replay i odrzucenie fałszywego odbioru. Test historyczny
+porównuje v1 bajtowo ze snapshotem nieudanej próby i ponownie odtwarza jej
+wynik `needs_revision`. Przygotowanie v2 było wyłącznie CPU; modelu nie
+uruchomiono i nie powstał nowy wynik merytoryczny.
