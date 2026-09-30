@@ -15,9 +15,13 @@ from scripts import technical_review_claim_self_correction as v2
 v1 = v2.v1
 CONTRACT = 'technical-review-source-self-correction.v3'
 ROOT, BUDGET, MAX_CALLS, CLAIMS = v2.ROOT, v2.BUDGET, 3, v2.CLAIMS
-CRITIC = v2.CRITIC.replace(
-    'Return one assessment per claim ID, exactly once and\nin order.',
-    'Return one assessment value under every supplied claim ID key. The map must contain every key exactly once and no other keys. Object key order has no semantic meaning.')
+LEGACY_AUDIT_SHAPE = 'Return one assessment per claim ID, exactly once and\nin order.'
+KEYED_AUDIT_SHAPE = ('Return one assessment value under every supplied claim ID key. '
+                     'The map must contain every key exactly once and no other keys. '
+                     'Object key order has no semantic meaning.')
+if v2.CRITIC.count(LEGACY_AUDIT_SHAPE) != 1:
+    raise RuntimeError('V3 critic prompt cannot replace the legacy audit-shape instruction exactly once')
+CRITIC = v2.CRITIC.replace(LEGACY_AUDIT_SHAPE, KEYED_AUDIT_SHAPE)
 WRITER = v2.WRITER.replace(
     'The writer audit is a deterministic projection of the preserved full audit:',
     'The writer audit is a deterministic keyed-map projection of the preserved full audit:')

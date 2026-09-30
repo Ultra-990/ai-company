@@ -23,6 +23,12 @@ def audit(value, bad=None):
             for claim, unit in repair.v2.claim_units(value).items()}
 
 
+def test_v3_critic_replaces_legacy_array_instruction_exactly():
+    assert repair.v2.CRITIC.count(repair.LEGACY_AUDIT_SHAPE) == 1
+    assert repair.LEGACY_AUDIT_SHAPE not in repair.CRITIC
+    assert repair.CRITIC.count(repair.KEYED_AUDIT_SHAPE) == 1
+
+
 @pytest.mark.parametrize('fault', ['missing', 'extra', 'duplicate'])
 def test_claim_map_rejects_missing_extra_and_duplicate_keys(fault):
     original = review(); value = audit(original)
