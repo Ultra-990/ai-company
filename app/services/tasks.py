@@ -431,6 +431,19 @@ class TaskRepository:
         self._refresh_documentation()
         return task
 
+    def execution_diagnostics(
+        self, task_id: int, *, attention_after_seconds: int = 900,
+    ) -> dict:
+        """Read task and attempt evidence from one SQLite snapshot; no mutation."""
+        from app.services.task_execution_diagnostics import inspect_execution
+        with self._session_factory() as session:
+            session.execute(text("BEGIN"))
+            try:
+                return inspect_execution(session, task_id,
+                    attention_after_seconds=attention_after_seconds)
+            except LookupError as exc:
+                raise TaskNotFoundError(str(exc)) from exc
+
     def _finish_execution(
         self,
         task_id: int,

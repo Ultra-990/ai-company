@@ -34,3 +34,34 @@ trzech równoczesnych wykonawców, kolejkę jednego i trzech zadań, kontrolowan
 wyścig dwóch transakcji, kolejność FIFO, pomijanie nieuprawnionych zadań,
 pojedynczy audyt/próbę i wycofanie wszystkich zapisów po wymuszonym błędzie.
 Nie wykonują modeli, kodu produktu ani kontenerów.
+
+## Diagnostyka niezakończonych prób
+
+Właścicielski `GET /api/tasks/{task_id}/execution-diagnostics` pokazuje
+metadane ostatniej próby, liczbę otwartych prób i wyników oczekujących
+na odbiór oraz wiek najstarszej otwartej próby. Domyślny próg uwagi wynosi
+900 sekund; parametr `attention_after_seconds` przyjmuje 1–604800 sekund.
+Odpowiedź ma `Cache-Control: no-store` i nie zawiera treści wyników ani
+komunikatów błędów wykonawcy.
+
+To zwykła kolejka zadań, bez heartbeat. `worker_liveness: unknown` oraz
+`failure_confirmed: false` są jawne także po przekroczeniu progu. Sam wiek
+próby nie rozstrzyga, czy wykonawca pracuje, zawiesił się, zakończył się bez
+zapisu lub utracił połączenie. `Task.updated_at` nie jest używany jako dowód
+aktywności procesu. Próg jest wskazówką do sprawdzenia, a nie czasem
+ważności uprawniającym do ponownego wykonania.
+
+Diagnostyka rozróżnia oczekiwanie na potwierdzenie pracy, wynik oczekujący
+na odbiór, brak otwartej próby oraz niespójne rekordy. Sygnalizuje m.in.
+kilka otwartych prób, starszą próbę pozostawioną otwartą po nowej, konflikt
+statusu zadania i próby oraz błędne czasy. Przyszły start nie jest zamieniany
+na wiek zero. Czasy SQLite pozbawione strefy są interpretowane jako UTC,
+zgodnie z ich zapisem. Uszkodzony zapis czasu uniemożliwiający odczyt daje
+503 zamiast pozornie poprawnej diagnozy.
+
+Wszystkie zapytania korzystają z jednego jawnego snapshotu SQLite. Test
+z drugim połączeniem kończącym próbę między odczytami potwierdza, że odpowiedź
+nie miesza różnych chwil. Endpoint niczego nie zapisuje, nie bada PID,
+nie zmienia stanu zadania i nie ponawia wykonania. Również status ostatniej
+próby `completed` nie oznacza automatycznej oceny jej jakości; zwracany jest
+osobno zapisany `verification_status`.

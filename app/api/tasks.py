@@ -2,7 +2,7 @@ from collections.abc import Generator
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -391,3 +391,22 @@ def retry_reviewed_task(
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="Ponowienie pracy jest niedostępne") from exc
+
+
+@router.get("/{task_id}/execution-diagnostics")
+def get_execution_diagnostics(
+    repository: RepositoryDependency,
+    response: Response,
+    task_id: int = Path(ge=1),
+    attention_after_seconds: int = Query(default=900, ge=1, le=604800),
+    _: None = Depends(require_owner),
+) -> dict:
+    """Report unfinished attempts without guessing liveness or retrying work."""
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        return repository.execution_diagnostics(task_id,
+            attention_after_seconds=attention_after_seconds)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (SQLAlchemyError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="Diagnostyka wykonania jest niedostępna") from exc
