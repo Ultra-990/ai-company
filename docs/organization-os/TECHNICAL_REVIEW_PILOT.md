@@ -387,12 +387,18 @@ poprawnej linii 7 zapisane jako wada. Raport SHA256:
 `2f811271fac543760daaccbf383a3c0d41dd8b90143777c8894faf870f2f9292`.
 Nie powtarzano v4.
 
-V5 `technical-review-atomic-claim-audit.v5` jest osobnym, CPU-only
-kontraktem kontroli i ochrony autora, jeszcze bez runnera inferencji. Dzieli
+V5 `technical-review-atomic-claim-audit.v5` jest osobnym kontraktem kontroli
+i ochrony autora. Dzieli
 diagnozę i rekomendację na bezstratne, uporządkowane sloty tekstowe. Każda
 wsparta atomowa teza wymaga dosłownego cytatu z `notes` źródła już wskazanego
 przez komentarz, poza wąskimi deterministycznymi przypadkami tekstu artykułu,
 absolutnej generalizacji lub osadzonej instrukcji. W pełni wspierane pole musi
 pozostać bajtowo identyczne; w polu mieszanym wolno zastąpić jedynie odrzucone
 sloty. Znane v4 jest związane hashami i sprawdzane bajtowo. V5 ma testy
-pozytywne i adwersarialne, lecz nie jest dowodem gotowości modelu.
+pozytywne i adwersarialne. Osobny runner
+`technical-review-atomic-self-correction.v5` ma najwyżej cztery kroki:
+audyt atomowy, autora, ponowny audyt i warunkowego final-writera. Odtwarza
+również błąd transportu po zapisaniu żądania, bez tworzenia fałszywej
+odpowiedzi, i odrzuca niemożliwe przejścia między krokami. Pozytywny wynik
+pozostaje niezaakceptowany i wymaga niezależnego odbioru. Runner jest
+przetestowany CPU, lecz nieuruchomiony na modelu.

@@ -13,7 +13,9 @@ porównawczą. Status `needs_revision` zachowano. Jedyny przebieg v4
 `final-correction-vi85m_7h` przeszedł odtworzenie po 148,684 s, lecz niezależny
 odbiór odrzucił niepodpartą kwalifikację rozmiaru próby, strukturę kosztów i
 opcjonalną elaborację zapisaną jako wada. Nie powtarzano v4. V5 przygotowuje
-atomową kontrolę źródłową tych tez i nie ma jeszcze runnera inferencji.
+atomową kontrolę źródłową tych tez oraz osobny runner z maksymalnie czterema
+krokami. Runner przeszedł niezależny odbiór CPU, ale nie ma jeszcze próby
+inferencji.
 Wszystkie pięć usług pozostaje niezakwalifikowanych (0/5).
 
 ## Aktualizacja 30.09.2026 — próba audytu twierdzeń zatrzymana na pokryciu

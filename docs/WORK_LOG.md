@@ -15,8 +15,10 @@ przeglądy doprowadziły do wymogu dokładnego zbioru plików oraz kompletnego
 dowodu retained-batch. Jedyny przebieg `final-correction-vi85m_7h` trwał
 148,684 s, miał trzy wywołania i poprawnie zwolnił model, lecz niezależny
 odbiór odrzucił trzy nadal nieudowodnione części recenzji. Nie powtarzano go.
-V5 zawiera atomową kontrolę źródłową i ochronę slotów tekstowych, ale nie ma
-jeszcze runnera inferencji. Wagi, stare przebiegi i kwalifikacja 0/5 pozostają
+V5 zawiera atomową kontrolę źródłową, ochronę slotów tekstowych i osobny
+runner z maksymalnie czterema krokami. Dwa niezależne odbiory sprawdziły też
+replay błędów transportu i niemożliwych przejść stanu; pierwszy pilot v5
+pozostaje nieuruchomiony. Wagi, stare przebiegi i kwalifikacja 0/5 pozostają
 bez zmian.
 
 ## 2026-09-30 — przekazanie zadań GPT-5.6 na polecenie właściciela
