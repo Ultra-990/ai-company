@@ -1,10 +1,25 @@
 import json
+from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
 from scripts import technical_review_atomic_runner as runner
 from tests.test_technical_review_atomic_claim_audit import assessment_map
 from tests.test_technical_review_holdout import content, run_fixture
+
+
+def test_direct_script_verify_entrypoint_bootstraps_package(pipeline, tmp_path):
+    source, root, _, _, _, _ = pipeline
+    out, _ = runner.run(source, root=root)
+    script = Path(runner.__file__).resolve()
+    completed = subprocess.run(
+        [sys.executable, str(script), '--verify', str(out)], cwd=tmp_path,
+        text=True, capture_output=True, check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout)['status'] == 'pending_independent_review_after_final_correction'
 
 
 @pytest.fixture

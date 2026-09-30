@@ -2,8 +2,10 @@
 import argparse
 import json
 from pathlib import Path
+import sys
 import types
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts import technical_review_atomic_claim_audit as atomic
 from scripts import technical_review_final_correction as engine
 
