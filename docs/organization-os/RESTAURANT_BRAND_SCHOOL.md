@@ -6,6 +6,24 @@ plan stylu, dwa koncepty logo, uzasadnia wybór i projektuje wizytówkę.
 Asystent rozwija wymagania, narzędzia i niezależną ocenę; nie rysuje logo
 ani nie poprawia współrzędnych za model.
 
+## Widoczność elementów obu logo — 30.09.2026
+
+`--repair-artwork KATALOG --visible-shape-checks --artwork-reasoning`
+włącza naprawę v5 wraz z kontrolami scen v4. Element, którego ukrycie nie
+zmienia żadnego piksela o co najmniej 20 w kanale RGB kolorowego podglądu,
+wraca do autora jako niemający mierzalnego wkładu. Dotyczy obu konceptów,
+nawet niewybranego. Używa istniejących dowodów usuwania elementów, bez
+dodatkowego wywołania modelu. Przyczyna może obejmować brak farby,
+zasłonięcie, redundancję lub niski kontrast; to nie klasyfikacja kształtu.
+
+`--run --visible-shape-checks` stosuje tę kontrolę przed akceptacją każdego
+logo oraz przy eksporcie, pod osobnym kontraktem `brand-visible-source.v1`.
+Weryfikator odtwarza pomiary z PNG. Nie zmienia reguł starszych przebiegów.
+Integracja źródła pokryta testami; rzeczywista próba v5 poprawiła Maple
+`artwork-repair-5wzsvck9` w jednym wywołaniu (19,593 s). Nowa latarnia
+widoczna, pozostałe pięć SVG/PNG niezmienione. Cała paczka nadal wymaga
+korekty opisu B; nie jest nowym zaliczonym egzaminem. 87 testów przeszło.
+
 ## Pełny egzamin v4 — 30.09.2026
 
 `--delivery-exam-complete` zamraża nowe briefy Maple Lantern, Pebble Kitchen

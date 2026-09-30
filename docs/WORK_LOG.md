@@ -1,5 +1,40 @@
 # Dziennik budowy AI Company
 
+## 2026-09-30 — mierzalna widoczność elementów i celowana naprawa Maple
+
+- Zdiagnozowano lukę poprzedniej kontroli: kolor=0 i monochrom=0 pikseli
+  nie oznacza zaniku przy konwersji, więc sześć całkiem niewidocznych
+  części latarni przechodziło sprawdzanie. Nie zmieniano surowego źródła.
+- `brand-measured-artwork-repair.v5` / `--visible-shape-checks` wymaga
+  niezerowego wkładu każdego elementu w kolorowy podgląd obu logo.
+  Bazuje na już wykonywanych obrazach po ukryciu elementów; nie dodaje
+  wywołania recenzenta. Próg >=20 w dowolnym kanale RGB na białym tle.
+  Zero nie jest dowodem semantycznym: diagnostyka wymienia brak farby,
+  zasłonięcie, redundancję i niski kontrast, pozostawiając naprawę autorowi.
+- `--run --visible-shape-checks` włącza scoped scenes i kontrakt źródła
+  `brand-visible-source.v1`. Wadliwa scena wraca przez dotychczasowy
+  ograniczony mechanizm korekt. Oba końcowe logo mają dodatkowe dowody
+  rastrowe; weryfikator odtwarza liczbę pikseli z rzeczywistych plików.
+  V1–V4 i wcześniejsze egzaminy nie otrzymują nowych reguł wstecz.
+- Przed inferencją Docker pusty, RTX5090 967/32607 MiB, 1% aktywności;
+  kolejne preflight zasobów wykonał istniejący mechanizm. Bez zmian usług.
+  `artwork-repair-5wzsvck9` ze źródła `scene-recovery-wloldyi7`: 19,593 s,
+  jedno nowe wywołanie autora, tylko logo A. Model zastąpił sześć
+  nieobserwowalnych elementów pięcioma widocznymi; wkłady kolorowe
+  140, 298, 76, 76, 342 piksele. Monochrom nie traci elementów.
+- Rzeczywisty weryfikator przeszedł (21 plików ZIP, autorstwo, PDF i dowody
+  rastrowe). Obejrzano nowe logo A; pozostałe pięć SVG/PNG identyczne bajtowo
+  z wcześniej obejrzanym źródłem. Osobny `independent-review.json` potwierdza
+  poprawkę grafiki, ale nie pełny odbiór: niezmieniony opis B nadal
+  nieprawdziwie mówi o wbudowaniu symbolu w M. Bez powtarzania znanej
+  zawodzącej recenzji v7 tylko dla losowego uzyskania lepszego wyniku.
+- 56 testów przed rzeczywistą naprawą; po integracji źródła 87 passed
+  w 4,45 s. Obejmują oba logo, zero wkładu przy poprawnym monochromie,
+  korektę przed przyjęciem sceny, źródło i odrzucenie ponownie związanych
+  hashami błędnych PNG/pomiarów. Nowe generowanie sprawdzono w testach;
+  nie deklarujemy nowego pełnego egzaminu ani gotowości usług. Bez treningu
+  wag, eksportu egzaminów do nauki i ręcznych zmian produktów.
+
 ## 2026-09-30 — pełny egzamin v4 i przegląd kosztu kolejnych prób
 
 - Dodano `--delivery-exam-complete`: zamrożone Maple Lantern, Pebble Kitchen,

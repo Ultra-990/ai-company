@@ -32,9 +32,11 @@ def test_collision_feedback_includes_actual_geometry_without_proposed_solution()
 @pytest.fixture
 def repaired(tmp_path, monkeypatch, request):
     strict = getattr(request, 'param', False)
-    source_scoped = strict == 'scoped-source'
+    source_visible = strict == 'visible-source'
+    source_scoped = strict in ('scoped-source', 'visible-source')
     if source_scoped: strict = False
-    full = strict == 'full'
+    visible = strict == 'visible'
+    full = strict in ('full', 'visible')
     monkeypatch.setattr(b, 'ROOT', tmp_path)
     monkeypatch.setattr(b.school, 'check_idle', lambda: {})
     monkeypatch.setattr(b, 'configuration', lambda: {'model': 'fixture', 'digest': 'f'*64})
@@ -69,7 +71,7 @@ def repaired(tmp_path, monkeypatch, request):
         texts = b.validate_svg(svg, profile=profile)['texts']
         result = {'layout': [{'text': v, 'bbox': [40, 40+i*60, 100, 40]} for i,v in enumerate(texts)], 'shape_layout': [{'tag': 'circle', 'bbox': [40, 380, 20, 20]}], 'pdf': {'fixture': True}}
         if profile == 'brand_logo':
-            result['shape_layout'][0]['bbox'] = [200, 341 if full and 'r="30"' in svg else 100, 20, 20]
+            result['shape_layout'][0]['bbox'] = [200, 341 if full and not visible and 'r="30"' in svg else 100, 20, 20]
         if profile == 'brand_card':
             result['shape_layout'] = []
             for element in ET.fromstring(svg).iter():
@@ -80,15 +82,17 @@ def repaired(tmp_path, monkeypatch, request):
                     result['shape_layout'].append({'tag': tag, 'bbox': [40, 380, 20, 20]})
         if measure_shape_contribution:
             pixels = 0 if output.name == 'monochrome' and output.parent.name == 'initial-logo' else 100
+            if visible and (output.name in ('initial-logo', 'initial-alternate') or output.parent.name in ('initial-logo', 'initial-alternate')):
+                pixels = 0
             result.update(contributions(pixels))
             for x in range(pixels): baseline.putpixel((x, 0), (0, 0, 0))
             baseline.save(output/'shape-removed-0.png')
         return result
     monkeypatch.setattr(b, 'render', render)
     monkeypatch.setattr(evidence, 'pdf_checks', lambda *a, **kw: {})
-    source, original = b.run(scoped_scenes=source_scoped)
+    source, original = b.run(scoped_scenes=source_scoped, visible_shapes=source_visible)
     assert original['status'] == 'pending_independent_visual_review'
-    out, report = repair.run(source, strict_card=bool(strict), full_scene=full)
+    out, report = repair.run(source, strict_card=bool(strict), full_scene=full, visible_shapes=visible)
     assert report['status'] == 'pending_independent_visual_review'
     return source, out, report
 
@@ -195,3 +199,74 @@ def test_rebound_changes_cannot_hide_repair_origin_or_invent_feedback(repaired, 
     b.school.save(out/name, value)
     report['artifacts'][name] = b.school.checksum(out/name); b.school.save(out/'report.json', report)
     with pytest.raises(ValueError): evidence.verify(out)
+
+
+@pytest.mark.parametrize('pixels', [(0, 0), (0, 100), (100, 0)])
+def test_visibility_rejects_unobservable_components_even_if_monochrome_matches(pixels):
+    findings = repair.visibility_findings(contributions(*pixels))
+    assert [v['shape_index'] for v in findings] == [i for i, count in enumerate(pixels) if count == 0]
+    assert not repair.monochrome_findings(contributions(*pixels), contributions(*pixels))
+    assert not repair.visibility_findings(contributions(1, 100))
+    for bad in (-1, True, 0.0):
+        with pytest.raises(ValueError): repair.visibility_findings(contributions(bad))
+
+
+@pytest.mark.parametrize('repaired', ['visible'], indirect=True)
+@pytest.mark.parametrize('target', ['logo-a', 'logo-b'])
+def test_visibility_repairs_both_logos_and_rechecks_actual_ablation_evidence(repaired, target):
+    source, out, report = repaired
+    result = evidence.verify(out)
+    assert result['repair_origin']['schema'] == repair.VISIBLE_CONTRACT
+    assert result['repair_origin']['repaired_stages'] == ['logo-a', 'logo-b', 'card']
+    assert result['repair_origin']['additional_model_calls'] == 3
+    for name in ('initial-logo', 'initial-alternate'):
+        feedback = evidence.read(out/(name+'-feedback.json'))
+        assert [v['kind'] for v in feedback['issues']] == ['shape_has_no_measurable_contribution']
+    # Rebind both counts AND underlying PNG so the pixel audit passes, while
+    # the accepted component no longer contributes. Visibility must still fail.
+    folder = out/(target+'-layout-0')
+    (folder/'shape-removed-0.png').write_bytes((folder/'preview.png').read_bytes())
+    measured = evidence.read(folder/'render.json')
+    measured['shape_contributions'][0]['changed_pixels'] = 0
+    b.school.save(folder/'render.json', measured)
+    for name in ('shape-removed-0.png', 'render.json'):
+        relative = str((folder/name).relative_to(out))
+        report['artifacts'][relative] = b.school.checksum(folder/name)
+    b.school.save(out/'report.json', report)
+    with pytest.raises(ValueError, match='unobservable component'): evidence.verify(out)
+
+
+@pytest.mark.parametrize('repaired', ['visible-source'], indirect=True)
+def test_new_source_checks_both_final_rasters_and_rejects_zero_contribution(repaired):
+    source, _, _ = repaired
+    report = evidence.read(source/'report.json')
+    assert report['visibility_contract'] == repair.SOURCE_VISIBLE_CONTRACT
+    assert evidence.verify(source)['literal_authorship_verified']
+    for name in ('logo-a', 'logo-b'):
+        assert evidence.read(source/name/'render.json')['shape_contributions']
+    folder = source/'logo-b'
+    (folder/'shape-removed-0.png').write_bytes((folder/'preview.png').read_bytes())
+    measured = evidence.read(folder/'render.json')
+    measured['shape_contributions'][0]['changed_pixels'] = 0
+    b.school.save(folder/'render.json', measured)
+    for name in ('shape-removed-0.png', 'render.json'):
+        relative = str((folder/name).relative_to(source))
+        report['artifacts'][relative] = b.school.checksum(folder/name)
+    b.school.save(source/'report.json', report)
+    with pytest.raises(ValueError, match='Source logo has an unobservable component'): evidence.verify(source)
+
+
+def test_new_scene_returns_visibility_failure_before_accepting_the_logo(tmp_path, monkeypatch):
+    svg = '<svg><circle/></svg>'
+    monkeypatch.setattr(b, 'compile_scene', lambda *a, **kw: svg)
+    monkeypatch.setattr(b.school, 'check_idle', lambda: {})
+    counts = iter([0, 100])
+    async def render(svg, folder, *, profile, measure_shape_contribution):
+        assert profile == 'brand_logo' and measure_shape_contribution
+        return contributions(next(counts)) | {'layout': [], 'shape_layout': []}
+    monkeypatch.setattr(b, 'render', render)
+    check = b.checked_scene(tmp_path, 'logo-a', {}, 'logo', visible_shapes=True)
+    with pytest.raises(ValueError, match='shape_has_no_measurable_contribution'): check('{}')
+    assert check('{}') == svg
+    assert (tmp_path/'logo-a-layout-0/render.json').is_file()
+    assert (tmp_path/'logo-a-layout-1/render.json').is_file()

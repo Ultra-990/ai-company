@@ -16,6 +16,8 @@ CONTRACT = 'brand-measured-artwork-repair.v2'
 LEGACY_CONTRACT = 'brand-measured-artwork-repair.v1'
 CARD_CONTRACT = 'brand-measured-artwork-repair.v3'
 FULL_CONTRACT = 'brand-measured-artwork-repair.v4'
+VISIBLE_CONTRACT = 'brand-measured-artwork-repair.v5'
+SOURCE_VISIBLE_CONTRACT = 'brand-visible-source.v1'
 TASK = 'Correct your previous scene using the independent measured findings. Preserve the brief, approved copy and palette. Return your complete corrected scene, with no invented output files or claims. Positions and geometry remain your responsibility.'
 REPAIR_RULES = b.SCENE_RULES.replace('use roughly 330, 390, 435 and 480\nfor the four centered lines unless a different safe spacing is clearly needed.',
     'choose baselines from actual measured text extents and the transformed logo bounds.\nDo not copy a rejected placement unchanged.')
@@ -85,6 +87,27 @@ def monochrome_findings(color, mono):
     return result
 
 
+def visibility_findings(measured):
+    """A declared component must change the actual raster when removed.
+
+    Zero at this threshold can mean no paint, occlusion, redundancy or very
+    low contrast. It does not prove the semantic identity of any visible mark.
+    """
+    rows = measured['shape_contributions']
+    if not isinstance(rows, list) or not 1 <= len(rows) <= 12:
+        raise ValueError('Bounded visible component evidence required')
+    result = []
+    for index, row in enumerate(rows):
+        if (row['index'] != index or type(row['changed_pixels']) is not int
+                or row['changed_pixels'] < 0):
+            raise ValueError('Ordered nonnegative component evidence required')
+        if row['changed_pixels'] == 0:
+            result.append({'kind': 'shape_has_no_measurable_contribution',
+                'shape_index': index, 'changed_pixels': 0,
+                'measurement': 'Removing this component changes no pixel by at least 20 in any RGB channel on the white preview. Check absent paint, occlusion, redundancy or low contrast; author the correction yourself.'})
+    return result
+
+
 def verify_contributions(folder, measured):
     """Recompute diagnostic counts from the preserved actual screenshots."""
     with Image.open(evidence.bounded(folder/'preview.png')) as image:
@@ -140,7 +163,7 @@ def card_decoration_findings(svg, measured, paper):
     return findings
 
 
-def diagnose(svg, folder, plan, kind, *, strict_card=False, full_scene=False):
+def diagnose(svg, folder, plan, kind, *, strict_card=False, full_scene=False, visible_shapes=False):
     color = measure(svg, folder, 'brand_'+kind, contribution=kind == 'logo')
     feedback = b.measured_feedback(color, 'brand_'+kind)
     if full_scene:
@@ -151,6 +174,7 @@ def diagnose(svg, folder, plan, kind, *, strict_card=False, full_scene=False):
     if kind == 'logo':
         mono = measure(b.monochrome(svg, plan['monochrome_ink']), folder/'monochrome', 'brand_logo', contribution=True)
         feedback['issues'] += monochrome_findings(color, mono)
+        if visible_shapes: feedback['issues'] += visibility_findings(color)
         feedback['monochrome_shape_contributions'] = mono['shape_contributions']
         feedback['color_shape_contributions'] = color['shape_contributions']
     return feedback
@@ -162,8 +186,9 @@ def payload(brief, plan, raw, findings, chosen=None):
     return json.dumps(data)
 
 
-def run(source, *, deliberate=False, matched_budget=False, strict_card=False, full_scene=False):
+def run(source, *, deliberate=False, matched_budget=False, strict_card=False, full_scene=False, visible_shapes=False):
     from scripts import brand_scene_contract as scoped
+    full_scene = full_scene or visible_shapes
     strict_card = strict_card or full_scene
     source = Path(source); original, raw, plan, logos, selection = source_values(source)
     resources = b.school.check_idle()
@@ -180,7 +205,7 @@ def run(source, *, deliberate=False, matched_budget=False, strict_card=False, fu
         shutil.copyfile(Path(__file__).parent/name, implementation/name)
     shutil.copyfile(Path(__file__).parents[1]/'app/services/local_ollama.py', implementation/'local_ollama.py')
     if full_scene: shutil.copyfile(Path(scoped.__file__), implementation/'brand_scene_contract.py')
-    contract = FULL_CONTRACT if full_scene else CARD_CONTRACT if strict_card else CONTRACT
+    contract = VISIBLE_CONTRACT if visible_shapes else FULL_CONTRACT if full_scene else CARD_CONTRACT if strict_card else CONTRACT
     record = {'schema': contract, 'source': str(source), 'source_report_sha256': b.school.checksum(source/'report.json'),
               'reused_stages': [], 'repaired_stages': [], 'max_additional_model_calls': 9 if full_scene else 6, 'fresh_exam': False}
     report = {key: original[key] for key in ('schema', 'brief', 'brief_sha256', 'model', 'digest')}
@@ -205,7 +230,7 @@ def run(source, *, deliberate=False, matched_budget=False, strict_card=False, fu
             if key in cache and cache[key]['issues']:
                 raise ValueError(json.dumps(cache[key]))
             folder = out/(stage+'-layout-'+str(attempt)); attempt += 1
-            feedback = diagnose(svg, folder, plan, kind, strict_card=strict_card, full_scene=full_scene)
+            feedback = diagnose(svg, folder, plan, kind, strict_card=strict_card, full_scene=full_scene, visible_shapes=visible_shapes)
             cache[key] = feedback
             if feedback['issues']:
                 raise ValueError(json.dumps(feedback))
@@ -220,12 +245,12 @@ def run(source, *, deliberate=False, matched_budget=False, strict_card=False, fu
             for stage in ('plan', 'selection'): reuse(stage)
             b.school.save(out/'plan.json', plan)
             selected = selection['selected']; stage = 'logo-'+selected
-            findings = diagnose(logos[selected], out/'initial-logo', plan, 'logo', full_scene=full_scene)
+            findings = diagnose(logos[selected], out/'initial-logo', plan, 'logo', full_scene=full_scene, visible_shapes=visible_shapes)
             b.school.save(out/'initial-logo-feedback.json', findings)
             for key in ('a', 'b'):
                 current = findings
                 if full_scene and key != selected:
-                    current = diagnose(logos[key], out/'initial-alternate', plan, 'logo', full_scene=True)
+                    current = diagnose(logos[key], out/'initial-alternate', plan, 'logo', full_scene=True, visible_shapes=visible_shapes)
                     b.school.save(out/'initial-alternate-feedback.json', current)
                 if (key == selected or full_scene) and current['issues']:
                     logos[key] = repair('logo-'+key, 'logo', current)
@@ -233,7 +258,7 @@ def run(source, *, deliberate=False, matched_budget=False, strict_card=False, fu
                 (out/('logo-'+key+'.svg')).write_text(logos[key])
             chosen = logos[selected]
             card = b.compile_scene(raw['card'], plan, kind='card', logo=chosen)
-            findings = diagnose(card, out/'initial-card', plan, 'card', strict_card=strict_card, full_scene=full_scene)
+            findings = diagnose(card, out/'initial-card', plan, 'card', strict_card=strict_card, full_scene=full_scene, visible_shapes=visible_shapes)
             b.school.save(out/'initial-card-feedback.json', findings)
             if findings['issues'] or original['status'] == 'failed':
                 card = repair('card', 'card', findings, chosen)
@@ -254,9 +279,10 @@ def run(source, *, deliberate=False, matched_budget=False, strict_card=False, fu
 def verify_origin(out, report):
     from scripts import brand_scene_contract as scoped
     record = evidence.read(out/'repair-origin.json'); source = Path(record['source'])
-    full_scene = record.get('schema') == FULL_CONTRACT
+    visible_shapes = record.get('schema') == VISIBLE_CONTRACT
+    full_scene = record.get('schema') in (FULL_CONTRACT, VISIBLE_CONTRACT)
     original, raw, plan, logos, selection = source_values(source)
-    if (record.get('schema') not in (LEGACY_CONTRACT, CONTRACT, CARD_CONTRACT, FULL_CONTRACT) or report['repair_contract'] != record['schema']
+    if (record.get('schema') not in (LEGACY_CONTRACT, CONTRACT, CARD_CONTRACT, FULL_CONTRACT, VISIBLE_CONTRACT) or report['repair_contract'] != record['schema']
             or record.get('fresh_exam') is not False or record.get('max_additional_model_calls') != (9 if full_scene else 6)
             or b.school.checksum(source/'report.json') != record['source_report_sha256']
             or any(report[k] != original[k] for k in ('brief', 'model', 'digest', 'selection'))
@@ -284,6 +310,7 @@ def verify_origin(out, report):
         feedback = b.measured_feedback(color, 'brand_logo')
         if full_scene: feedback['issues'] += scoped.margin_findings(logos[selection['selected']], color, 'logo', plan['paper'])
         feedback['issues'] += monochrome_findings(color, mono)
+        if visible_shapes: feedback['issues'] += visibility_findings(color)
         feedback.update(monochrome_shape_contributions=mono['shape_contributions'], color_shape_contributions=color['shape_contributions'])
         if feedback != evidence.read(out/'initial-logo-feedback.json'):
             raise ValueError('Initial logo diagnostic changed')
@@ -303,6 +330,8 @@ def verify_origin(out, report):
         verify_contributions(accepted/'monochrome', final_mono)
         if b.quality_issues(final_color, 'brand_logo') or monochrome_findings(final_color, final_mono):
             raise ValueError('Accepted logo still loses monochrome features or has layout defects')
+        if visible_shapes and visibility_findings(final_color):
+            raise ValueError('Accepted logo has an unobservable component')
         if full_scene:
             other = 'b' if selection['selected'] == 'a' else 'a'
             folder = out/'initial-alternate'
@@ -315,6 +344,7 @@ def verify_origin(out, report):
             other_feedback = b.measured_feedback(measured, 'brand_logo')
             other_feedback['issues'] += scoped.margin_findings(logos[other], measured, 'logo', plan['paper'])
             other_feedback['issues'] += monochrome_findings(measured, mono)
+            if visible_shapes: other_feedback['issues'] += visibility_findings(measured)
             other_feedback.update(monochrome_shape_contributions=mono['shape_contributions'], color_shape_contributions=measured['shape_contributions'])
             if other_feedback != evidence.read(out/'initial-alternate-feedback.json'):
                 raise ValueError('Alternate diagnostic changed')
@@ -329,6 +359,8 @@ def verify_origin(out, report):
             measured, mono = evidence.read(folder/'render.json'), evidence.read(folder/'monochrome/render.json')
             verify_contributions(folder, measured); verify_contributions(folder/'monochrome', mono)
             if monochrome_findings(measured, mono): raise ValueError('Alternate monochrome still loses features')
+            if visible_shapes and visibility_findings(measured):
+                raise ValueError('Accepted alternate logo has an unobservable component')
             for key in ('a', 'b'):
                 delivered = evidence.bounded(out/'delivery'/('logo-'+key+'.svg')).read_text()
                 if scoped.margin_findings(delivered, evidence.read(out/('logo-'+key)/'render.json'), 'logo', plan['paper']):
@@ -339,7 +371,7 @@ def verify_origin(out, report):
         card_feedback = b.measured_feedback(card_measurements, 'brand_card')
         if full_scene:
             card_feedback['issues'] += scoped.margin_findings(evidence.bounded(out/'initial-card/artwork.svg').read_text(), card_measurements, 'card', plan['paper'])
-        if record['schema'] in (CARD_CONTRACT, FULL_CONTRACT):
+        if record['schema'] in (CARD_CONTRACT, FULL_CONTRACT, VISIBLE_CONTRACT):
             card_feedback['issues'] += card_decoration_findings(
                 evidence.bounded(out/'initial-card/artwork.svg').read_text(), card_measurements, plan['paper'])
             card_raw, _ = evidence.chain(out, 'card', report)

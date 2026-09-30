@@ -259,7 +259,7 @@ def measured_feedback(rendered, profile):
             'group_layout': rendered.get('group_layout', [])}
 
 
-def checked_scene(out, name, plan, kind, logo=None, *, scoped_scenes=False):
+def checked_scene(out, name, plan, kind, logo=None, *, scoped_scenes=False, visible_shapes=False):
     attempt = 0
     def validate(raw):
         nonlocal attempt
@@ -270,9 +270,13 @@ def checked_scene(out, name, plan, kind, logo=None, *, scoped_scenes=False):
             svg = compile_scene(raw, plan, kind=kind, logo=logo)
         folder = out/(name+'-layout-'+str(attempt)); attempt += 1; folder.mkdir()
         (folder/'artwork.svg').write_text(svg); school.check_idle()
-        measured = asyncio.run(render(svg, folder, profile='brand_'+kind))
+        measured = asyncio.run(render(svg, folder, profile='brand_'+kind,
+            **({'measure_shape_contribution': True} if visible_shapes and kind == 'logo' else {})))
         school.save(folder/'render.json', measured)
         issues = quality_issues(measured, 'brand_'+kind)
+        if visible_shapes and kind == 'logo':
+            from scripts.brand_artwork_repair import visibility_findings
+            issues += visibility_findings(measured)
         if scoped_scenes:
             issues += scoped.margin_findings(svg, measured, kind, plan['paper'])
             if kind == 'card':
@@ -301,13 +305,18 @@ def assemble(out, plan, logos, selection, card, report):
     delivery = out/'delivery'; delivery.mkdir()
     for name, (svg, profile, scale) in assets.items():
         folder = out/name; folder.mkdir(); (folder/'artwork.svg').write_text(svg)
-        school.check_idle(); rendered = asyncio.run(render(svg, folder, profile=profile, png_scale=scale))
+        check_visibility = 'visibility_contract' in report and name in ('logo-a', 'logo-b')
+        school.check_idle(); rendered = asyncio.run(render(svg, folder, profile=profile, png_scale=scale,
+            **({'measure_shape_contribution': True} if check_visibility else {})))
         from PIL import Image
         with Image.open(folder/'preview.png') as preview:
             if preview.size != (int(PROFILES[profile]['width']*scale), int(PROFILES[profile]['height']*scale)):
                 raise ValueError('Actual preview dimensions differ from requested scale')
         school.save(folder/'render.json', rendered)
         issues = quality_issues(rendered, profile)
+        if check_visibility:
+            from scripts.brand_artwork_repair import visibility_findings
+            issues += visibility_findings(rendered)
         if report.get('scene_contract') == 'brand-scoped-scene.v1':
             from scripts.brand_scene_contract import margin_findings
             issues += margin_findings(svg, rendered, 'card' if profile == 'brand_card' else 'logo', plan['paper'])
@@ -331,8 +340,9 @@ def assemble(out, plan, logos, selection, card, report):
     report['status'] = 'needs_revision' if any(c['issues'] for c in report['checks'].values()) else 'pending_independent_visual_review'
 
 
-def run(*, sampling_profile=None, matched_exam_budget=False, scoped_scenes=False):
+def run(*, sampling_profile=None, matched_exam_budget=False, scoped_scenes=False, visible_shapes=False):
     from scripts import brand_scene_contract as scoped
+    scoped_scenes = scoped_scenes or visible_shapes
     ROOT.mkdir(exist_ok=True)
     if any(p.is_symlink() for p in (ROOT, *ROOT.parents)): raise ValueError('Private Linux workspace required')
     resources = school.check_idle(); out = Path(tempfile.mkdtemp(prefix='identity-', dir=ROOT))
@@ -357,6 +367,9 @@ def run(*, sampling_profile=None, matched_exam_budget=False, scoped_scenes=False
         'training_exported': False, 'production_changed': False, 'print_ready': False, 'commercial_delivery_approved': False,
         'stages': [], 'checks': {}, 'implementation_sha256': school.checksum(Path(__file__))}
     if scoped_scenes: report['scene_contract'] = scoped.CONTRACT
+    if visible_shapes:
+        from scripts.brand_artwork_repair import SOURCE_VISIBLE_CONTRACT
+        report['visibility_contract'] = SOURCE_VISIBLE_CONTRACT
     school.save(out/'report.json', report); started = time.monotonic(); print(json.dumps({'output': str(out)}), flush=True)
     try:
         plan = validated_call(out, 'plan', INSTRUCTION, json.dumps(BRIEF)+'\nDevelop two distinct logo directions and a concise coherent style plan. Write ONE SHORT COMPLETE SENTENCE per positioning, concept and guideline field: aim for 100 characters, never more than 160. Tagline: a complete phrase of at most24characters. Do not write paragraphs or fill the schema limit. ink, paper, accent and monochrome_ink MUST be literal seven-character #RRGGBB hexadecimal strings, not names. Four guidelines: palette roles, typography, clear space/small use, monochrome use. Both logo concepts MUST use heading_font; vary symbols/layout instead of contradicting that font selection. Describe only assets we produce: two concepts, a selected logo with its wordmark, a monochrome version, a small full-logo preview, and one 85x55mm card. Do not promise extra symbol-only files, wordmark-only variants, legibility on every background, or printer-specific readiness.', Plan.model_json_schema(), config, plan_value)
@@ -367,7 +380,7 @@ def run(*, sampling_profile=None, matched_exam_budget=False, scoped_scenes=False
             rules = scoped.rules('logo') if scoped_scenes else SCENE_RULES
             schema = scoped.schema('logo', plan, BRIEF) if scoped_scenes else scene_schema('logo', plan)
             logos[name] = validated_call(out, 'logo-'+name, INSTRUCTION+'\n'+rules, prompt, schema, config,
-                                        checked_scene(out, 'logo-'+name, plan, 'logo', scoped_scenes=scoped_scenes))
+                                        checked_scene(out, 'logo-'+name, plan, 'logo', scoped_scenes=scoped_scenes, visible_shapes=visible_shapes))
             report['stages'].append('logo-'+name)
             (out/('logo-'+name+'.svg')).write_text(logos[name])
         if logos['a'] == logos['b']: raise ValueError('Two distinct logo concepts required')
@@ -380,7 +393,7 @@ def run(*, sampling_profile=None, matched_exam_budget=False, scoped_scenes=False
         schema = scoped.schema('card', plan, BRIEF) if scoped_scenes else scene_schema('card', plan)
         card = validated_call(out, 'card', INSTRUCTION+'\n'+rules, json.dumps({'brief': BRIEF, 'plan': plan,
             'chosen_logo_svg': chosen, 'task': 'Design the 85x55mm business card. Choose the placement of the existing logo and all four other lines yourself.'}), schema, config,
-            checked_scene(out, 'card', plan, 'card', logo=chosen, scoped_scenes=scoped_scenes))
+            checked_scene(out, 'card', plan, 'card', logo=chosen, scoped_scenes=scoped_scenes, visible_shapes=visible_shapes))
         report['stages'].append('card')
         assemble(out, plan, logos, selection, card, report)
     except Exception as exc:
@@ -416,6 +429,7 @@ if __name__ == '__main__':
     parser.add_argument('--artwork-reasoning', action='store_true', help='Use the bounded reasoning profile for artwork repair')
     parser.add_argument('--strict-card', action='store_true', help='Check decoration bounds against card text during artwork repair')
     parser.add_argument('--complete-scene-checks', action='store_true', help='Check both logos and all shape margins with stage-specific repair requirements')
+    parser.add_argument('--visible-shape-checks', action='store_true', help='Require measurable raster contributions from both logos during generation or full artwork repair')
     parser.add_argument('--scoped-scenes', action='store_true', help='Use stage-specific text requirements and complete shape margins for new generation')
     args = parser.parse_args()
     if args.scoped_scenes and not args.run:
@@ -426,11 +440,13 @@ if __name__ == '__main__':
         parser.error('--strict-card requires --repair-artwork')
     if args.complete_scene_checks and not args.repair_artwork:
         parser.error('--complete-scene-checks requires --repair-artwork')
+    if args.visible_shape_checks and not (args.repair_artwork or args.run):
+        parser.error('--visible-shape-checks requires --run or --repair-artwork')
     if args.warm_revision and not any((args.revise_guide, args.revise_plan_text, args.revise_spatial_text, args.revise_spatial_subjects, args.revise_alignment_text, args.revise_background_text, args.revise_wordmark_text)):
         parser.error('--warm-revision requires a guide/plan/spatial revision')
     if args.repair_artwork:
         from scripts.brand_artwork_repair import run as repair_artwork
-        _, report = repair_artwork(args.repair_artwork, deliberate=args.artwork_reasoning, strict_card=args.strict_card, full_scene=args.complete_scene_checks)
+        _, report = repair_artwork(args.repair_artwork, deliberate=args.artwork_reasoning, strict_card=args.strict_card, full_scene=args.complete_scene_checks, visible_shapes=args.visible_shape_checks)
         raise SystemExit(int(report['status'] != 'pending_independent_visual_review'))
     if args.delivery_exam or args.delivery_exam_strict or args.delivery_exam_complete:
         from scripts.brand_delivery_exam import run as delivery_exam
@@ -488,5 +504,5 @@ if __name__ == '__main__':
         from scripts.brand_full_exam import run as full_exam
         _, report = full_exam(); raise SystemExit(int(report['status'] != 'completed'))
     if args.run:
-        _, report = run(scoped_scenes=args.scoped_scenes); raise SystemExit(int(report['status'] == 'failed'))
+        _, report = run(scoped_scenes=args.scoped_scenes, visible_shapes=args.visible_shape_checks); raise SystemExit(int(report['status'] == 'failed'))
     print(json.dumps({'model_called': False, 'training_started': False, 'brief': BRIEF}))

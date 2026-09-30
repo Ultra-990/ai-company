@@ -84,6 +84,10 @@ def verify(folder):
     if 'scene_contract' in report:
         from scripts import brand_scene_contract as scoped
         if report['scene_contract'] != scoped.CONTRACT: raise ValueError('Unknown original scene contract')
+    if 'visibility_contract' in report:
+        from scripts import brand_artwork_repair as visibility
+        if report['visibility_contract'] != visibility.SOURCE_VISIBLE_CONTRACT or 'scene_contract' not in report:
+            raise ValueError('Known scoped visibility contract required')
     def bound_read(name):
         if name not in report['artifacts']: raise ValueError('Missing bound brand artifact')
         return read(folder/name)
@@ -110,6 +114,10 @@ def verify(folder):
                 if relative not in report['artifacts'] or bounded(folder/relative).read_text() != svg:
                     raise ValueError('Delivered brand artwork differs from model-authored scene')
             measured = bound_read(name+'/render.json')
+            if 'visibility_contract' in report and name in ('logo-a', 'logo-b'):
+                visibility.verify_contributions(folder/name, measured)
+                if visibility.visibility_findings(measured):
+                    raise ValueError('Source logo has an unobservable component')
             if brand.quality_issues(measured, profile): raise ValueError('Unresolved measured brand layout defects')
             if 'scene_contract' in report:
                 if scoped.margin_findings(svg, measured, 'card' if profile == 'brand_card' else 'logo', plan['paper']):

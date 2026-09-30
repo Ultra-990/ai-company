@@ -1,5 +1,29 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — widoczność symboli i poprawka Maple w 19,593 s
+
+Dodano `--visible-shape-checks`: naprawa v5 sprawdza oba logo, a nowe
+generowanie otrzymuje osobny kontrakt `brand-visible-source.v1`. Każdy
+zadeklarowany element musi zmienić choć jeden piksel o >=20 w kanale RGB
+po jego diagnostycznym ukryciu. Zero oznacza brak mierzalnego wkładu:
+możliwy brak farby, zasłonięcie, nadmiarowa kopia lub niski kontrast.
+Kontrola nie rozpoznaje znaczenia symbolu i nie zastępuje odbioru estetyki.
+W nowym generowaniu działa przed przyjęciem sceny i przy eksporcie obu logo;
+weryfikator ponownie liczy różnice z zachowanych PNG. Starsze kontrakty
+zachowują dotychczasowe zasady i wyniki.
+
+Maple `artwork-repair-5wzsvck9`: **jedno wywołanie, 19,593 s**. Autor
+poprawił tylko niewidoczną latarnię w logo A; pięć pozostałych SVG/PNG
+identycznych ze źródłem. Ogląd nowego logo, dosłowne pochodzenie, piksele
+diagnostyczne i eksport ZIP/PDF potwierdzone. To rzeczywista poprawka
+znanego projektu, a nie nowy egzamin. Cała paczka jeszcze nieodebrana:
+opis B nadal twierdzi, że symbol wbudowano w literę M. Następny krok to
+wierna korekta opisów oraz rozróżnienie relacji do środka i do całej ramki.
+
+87 powiązanych testów przeszło w 4,45 s. Integracja nowego generowania
+sprawdzona w testach; rzeczywista próba dotyczyła naprawy. Bez zmiany wag,
+danych treningowych, historycznych ocen lub kwalifikacji pięciu usług.
+
 ## Aktualizacja 30.09.2026 — egzamin v4: 1/3 odebrane; ograniczamy nieinformatywne powtórzenia
 
 `delivery-exam-ld9zzmd9` ukończony w 201,283 s. Nowe, zamrożone briefy
