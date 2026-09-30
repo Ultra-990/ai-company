@@ -7,6 +7,16 @@ Obowiązują reguły autorstwa lokalnych modeli z `AGENTS.md`.
 
 ## Kolejność wskazana przez właściciela 29.09.2026
 
+Aktualizacja 30.09.2026: właściciel jawnie polecił pracę nad dwoma–trzema
+zadaniami równolegle i dopuścił równoległą rozbudowę samego AI Company.
+Gotowość modelu nie blokuje już prac nad infrastrukturą systemu. Szczegóły
+panelu klienta i właściciela nadal mają zostać przekazane później; nie
+dopisujemy tych wymagań za właściciela. Role autorstwa produktów pozostają.
+Przeglądy/kod/lekkie testy mogą być delegowane równolegle, natomiast duże
+lokalne inferencje na wspólnej karcie mają kolejkę i jednego właściciela
+slotu naraz. Każdy proces nadal wykonuje własny preflight zasobów; przydział
+koordynatora nie zastępuje sprawdzenia cudzych kontenerów i procesów.
+
 Po potwierdzeniu gotowości modelu właściciel chce rozszerzyć jego umiejętności
 w kierunku możliwości asystenta prowadzącego: analiza wymagań, planowanie,
 programowanie, testowanie, diagnozowanie błędów i korzystanie z narzędzi.

@@ -1,5 +1,6 @@
 from copy import deepcopy
 import json
+from pathlib import Path
 import pytest
 
 from scripts import brand_guide_revision as guide
@@ -61,7 +62,7 @@ def revised(tmp_path, monkeypatch, request):
     expanded = getattr(request, 'param', False)
     warm = expanded == 'warm'
     if warm: expanded = False
-    spatial = expanded in ('spatial', 'subject', 'alignment', 'background', 'wordmark', 'reference')
+    spatial = expanded in ('spatial', 'subject', 'alignment', 'background', 'wordmark', 'reference', 'composed', 'constrained')
     if expanded:
         data['plan'].update(concept_a='A false original concept description.', concept_b='A preserved second concept description.')
     if spatial:
@@ -71,10 +72,12 @@ def revised(tmp_path, monkeypatch, request):
         if expanded == 'background': from scripts import brand_background_review as measured
         if expanded == 'wordmark': from scripts import brand_wordmark_review as measured
         if expanded == 'reference': from scripts import brand_reference_review as measured
+        if expanded == 'composed': from scripts import brand_composed_review as measured
+        if expanded == 'constrained': from scripts import brand_constrained_review as measured
         data['plan'].update(concept_a='A wave sits below the wordmark.', concept_b='A circle surrounds the wordmark.')
         from scripts.brand_spatial_review import geometry as measure
         geometry = measure({'layout': [{'bbox': [100, 250, 300, 60]}], 'shape_layout': [{'bbox': [200, 100, 100, 80]}]})
-        if expanded == 'subject': geometry['necessary_conditions']['inside'] = False
+        if expanded in ('subject', 'composed', 'constrained'): geometry['necessary_conditions']['inside'] = False
         monkeypatch.setattr(measured, 'expand', lambda data, p: data | {'spatial_measurements': {'a': geometry, 'b': geometry}, 'wordmark_line_counts': {'a': 1, 'b': 1}})
         monkeypatch.setattr(measured, 'remeasure', lambda p, data: {'fixture_only': True})
     brand.school.save(delivery/'style-plan.json', PLAN)
@@ -100,14 +103,14 @@ def revised(tmp_path, monkeypatch, request):
             return {'concepts': [{'id': key, 'claims': [{'relation': relation, 'quote': quote}]} for key, relation, quote in phase]}
         before = claims([('a', 'below', 'below the wordmark'), ('b', 'surrounds', 'surrounds the wordmark')])
         after = claims([('a', 'above', 'above the wordmark'), ('b', 'above', 'above the wordmark')])
-        if expanded in ('wordmark', 'reference'):
+        if expanded in ('wordmark', 'reference', 'composed', 'constrained'):
             for value in (before, after):
                 for row in value['concepts']: row['wordmark_lines'] = {'relation': 'unspecified', 'quote': ''}
-        if expanded == 'reference':
+        if expanded in ('reference', 'composed', 'constrained'):
             for value in (before, after):
                 for row in value['concepts']:
                     for c in row['claims']: c.update(reference='bounds', reference_quote='')
-        if expanded == 'subject':
+        if expanded in ('subject', 'composed', 'constrained'):
             for value in (before, after):
                 for row in value['concepts']:
                     noun = 'wave' if row['id'] == 'a' else 'circle'
@@ -125,7 +128,7 @@ def revised(tmp_path, monkeypatch, request):
         monkeypatch.setattr(batch, 'OllamaProvider', Provider)
         monkeypatch.setattr(batch, 'check_resources', lambda *args: {})
         monkeypatch.setattr(batch, 'resident_models', lambda: [])
-    out, report = guide.run(source, expanded=bool(expanded), spatial=expanded if expanded in ('subject', 'alignment', 'background', 'wordmark', 'reference') else spatial, warm=warm)
+    out, report = guide.run(source, expanded=bool(expanded), spatial=expanded if expanded in ('subject', 'alignment', 'background', 'wordmark', 'reference', 'composed', 'constrained') else spatial, warm=warm)
     assert report['status'] == 'pending_independent_review'
     return out, report
 
@@ -136,7 +139,7 @@ def test_complete_revision_replays_three_model_calls_and_protects_artwork(revise
     assert not result['autonomy_qualified'] and not result['exam_score_changed']
 
 
-@pytest.mark.parametrize('revised', ['wordmark'], indirect=True)
+@pytest.mark.parametrize('revised', ['wordmark', 'reference', 'composed', 'constrained'], indirect=True)
 def test_review_only_audit_refuses_to_hide_a_writer_and_final_review(revised):
     out, report = revised
     report.update(status='no_repair_requested', retained_batch_contract='local-retained-batch.v1')
@@ -166,7 +169,7 @@ def test_expanded_revision_replays_structure_and_changed_concept(revised):
     assert json.loads((out/'revised-plan.json').read_text())['concept_a'] == 'A corrected description from the local model.'
 
 
-@pytest.mark.parametrize('revised', ['spatial', 'subject', 'alignment', 'background', 'wordmark', 'reference'], indirect=True)
+@pytest.mark.parametrize('revised', ['spatial', 'subject', 'alignment', 'background', 'wordmark', 'reference', 'composed', 'constrained'], indirect=True)
 def test_spatial_revision_overrides_false_model_approval_and_replays_five_calls(revised):
     out, report = revised
     assert report['max_model_calls'] == 5
@@ -177,6 +180,44 @@ def test_spatial_revision_overrides_false_model_approval_and_replays_five_calls(
     result = guide.verify(out)
     assert result['independent_spatial_render'] == {'fixture_only': True}
     assert result['protected_artwork_unchanged']
+
+
+@pytest.mark.parametrize('revised', ['composed', 'constrained'], indirect=True)
+def test_composed_no_change_review_replays_subjects_and_natural_release(revised, monkeypatch):
+    from scripts import brand_composed_review as protocol
+    mode = 'composed'
+    if revised[1]['review_contract'] == 'brand-constrained-spatial-review.v10':
+        from scripts import brand_constrained_review as protocol
+        mode = 'constrained'
+    from scripts import local_retained_batch as batch
+    source = Path(revised[1]['package'])
+    original, data = guide.inputs(source)
+    data['plan'].update(concept_a='The wordmark sits below the wave.', concept_b='The name sits below the circle.')
+    monkeypatch.setattr(guide, 'inputs', lambda _: (original, deepcopy(data)))
+    first = verdict(())
+    first['reviews'].extend([{'index': i, 'verdict': 'supported', 'reason': 'A matching concept description.'} for i in (4, 5)])
+    claims = {'concepts': [{'id': key, 'wordmark_lines': {'relation': 'unspecified', 'quote': ''},
+        'claims': [{'subject': 'wordmark', 'subject_quote': noun, 'relation': 'below',
+            'quote': data['plan']['concept_'+key], 'reference': 'bounds', 'reference_quote': ''}]}
+        for key, noun in [('a', 'wordmark'), ('b', 'name')]]}
+    answers = iter([first, claims])
+    class Provider:
+        def __init__(self, config): pass
+        def complete(self, messages):
+            return {'content': json.dumps(next(answers)), 'model': 'fixture', 'digest': 'f'*64, 'elapsed_seconds': .1}
+    monkeypatch.setattr(batch, 'OllamaProvider', Provider)
+    monkeypatch.setattr(batch, 'check_resources', lambda *args: {})
+    monkeypatch.setattr(batch, 'resident_models', lambda: [])
+    out, report = guide.run(source, spatial=mode, warm=True)
+    assert report['review_contract'] == protocol.CONTRACT and report['status'] == 'no_repair_requested'
+    assert not (out/'writer-response.json').exists()
+    checked = guide.verify_review_only(out)
+    assert checked['review_authorship_verified'] and not checked['autonomy_qualified']
+    assert checked['independent_spatial_render'] == {'fixture_only': True}
+    for name in ('brand_composed_review.py', 'brand_spatial_subject_review.py', 'brand_reference_review.py',
+                 'brand_wordmark_review.py', 'brand_background_review.py', 'brand_spatial_alignment_review.py'):
+        assert (out/'implementation'/name).is_file()
+    if mode == 'constrained': assert (out/'implementation/brand_constrained_review.py').is_file()
 
 
 @pytest.mark.parametrize('fault', ['artwork', 'guide', 'author', 'hint', 'extra', 'qualify'])

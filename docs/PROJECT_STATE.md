@@ -1,5 +1,72 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — odzyskany podmiot relacji, recenzent nadal zawodny
+
+Jawne v9 łączy pominiętą wcześniej kontrolę podmiotu v4 z v8; v10 wymusza
+dodatkowo spójność pól w schemacie odpowiedzi. Starszych kontraktów nie
+zmieniono. 103 testy infrastruktury przeszły. Rzeczywiste próby Reed Bay
+zachowano oddzielnie: v9 failed po 11,444 s, v10 failed po 16,484 s.
+V10 umożliwiło autorowi poprawienie błędnej liczby wierszy w opisie,
+ale końcowy ekstraktor nadal podał relację/cytat niezgodne z kontraktem.
+Brak nowej zaakceptowanej paczki lub kwalifikacji. Model zwolniony po
+ograniczonym przebiegu. Nie wykonano kolejnej doraźnej serii poprawek.
+
+## Aktualizacja 30.09.2026 — odczyt diagnostyki niezakończonych zadań
+
+Dodano właścicielski `GET /api/tasks/{id}/execution-diagnostics`. Pokazuje
+ostatnią próbę, otwarte próby, oczekujące odbiory, wiek i niespójności
+w jednym snapshotcie SQLite, również gdy równoległy wykonawca kończy
+zadanie między odczytami. Wiek nie jest dowodem awarii: żywotność pozostaje
+nieznana, brak automatycznego ponowienia lub zmiany statusu. Bez treści
+wyników w odpowiedzi, `no-store`, jawne 503 przy uszkodzonych danych czasu.
+71 testów przeszło w 2,68 s, w tym autoryzacja i rzeczywisty zapis przez
+drugie połączenie. Kod zapisany w 091b5b1; produkcyjnej bazy nie zmieniano.
+
+## Aktualizacja 30.09.2026 — porównanie generowania i błędy recenzji
+
+Nowy egzamin generuje oddzielne źródło dla każdego profilu, zamiast
+porównywać naprawy często niewymagające wywołania autora. Trzy zamrożone
+briefy, sześć źródeł, równe budżety, wspólne dalsze kontrole. Przebieg
+`generation-exam-mfggdhto` trwał 689,332 s i zakończył się technicznie 0/3
+w obu ramionach. Profil bazowy zatrzymały błędy geometrii; profil
+z rozumowaniem przygotował trzy komplety grafik, lecz zatrzymała go
+procedura recenzji tekstów. Żaden pełny kandydat nie uzyskał odbioru.
+
+Ogląd niezależny wykazał także wady oceny: kontrola Reed odwróciła podmiot
+relacji napis/symbol, a recenzent Pear potraktował zalecenie rozmiaru jako
+deklarację przetestowanej czytelności. To ogranicza interpretację wyniku.
+Nie zmieniono historycznej punktacji. Naprawa tych kontroli wymaga osobnego
+kontraktu i dowodu; trzy przypadki nie wystarczają do wnioskowania o ogólnej
+przewadze profilu. Wszystkie usługi pozostają niezakwalifikowane.
+
+## Aktualizacja 30.09.2026 — równoległe tory i atomowa kolejka systemu
+
+Właściciel jawnie dopuścił równoległą pracę i kontynuowanie rozbudowy
+AI Company przed pełną kwalifikacją modeli. Uruchomiono odrębne tory
+techniczny, wnętrz i infrastruktury systemu; główny tor prowadzi pełną
+ocenę restauracji. GPU ma pojedynczy przydzielany slot, a analiza, kod
+i lekkie testy toczą się równolegle. Nie zmienia to zasad autorstwa.
+
+W systemie naprawiono realny wyścig kolejki: wybór FIFO i claim są jedną
+krótką transakcją. Drugi wykonawca pobiera kolejne zadanie zamiast zgłaszać
+pustą kolejkę po przegranym wyścigu. Zgody, wykluczenie delegacji, próba
+i audyt pozostają egzekwowane; błąd zapisu cofa całość. 80 testów przeszło
+w 3,22 s, w tym API i równoczesne osobne połączenia SQLite. Bez ingerencji
+w produkcyjną bazę i bez automatycznego zwiększania równoległości GPU.
+Szczegóły: [przydział zadań](organization-os/TASK_DISPATCH.md).
+
+Przegląd techniczny: usunięto wnioskowanie o parytecie ze słów kluczowych,
+naprawiono wybór przyjętej odpowiedzi oraz kontrolę obu korekt i zasobów.
+`replay-v2-9wo0u6n8`: 28,159 s, dwa wywołania, naprawiona kotwica cytowania.
+Pełny odbiór odrzucony za nieudowodnione zalecenia i krytykę poprawnych zdań.
+32 testy przeszły, 3 jawnie pominięte próby modelowe nie są sukcesami.
+
+Wnętrza: dodano ograniczoną poprawkę pól opisu na podstawie PNG, bez zmiany
+obrazu. `observation-repair-4vo8wtlh`: 6,426 s, jedno wywołanie. Recenzent
+zaakceptował niepotwierdzone materiały, więc korekta nie ruszyła; niezależny
+odbiór odrzucony. 28 testów infrastruktury przeszło. Te dwa pilotaże
+zachowują porażki, nie są dowodami nowej jakości lub kwalifikacji.
+
 ## Aktualizacja 30.09.2026 — relacje do środka poprawione, semantyka nadal blokuje odbiór
 
 V8 `--revise-reference-text` rozdziela relacje do całej ramki i jawne

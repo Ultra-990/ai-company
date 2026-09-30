@@ -1,5 +1,157 @@
 # Dziennik budowy AI Company
 
+## 2026-09-30 — złożenie kontroli podmiotu i dwie jawnie nieudane próby
+
+Przyczyna regresji Reed: v5 importowało v3 z pominięciem bocznego v4;
+v6–v8 odziedziczyły brak jawnego podmiotu. Nowe opcjonalne v9 łączy v4
+z v8, używając istniejącej normalizacji i słownika. Dodano rozróżnienie
+zalecenia minimalnego rozmiaru od deklaracji wykonanego testu. Stare
+kontrakty niezmienione. 86 testów, potem rzeczywiste
+`guide-revision-ovo5qp69`: failed, 11,444 s, dwa wywołania, idle_after=true.
+Model poprawnie ocenił zalecenie 18 mm, lecz dla unspecified podał niepusty
+subject_quote. SHA256 raportu
+0aa76ac7b31c5890602f46de87e6ab12c575c7398e7ddb14740c429a1c888de6.
+
+Cienkie opcjonalne v10 zmienia wyłącznie identyfikator i schemat claimów:
+trzy gałęzie anyOf ograniczają kombinacje unspecified/bounds/centers.
+Logika, instrukcje i budżet są współdzielone z v9. Do istniejącego pliku
+zależności dopisano używany już lokalnie jsonschema 4.26.0, bez instalacji.
+103 testy passed / 2,58 s: trzy poprawne i osiem sprzecznych kombinacji,
+pełny replay pięciu wywołań oraz dwóch bez żądania zmian. Moduł v9
+potwierdzony bajtowo względem snapshotu pierwszej nieudanej próby.
+
+Jedna rzeczywista próba v10 na tym samym znanym źródle Reed:
+`guide-revision-7n_nv0wz`, failed, 16,484 s, pięć wywołań, idle_after=true.
+Początkowe unspecified poprawne; autor zmienił stacked na single-line.
+Końcowa ekstrakcja A interpretuje paired with jako side_by_side mimo
+braku literalnego warunku dotychczasowego walidatora. B używa subject_quote
+wordmark, którego nie ma w wybranym cytacie beneath the name. Zatrzymanie
+zgodne z kontraktem; brak eksportu poprawionej paczki i odbioru. SHA256
+33273508f0ed4db8d7884fe73a7e049c9e84afe7f662d028e6d10bd80423e38b.
+Nie zmieniano progu lub wyniku po fakcie, nie uruchomiono dalszych prób.
+To diagnostyka znanego projektu, nie świeży egzamin lub trening wag.
+
+## 2026-09-30 — diagnostyka próby bez zgadywania awarii
+
+Dodano osobny serwis i właścicielski odczyt
+`GET /api/tasks/{id}/execution-diagnostics`. Dane zadania i prób pochodzą
+z jednego jawnego `BEGIN` SQLite. Próba zakończona podczas odczytu przez
+drugie połączenie nie miesza stanów. Odpowiedź zawiera metadane ostatniej
+próby, liczbę otwartych/oczekujących odbioru, wiek najstarszej otwartej
+próby, próg uwagi 1–604800 s (domyślnie 900 s) i przyczyny niespójności.
+
+Brak heartbeat jest jawny; `worker_liveness=unknown`, bez potwierdzenia
+awarii na podstawie wieku i bez automatycznego retry. Endpoint niczego
+nie zapisuje, nie ujawnia treści wyników/błędów wykonawcy, używa no-store.
+Niepoprawne daty z bazy dają ogólne 503. Brak zakończenia przy statusie
+terminalnym, przyszły start, wiele prób i rozbieżność statusów są sygnałami
+do sprawdzenia, nie dowodami śmierci procesu ani oceną jakości produktu.
+
+71 passed / 2,68s: test_task_execution_diagnostics, test_task_worker,
+test_task_repository, test_execution_api. Próby używają osobnych baz;
+obejmują autoryzację, niezmienność tabel, granice progu, daty i równoczesne
+zakończenie w WAL. Diff oraz staged/outgoing gitleaks czyste. Commit 091b5b1.
+Bez nowego obciążenia GPU, zmiany produkcyjnych rekordów lub restartu usługi.
+
+## 2026-09-30 — sześć niezależnych generacji, wynik i kontrola procedury
+
+`brand-generation-delivery-exam.v1` zamraża Cinder Corner, Reed Bay,
+Pear Common. Profile różnią się już przy generowaniu źródła; nie dzielą
+jednej wygenerowanej paczki. Kontekst 16384, odpowiedź 8192, 4 wątki,
+180 s i do 15 wywołań na źródło. Kolejność naprzemienna. Wspólne dalsze
+etapy: art v5 z widocznością (profil bazowy, do 9 nowych wywołań), tekst
+reference v8 warm (8192/1800, 90 s, do 5 wywołań). Bez ręcznych podpowiedzi,
+treningu, eksportu egzaminu lub zmiany wag. Zakończone porażki pozostają.
+
+Przed startem 73 testy powiązanych kontraktów przeszły; po dodatkowym
+ograniczeniu statusu źródła 8 testów nowego egzaminu przeszło ponownie.
+Rzeczywisty przebieg `generation-exam-mfggdhto`: terminalny exit0,
+completed, 689,332 s, techniczne baseline0/deliberate0. SHA256 raportu
+8eb5360c3dc9295fab49b7be6e550e64f21a6a009b3c8c47346aad99ecb21f80.
+Oryginalny read-only verify przeszedł, zapis `verification-original.json`.
+Żaden wariant nie trafił do końcowego odbioru; nie przyznano kwalifikacji.
+
+- Cinder baza: karta nadal ma nakładanie tekstów i dolny margines poza
+  wymaganiem; dodatkowe poprawki autora nie rozwiązały całości.
+- Cinder rozumowanie: komplet grafik, potem niepoprawny zapis ekstraktora
+  `uncertain`/`centers` zatrzymuje końcową recenzję.
+- Reed baza: fala dekoracyjna naprzemiennie koliduje z tekstem lub przekracza
+  dolny margines. Zachowano wszystkie próby i pomiary.
+- Reed rozumowanie: komplet grafik; opisy pozycji napisu są prawdziwe,
+  ale ekstrakcja i kontrola potraktowały je jako pozycje symbolu. Root oraz
+  osobny agent obejrzeli pięć PNG i przeczytali poprawiony plan. Odbioru
+  ani wyniku nie zmieniono poza protokołem.
+- Pear baza: symbol drugiego logo wchodzi w ramkę napisu; źródło zatrzymane
+  przed kartą, bez doraźnego dodania kolejnych prób.
+- Pear rozumowanie: komplet grafik; końcowa recenzja odrzuciła zalecenie
+  minimum 28 mm jako brak testu czytelności, choć autor nie twierdził, że
+  wykonał taki test. Niezależna notatka rozdziela zalecenie od pomiaru.
+
+Odczytowe diagnozy zapisano oddzielnie od raportów modeli. Wynik wykazuje
+różnicę etapów osiągniętych w tej próbie, ale błędy recenzji i mała liczba
+przypadków nie pozwalają wnioskować o ogólnej przewadze lub samodzielności.
+Po terminalnym końcu zlecono równolegle poprawkę jawnego podmiotu relacji
+oraz audyt ograniczeń weryfikatora, zachowując kopie pierwotnego kodu.
+
+Audyt po wykonaniu w osobnym `brand_generation_audit.py` odtwarza literalne
+początkowe prompty, odpowiedzi, feedback oraz powody terminalnych odrzuceń
+również dla failed/needs_revision. Sprawdza komplet modułów przypisany do
+kontraktów source/v5/v8, autora także w config oraz rzeczywiste ograniczone
+wywołania warm. Nie liczy odziedziczonych kopii jako nowych inferencji.
+106 testów przeszło w 5,28 s. Ponowny read-only verify rzeczywistego przebiegu
+przeszedł: 59 wywołań, w tym 38 generacji, 6 napraw, 15 tekstowych. Osobny wynik
+`verification-terminal-audit-v1.json`, SHA256
+09325c0b120428a74b315ee9b3d88a9683ad793d8d4be3998b16e8c4640f15b2.
+Pierwotny raport i snapshoty identyczne, wynik nadal 0/0. Audyt potwierdza
+spójność zapisanych dowodów; nie chroni przed przepisaniem wszystkich
+plików i hashy naraz ani nie zatwierdza semantyki produktów.
+
+Odczyt istniejących pomiarów źródeł: po 19 wywołań w każdym profilu;
+suma `elapsed_seconds` odpowiedzi 111,062 s dla bazy i 444,026 s dla
+rozumowania. Zgłoszony przez serwer czas ładowania sumuje się odpowiednio
+do 54,195 s i 54,250 s. To składniki tej próby, nie nowy benchmark i nie
+czas wszystkich etapów. Pokazują koszt jakości oraz możliwy kierunek
+przyspieszenia przez ograniczoną retencję między generacjami, wymagający
+osobnego sprawdzenia zwalniania zasobów. Niczego nie przełączono automatycznie.
+
+## 2026-09-30 — współpraca równoległa i rozbudowa przydziału zadań
+
+- Właściciel jawnie polecił 2–3 równoległe działania, a następnie dopuścił
+  bieżącą rozbudowę AI Company bez czekania na gotowość modelu. Podzielono
+  prace między tory techniczny, wnętrz i infrastruktury; główny tor rozwija
+  pełną ocenę restauracji. Wspólne GPU jest przydzielane kolejno, po
+  potwierdzonym terminalnym końcu poprzedniego procesu i własnym preflight.
+  Autorstwo produktów nadal należy do lokalnych modeli. Zaktualizowano
+  opis kolejności w `AUTONOMOUS_WORK.md`; paneli nie wymyślano za właściciela.
+- Kolejka: `TaskRepository.claim_next()` wybiera i przejmuje FIFO w jednym
+  `BEGIN IMMEDIATE`, zachowuje filtry pending/approved/queued, wykluczenie
+  delegacji i wspólny zapis statusu, próby i audytu. Wspólny helper obsługuje
+  także jawny claim. Drugi worker po zwolnieniu blokady widzi aktualny stan.
+  Blokada kończy się przed pracą modelu i odświeżeniem dokumentacji.
+- Siedem nowych przypadków testowych kolejki obejmuje trzech wykonawców,
+  jedno/trzy zadania, kontrolowany wyścig, FIFO, filtry oraz rollback i
+  odzyskanie blokady po błędzie. Pełny właściwy zestaw: 80 passed / 3,22 s.
+  TestClient zawisł w sandboxie; zakończono wyłącznie własny PID 2566648
+  (potwierdzony kod 143), po czym ten sam zestaw przeszedł poza sandboxem.
+  Nie dotykano rzeczywistej bazy ani cudzych procesów/modeli/kontenerów.
+- Tor techniczny: nowy replay-v2 odtwarza wszystkie maksymalnie trzy
+  wywołania i dosłowne eksporty; także ostatnia korekta jest sprawdzana.
+  Assessor zapisuje osobne proxy-assessment-v2.json i nigdy nie wnioskuje
+  o parytecie z keywordów. `replay-v2-9wo0u6n8`: 28,159 s, dwa wywołania,
+  model poprawił kotwicę cytowania. Odbiór merytoryczny odrzucony przez
+  nieudowodniony ranking kosztów FT/RAG, przewagę hybrydy i fałszywe alarmy
+  na poprawnych zdaniach. 32 passed, 3 skipped; źródła i dawne oceny zachowane.
+- Tor wnętrz: `interior_observation_repair` uwierzytelnia oryginalne PNG,
+  ogranicza zmianę do zakwestionowanych pól, najwyżej jedna poprawka i
+  ponowna kontrola, max trzy wywołania. `observation-repair-4vo8wtlh`:
+  6,426 s, jedno wywołanie. Recenzent błędnie zaakceptował „wooden knob”
+  i „linen cloth”, więc nie wywołano autora poprawki. Niezależny odbiór
+  odrzucony, bez fałszywej promocji. 28 testów passed. Pierwszy start
+  zatrzymał sandbox przed inferencją; właściwy zakończył się terminalnie.
+- Po przeglądzie zakresów i skanach sekretów opublikowano oddzielne
+  commity kolejki, protokołu technicznego i narzędzia wnętrz. Brak zmiany
+  wag, eksportu egzaminów do treningu i deklaracji autonomii pięciu usług.
+
 ## 2026-09-30 — rozróżnienie ramki/środka i ślepa obserwacja obrazu
 
 - `brand-spatial-reference-review.v8` / `--revise-reference-text`: jawna

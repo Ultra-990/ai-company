@@ -6,6 +6,88 @@ plan stylu, dwa koncepty logo, uzasadnia wybór i projektuje wizytówkę.
 Asystent rozwija wymagania, narzędzia i niezależną ocenę; nie rysuje logo
 ani nie poprawia współrzędnych za model.
 
+## Złożona kontrola podmiotu i referencji v9 — 30.09.2026
+
+`--revise-composed-text KATALOG --warm-revision` jawnie wybiera nowy
+kontrakt. Łączy gramatyczny podmiot relacji z v4 oraz późniejsze kontrole
+tła, liczby wierszy, ramek i środków z v8. Ekstraktor wskazuje dosłowny
+podmiot i kierunek tak, jak zapisano je w zdaniu; istniejący walidator v4
+odwraca relację w kodzie, jeśli podmiotem jest napis. Nie oczekujemy od
+modelu mentalnego odwracania kierunku. Zachowane są ograniczenia słownika
+angielskich podmiotów; to nie jest parser dowolnego tekstu.
+
+Wykryta przyczyna regresji: v4 było boczną gałęzią, a v5 dziedziczyło
+bezpośrednio v3, więc v6–v8 nie miały kontroli podmiotu. Nowe v9 nie
+zmienia interpretacji zapisanych przebiegów v3–v8. Jawnie rozróżnia także
+zalecenie minimalnego rozmiaru od deklaracji wykonania testu czytelności.
+Nadal odrzuca sprzeczne instrukcje i polecenia używania niedostarczonych
+wariantów. Zalecenie samo w sobie nie potwierdza gotowości do druku.
+
+Budżet pozostaje taki sam: do pięciu wywołań, bez generowania grafiki
+i bez automatycznego odbioru. Zarówno poprawiona paczka, jak i wynik bez
+żądania poprawki mają osobną ścieżkę weryfikacji pochodzenia i renderów.
+
+Pierwsza rzeczywista próba v9 `guide-revision-ovo5qp69` zakończyła się
+`failed` po 11,444 s: model zwrócił `unspecified` z niepustym cytatem
+podmiotu, choć walidator wymaga pustego pola. Zalecenie 18 mm zostało
+tym razem rozpoznane prawidłowo, ale nie ukończono korekty całego tekstu.
+86 testów infrastruktury przed próbą nie było dowodem skuteczności modelu.
+Zachowano pierwotne żądania, odpowiedzi i snapshot kodu.
+
+`--revise-constrained-text KATALOG --warm-revision` wybiera opcjonalne
+v10: cienką nakładkę na v9, wymuszającą spójność pól przez trzy gałęzie
+`anyOf` (brak relacji, zwykłe granice, kierunkowa relacja środków).
+Nie zmienia walidatorów, instrukcji ani budżetu. Historyczny schemat v9
+pozostaje identyczny ze snapshotem nieudanej próby. 103 testy przeszły,
+w tym niezależne sprawdzenie poprawnych i sprzecznych kombinacji przez
+jsonschema oraz odtworzenie pełnej naprawy i kontroli bez zmian.
+
+Rzeczywiste v10 `guide-revision-7n_nv0wz`: 16,484 s, pięć wywołań, `failed`.
+Początkowy brak relacji został zapisany poprawnie; autor zmienił błędne
+„stacked” na zgodne z obrazem „single-line”. Końcowy ekstraktor nadal
+zwrócił niedozwoloną interpretację „paired with” oraz podmiot nieobecny
+w swoim cytacie. Model został zwolniony. Brak końcowej paczki i odbioru;
+nie wykonano kolejnych prób z dodatkowymi podpowiedziami. V9/v10 pozostają
+opcjonalnymi narzędziami diagnostycznymi, nie dowodem niezawodnej recenzji.
+
+## Porównanie profili od generowania — 30.09.2026
+
+`python -m scripts.brand_generation_exam --run` zamraża trzy nowe briefy
+(Cinder Corner, Reed Bay, Pear Common) i generuje sześć osobnych źródeł.
+W każdej parze różni się profil autora od samego początku: bounded-default
+oraz qwen-deliberate. Kolejność jest naprzemienna. Oba mają 16384 kontekstu,
+8192 tokenów odpowiedzi, 4 wątki, 180 s na wywołanie i maksymalnie 15 wywołań
+generowania. Obowiązują scoped scenes oraz mierzalna widoczność kształtów.
+
+Dalsze etapy są wspólne: naprawa grafiki v5 w profilu bazowym z tym samym
+budżetem na wywołanie, do 9 dodatkowych wywołań; recenzja/poprawka tekstu
+v8 warm, 8192/1800, 4 wątki, 90 s, do 5 wywołań. Budżety dotyczą etapów,
+nie deklaracji, że każde zlecenie wykorzysta wszystkie wywołania. Źródło
+przerwane przed stanem obsługiwanym przez naprawę nie dostaje dodatkowej
+kontynuacji. Zakończone niepowodzenia są częścią wyniku.
+
+`--verify KATALOG` sprawdza zamrożone briefy, konfiguracje, różne źródła,
+pochodzenie etapów, zapisane pliki i kod oraz odtwarza wynik techniczny.
+Dla kandydatów korzysta z wcześniej rzeczywiście wykonanych niezależnych
+renderów. Wynik techniczny nie jest odbiorem całej identyfikacji: wymagany
+jest osobny ogląd obrazów, opisów i eksportów. Dane egzaminu nie trafiają
+do treningu. Ten protokół zachowuje reguły i wyniki poprzednich egzaminów.
+
+Pierwszy przebieg `generation-exam-mfggdhto`: 689,332 s, technicznie **0/3
+w obu ramionach**, żadnego kandydata do końcowego odbioru. Oryginalny audyt
+odczytowy przeszedł. Profil bazowy zatrzymał się na wizytówkach Cinder/Reed
+oraz kolizji drugiego logo Pear. Profil z rozumowaniem ukończył wszystkie
+trzy komplety grafik; dalsza procedura zatrzymała je na tekstach.
+
+Niezależna diagnoza rozdziela błędy autora i recenzji. Cinder deliberate
+zwrócił niedozwoloną kombinację `uncertain`/`centers` w ekstrakcji relacji.
+Reed deliberate został błędnie zatrzymany przez zamianę podmiotu: tekst
+opisywał pozycję napisu, kontrola interpretowała ją jako pozycję symbolu.
+Pear deliberate został zatrzymany za zalecenie minimalnego rozmiaru,
+potraktowane jako twierdzenie o wykonanym teście. Nie przepisano wyniku
+ani nie zatwierdzono automatycznie tych paczek. Wniosek dotyczy tej próby,
+nie dowodzi ogólnej przewagi profilu ani gotowości do samodzielnej pracy.
+
 ## Referencje przestrzenne i obserwacja obrazu — 30.09.2026
 
 `--revise-reference-text KATALOG --warm-revision` wybiera v8: model

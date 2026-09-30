@@ -120,6 +120,8 @@ def run(package, *, expanded=False, spatial=False, warm=False):
         if spatial == 'background': from scripts import brand_background_review as protocol
         if spatial == 'wordmark': from scripts import brand_wordmark_review as protocol
         if spatial == 'reference': from scripts import brand_reference_review as protocol
+        if spatial == 'composed': from scripts import brand_composed_review as protocol
+        if spatial == 'constrained': from scripts import brand_constrained_review as protocol
         data = protocol.expand(data, package)
     config = brand.configuration() | {'sampling_profile': 'bounded-default.v1', 'think': False,
         'num_ctx': 8192, 'num_predict': 1800, 'num_thread': 4, 'timeout_seconds': 90}
@@ -134,11 +136,13 @@ def run(package, *, expanded=False, spatial=False, warm=False):
     if spatial:
         for name in ('brand_spatial_review.py', 'render_school_svg.py', 'vector_school_contract.py'):
             shutil.copyfile(Path(__file__).parent/name, code/name)
-        if spatial == 'subject': shutil.copyfile(Path(__file__).parent/'brand_spatial_subject_review.py', code/'brand_spatial_subject_review.py')
-        if spatial in ('alignment', 'background', 'wordmark', 'reference'): shutil.copyfile(Path(__file__).parent/'brand_spatial_alignment_review.py', code/'brand_spatial_alignment_review.py')
-        if spatial in ('background', 'wordmark', 'reference'): shutil.copyfile(Path(__file__).parent/'brand_background_review.py', code/'brand_background_review.py')
-        if spatial in ('wordmark', 'reference'): shutil.copyfile(Path(__file__).parent/'brand_wordmark_review.py', code/'brand_wordmark_review.py')
-        if spatial == 'reference': shutil.copyfile(Path(__file__).parent/'brand_reference_review.py', code/'brand_reference_review.py')
+        if spatial in ('subject', 'composed', 'constrained'): shutil.copyfile(Path(__file__).parent/'brand_spatial_subject_review.py', code/'brand_spatial_subject_review.py')
+        if spatial in ('alignment', 'background', 'wordmark', 'reference', 'composed', 'constrained'): shutil.copyfile(Path(__file__).parent/'brand_spatial_alignment_review.py', code/'brand_spatial_alignment_review.py')
+        if spatial in ('background', 'wordmark', 'reference', 'composed', 'constrained'): shutil.copyfile(Path(__file__).parent/'brand_background_review.py', code/'brand_background_review.py')
+        if spatial in ('wordmark', 'reference', 'composed', 'constrained'): shutil.copyfile(Path(__file__).parent/'brand_wordmark_review.py', code/'brand_wordmark_review.py')
+        if spatial in ('reference', 'composed', 'constrained'): shutil.copyfile(Path(__file__).parent/'brand_reference_review.py', code/'brand_reference_review.py')
+        if spatial in ('composed', 'constrained'): shutil.copyfile(Path(__file__).parent/'brand_composed_review.py', code/'brand_composed_review.py')
+        if spatial == 'constrained': shutil.copyfile(Path(__file__).parent/'brand_constrained_review.py', code/'brand_constrained_review.py')
     shutil.copyfile(Path(__file__).resolve().parents[1]/'app/services/local_ollama.py', code/'local_ollama.py')
     batch = None
     if warm:
@@ -242,7 +246,7 @@ def recorded_render(out, package, data):
 
 def verify(out, *, use_recorded_render=False):
     out = Path(out); report = evidence.read(out/'report.json')
-    spatial = report.get('review_contract') in ('brand-measured-spatial-review.v3', 'brand-subject-spatial-review.v4', 'brand-measured-alignment-review.v5', 'brand-background-evidence-review.v6', 'brand-wordmark-lines-review.v7', 'brand-spatial-reference-review.v8')
+    spatial = report.get('review_contract') in ('brand-measured-spatial-review.v3', 'brand-subject-spatial-review.v4', 'brand-measured-alignment-review.v5', 'brand-background-evidence-review.v6', 'brand-wordmark-lines-review.v7', 'brand-spatial-reference-review.v8', 'brand-composed-spatial-review.v9', 'brand-constrained-spatial-review.v10')
     if (report.get('schema') != CONTRACT or report.get('status') != 'pending_independent_review'
             or report.get('max_model_calls') != (5 if spatial else 3)
             or any(report.get(k) is not False for k in ('training_exported', 'exam_score_changed', 'production_changed', 'autonomy_qualified'))):
@@ -264,6 +268,8 @@ def verify(out, *, use_recorded_render=False):
         if report['review_contract'] == 'brand-background-evidence-review.v6': from scripts import brand_background_review as protocol
         if report['review_contract'] == 'brand-wordmark-lines-review.v7': from scripts import brand_wordmark_review as protocol
         if report['review_contract'] == 'brand-spatial-reference-review.v8': from scripts import brand_reference_review as protocol
+        if report['review_contract'] == 'brand-composed-spatial-review.v9': from scripts import brand_composed_review as protocol
+        if report['review_contract'] == 'brand-constrained-spatial-review.v10': from scripts import brand_constrained_review as protocol
         if report['review_contract'] != protocol.CONTRACT: raise ValueError('Unknown text review contract')
         data = protocol.expand(data, package)
     if (brand.school.checksum(package/'report.json') != report['source_report_sha256']
@@ -340,17 +346,21 @@ def verify(out, *, use_recorded_render=False):
 
 
 def verify_review_only(out):
-    """Authenticate a v7/v8 no-change review and freshly remeasure the source logos."""
+    """Authenticate a v7-v10 no-change review and freshly remeasure source logos."""
     from scripts import brand_wordmark_review as protocol
     from scripts.brand_delivery_exam import check_no_text_repair
     out = Path(out); report = evidence.read(out/'report.json')
     if report.get('review_contract') == 'brand-spatial-reference-review.v8':
         from scripts import brand_reference_review as protocol
+    if report.get('review_contract') == 'brand-composed-spatial-review.v9':
+        from scripts import brand_composed_review as protocol
+    if report.get('review_contract') == 'brand-constrained-spatial-review.v10':
+        from scripts import brand_constrained_review as protocol
     if (report.get('schema') != CONTRACT or report.get('status') != 'no_repair_requested'
             or report.get('review_contract') != protocol.CONTRACT or report.get('max_model_calls') != 5
             or report.get('retained_batch_contract') != 'local-retained-batch.v1'
             or any(report.get(k) is not False for k in ('training_exported', 'exam_score_changed', 'production_changed', 'autonomy_qualified'))):
-        raise ValueError('Bounded v7/v8 review-only result required')
+        raise ValueError('Bounded v7-v10 review-only result required')
     for name, digest in report['artifacts'].items():
         path = evidence.bounded(out/name)
         if not path.resolve().is_relative_to(out.resolve()) or brand.school.checksum(path) != digest:
