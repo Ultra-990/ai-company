@@ -331,6 +331,57 @@ class TaskRepository:
             reason=reason,
         )
 
+    @staticmethod
+    def _normalize_claim_worker(worker_id: str | None) -> str | None:
+        normalized = worker_id.strip() if worker_id is not None else None
+        if normalized is not None and len(normalized) > 100:
+            raise ValueError("Identyfikator workera nie może przekraczać 100 znaków")
+        return normalized or None
+
+    @staticmethod
+    def _claim_in_session(
+        session: Session,
+        task_id: int,
+        worker_id: str | None,
+        reason: str,
+    ) -> Task:
+        """Caller holds the SQLite write reservation; commit belongs to caller."""
+        task = session.get(Task, task_id)
+        if task is None:
+            raise TaskNotFoundError(
+                f"Nie znaleziono zadania o identyfikatorze {task_id}"
+            )
+        if session.get(TaskDelegation, task_id) is not None:
+            raise TaskTransitionError(
+                "Delegacja zespołowa nie ma zatwierdzonego środowiska wykonania."
+            )
+        now = utc_now()
+        result = session.execute(
+            update(Task)
+            .where(
+                Task.id == task_id,
+                Task.status == TaskStatus.PENDING,
+                Task.approval_status == ApprovalStatus.APPROVED,
+                Task.queued_at.is_not(None),
+                Task.id.not_in(select(TaskDelegation.task_id)),
+            )
+            .values(status=TaskStatus.IN_PROGRESS, started_at=now, updated_at=now)
+        )
+        if result.rowcount != 1:
+            raise TaskTransitionError(
+                "Zadanie nie jest gotowe do wykonania albo zostało już przejęte"
+            )
+        session.add(TaskAttempt(
+            task_id=task_id, worker_id=worker_id or "unknown",
+            status="started", started_at=now,
+        ))
+        session.add(AuditEvent(
+            event_type="task_execution", operation="claim", decision="claim",
+            allowed=True,
+            reason=f"{reason}; worker={worker_id}" if worker_id else reason,
+        ))
+        return task
+
     def claim(
         self,
         task_id: int,
@@ -339,86 +390,44 @@ class TaskRepository:
         reason: str = "Zadanie pobrane do wykonania",
     ) -> Task:
         """Atomowo pobiera zatwierdzone zadanie z kolejki do wykonania."""
-
-        normalized_worker = (
-            worker_id.strip()
-            if worker_id is not None
-            else None
-        )
-
-        if normalized_worker == "":
-            normalized_worker = None
-
-        if normalized_worker is not None and len(normalized_worker) > 100:
-            raise ValueError(
-                "Identyfikator workera nie może przekraczać 100 znaków"
-            )
-
-        audit_reason = reason
-        if normalized_worker is not None:
-            audit_reason = f"{reason}; worker={normalized_worker}"
-
-        now = utc_now()
-
+        normalized_worker = self._normalize_claim_worker(worker_id)
         with self._session_factory() as session:
-            task_exists = session.get(Task, task_id)
+            session.execute(text("BEGIN IMMEDIATE"))
+            task = self._claim_in_session(session, task_id, normalized_worker, reason)
+            session.commit()
+            session.expunge(task)
+        self._refresh_documentation()
+        return task
 
-            if task_exists is None:
-                raise TaskNotFoundError(
-                    f"Nie znaleziono zadania o identyfikatorze {task_id}"
-                )
+    def claim_next(
+        self,
+        *,
+        worker_id: str | None = None,
+        reason: str = "Zadanie pobrane do wykonania",
+    ) -> Task | None:
+        """Select and reserve FIFO work in one short SQLite transaction.
 
-            if session.get(TaskDelegation, task_id) is not None:
-                raise TaskTransitionError(
-                    "Delegacja zespołowa nie ma zatwierdzonego środowiska wykonania."
-                )
-
-            result = session.execute(
-                update(Task)
-                .where(
-                    Task.id == task_id,
+        Concurrent callers wait for the reservation, then select from the
+        current queue. No model, runner or documentation work holds this lock.
+        Empty queue is distinct from database errors, which propagate.
+        """
+        normalized_worker = self._normalize_claim_worker(worker_id)
+        with self._session_factory() as session:
+            session.execute(text("BEGIN IMMEDIATE"))
+            task_id = session.scalar(
+                select(Task.id).where(
                     Task.status == TaskStatus.PENDING,
                     Task.approval_status == ApprovalStatus.APPROVED,
                     Task.queued_at.is_not(None),
                     Task.id.not_in(select(TaskDelegation.task_id)),
-                )
-                .values(
-                    status=TaskStatus.IN_PROGRESS,
-                    started_at=now,
-                    updated_at=now,
-                )
+                ).order_by(Task.queued_at.asc(), Task.id.asc()).limit(1)
             )
-
-            if result.rowcount != 1:
+            if task_id is None:
                 session.rollback()
-                raise TaskTransitionError(
-                    "Zadanie nie jest gotowe do wykonania "
-                    "albo zostało już przejęte"
-                )
-
-            attempt = TaskAttempt(
-                task_id=task_id,
-                worker_id=normalized_worker or "unknown",
-                status="started",
-                started_at=now,
-            )
-            session.add(attempt)
-
-            audit_event = AuditEvent(
-                event_type="task_execution",
-                operation="claim",
-                decision="claim",
-                allowed=True,
-                reason=audit_reason,
-            )
-            session.add(audit_event)
-
+                return None
+            task = self._claim_in_session(session, task_id, normalized_worker, reason)
             session.commit()
-
-            task = session.get(Task, task_id)
-            assert task is not None
             session.expunge(task)
-
         self._refresh_documentation()
         return task
 

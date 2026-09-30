@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from app.models.task import Task
-from app.models.task import TaskTransitionError
 from app.services.tasks import TaskRepository
 
 
@@ -30,18 +29,4 @@ class TaskWorker:
     def claim_next(self) -> Task | None:
         """Przejmuje najstarsze dostępne zadanie albo zwraca None."""
 
-        candidates = self.repository.list_ready(limit=1)
-
-        if not candidates:
-            return None
-
-        candidate = candidates[0]
-
-        try:
-            return self.repository.claim(
-                candidate.id,
-                worker_id=self.worker_id,
-            )
-        except TaskTransitionError:
-            # Zadanie mogło zostać przejęte między list_ready() i claim().
-            return None
+        return self.repository.claim_next(worker_id=self.worker_id)
