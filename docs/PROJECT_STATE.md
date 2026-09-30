@@ -1,5 +1,19 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — próba audytu twierdzeń zatrzymana na pokryciu
+
+Samokorekta recenzji technicznej v2 została wykonana raz na znanym materiale:
+`claim-self-correction-w3a0i7v3`, 71,333 s, jedno wywołanie audytu, `failed`.
+Model zwrócił 30 rekordów, lecz siedmiokrotnie powtórzył jeden identyfikator
+i pominął sześć wymaganych części recenzji. Kontrola prawidłowo zatrzymała
+przebieg przed wywołaniem autora. Nie powstała poprawiona recenzja;
+read-only replay potwierdził porażkę i zachowane odpowiedzi. GPU zwolnione.
+
+Kod i testy samokorekty, brandingu oraz pełnego dostarczania infografik
+zapisano w origin do 4a6cefd, po skanach sekretów. Ostatnia kontrola brandingu:
+125 passed; infografik: 80 passed; samokorekty technicznej: 66 passed,
+3 skipped. Testy narzędzi nie oznaczają kwalifikacji usług.
+
 ## Aktualizacja 30.09.2026 — kontrola rozmiaru odpowiedzi i pełnego odbioru
 
 V11 ujawniło ograniczenie adaptera: schemat pewnych poprawnych opisów miał

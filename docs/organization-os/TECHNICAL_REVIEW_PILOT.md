@@ -321,3 +321,31 @@ i ryzyko nadmiernego powtórzenia pozytywnych uzasadnień w żądaniu autora.
 Testy po wprowadzeniu projekcji: **66 passed, 3 skipped**.
 Oszacowanie długości kontekstu na podstawie
 liczby znaków nie jest dokładnym pomiarem tokenów; pilota jeszcze nie wykonano.
+
+Znany pilot v2 wykonano później dokładnie raz jako
+`claim-self-correction-w3a0i7v3`. Zakończył się **failed** po 71,333 s i jednym
+wywołaniu audytu (68,109 s). Model zwrócił 30 rekordów, lecz po prawidłowych
+24 elementach komentarzy powtórzył `comment:7:source_grounding` sześć
+dodatkowych razy zamiast sześciu pól ogólnych recenzji. Walidator zatrzymał
+próbę przed autorem; nie powstał kandydat ani poprawiona recenzja. Nie wykonano
+powtórzenia ani świeżego egzaminu.
+
+Odtworzenie przeszło z `status=failed`, jednym wywołaniem i potwierdzonym
+literalnym autorstwem. Raport SHA256:
+`f62e10ce74447705b7810494701c53dc78bce679ce00fefb123501f51438afe6`.
+Krótka retencja wygasła naturalnie (`idle_after=true`); nie zatrzymywano ani
+nie rozładowywano modelu poleceniem.
+
+Niezależny przegląd objął całą recenzję, artykuł i trzy karty źródłowe.
+Częściowy audyt trafnie odrzucił przedstawienie poprawnej linii 7 jako wady
+oraz niepopartą przewagę rozwiązania hybrydowego. Błędnie zaakceptował jednak
+ocenę 1000 przykładów jako małej próby bez ustalonego kryterium oraz
+nieudowodnione relacje kosztowe fine-tuningu i RAG. Samo zalecenie podania
+niepewności wyniku lub doprecyzowania metryki może być zasadne; nie należy
+mylić liczby przykładów treningowych z niepodaną liczebnością zbioru oceny.
+Recenzja pominęła też
+komentarz do linii 8 z osadzoną instrukcją, a jej `uncertainty` zbyt szeroko
+stwierdza brak źródła dla architektury hybrydowej: karta RAG wspiera możliwość
+połączenia, choć nie ranking ani szczegółowe relacje kosztów i wydajności.
+Wynik niezależny: **rejected_no_candidate**. SHA256 prywatnej oceny:
+`a93a4668e5b6f2c24cbfe5471b636b2f76641a90824b4f004da0ae52670358e3`.

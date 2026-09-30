@@ -2,6 +2,31 @@
 
 ## 2026-09-30 — przekazanie zadań GPT-5.6 na polecenie właściciela
 
+Zakończony znany pilot techniczny v2: `claim-self-correction-w3a0i7v3`,
+71,333 s / jedno wywołanie / failed, bez autora i bez kandydata. 30 rekordów
+nie pokrywało 30 jednostek: comment:7:source_grounding powtórzone siedem razy,
+brak top_fixes, citation_needs, additions, verdict, reader_intent, uncertainty.
+To rzeczywisty brak pokrycia, a nie spór o kolejność. Read-only verify
+odtworzył porażkę; raport SHA256
+`f62e10ce74447705b7810494701c53dc78bce679ce00fefb123501f51438afe6`.
+Handle 18633 terminalny/brak, retained-batch idle_after=true; postflight
+potwierdził pusty Docker/Ollama, brak ComfyUI i 31379 MiB wolnego GPU.
+Slot przekazano jednej znanej próbie infografik v2, bez ponowienia tej recenzji.
+
+Kod v11/v12 brandingu i przygotowanego, nieuruchomionego egzaminu v2
+opublikowano w fb7eabe po pełnym kierunkowym zestawie 125 passed / 4,05 s.
+Infografiki v1 plus osobny ograniczony cykl v2 opublikowano w 4a6cefd:
+80 passed / 7,29 s. Dwa przeglądy prowadzącego wymusiły odtworzenie
+literalnych odpowiedzi, dokładnych danych dostawcy/promptów, konfiguracji,
+snapshotów i pochodzenia ze starego zatrzymanego przebiegu. Testy obejmują
+również podmienione dane z przeliczonymi hashami. Skany staged/outgoing czyste.
+Żaden z tych commitów nie kwalifikuje usługi ani nie trenuje wag.
+
+Następne tory GPT-5.6: branding v13 z kontrastowymi przypadkami liczby
+wierszy (CPU), techniczny audyt v3 z nazwanymi wymaganymi kluczami zamiast
+swobodnej tablicy identyfikatorów (CPU), jedna próba infografik po własnym
+preflight. Nie zmieniać historycznych kontraktów ani powtarzać nieudanych prób.
+
 Poprzedni obrót celu był postępem: zapisano przekazanie i nowe polecenie
 w AGENTS.md oraz rzeczywiście uruchomiono trzech agentów GPT-5.6. Kolejny
 obrót potwierdził ich aktywność i ponownie sprawdził pełne kryteria pięciu
