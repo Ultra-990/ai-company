@@ -45,7 +45,9 @@ def exercise_context(brief):
             if brief not in ([delivery.definition(c) for c in delivery.CASES]
                              + [delivery.definition(c, strict=True) for c in delivery.STRICT_CASES]
                              + [delivery.definition(c, complete=True) for c in delivery.COMPLETE_CASES]):
-                raise ValueError('Known frozen synthetic brand brief required')
+                from scripts import brand_generation_exam as generation
+                if brief not in [generation.definition(c) for c in generation.CASES]:
+                    raise ValueError('Known frozen synthetic brand brief required')
     previous = brand.BRIEF
     brand.BRIEF = deepcopy(brief)
     try: yield
