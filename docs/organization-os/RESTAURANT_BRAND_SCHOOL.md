@@ -89,6 +89,15 @@ użyć znanego Reed `artwork-repair-88vybuf1`, dokładnie komendy:
 --warm-revision`. Bez dodatkowych prób ad hoc; generation-exam v2 pozostaje na
 v12 do czasu osobnego odbioru tego pilota.
 
+Pierwszy start kontrastowego egzaminu v13 `line-claim-exam-s3uaow0c` zatrzymał
+się po jednym wywołaniu bez końcowego raportu: model zwrócił JSON w bloku
+Markdown i w błędnym kształcie (`a`/`b` zamiast `concepts`). Katalog pozostał
+niezmieniony, a osobny rekord porażki wiąże jego żądanie i odpowiedź. Nie jest
+to wynik egzaminu ani podstawa do powtórzenia. Runner następnie wzmocniono tak,
+aby przyszła niepoprawna odpowiedź lub błąd transportu zawsze tworzyły pełny,
+odtwarzalny wynik `failed` z dokładnym zbiorem artefaktów i naturalnym
+zwolnieniem krótkiej retencji.
+
 ## Złożona kontrola podmiotu i referencji v9 — 30.09.2026
 
 `--revise-composed-text KATALOG --warm-revision` jawnie wybiera nowy
