@@ -1,5 +1,38 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — nowy egzamin v3: 2/3 technicznie, 0/3 po pełnym odbiorze
+
+Zamrożono nowe briefy Willow Hearth, Stone Market i Tide Garden z kontrolą
+dekoracji karty v3 i opisów/tła v6, przy równych budżetach obu profili.
+`delivery-exam-2ex2vdv1` przerwał się po 86,969 s: między etapami wystartował
+test `vastai/test:bandwidth-test-nvidia`. Odczyt historii Dockera potwierdził
+start oraz zakończenie/usunięcie po trzech sekundach; nie ruszano usług.
+
+Dodano zachowawcze wznowienie `brand_delivery_resume`: zachowuje wszystkie
+wcześniejsze źródła i ukończone ramiona. Powtarza etap grafiki wyłącznie,
+jeśli przerwał go preflight zasobów przed jakimkolwiek nowym wywołaniem autora.
+Nie przyznaje dodatkowych prób błędom modelu. Kod i briefy muszą odpowiadać
+zamrożeniu; nowy raport wiąże oryginalne przerwanie i zerowy koszt inferencji.
+`delivery-resume-_u0utxn3` dokończony w 81,226 s. Odczytowy audyt przeszedł,
+sprawdzając także świeże rendery zapisane w etapach poprawki opisów.
+
+Wynik techniczny **2/3 w obu profilach**, niezależny odbiór **0/3 w obu**:
+
+- Willow: trzy odpowiedzi logo B zawierały hasło zamiast nazwy. Limit
+  zakończył źródło po pierwszym poprawnym logo, bez dodatkowych prób.
+- Stone: grafiki czytelne, lecz opis A nieprawdziwie nazywa jednoliniową
+  nazwę „stacked wordmark”. Recenzent lokalny przeoczył tę część zdania.
+- Tide: grafiki i opisy zasadniczo zgodne, ale podkreślenie logo B kończy
+  ramkę na y=351 przy wysokości 360, jeszcze przed obrysem. Nie spełnia
+  żądanego marginesu 18px; naprawa kolizji wprowadziła błąd marginesu.
+
+Żadne ramię dodatkowej naprawy grafiki nie wywołało autora; nadal brak
+dowodu przewagi profilu rozumowania. Potrzebne jawne wymagane teksty dla
+konkretnego etapu, kontrola marginesów wszystkich kształtów w obu konceptach
+oraz sprawdzanie twierdzeń o liczbie wierszy. Bez kwalifikacji, zmiany wag,
+eksportu egzaminów do nauki i zmiany wcześniejszego wyniku 2/3.
+93 powiązane testy przeszły, w tym autentyczność kontynuacji i stare kontrakty.
+
 ## Aktualizacja 30.09.2026 — Saffron poprawiony bez ponownego generowania całego egzaminu
 
 Model poprawił samą wizytówkę w jednej próbie: `artwork-repair-y1jftr7b`,

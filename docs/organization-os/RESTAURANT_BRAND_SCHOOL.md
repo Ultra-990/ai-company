@@ -6,6 +6,32 @@ plan stylu, dwa koncepty logo, uzasadnia wybór i projektuje wizytówkę.
 Asystent rozwija wymagania, narzędzia i niezależną ocenę; nie rysuje logo
 ani nie poprawia współrzędnych za model.
 
+## Egzamin v3 i wznawianie po preflight zasobów
+
+`--delivery-exam-strict` zamraża trzy nowe briefy: Willow Hearth, Stone
+Market i Tide Garden, z kontrolą karty v3 oraz opisów/tła v6. Budżety
+pozostają równe, pierwotne źródło wspólne na parę, profile różnią się tylko
+dodatkową naprawą grafiki. Starsze `--delivery-exam` zachowuje kontrakt v2.
+
+Po terminalnym przerwaniu przez preflight można uruchomić:
+
+```bash
+.venv/bin/python -m scripts.brand_delivery_resume --resume KATALOG_EGZAMINU
+.venv/bin/python -m scripts.brand_delivery_resume --verify KATALOG_KONTYNUACJI
+```
+
+To ograniczona kontynuacja oryginalnego egzaminu, nie nowy egzamin i nie
+reset budżetu. Wymaga niezmienionych briefów/kodu, zachowuje wcześniejsze
+źródła i ukończone ramiona. Ponawia grafikę jedynie, gdy preflight przerwał
+ją przed dodatkową inferencją. Nie obsługuje dowolnego błędu modelu ani
+kolejnych przerwań kontynuacji; wtedy pozostawia raport nieukończenia.
+
+Rzeczywisty egzamin przerwał trzysekundowy test przepustowości Vast.ai.
+Kontynuacja dokończyła brakujące etapy, a odczytowy audyt potwierdził
+pochodzenie i zachowane rendery. Wynik: technicznie 2/3 w obu ramionach,
+niezależnie 0/3. Pozostały błędna nazwa, fałszywy opis liczby wierszy i
+margines drugiego logo; potrzebne poprawki przed kolejnym pełnym przebiegiem.
+
 ## Selektywne poprawki z kontrolą dekoracji i tła — 30.09.2026
 
 `--repair-artwork KATALOG --strict-card --artwork-reasoning` włącza

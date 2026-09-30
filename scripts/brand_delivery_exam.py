@@ -16,6 +16,18 @@ from scripts import brand_spatial_alignment_review as text_protocol
 from scripts import verify_brand_package as evidence
 
 CONTRACT = 'brand-complete-delivery-exam.v2'
+STRICT_CONTRACT = 'brand-complete-delivery-exam.v3'
+STRICT_CASES = (
+    {'id': 'willow-hearth', 'name': 'Willow Hearth',
+     'concept': 'Fictional neighborhood supper room serving baked root vegetables, grains and warm bread. Welcoming, calm and rustic with a restrained branch or hearth motif; no luxury crests or fork/knife clip art.',
+     'audience': 'Neighbors and small groups sharing an informal evening supper.'},
+    {'id': 'stone-market', 'name': 'Stone Market',
+     'concept': 'Fictional daytime market restaurant serving seasonal vegetable bowls and handmade dumplings. Practical, lively and approachable with a simple market stall or bowl motif; no luxury crests or fork/knife clip art.',
+     'audience': 'Market shoppers and nearby workers meeting for a casual lunch.'},
+    {'id': 'tide-garden', 'name': 'Tide Garden',
+     'concept': 'Fictional seaside restaurant serving vegetable plates, seaweed salads and local fish. Light, relaxed and hospitable with a simple leaf-and-water motif; no luxury crests or fork/knife clip art.',
+     'audience': 'Local families and visitors gathering for an unhurried daytime meal.'},
+)
 CASES = (
     {'id': 'orchard-counter', 'name': 'Orchard Counter',
      'concept': 'Fictional breakfast and lunch counter offering fruit-led breakfasts, warm porridge and seasonal vegetable sandwiches. Bright, relaxed and practical, with orchard imagery; no luxury crests or fork/knife clip art.',
@@ -38,27 +50,37 @@ CODE = ('brand_delivery_exam.py', 'brand_school.py', 'brand_full_exam.py', 'bran
         'compare_local_models.py', 'vector_school.py', 'local_ollama.py')
 
 
-def definition(case):
-    if case not in CASES: raise ValueError('Frozen complete-delivery case required')
+def definition(case, *, strict=False):
+    if case not in (STRICT_CASES if strict else CASES): raise ValueError('Frozen complete-delivery case required')
     brief = deepcopy(b.DEFAULT_BRIEF); domain = case['id'].replace('-', '')+'.example'
-    brief.update(restaurant_name=case['name'], family='brand-delivery-v2-'+case['id'], split='test',
-        concept=case['concept'], audience=case['audience'], qualification_exam=CONTRACT,
+    brief.update(restaurant_name=case['name'], family=('brand-delivery-v3-' if strict else 'brand-delivery-v2-')+case['id'], split='test',
+        concept=case['concept'], audience=case['audience'], qualification_exam=STRICT_CONTRACT if strict else CONTRACT,
         contacts=['Reservations by email', 'hello@'+domain, domain])
     return brief
 
 
-def manifest(config):
-    return {'schema': CONTRACT, 'briefs': [definition(c) for c in CASES],
+def protocol_for(strict):
+    if strict:
+        from scripts import brand_background_review
+        return brand_background_review
+    return text_protocol
+
+
+def manifest(config, *, strict=False):
+    return {'schema': STRICT_CONTRACT if strict else CONTRACT,
+        'briefs': [definition(c, strict=strict) for c in (STRICT_CASES if strict else CASES)],
         'model': config['model'], 'digest': config['digest'], 'shared_original_per_pair': True,
         'generation_budget': GENERATION, 'artwork_budget': ARTWORK, 'text_budget': TEXT,
         'max_generation_calls': 15, 'max_additional_artwork_calls': 6, 'max_text_calls': 5,
-        'artwork_contract': artwork.CONTRACT, 'text_contract': text_protocol.CONTRACT,
+        'artwork_contract': artwork.CARD_CONTRACT if strict else artwork.CONTRACT,
+        'text_contract': protocol_for(strict).CONTRACT,
         'profiles': {'baseline': 'bounded-default.v1', 'deliberate': 'qwen-deliberate-trial.v1'},
         'warm_text': True, 'manual_hints_allowed': False, 'training_export_allowed': False}
 
 
-def check_no_text_repair(folder, source):
+def check_no_text_repair(folder, source, *, strict=False):
     """Replay both original reviews, including geometry veto and warm release."""
+    text_protocol = protocol_for(strict)
     read = evidence.read; report = read(folder/'report.json')
     original, data = text_repair.inputs(source); data = text_protocol.expand(data, source)
     expected = [('review', text_protocol.REVIEW_SYSTEM, data, text_protocol.REVIEW_SCHEMA),
@@ -90,16 +112,16 @@ def check_no_text_repair(folder, source):
             raise ValueError('No-repair batch timing changed')
 
 
-def run():
+def run(*, strict=False):
     from scripts.brand_full_exam import exercise_context
     resources = b.school.check_idle(); config = b.configuration()
     out = Path(tempfile.mkdtemp(prefix='delivery-exam-', dir=b.ROOT))
-    frozen = manifest(config); b.school.save(out/'exam.json', frozen)
+    frozen = manifest(config, strict=strict); b.school.save(out/'exam.json', frozen)
     code = out/'implementation'; code.mkdir()
-    for name in CODE:
+    for name in CODE + (('brand_background_review.py',) if strict else ()):
         source = Path(__file__).parent/name if name != 'local_ollama.py' else Path(__file__).parents[1]/'app/services/local_ollama.py'
         shutil.copyfile(source, code/name)
-    report = {'schema': CONTRACT, 'status': 'running', 'resources_before': resources,
+    report = {'schema': frozen['schema'], 'status': 'running', 'resources_before': resources,
         'exam_sha256': b.school.checksum(out/'exam.json'), 'cases': [],
         'autonomy_qualified': False, 'training_exported': False, 'production_changed': False,
         'independent_review_required': True}
@@ -120,19 +142,19 @@ def run():
                 entry['source_repairable'] = False; save(); continue
             entry['source_repairable'] = True
             for arm in (('baseline', 'deliberate') if index % 2 == 0 else ('deliberate', 'baseline')):
-                package, repaired = artwork.run(source, deliberate=ARMS[arm], matched_budget=True)
+                package, repaired = artwork.run(source, deliberate=ARMS[arm], matched_budget=True, **({'strict_card': True} if strict else {}))
                 outcome = {'artwork': str(package), 'artwork_report_sha256': b.school.checksum(package/'report.json'),
                            'text': None, 'candidate': None, 'status': repaired['status']}
                 entry['arms'][arm] = outcome; save()
                 if repaired['status'] == 'pending_independent_visual_review':
                     b.school.save(package/'verification.json', evidence.verify(package))
-                    text_folder, text_result = text_repair.run(package, spatial='alignment', warm=True)
+                    text_folder, text_result = text_repair.run(package, spatial='background' if strict else 'alignment', warm=True)
                     outcome.update(text=str(text_folder), text_report_sha256=b.school.checksum(text_folder/'report.json'), status=text_result['status'])
                     if text_result['status'] == 'pending_independent_review':
                         b.school.save(text_folder/'verification.json', text_repair.verify(text_folder))
                         outcome['candidate'] = str(text_folder)
                     elif text_result['status'] == 'no_repair_requested':
-                        check_no_text_repair(text_folder, package); outcome['candidate'] = str(package)
+                        check_no_text_repair(text_folder, package, **({'strict': True} if strict else {})); outcome['candidate'] = str(package)
                 save(); print(json.dumps({'case': brief['restaurant_name'], 'arm': arm, **outcome}), flush=True)
         report.update(status='completed', technical_scores={arm: sum(bool(c['arms'].get(arm, {}).get('candidate')) for c in report['cases']) for arm in ARMS})
     except Exception as exc:
@@ -145,7 +167,8 @@ def run():
 def verify(out, *, use_recorded_render=False):
     out = Path(out); read = evidence.read; checksum = b.school.checksum
     report, frozen = read(out/'report.json'), read(out/'exam.json')
-    if (report.get('schema') != CONTRACT or report.get('status') != 'completed' or frozen != manifest(frozen)
+    strict = report.get('schema') == STRICT_CONTRACT
+    if (report.get('schema') not in (CONTRACT, STRICT_CONTRACT) or report.get('status') != 'completed' or frozen != manifest(frozen, strict=strict)
             or checksum(out/'exam.json') != report['exam_sha256']
             or any(report.get(k) is not False for k in ('autonomy_qualified', 'training_exported', 'production_changed'))
             or [c['family'] for c in report['cases']] != [v['family'] for v in frozen['briefs']]):
@@ -204,14 +227,15 @@ def verify(out, *, use_recorded_render=False):
                     raise ValueError('Bounded unchanged text phase required')
                 if result['status'] == 'pending_independent_review':
                     text_repair.verify(folder, use_recorded_render=use_recorded_render); candidate = str(folder)
-                elif result['status'] == 'no_repair_requested': check_no_text_repair(folder, package); candidate = str(package)
+                elif result['status'] == 'no_repair_requested':
+                    check_no_text_repair(folder, package, **({'strict': True} if strict else {})); candidate = str(package)
                 elif result['status'] not in ('failed', 'needs_revision'): raise ValueError('Terminal text result required')
             elif value['status'] not in ('failed', 'needs_revision') or outcome['text'] is not None or outcome['status'] != value['status']:
                 raise ValueError('Terminal artwork result required')
             if candidate != outcome['candidate']: raise ValueError('Final candidate substituted')
             scores[arm] += bool(candidate)
     if scores != report['technical_scores']: raise ValueError('Delivery score changed')
-    return {'schema': CONTRACT, 'report_sha256': checksum(out/'report.json'), 'technical_scores': scores,
+    return {'schema': frozen['schema'], 'report_sha256': checksum(out/'report.json'), 'technical_scores': scores,
             'shared_original_per_pair': True, 'equal_artwork_budgets': True,
             'independent_review_required': True, 'autonomy_qualified': False,
             'render_evidence_mode': 'prior_recorded_renders_rechecked_without_browser' if use_recorded_render else 'fresh_renders'}

@@ -1,5 +1,39 @@
 # Dziennik budowy AI Company
 
+## 2026-09-30 — zamrożony egzamin v3 i kontynuacja po krótkim teście zasobów
+
+- Nowe trzy briefy Willow Hearth / Stone Market / Tide Garden; oba ramiona
+  mają te same budżety, kontrolę grafiki v3 i opisów v6, wspólne źródło na parę.
+  Dawny kontrakt v2 pozostaje odtwarzalny. Egzamin `delivery-exam-2ex2vdv1`.
+- Po 86,969 s preflight wykrył kontener. Odczyt zdarzeń potwierdził
+  `vastai/test:bandwidth-test-nvidia`: utworzony i uruchomiony 01:00:49 UTC,
+  zakończony oraz usunięty 01:00:52 UTC. Kontenery następnie puste; nie
+  zatrzymywano ani nie zmieniano usług Vast.ai, Dockera czy hosta.
+- `scripts/brand_delivery_resume.py` zachowuje zamrożenie i wcześniejsze
+  wyniki. Wymaga terminalnego błędu preflight; ponawia przerwany etap grafiki
+  tylko przy zerze nowych wywołań autora i dokładnych kopiach wcześniejszych
+  żądań/odpowiedzi. Ponowne generowanie źródeł i zastępowanie ukończonych
+  ramion są odrzucane. Weryfikacja historyczna korzysta z kopii kodu, a
+  uruchomienie kontynuacji wymaga dodatkowo identycznego bieżącego kodu.
+- `delivery-resume-_u0utxn3`: zakończony w 81,226 s, potwierdzony odczytowym
+  audytem z kontrolą zachowanych renderów. Willow nie dostał kolejnych prób:
+  trzy razy hasło zamiast nazwy w logo B, źródło odrzucone. Stone oba ramiona
+  mają fałszywe „stacked wordmark” w opisie. Tide naprawił kolizję w logo B,
+  ale linia kończy bbox na y=351/360, łamiąc wymagany margines 18px.
+- Ogląd dziesięciu PNG (po pięć na Stone i Tide), sprawdzenie hashy kopii
+  drugiego ramienia, wszystkich opisów i faktycznego pomiaru linii:
+  technicznie 2/3 vs 2/3, niezależnie 0/3 vs 0/3. Brak nowych wywołań autora
+  grafiki w ramionach napraw; nie porównano skutecznie profili rozumowania.
+  Dodatkowy czas wznowienia nie jest benchmarkiem przyspieszenia.
+- Kolejny problem: wspólne instrukcje logo/karty i ogólny komunikat błędu
+  nie naprowadziły autora na wymaganą nazwę; kontrola grafiki nie sprawdza
+  marginesów wszystkich elementów drugiego konceptu. Potrzebne naprawy
+  mechanizmu na zachowanych błędach przed następnym pełnym egzaminem.
+  Bez kwalifikacji, ręcznych zmian produktu i zmiany historycznych ocen.
+- 93 powiązane testy przeszły w 3,43 s, w tym odtwarzanie obu wersji
+  egzaminu, odmowa zmienionych budżetów/kodu i zachowanie ukończonych
+  etapów podczas kontynuacji bez resetowania prób modelu.
+
 ## 2026-09-30 — selektywna naprawa Saffron i ponowne użycie modelu
 
 - Zasoby sprawdzone poza sandboxem: brak kontenerów, RTX 5090, 839 MiB
