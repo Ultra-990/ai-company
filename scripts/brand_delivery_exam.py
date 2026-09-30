@@ -17,6 +17,18 @@ from scripts import verify_brand_package as evidence
 
 CONTRACT = 'brand-complete-delivery-exam.v2'
 STRICT_CONTRACT = 'brand-complete-delivery-exam.v3'
+COMPLETE_CONTRACT = 'brand-complete-delivery-exam.v4'
+COMPLETE_CASES = (
+    {'id': 'maple-lantern', 'name': 'Maple Lantern',
+     'concept': 'Fictional neighborhood restaurant serving roasted squash, mushroom dishes and warm grain bowls. Calm, welcoming and seasonal, with a restrained maple leaf or lantern motif; no luxury crests or fork/knife clip art.',
+     'audience': 'Neighbors sharing a relaxed evening meal after work.'},
+    {'id': 'pebble-kitchen', 'name': 'Pebble Kitchen',
+     'concept': 'Fictional riverside lunch restaurant serving soups, toasted sandwiches and vegetable plates. Modest, fresh and approachable with a simple pebble or flowing-water motif; no luxury crests or fork/knife clip art.',
+     'audience': 'Walkers and local workers stopping for a casual lunch.'},
+    {'id': 'meadow-loom', 'name': 'Meadow Loom',
+     'concept': 'Fictional small restaurant serving handmade pasta, garden herbs and seasonal vegetables. Warm, sociable and unpretentious with a simple woven line or herb motif; no luxury crests or fork/knife clip art.',
+     'audience': 'Friends and families sharing an informal early supper.'},
+)
 STRICT_CASES = (
     {'id': 'willow-hearth', 'name': 'Willow Hearth',
      'concept': 'Fictional neighborhood supper room serving baked root vegetables, grains and warm bread. Welcoming, calm and rustic with a restrained branch or hearth motif; no luxury crests or fork/knife clip art.',
@@ -50,32 +62,41 @@ CODE = ('brand_delivery_exam.py', 'brand_school.py', 'brand_full_exam.py', 'bran
         'compare_local_models.py', 'vector_school.py', 'local_ollama.py')
 
 
-def definition(case, *, strict=False):
-    if case not in (STRICT_CASES if strict else CASES): raise ValueError('Frozen complete-delivery case required')
+def definition(case, *, strict=False, complete=False):
+    if case not in (COMPLETE_CASES if complete else STRICT_CASES if strict else CASES): raise ValueError('Frozen complete-delivery case required')
     brief = deepcopy(b.DEFAULT_BRIEF); domain = case['id'].replace('-', '')+'.example'
-    brief.update(restaurant_name=case['name'], family=('brand-delivery-v3-' if strict else 'brand-delivery-v2-')+case['id'], split='test',
-        concept=case['concept'], audience=case['audience'], qualification_exam=STRICT_CONTRACT if strict else CONTRACT,
+    brief.update(restaurant_name=case['name'], family=('brand-delivery-v4-' if complete else 'brand-delivery-v3-' if strict else 'brand-delivery-v2-')+case['id'], split='test',
+        concept=case['concept'], audience=case['audience'], qualification_exam=COMPLETE_CONTRACT if complete else STRICT_CONTRACT if strict else CONTRACT,
         contacts=['Reservations by email', 'hello@'+domain, domain])
     return brief
 
 
-def protocol_for(strict):
+def protocol_for(strict, complete=False):
+    if complete:
+        from scripts import brand_wordmark_review
+        return brand_wordmark_review
     if strict:
         from scripts import brand_background_review
         return brand_background_review
     return text_protocol
 
 
-def manifest(config, *, strict=False):
-    return {'schema': STRICT_CONTRACT if strict else CONTRACT,
-        'briefs': [definition(c, strict=strict) for c in (STRICT_CASES if strict else CASES)],
+def implementation_files(*, strict=False, complete=False):
+    return CODE + (('brand_background_review.py',) if strict or complete else ()) + (('brand_scene_contract.py', 'brand_wordmark_review.py') if complete else ())
+
+
+def manifest(config, *, strict=False, complete=False):
+    result = {'schema': COMPLETE_CONTRACT if complete else STRICT_CONTRACT if strict else CONTRACT,
+        'briefs': [definition(c, strict=strict, complete=complete) for c in (COMPLETE_CASES if complete else STRICT_CASES if strict else CASES)],
         'model': config['model'], 'digest': config['digest'], 'shared_original_per_pair': True,
         'generation_budget': GENERATION, 'artwork_budget': ARTWORK, 'text_budget': TEXT,
-        'max_generation_calls': 15, 'max_additional_artwork_calls': 6, 'max_text_calls': 5,
-        'artwork_contract': artwork.CARD_CONTRACT if strict else artwork.CONTRACT,
-        'text_contract': protocol_for(strict).CONTRACT,
+        'max_generation_calls': 15, 'max_additional_artwork_calls': 9 if complete else 6, 'max_text_calls': 5,
+        'artwork_contract': artwork.FULL_CONTRACT if complete else artwork.CARD_CONTRACT if strict else artwork.CONTRACT,
+        'text_contract': protocol_for(strict, complete).CONTRACT,
         'profiles': {'baseline': 'bounded-default.v1', 'deliberate': 'qwen-deliberate-trial.v1'},
         'warm_text': True, 'manual_hints_allowed': False, 'training_export_allowed': False}
+    if complete: result['source_contract'] = 'brand-scoped-scene.v1'
+    return result
 
 
 def check_no_text_repair(folder, source, *, strict=False, protocol=None):
@@ -112,13 +133,14 @@ def check_no_text_repair(folder, source, *, strict=False, protocol=None):
             raise ValueError('No-repair batch timing changed')
 
 
-def run(*, strict=False):
+def run(*, strict=False, complete=False):
+    strict = strict or complete
     from scripts.brand_full_exam import exercise_context
     resources = b.school.check_idle(); config = b.configuration()
     out = Path(tempfile.mkdtemp(prefix='delivery-exam-', dir=b.ROOT))
-    frozen = manifest(config, strict=strict); b.school.save(out/'exam.json', frozen)
+    frozen = manifest(config, strict=strict, complete=complete); b.school.save(out/'exam.json', frozen)
     code = out/'implementation'; code.mkdir()
-    for name in CODE + (('brand_background_review.py',) if strict else ()):
+    for name in implementation_files(strict=strict, complete=complete):
         source = Path(__file__).parent/name if name != 'local_ollama.py' else Path(__file__).parents[1]/'app/services/local_ollama.py'
         shutil.copyfile(source, code/name)
     report = {'schema': frozen['schema'], 'status': 'running', 'resources_before': resources,
@@ -133,7 +155,7 @@ def run(*, strict=False):
     save(); print(json.dumps({'output': str(out)}), flush=True)
     try:
         for index, brief in enumerate(frozen['briefs']):
-            with exercise_context(brief): source, generated = b.run()
+            with exercise_context(brief): source, generated = b.run(**({'scoped_scenes': True} if complete else {}))
             entry = {'family': brief['family'], 'source': str(source),
                 'source_report_sha256': b.school.checksum(source/'report.json'), 'arms': {}}
             report['cases'].append(entry); save()
@@ -142,19 +164,20 @@ def run(*, strict=False):
                 entry['source_repairable'] = False; save(); continue
             entry['source_repairable'] = True
             for arm in (('baseline', 'deliberate') if index % 2 == 0 else ('deliberate', 'baseline')):
-                package, repaired = artwork.run(source, deliberate=ARMS[arm], matched_budget=True, **({'strict_card': True} if strict else {}))
+                package, repaired = artwork.run(source, deliberate=ARMS[arm], matched_budget=True,
+                    **({'full_scene': True} if complete else {'strict_card': True} if strict else {}))
                 outcome = {'artwork': str(package), 'artwork_report_sha256': b.school.checksum(package/'report.json'),
                            'text': None, 'candidate': None, 'status': repaired['status']}
                 entry['arms'][arm] = outcome; save()
                 if repaired['status'] == 'pending_independent_visual_review':
                     b.school.save(package/'verification.json', evidence.verify(package))
-                    text_folder, text_result = text_repair.run(package, spatial='background' if strict else 'alignment', warm=True)
+                    text_folder, text_result = text_repair.run(package, spatial='wordmark' if complete else 'background' if strict else 'alignment', warm=True)
                     outcome.update(text=str(text_folder), text_report_sha256=b.school.checksum(text_folder/'report.json'), status=text_result['status'])
                     if text_result['status'] == 'pending_independent_review':
                         b.school.save(text_folder/'verification.json', text_repair.verify(text_folder))
                         outcome['candidate'] = str(text_folder)
                     elif text_result['status'] == 'no_repair_requested':
-                        check_no_text_repair(text_folder, package, **({'strict': True} if strict else {})); outcome['candidate'] = str(package)
+                        check_no_text_repair(text_folder, package, **({'protocol': protocol_for(strict, complete)} if complete else {'strict': True} if strict else {})); outcome['candidate'] = str(package)
                 save(); print(json.dumps({'case': brief['restaurant_name'], 'arm': arm, **outcome}), flush=True)
         report.update(status='completed', technical_scores={arm: sum(bool(c['arms'].get(arm, {}).get('candidate')) for c in report['cases']) for arm in ARMS})
     except Exception as exc:
@@ -167,8 +190,9 @@ def run(*, strict=False):
 def verify(out, *, use_recorded_render=False):
     out = Path(out); read = evidence.read; checksum = b.school.checksum
     report, frozen = read(out/'report.json'), read(out/'exam.json')
-    strict = report.get('schema') == STRICT_CONTRACT
-    if (report.get('schema') not in (CONTRACT, STRICT_CONTRACT) or report.get('status') != 'completed' or frozen != manifest(frozen, strict=strict)
+    complete = report.get('schema') == COMPLETE_CONTRACT
+    strict = report.get('schema') in (STRICT_CONTRACT, COMPLETE_CONTRACT)
+    if (report.get('schema') not in (CONTRACT, STRICT_CONTRACT, COMPLETE_CONTRACT) or report.get('status') != 'completed' or frozen != manifest(frozen, strict=strict, complete=complete)
             or checksum(out/'exam.json') != report['exam_sha256']
             or any(report.get(k) is not False for k in ('autonomy_qualified', 'training_exported', 'production_changed'))
             or [c['family'] for c in report['cases']] != [v['family'] for v in frozen['briefs']]):
@@ -193,6 +217,8 @@ def verify(out, *, use_recorded_render=False):
     for case, brief in zip(report['cases'], frozen['briefs']):
         source = Path(case['source']); original = stage(source, case['source_report_sha256'], GENERATION)
         if (original['brief'] != brief or 'repair_contract' in original
+                or 'scene_recovery_contract' in original
+                or original.get('scene_contract') != frozen.get('source_contract')
                 or original['status'] not in ('failed', 'needs_revision', 'pending_independent_visual_review')
                 or original['config'].get('think', False) is not False
                 or original['config'].get('sampling_profile', 'bounded-default.v1') != 'bounded-default.v1'
@@ -210,10 +236,10 @@ def verify(out, *, use_recorded_render=False):
             origin = read(package/'repair-origin.json')
             if (value['brief'] != brief or value.get('repair_contract') != frozen['artwork_contract']
                     or Path(origin['source']).resolve() != source.resolve() or origin['source_report_sha256'] != case['source_report_sha256']
-                    or origin['max_additional_model_calls'] != 6 or origin['fresh_exam'] is not False
+                    or origin['max_additional_model_calls'] != frozen['max_additional_artwork_calls'] or origin['fresh_exam'] is not False
                     or value['config'].get('think') is not ARMS[arm] or value['config'].get('sampling_profile') != frozen['profiles'][arm]):
                 raise ValueError('Matched artwork arm or shared source changed')
-            if len(origin['repaired_stages']) > 2 or sum(len(list(package.glob(s+'*-request.json'))) for s in origin['repaired_stages']) > 6:
+            if len(origin['repaired_stages']) > (3 if complete else 2) or sum(len(list(package.glob(s+'*-request.json'))) for s in origin['repaired_stages']) > frozen['max_additional_artwork_calls']:
                 raise ValueError('Artwork call budget exceeded')
             candidate = None
             if value['status'] == 'pending_independent_visual_review':
@@ -228,7 +254,7 @@ def verify(out, *, use_recorded_render=False):
                 if result['status'] == 'pending_independent_review':
                     text_repair.verify(folder, use_recorded_render=use_recorded_render); candidate = str(folder)
                 elif result['status'] == 'no_repair_requested':
-                    check_no_text_repair(folder, package, **({'strict': True} if strict else {})); candidate = str(package)
+                    check_no_text_repair(folder, package, **({'protocol': protocol_for(strict, complete)} if complete else {'strict': True} if strict else {})); candidate = str(package)
                 elif result['status'] not in ('failed', 'needs_revision'): raise ValueError('Terminal text result required')
             elif value['status'] not in ('failed', 'needs_revision') or outcome['text'] is not None or outcome['status'] != value['status']:
                 raise ValueError('Terminal artwork result required')

@@ -6,6 +6,29 @@ plan stylu, dwa koncepty logo, uzasadnia wybór i projektuje wizytówkę.
 Asystent rozwija wymagania, narzędzia i niezależną ocenę; nie rysuje logo
 ani nie poprawia współrzędnych za model.
 
+## Pełny egzamin v4 — 30.09.2026
+
+`--delivery-exam-complete` zamraża nowe briefy Maple Lantern, Pebble Kitchen
+i Meadow Loom. Łączy scoped scenes v1, naprawę obu konceptów/karty v4
+i tekst v7 warm. Starsze v2/v3 zachowują swoje warunki. Odczyt i wznowienie
+sprawdzają właściwy kontrakt źródła; znana naprawa nie staje się świeżym
+egzaminem przez podmianę raportu.
+
+Pierwszy `delivery-exam-ld9zzmd9`: 201,283 s, technicznie 2/3 baza i 1/3
+rozumowanie, niezależnie 1/3 w obu (Pebble). W żadnym ramieniu dodatkowa
+naprawa grafiki nie wywołała autora; porównanie nie mierzy przewagi profili.
+Meadow sam poprawił układ, ale jego opis „woven line” nie odpowiada dwóm
+niesplecionym owalom. Maple zatrzymała zapętlona ścieżka drugiego logo.
+
+Osobne dokończenie Maple (96,214 s) dało czytelną kartę i drugie logo,
+lecz zachowane logo A ma niewidoczne elementy i fałszywy opis latarni.
+Pełna paczka nadal odrzucona. Recenzja tekstu (14,258 s) wykazała też
+błędną interpretację relacji względem środka jako rozdzielenia całych ramek.
+Potrzebna kontrola opisów wobec widocznego wyniku, a nie tylko deklarowanej
+geometrii. Te ograniczenia pozostają jawne; bez kwalifikacji i treningu.
+116 powiązanych testów przeszło. Nie powtarzamy inferencji wyłącznie po to,
+żeby uzyskać korzystniejszy wynik z tego samego znanego zadania.
+
 ## Wymagania etapów, oba logo i liczba wierszy — 30.09.2026
 
 Nowa generacja: `--run --scoped-scenes`. Kontrakt `brand-scoped-scene.v1`

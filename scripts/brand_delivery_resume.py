@@ -28,22 +28,23 @@ def bound(folder, report):
 def interrupted(source, *, require_live=False):
     read = exam.evidence.read
     report = read(source/'report.json'); frozen = read(source/'exam.json')
-    strict = report.get('schema') == exam.STRICT_CONTRACT
-    if (report.get('schema') not in (exam.CONTRACT, exam.STRICT_CONTRACT)
+    complete = report.get('schema') == exam.COMPLETE_CONTRACT
+    strict = report.get('schema') in (exam.STRICT_CONTRACT, exam.COMPLETE_CONTRACT)
+    if (report.get('schema') not in (exam.CONTRACT, exam.STRICT_CONTRACT, exam.COMPLETE_CONTRACT)
             or report.get('status') != 'failed' or report.get('error_type') != 'PreflightFailure'
             or report.get('error') not in RESOURCE_ERRORS or 'resource_continuation' in report
-            or frozen != exam.manifest(frozen, strict=strict)
+            or frozen != exam.manifest(frozen, strict=strict, complete=complete)
             or exam.b.school.checksum(source/'exam.json') != report['exam_sha256']):
         raise ValueError('One original frozen resource interruption required')
     bound(source, report)
     if [c['family'] for c in report['cases']] != [v['family'] for v in frozen['briefs'][:len(report['cases'])]]:
         raise ValueError('Original ordered case prefix required')
     if require_live:
-        for name in exam.CODE + (('brand_background_review.py',) if strict else ()):
+        for name in exam.implementation_files(strict=strict, complete=complete):
             live = Path(exam.__file__).parent/name if name != 'local_ollama.py' else Path(exam.__file__).parents[1]/'app/services/local_ollama.py'
             if live.read_bytes() != read_bytes(source/'implementation'/name):
                 raise ValueError('Frozen implementation changed; cannot continue exam')
-    return report, frozen, strict
+    return report, frozen, strict, complete
 
 
 def read_bytes(path):
@@ -72,7 +73,7 @@ def can_restart_art(outcome):
 
 
 def run(source):
-    source = Path(source); original, frozen, strict = interrupted(source, require_live=True)
+    source = Path(source); original, frozen, strict, complete = interrupted(source, require_live=True)
     resources = exam.b.school.check_idle()
     out = Path(tempfile.mkdtemp(prefix='delivery-resume-', dir=exam.b.ROOT))
     shutil.copyfile(source/'exam.json', out/'exam.json')
@@ -95,7 +96,7 @@ def run(source):
             if index < len(report['cases']):
                 entry = report['cases'][index]; package_source = Path(entry['source'])
             else:
-                with exercise_context(brief): package_source, _ = exam.b.run()
+                with exercise_context(brief): package_source, _ = exam.b.run(**({'scoped_scenes': True} if complete else {}))
                 entry = {'family': brief['family'], 'source': str(package_source),
                     'source_report_sha256': exam.b.school.checksum(package_source/'report.json'), 'arms': {}}
                 report['cases'].append(entry)
@@ -109,18 +110,19 @@ def run(source):
                     if prior.get('candidate') is not None: continue
                     can_restart_art(prior)
                     report['resource_continuation']['zero_inference_restarts'].append({'family': entry['family'], 'arm': arm, 'original': deepcopy(prior)})
-                package, art = exam.artwork.run(package_source, deliberate=exam.ARMS[arm], matched_budget=True, **({'strict_card': True} if strict else {}))
+                package, art = exam.artwork.run(package_source, deliberate=exam.ARMS[arm], matched_budget=True,
+                    **({'full_scene': True} if complete else {'strict_card': True} if strict else {}))
                 outcome = {'artwork': str(package), 'artwork_report_sha256': exam.b.school.checksum(package/'report.json'),
                     'text': None, 'candidate': None, 'status': art['status']}
                 entry['arms'][arm] = outcome; save()
                 if art['status'] == 'pending_independent_visual_review':
                     exam.b.school.save(package/'verification.json', exam.evidence.verify(package))
-                    folder, text = exam.text_repair.run(package, spatial='background' if strict else 'alignment', warm=True)
+                    folder, text = exam.text_repair.run(package, spatial='wordmark' if complete else 'background' if strict else 'alignment', warm=True)
                     outcome.update(text=str(folder), text_report_sha256=exam.b.school.checksum(folder/'report.json'), status=text['status'])
                     if text['status'] == 'pending_independent_review':
                         exam.b.school.save(folder/'verification.json', exam.text_repair.verify(folder)); outcome['candidate'] = str(folder)
                     elif text['status'] == 'no_repair_requested':
-                        exam.check_no_text_repair(folder, package, strict=strict); outcome['candidate'] = str(package)
+                        exam.check_no_text_repair(folder, package, strict=strict, protocol=exam.protocol_for(strict, complete)); outcome['candidate'] = str(package)
                 save(); print(json.dumps({'case': brief['restaurant_name'], 'arm': arm, **outcome}), flush=True)
         report.update(status='completed', technical_scores={a: sum(bool(c['arms'].get(a, {}).get('candidate')) for c in report['cases']) for a in exam.ARMS})
     except Exception as exc:
@@ -131,7 +133,7 @@ def run(source):
 
 def verify(out):
     out = Path(out); report = exam.evidence.read(out/'report.json'); record = report['resource_continuation']
-    source = Path(record['source']); old, frozen, _ = interrupted(source)
+    source = Path(record['source']); old, frozen, _, _ = interrupted(source)
     if (record['schema'] != CONTRACT or exam.b.school.checksum(source/'report.json') != record['source_report_sha256']
             or read_bytes(out/'exam.json') != read_bytes(source/'exam.json')
             or record['previous_elapsed_seconds'] != old['elapsed_seconds']):

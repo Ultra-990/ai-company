@@ -1,5 +1,45 @@
 # Dziennik budowy AI Company
 
+## 2026-09-30 — pełny egzamin v4 i przegląd kosztu kolejnych prób
+
+- Dodano `--delivery-exam-complete`: zamrożone Maple Lantern, Pebble Kitchen,
+  Meadow Loom; sceny v1, naprawa obu logo/karty v4 (do dziewięciu wywołań),
+  opisy v7 warm (do pięciu). Generowanie bazowe zachowuje 8192/4096/4/180,
+  oba profile napraw 16384/8192/4/180, tekst 8192/1800/4/90. V2/v3 pozostają
+  dostępne. Wznowienie obsługuje v4 bez resetowania błędów/prób modelu.
+- `delivery-exam-ld9zzmd9`: 201,283 s, technicznie baza 2/3, rozumowanie
+  1/3, niezależnie 1/3 w obu. Raport SHA256
+  `033bef5554f440cdcd43124d72c29cec418bf0f324cc695daa4b4d77a53f804a`.
+  Audyt `verification-recorded-render.json` przeszedł; przeglądy kandydatów
+  związane hashami w `independent-review.json`. Przed startem Docker pusty,
+  GPU 1042 MiB / 0%; preflight ponawiany przy inferencji. Nie ruszano usług.
+- Pebble: obie paczki odebrane po oglądzie pięciu eksportów i treści.
+  Artefakty `artwork-repair-nzcoh0pr` / `artwork-repair-xqmd3lj6`; brak
+  dodatkowych poprawek grafiki, recenzje tekstu bez żądania zmian.
+- Meadow: źródło `identity-hintzn_4` samodzielnie poprawia logo A oraz kartę.
+  `guide-revision-dq4x9djk` odrzucone za opis dwóch owali jako splotu;
+  `guide-revision-crolieqx` zatrzymane z niepotwierdzonym minimum 12mm.
+- Maple: `identity-6avzcak5` wyczerpał trzy próby drugiego logo z powtarzaną
+  ścieżką poza płótnem. Osobny `scene-recovery-wloldyi7`: 96,214 s,
+  cztery dodatkowe wywołania, B i wybór od razu, karta w dwóch próbach.
+  Dosłowne autorstwo, 21 plików ZIP i eksporty potwierdzone. Ogląd pięciu
+  PNG ujawnił niewidoczną latarnię w chronionym logo A: elementy mają
+  fill/stroke none, mimo opisu o widocznym symbolu. Cały pakiet odrzucony.
+- Maple `guide-revision-yj5w2b51`: 14,258 s, pięć wywołań, needs_revision.
+  Recenzent przeoczył niewidoczną latarnię. Kontrola przestrzenna odrzuciła
+  prawdziwe „left of the text's horizontal center”: środek symbolu x=140,
+  tekstu x=300. Warunek całkowitego rozdzielenia ramek nie pasuje do tego
+  twierdzenia. Osobny przegląd zapisuje zarówno błąd autora, jak i recenzji;
+  nie zmieniono wyniku egzaminu ani ręcznie żadnego produktu.
+- W całym v4 zero dodatkowych wywołań autora grafiki w obu ramionach:
+  porównanie profili nieinformatywne. Przyspieszenie dalszej pracy wymaga
+  prób na rzeczywiście zawodzącym etapie, zamiast ponawiania równych paczek.
+  Zachowujemy istniejący warm oraz odczyt wcześniejszych związanych dowodów
+  renderowania tam, gdzie nie potrzeba nowego renderu. Nie deklarujemy
+  nowego globalnego mnożnika szybkości ani kwalifikacji.
+- 116 powiązanych testów przeszło w 4,65 s. Bez SFT, zmiany oryginalnych wag,
+  egzaminów w danych treningowych i zmian produkcyjnego routingu modeli.
+
 ## 2026-09-30 — lokalny autor naprawił Willow, Stone i Tide
 
 - `brand-scoped-scene.v1`: osobne instrukcje i wymagane teksty etapów,

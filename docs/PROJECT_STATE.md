@@ -1,5 +1,36 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — egzamin v4: 1/3 odebrane; ograniczamy nieinformatywne powtórzenia
+
+`delivery-exam-ld9zzmd9` ukończony w 201,283 s. Nowe, zamrożone briefy
+Maple Lantern, Pebble Kitchen i Meadow Loom korzystają z kontraktu scen v1,
+naprawy obu logo/karty v4 i recenzji opisów v7. Technicznie baza 2/3,
+profil rozumowania 1/3; niezależnie **1/3 w obu** (Pebble). Odczytowy audyt
+z zachowanymi rzeczywistymi renderami przeszedł. 116 powiązanych testów
+przeszło, w tym wznowienie po braku zasobów i autentyczność kontraktu źródła.
+
+Żadne ramię dodatkowej naprawy grafiki nie wywołało autora. Różnice wynikły
+z osobnych wywołań tego samego profilu tekstowego; nie dowodzą przewagi
+rozumowania. Dalsze porównania należy kierować na etap generowania lub
+rzeczywiście odrzucone sceny, zamiast powtarzać niezmienione paczki.
+Tryb warm nadal ogranicza ponowne ładowanie modelu w poprawkach tekstu;
+wcześniejszy pomiar 23,499 → 13,478 s dotyczy jednej pary, nie całego systemu.
+
+Maple wyczerpał trzy próby logo B przez zapętloną ścieżkę poza płótnem.
+Osobna naprawa `scene-recovery-wloldyi7` dokończyła grafiki w 96,214 s
+i czterech nowych wywołaniach; model sam zwiększył za mały napis na karcie.
+Paczka nadal odrzucona: logo A zawiera niewidoczne elementy latarni, którą
+opis i recenzent błędnie uznają za widoczną. Tekst `guide-revision-yj5w2b51`
+zatrzymał się po 14,258 s. Dodatkowo kontrola błędnie utożsamia „na lewo
+od środka tekstu” z „w całości na lewo od tekstu”. Zachowano te dowody.
+
+Meadow sam poprawił kolizję logo A oraz marginesy/dekoracje karty w budżecie
+źródła. Opis nadal nazywa dwa niesplecione owale splotem; niezależny odbiór
+odrzucił pakiet. Drugie ramię zatrzymało niepotwierdzone minimum druku 12mm.
+Następny krok: opisy oparte na rzeczywiście widocznych elementach i mniej
+zbędnych powtórzeń. Bez kwalifikacji pięciu usług, treningu, zmiany wag lub
+eksportowania egzaminów do nauki; historyczne oceny pozostają niezmienione.
+
 ## Aktualizacja 30.09.2026 — trzy zachowane projekty poprawione przez model
 
 Dodano kontrakt scen v1: osobne instrukcje logo/karty, wymagane teksty

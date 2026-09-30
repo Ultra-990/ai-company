@@ -9,9 +9,10 @@ from scripts import brand_delivery_exam as exam
 from scripts.brand_full_exam import exercise_context
 
 
-@pytest.mark.parametrize('strict', [False, True])
+@pytest.mark.parametrize('strict', [False, True, 'complete'])
 def test_new_cases_are_frozen_reserved_and_distinct(strict):
-    briefs = [exam.definition(c, strict=strict) for c in (exam.STRICT_CASES if strict else exam.CASES)]
+    complete = strict == 'complete'
+    briefs = [exam.definition(c, strict=bool(strict), complete=complete) for c in (exam.COMPLETE_CASES if complete else exam.STRICT_CASES if strict else exam.CASES)]
     assert len({v['family'] for v in briefs}) == 3
     assert all(v['split'] == 'test' and v['synthetic'] for v in briefs)
     old = deepcopy(exam.b.BRIEF)
@@ -25,6 +26,8 @@ def test_new_cases_are_frozen_reserved_and_distinct(strict):
 @pytest.fixture
 def completed(tmp_path, monkeypatch, request):
     strict = getattr(request, 'param', False)
+    complete = strict == 'complete'
+    strict = bool(strict)
     b = exam.b
     monkeypatch.setattr(b, 'ROOT', tmp_path)
     monkeypatch.setattr(b.school, 'check_idle', lambda: {})
@@ -41,39 +44,42 @@ def completed(tmp_path, monkeypatch, request):
     def finish(out, value):
         value['artifacts'] = {str(p.relative_to(out)): b.school.checksum(p) for p in out.rglob('*') if p.is_file()}
         b.school.save(out/'report.json', value); return out, value
-    def generate():
+    def generate(*, scoped_scenes=False):
+        assert scoped_scenes is complete
         out = create(('brand_school.py',))
         b.school.save(out/'plan-request.json', {})
-        return finish(out, {'model': 'fixture', 'digest': 'f'*64, 'brief': deepcopy(b.BRIEF),
-            'config': dict(exam.GENERATION), 'status': 'pending_independent_visual_review'})
+        value = {'model': 'fixture', 'digest': 'f'*64, 'brief': deepcopy(b.BRIEF),
+            'config': dict(exam.GENERATION), 'status': 'pending_independent_visual_review'}
+        if complete: value['scene_contract'] = 'brand-scoped-scene.v1'
+        return finish(out, value)
     calls = []
-    def repair(source, *, deliberate, matched_budget, strict_card=False):
-        assert matched_budget and strict_card is strict; calls.append(deliberate)
+    def repair(source, *, deliberate, matched_budget, strict_card=False, full_scene=False):
+        assert matched_budget and strict_card is (strict and not complete) and full_scene is complete; calls.append(deliberate)
         out = create(('brand_artwork_repair.py',)); original = exam.evidence.read(source/'report.json')
         b.school.save(out/'repair-origin.json', {'source': str(source), 'source_report_sha256': b.school.checksum(source/'report.json'),
-            'max_additional_model_calls': 6, 'fresh_exam': False, 'repaired_stages': []})
+            'max_additional_model_calls': 9 if complete else 6, 'fresh_exam': False, 'repaired_stages': []})
         return finish(out, {'model': 'fixture', 'digest': 'f'*64, 'brief': original['brief'],
             'config': exam.ARTWORK | {'think': deliberate, 'sampling_profile': 'qwen-deliberate-trial.v1' if deliberate else 'bounded-default.v1'},
-            'repair_contract': exam.artwork.CARD_CONTRACT if strict else exam.artwork.CONTRACT, 'status': 'pending_independent_visual_review'})
+            'repair_contract': exam.artwork.FULL_CONTRACT if complete else exam.artwork.CARD_CONTRACT if strict else exam.artwork.CONTRACT, 'status': 'pending_independent_visual_review'})
     def revise(package, *, spatial, warm):
-        assert spatial == ('background' if strict else 'alignment') and warm
+        assert spatial == ('wordmark' if complete else 'background' if strict else 'alignment') and warm
         out = create(('brand_guide_revision.py',))
         b.school.save(out/'review-request.json', {})
         b.school.save(out/'spatial-request.json', {})
         return finish(out, {'model': 'fixture', 'digest': 'f'*64, 'package': str(package),
             'source_report_sha256': b.school.checksum(package/'report.json'),
             'config': exam.TEXT | {'think': False, 'sampling_profile': 'bounded-default.v1'},
-            'max_model_calls': 5, 'review_contract': exam.protocol_for(strict).CONTRACT,
+            'max_model_calls': 5, 'review_contract': exam.protocol_for(strict, complete).CONTRACT,
             'retained_batch_contract': 'local-retained-batch.v1', 'status': 'no_repair_requested'})
     monkeypatch.setattr(b, 'run', generate)
     monkeypatch.setattr(exam.artwork, 'run', repair)
     monkeypatch.setattr(exam.text_repair, 'run', revise)
-    out, report = exam.run(strict=strict)
+    out, report = exam.run(strict=strict, complete=complete)
     assert calls == [False, True, True, False, False, True]
     return out, report
 
 
-@pytest.mark.parametrize('completed', [False, True], indirect=True)
+@pytest.mark.parametrize('completed', [False, True, 'complete'], indirect=True)
 def test_full_flow_keeps_shared_sources_and_no_self_qualification(completed):
     out, report = completed
     assert report['technical_scores'] == {'baseline': 3, 'deliberate': 3}
@@ -82,7 +88,20 @@ def test_full_flow_keeps_shared_sources_and_no_self_qualification(completed):
     assert not result['autonomy_qualified']
 
 
-@pytest.mark.parametrize('completed', [False, True], indirect=True)
+@pytest.mark.parametrize('completed', ['complete'], indirect=True)
+def test_complete_exam_cannot_drop_the_source_scene_contract(completed):
+    out, report = completed
+    case = report['cases'][0]; source = Path(case['source'])
+    value = exam.evidence.read(source/'report.json')
+    value.pop('scene_contract')
+    exam.b.school.save(source/'report.json', value)
+    case['source_report_sha256'] = exam.b.school.checksum(source/'report.json')
+    exam.b.school.save(out/'report.json', report)
+    with pytest.raises(ValueError, match='Fresh bounded shared source'):
+        exam.verify(out)
+
+
+@pytest.mark.parametrize('completed', [False, True, 'complete'], indirect=True)
 @pytest.mark.parametrize('fault', ['budget', 'profile', 'source', 'code', 'candidate', 'score', 'brief', 'contract'])
 def test_rebound_changes_do_not_create_a_valid_frozen_comparison(completed, fault):
     out, report = completed; outcome = report['cases'][0]['arms']['deliberate']; folder = Path(outcome['artwork'])
@@ -104,7 +123,7 @@ def test_rebound_changes_do_not_create_a_valid_frozen_comparison(completed, faul
     with pytest.raises(ValueError): exam.verify(out)
 
 
-@pytest.mark.parametrize('completed', [True], indirect=True)
+@pytest.mark.parametrize('completed', [True, 'complete'], indirect=True)
 def test_resource_continuation_preserves_finished_work_and_model_failure_budgets(completed, monkeypatch):
     from scripts import brand_delivery_resume as resume
     source, original = completed
