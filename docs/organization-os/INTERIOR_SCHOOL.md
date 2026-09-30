@@ -143,11 +143,71 @@ szersze dane oraz odrębne rodziny walidacji/testu. Przykładowy mechanizm
 przetwarzania opisuje [Unsloth vision fine-tuning](https://unsloth.ai/docs/basics/vision-fine-tuning).
 Nie potwierdzono gotowości całej paczki, komercyjnych praw ani usługi klienta.
 
-Końcowo 41 testów infrastruktury: dodatkowo odtworzenie dokładnego wejścia
-obraz–tekst, wykrywanie podmiany obrazu/promptu/odpowiedzi/renderu, brak eksportu
-po samej samoocenie modelu i odrzucenie rekordu przez tekstowy loader SFT.
+Weryfikacja etapu obraz–tekst z 21.09: 41 testów infrastruktury, obejmujących
+odtworzenie dokładnego wejścia obraz–tekst, wykrywanie podmiany
+obrazu/promptu/odpowiedzi/renderu, brak eksportu po samej samoocenie modelu
+i odrzucenie rekordu przez tekstowy loader SFT.
 
-Kolejny etap 21.09: [audyt wejścia i trzy rzeczywiste aktualizacje adaptera
+Dalszy etap z 21.09: [audyt wejścia i trzy rzeczywiste aktualizacje adaptera
 obraz–tekst](VISION_TRAINING_INPUTS.md). Wcześniejszy manifest paczki zachowuje
 stan z chwili eksportu; osobny raport dokumentuje wykonany później trening
 integracyjny. Nie oznacza to spełnienia warunków treningu produkcyjnego.
+
+## Ograniczona korekta obserwacji — 30.09.2026
+
+`scripts/interior_observation_repair.py` uruchamia osobną próbę rozwojową
+na zachowanej obserwacji i dokładnie tych samych pikselach. Lokalny recenzent
+otrzymuje sześć pól opisu i PNG, bez promptu generowania, tytułu koncepcji,
+oceny człowieka lub oczekiwanego werdyktu. Musi sprawdzić wszystkie pola
+i wskazać literalny fragment każdego zakwestionowanego pola. Osobny pomiar
+sprawdza długości opisów oraz alt text 8–16 słów; aprobata recenzenta nie
+może unieważnić przekroczonego limitu.
+
+Jeżeli wystąpi zastrzeżenie, lokalny autor ma jedną próbę zmiany wyłącznie
+wskazanych pól. Pozostałe pola, ich kolejność w listach, rekomendacja autora
+i obraz pozostają dokładnie zachowane. Końcowa recenzja używa rzeczywistych
+pikseli i nowego tekstu. Maksymalnie trzy wywołania, każde 8192 kontekstu,
+1800 tokenów wyjścia, cztery wątki i 90 sekund. Kontrola zasobów poprzedza
+każde wywołanie; narzędzie nie uruchamia ComfyUI ani nie regeneruje obrazu.
+
+```bash
+.venv/bin/python scripts/interior_observation_repair.py /prywatny/inspect-ID/report.json --asset pin --run
+.venv/bin/python scripts/interior_observation_repair.py /prywatny/observation-repair-ID --verify
+```
+
+Bez `--run` narzędzie tylko sprawdza pochodzenie. Weryfikator odtwarza
+dokładne żądania, odpowiedzi, zakres dozwolonych zmian i wynik pomiaru,
+sprawdza hash oryginalnej obserwacji i łańcuch obrazu oraz odrzuca dodatkowe
+wywołania. Surowe odrzucone odpowiedzi pozostają zapisane. Wyczerpanie jednej
+poprawki daje `needs_revision`; brak zastrzeżeń daje wyłącznie
+`pending_independent_review`. Lokalny recenzent może nadal pomylić materiał,
+liczbę lub położenie przedmiotu. Wymagany jest niezależny ogląd całego opisu
+i obrazu; techniczna weryfikacja nie zatwierdza realizacji.
+
+Próba przyjmuje tylko istniejące syntetyczne rodziny rozwojowe, odrzuca
+zarezerwowane obrazy testowe, nie eksportuje danych do nauki i nie zmienia
+wag ani dawnych wyników. Nie jest jeszcze zintegrowana z pełnym egzaminem
+trzech nowych pakietów ani z publikacją.
+
+Pierwsza rzeczywista próba `observation-repair-4vo8wtlh` dotyczyła znanego
+pin z `inspect-izdxjllv`. Kontrola zasobów potwierdziła brak kontenerów;
+wykonano jedno wywołanie w 6,426 s. Recenzent zaakceptował wszystkie pola,
+więc korekta nie została uruchomiona. Odtworzenie pochodzenia i żądania
+zakończyło się poprawnie, ale **niezależny odbiór ponownie odrzucił opis**:
+materiał częściowo uciętego elementu przy pokrywie nadal nazwano drewnem,
+a skład włókna tkaniny lnem. Piksele tych twierdzeń nie potwierdzają.
+Recenzent błędnie policzył również alt text jako 13 słów; pomiar daje 15,
+czyli nadal wewnątrz limitu. Nie przepisano oryginalnego wyniku ani produktu.
+
+Osobna negatywna ocena wiąże raport, PNG, obserwację i weryfikację hashami.
+Ta próba wykazuje, że aprobata recenzenta oglądającego gotowy opis nadal
+nie jest skuteczną kontrolą subtelnych twierdzeń materiałowych. Nie wykazano
+poprawy jakości; mechanizm pozostaje eksperymentalny. Następna ograniczona
+próba powinna oddzielić obserwację samego obrazu od konfrontacji z tekstem,
+aby sprawdzić wpływ sugestii gotowej odpowiedzi. Bez ponownego generowania
+obrazów i bez przenoszenia tych znanych przykładów do nowego egzaminu.
+
+28 testów infrastruktury zaliczonych: granice PNG, hashe łańcucha źródeł,
+odmowa użycia rodziny testowej, kompletność i cytaty recenzji, niezależny
+limit słów, ochrona niezmienianych pól, odtworzenie dokładnych żądań,
+przerwanie po jednej korekcie i brak inferencji w trybie odczytu.
