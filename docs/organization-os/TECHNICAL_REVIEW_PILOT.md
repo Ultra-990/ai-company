@@ -349,3 +349,32 @@ stwierdza brak źródła dla architektury hybrydowej: karta RAG wspiera możliwo
 połączenia, choć nie ranking ani szczegółowe relacje kosztów i wydajności.
 Wynik niezależny: **rejected_no_candidate**. SHA256 prywatnej oceny:
 `a93a4668e5b6f2c24cbfe5471b636b2f76641a90824b4f004da0ae52670358e3`.
+
+## Mapa wymaganych kluczy v3 i końcowa korekta v4
+
+Wersja v3 (`technical-review-source-self-correction.v3`) zastępuje swobodną
+tablicę audytu obiektem z nazwanymi, wymaganymi kluczami. Dla znanego wejścia
+powstaje dokładnie 30 ocen: wszystkie wymagane klucze są obecne, klucze
+dodatkowe i zduplikowane są odrzucane, a porządek JSON nie zmienia wyniku.
+Schema rzeczywistego wejścia ma 3499 znaków; test 126 jednostek pozostaje
+poniżej limitu adaptera. Przypięcie v3 do dawnej instrukcji autora jest
+sprawdzane, aby przyszła zmiana v2 nie mogła potajemnie przywrócić formatu
+tablicy.
+
+Jedyna rzeczywista próba v3 `claim-map-self-correction-qxhti21g` wykonała
+trzy wywołania w 141,262 s. Odtworzenie literalne przeszło; raport SHA256 to
+`707274198b9b212dc93dcc04d2a9120db378b972d861625d627644381663f0a3`.
+Końcowy audyt pozostawił `needs_revision`: rekomendacja do linii 7 twierdziła,
+że połączenie RAG i dostrajania „often yields the best results”, podczas gdy
+karta źródłowa potwierdza jedynie możliwość połączenia. Niezależny odbiór
+odrzucił kandydat; nie było powtórzenia, treningu ani zmiany zachowanego v3.
+
+Przygotowana v4 dodaje najwyżej jedno czwarte wywołanie autora tylko po
+sprzeciwie końcowego audytu. Autor może zmienić wyłącznie jednostki oznaczone
+`needs_revision` lub `uncertain`, a wszystkie pola wspierane przez końcowy
+audyt muszą pozostać literalnie identyczne. Wynik po tym kroku jest nadal
+`pending_independent_review_after_final_correction`, bez automatycznej zgody
+lub ukrytego ponownego audytu. Weryfikator wymaga dokładnego, zależnego od
+gałęzi zbioru artefaktów i kompletnego zapisu retencji modelu: schematu,
+kolejności, zasobów, czasów i naturalnego zwolnienia. V4 jest przygotowana i
+przetestowana CPU; nie uruchomiono jeszcze jej inferencji.

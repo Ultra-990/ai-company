@@ -1,5 +1,21 @@
 # Dziennik budowy AI Company
 
+## 2026-09-30 — v3 recenzji technicznej i zamknięcie v4 przed kolejną próbą
+
+Znany przebieg v3 `claim-map-self-correction-qxhti21g` wykonał trzy lokalne
+wywołania w 141,262 s i przeszedł odtwarzanie literalnego autorstwa. Końcowy
+audyt zatrzymał wynik jako `needs_revision`: po poprawce pozostała
+nieudowodniona przewaga hybrydy RAG/dostrajanie w rekomendacji do linii 7.
+Niezależny odbiór zapisano poza katalogiem dowodowym; kandydat odrzucono,
+bez powtórzenia. Raport SHA256:
+`707274198b9b212dc93dcc04d2a9120db378b972d861625d627644381663f0a3`.
+
+GPT-5.6 przygotował v4 z jednym warunkowym final-writerem. Dwa niezależne
+przeglądy doprowadziły do wymogu dokładnego zbioru plików oraz kompletnego
+dowodu retained-batch przed pierwszym przebiegiem v4. 58 właściwych testów
+przeszło lokalnie; wagi, stare przebiegi i kwalifikacja 0/5 pozostają bez
+zmian.
+
 ## 2026-09-30 — przekazanie zadań GPT-5.6 na polecenie właściciela
 
 Zakończony znany pilot techniczny v2: `claim-self-correction-w3a0i7v3`,

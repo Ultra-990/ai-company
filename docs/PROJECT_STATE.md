@@ -1,5 +1,19 @@
 # Stan projektu AI Company
 
+## Aktualizacja 30.09.2026 — BRIAR odebrany rozwojowo, v3 techniczne odrzucone
+
+Pełna paczka BRIAR `delivery-correction-b93evuld` przeszła niezależny odbiór
+jako syntetyczny kandydat rozwojowy. Cztery panele są czytelne i zgodne z
+danymi źródłowymi, a raport workflow i kandydat pozostały niezmienione.
+Nie jest to egzamin świeży, odbiór komercyjny ani kwalifikacja autonomii.
+
+Techniczna próba v3 `claim-map-self-correction-qxhti21g` ma pełne dowody i
+udane odtworzenie, ale końcowy audyt odrzucił nadal niepodpartą rekomendację
+porównawczą. Status `needs_revision` zachowano. V4 dodaje jedną ograniczoną
+poprawkę po takim sprzeciwie, z literalną ochroną wspartych pól i ścisłym
+zbiorem dowodów; jest przetestowana CPU, lecz nieuruchomiona na modelu.
+Wszystkie pięć usług pozostaje niezakwalifikowanych (0/5).
+
 ## Aktualizacja 30.09.2026 — próba audytu twierdzeń zatrzymana na pokryciu
 
 Samokorekta recenzji technicznej v2 została wykonana raz na znanym materiale:
