@@ -9,9 +9,11 @@ Nie jest to egzamin świeży, odbiór komercyjny ani kwalifikacja autonomii.
 
 Techniczna próba v3 `claim-map-self-correction-qxhti21g` ma pełne dowody i
 udane odtworzenie, ale końcowy audyt odrzucił nadal niepodpartą rekomendację
-porównawczą. Status `needs_revision` zachowano. V4 dodaje jedną ograniczoną
-poprawkę po takim sprzeciwie, z literalną ochroną wspartych pól i ścisłym
-zbiorem dowodów; jest przetestowana CPU, lecz nieuruchomiona na modelu.
+porównawczą. Status `needs_revision` zachowano. Jedyny przebieg v4
+`final-correction-vi85m_7h` przeszedł odtworzenie po 148,684 s, lecz niezależny
+odbiór odrzucił niepodpartą kwalifikację rozmiaru próby, strukturę kosztów i
+opcjonalną elaborację zapisaną jako wada. Nie powtarzano v4. V5 przygotowuje
+atomową kontrolę źródłową tych tez i nie ma jeszcze runnera inferencji.
 Wszystkie pięć usług pozostaje niezakwalifikowanych (0/5).
 
 ## Aktualizacja 30.09.2026 — próba audytu twierdzeń zatrzymana na pokryciu

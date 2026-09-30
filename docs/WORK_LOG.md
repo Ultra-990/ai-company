@@ -1,6 +1,6 @@
 # Dziennik budowy AI Company
 
-## 2026-09-30 — v3 recenzji technicznej i zamknięcie v4 przed kolejną próbą
+## 2026-09-30 — v3/v4 recenzji technicznej i atomowy kontrakt v5
 
 Znany przebieg v3 `claim-map-self-correction-qxhti21g` wykonał trzy lokalne
 wywołania w 141,262 s i przeszedł odtwarzanie literalnego autorstwa. Końcowy
@@ -12,9 +12,12 @@ bez powtórzenia. Raport SHA256:
 
 GPT-5.6 przygotował v4 z jednym warunkowym final-writerem. Dwa niezależne
 przeglądy doprowadziły do wymogu dokładnego zbioru plików oraz kompletnego
-dowodu retained-batch przed pierwszym przebiegiem v4. 58 właściwych testów
-przeszło lokalnie; wagi, stare przebiegi i kwalifikacja 0/5 pozostają bez
-zmian.
+dowodu retained-batch. Jedyny przebieg `final-correction-vi85m_7h` trwał
+148,684 s, miał trzy wywołania i poprawnie zwolnił model, lecz niezależny
+odbiór odrzucił trzy nadal nieudowodnione części recenzji. Nie powtarzano go.
+V5 zawiera atomową kontrolę źródłową i ochronę slotów tekstowych, ale nie ma
+jeszcze runnera inferencji. Wagi, stare przebiegi i kwalifikacja 0/5 pozostają
+bez zmian.
 
 ## 2026-09-30 — przekazanie zadań GPT-5.6 na polecenie właściciela
 

@@ -376,5 +376,23 @@ audyt muszą pozostać literalnie identyczne. Wynik po tym kroku jest nadal
 `pending_independent_review_after_final_correction`, bez automatycznej zgody
 lub ukrytego ponownego audytu. Weryfikator wymaga dokładnego, zależnego od
 gałęzi zbioru artefaktów i kompletnego zapisu retencji modelu: schematu,
-kolejności, zasobów, czasów i naturalnego zwolnienia. V4 jest przygotowana i
-przetestowana CPU; nie uruchomiono jeszcze jej inferencji.
+kolejności, zasobów, czasów i naturalnego zwolnienia.
+
+Jedyny przebieg v4 `final-correction-vi85m_7h` zakończył się po trzech
+wywołaniach w 148,684 s; odtworzenie literalne przeszło, a GPU zwolniono
+naturalnie. Lokalny końcowy audyt zgłosił akceptację, ale niezależny odbiór
+odrzucił wynik. Pozostały: nieudowodniona kwalifikacja 1000 przykładów jako
+małej próby, niesourceowane struktury kosztów oraz opcjonalne rozwinięcie
+poprawnej linii 7 zapisane jako wada. Raport SHA256:
+`2f811271fac543760daaccbf383a3c0d41dd8b90143777c8894faf870f2f9292`.
+Nie powtarzano v4.
+
+V5 `technical-review-atomic-claim-audit.v5` jest osobnym, CPU-only
+kontraktem kontroli i ochrony autora, jeszcze bez runnera inferencji. Dzieli
+diagnozę i rekomendację na bezstratne, uporządkowane sloty tekstowe. Każda
+wsparta atomowa teza wymaga dosłownego cytatu z `notes` źródła już wskazanego
+przez komentarz, poza wąskimi deterministycznymi przypadkami tekstu artykułu,
+absolutnej generalizacji lub osadzonej instrukcji. W pełni wspierane pole musi
+pozostać bajtowo identyczne; w polu mieszanym wolno zastąpić jedynie odrzucone
+sloty. Znane v4 jest związane hashami i sprawdzane bajtowo. V5 ma testy
+pozytywne i adwersarialne, lecz nie jest dowodem gotowości modelu.
