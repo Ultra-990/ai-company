@@ -49,6 +49,67 @@ def fingerprint(value):
     return hashlib.sha256(value.encode('utf-8')).hexdigest()
 
 
+def task_views(content):
+    """Recognize lossless JSON reserialization without executing task content.
+
+    Text leaves also expose a reserved article carried as numbered lines inside
+    a new JSON wrapper. This is exact-content screening, not paraphrase detection.
+    """
+    views = {normalized(content)}
+    stripped = content.strip()
+    if stripped.startswith('```json\n') and stripped.endswith('\n```'):
+        stripped = stripped[8:-4]
+    try:
+        value = json.loads(stripped, object_pairs_hook=unique_object)
+    except DatasetError:
+        raise
+    except (ValueError, TypeError):
+        return views
+    except RecursionError:
+        raise DatasetError('task JSON nesting too deep') from None
+    leaves = []
+    def walk(item, depth=0):
+        require(depth <= 32, 'task JSON nesting too deep')
+        if isinstance(item, str):
+            leaves.append(item)
+        elif isinstance(item, dict):
+            for child in item.values(): walk(child, depth+1)
+        elif isinstance(item, list):
+            for child in item: walk(child, depth+1)
+    walk(value)
+    views.add(normalized(json.dumps(value, ensure_ascii=False, sort_keys=True)))
+    if leaves: views.add(normalized(' '.join(leaves)))
+    return views
+
+
+def task_identity(content):
+    """Fingerprint lossless task representations, preserving keys and numbers.
+
+    A single object/list wrapper carries no additional task content. Unlike
+    reserved-article screening, identity must not discard numeric facts or
+    compare only text leaves: distinct exercises can share those leaves.
+    """
+    stripped = content.strip()
+    if stripped.startswith('```json\n') and stripped.endswith('\n```'):
+        stripped = stripped[8:-4]
+    try:
+        value = json.loads(stripped, object_pairs_hook=unique_object)
+    except DatasetError:
+        raise
+    except (ValueError, TypeError):
+        return fingerprint(normalized(content))
+    except RecursionError:
+        raise DatasetError('task JSON nesting too deep') from None
+    # Apply the same structural depth limit to all splits, including test.
+    task_views(content)
+    while isinstance(value, (dict, list)) and len(value) == 1:
+        child = next(iter(value.values())) if isinstance(value, dict) else value[0]
+        if not isinstance(child, (dict, list)):
+            break
+        value = child
+    return fingerprint(normalized(json.dumps(value, ensure_ascii=False, sort_keys=True)))
+
+
 def validate_record(row):
     require(isinstance(row, dict) and set(row) == FIELDS, 'incorrect record fields')
     require(row['version'] == VERSION, 'unsupported version')
@@ -93,10 +154,17 @@ def validate_dataset(raw):
     # Reserved evaluation families cannot quietly become training/validation
     # examples through a separate input file. Never import/execute their code.
     from scripts.qwen_evaluation_catalog import reserved_cases
+    from scripts.training_family_registry import load_training_only_families
     try:
         reserved = reserved_cases()
+        training_only = load_training_only_families()
     except (OSError, ValueError, KeyError) as exc:
         raise DatasetError('evaluation catalog missing or changed') from exc
+    reserved_families = {case['family'] for case in reserved}
+    reserved_views = set()
+    for case in reserved:
+        reserved_views.update(task_views(case['brief']))
+        if case.get('article'): reserved_views.add(normalized(case['article']))
     require(len(raw) <= MAX_BYTES, 'dataset too large')
     try:
         content = raw.decode('utf-8')
@@ -110,21 +178,25 @@ def validate_dataset(raw):
             row = json.loads(line, object_pairs_hook=unique_object,
                              parse_constant=lambda _: (_ for _ in ()).throw(DatasetError('non-finite JSON')))
             validate_record(row)
+            if row['split'] != 'train':
+                require(row['family'] not in training_only,
+                        'training-only family cannot enter validation/test')
             if row['split'] != 'test':
-                require(row['family'] not in {c['family'] for c in reserved},
+                require(row['family'] not in reserved_families,
                         'reserved evaluation family cannot enter training/validation')
-                require(not any(normalized(c['brief']) in normalized(row['messages'][1]['content'])
-                                for c in reserved), 'evaluation brief reused outside test split')
+                candidate_views = task_views(row['messages'][1]['content'])
+                require(not any(brief in candidate for brief in reserved_views for candidate in candidate_views),
+                        'evaluation brief reused outside test split')
             require(row['id'] not in ids, 'duplicate record ID')
             ids.add(row['id'])
             family, split = row['family'], row['split']
             require(family not in families or families[family] == split, 'family crosses dataset splits')
             families[family] = split
             # Ignore system text: changing the wrapper must not conceal a reused task.
-            prompt = fingerprint(normalized(row['messages'][1]['content']))
+            prompt = task_identity(row['messages'][1]['content'])
             require(prompt not in prompts or prompts[prompt] == split, 'same prompt crosses dataset splits')
             prompts[prompt] = split
-            conversation = fingerprint(normalized(row['messages'][1]['content']) + '\n' + normalized(row['messages'][2]['content']))
+            conversation = fingerprint(prompt + '\n' + normalized(row['messages'][2]['content']))
             require(conversation not in conversations, 'duplicate example')
             conversations.add(conversation)
             rows.append(row)

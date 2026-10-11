@@ -1,5 +1,29 @@
 # Zasady pracy w repozytorium AI Company
 
+## Stała zgoda na kolejne procesy — 2026-10-10
+
+- Właściciel następnie polecił nie zatrzymywać pracy podczas jego nieobecności
+  przez kilkanaście godzin i oddał wszystkie podzespoły do dyspozycji projektu.
+  Kontynuuj niezależne etapy bez oczekiwania na odpowiedź; dokumentuj wyniki
+  i punkt wznowienia. Dostępność sprzętu nadal sprawdzaj przed obciążeniem.
+- Właściciel zatwierdził cały plan rozbudowy i powiedział: „możesz wykonac
+  1000 kolejnych procesów nie pytając mnie o zadne zgody”. Kontynuuj działania
+  potrzebne do projektu bez ponawiania pytań o rutynowe decyzje.
+- To zgoda na kolejne potrzebne działania, nie wymóg uruchomienia tysiąca
+  procesów równocześnie lub generowania pustych iteracji. Zachowaj ograniczone
+  przebiegi, pomiary, autorstwo lokalnych modeli i kontrolę wyników.
+- Zgoda nie znosi ochrony cudzych zadań, danych prywatnych ani ograniczeń
+  technicznych środowiska. Przed obciążeniem nadal sprawdzaj zasoby.
+
+## Zgoda na rozwój i trening po naprawie GPU — 2026-10-10
+
+- Właściciel jawnie polecił dalszą rozbudowę całości AI Company oraz zezwolił
+  na trening modelu. Zgoda obejmuje lokalną inferencję i trening na GPU;
+  zastępuje instrukcję z 06.10 o oczekiwaniu na sygnał dostępności.
+- Przed obciążeniem nadal sprawdzaj zasoby i obce kontenery. Nie ingeruj
+  w cudze zadania. Zachowuj bazowe wagi, oddzielne adaptery, autorstwo modeli,
+  kontrolę danych i niezależny odbiór. Zgoda nie oznacza gotowości usług.
+
 ## Zmiana modelu prowadzącego — 2026-09-30
 
 - Właściciel polecił przekazać zadania GPT-5.6 („Terra”) i zmienić model

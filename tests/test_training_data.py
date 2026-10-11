@@ -33,6 +33,88 @@ def test_seed_is_valid_but_not_training_ready():
     assert len(report['blocking_reasons']) == 4
 
 
+@pytest.mark.parametrize('wrapped_first', [False, True])
+@pytest.mark.parametrize('wrapper', [lambda task: [task], lambda task: {'wrapper': [task]},
+                                    lambda task: [{'wrapper': [task]}]])
+def test_singleton_list_wrappers_cannot_conceal_cross_split_task(wrapper, wrapped_first):
+    task = {'facts': {'weight': 73}, 'question': 'Read supplied weight.'}
+    representations = [task, wrapper(task)]
+    if wrapped_first:
+        representations.reverse()
+    examples = [rows()[0], rows()[2]]
+    for row, payload, split in zip(examples, representations, ('train', 'test')):
+        row['split'] = split
+        row['messages'][1]['content'] = json.dumps(payload)
+    with pytest.raises(DatasetError, match='same prompt crosses dataset splits'):
+        validate_dataset(raw(examples))
+
+
+@pytest.mark.parametrize('split', ['train', 'validation'])
+@pytest.mark.parametrize('representation', ['reserialized', 'nested', 'article', 'lines', 'fenced'])
+def test_reserved_review_cannot_be_hidden_by_json_format_or_wrapper(split, representation):
+    from scripts.qwen_evaluation_catalog import load_reviewer_suite
+    case = load_reviewer_suite()['cases'][0]
+    payload = json.loads(case['brief'])
+    if representation == 'nested': payload = {'new_task_wrapper': payload}
+    elif representation == 'article': payload = {'draft': case['article'], 'instruction': 'Review this.'}
+    elif representation == 'lines': payload = {'draft': payload['article_lines']}
+    content = json.dumps(payload, sort_keys=True, indent=2, ensure_ascii=True)
+    if representation == 'fenced': content = '```json\n'+content+'\n```'
+    row = rows()[0]; row.update(split=split, family='renamed-evaluation-family')
+    row['messages'][1]['content'] = content
+    with pytest.raises(DatasetError, match='evaluation brief reused'):
+        validate_dataset(raw([row]))
+    row['split'] = 'test'
+    assert validate_dataset(raw([row]))[0][0]['split'] == 'test'
+
+
+def test_related_training_article_is_not_a_reserved_exam_copy():
+    from scripts.technical_review_curriculum import CASES
+    row = rows()[0]; row.update(split='train', family=CASES[0]['family'])
+    row['messages'][1]['content'] = json.dumps({'article': CASES[0]['article'], 'sources': CASES[0]['sources']})
+    assert validate_dataset(raw([row]))[0][0]['split'] == 'train'
+
+
+@pytest.mark.parametrize('split', ['train', 'validation'])
+@pytest.mark.parametrize('reuse', ['family', 'prompt', 'nested'])
+def test_evidence_calibration_holdout_cannot_enter_general_sft(split, reuse):
+    from scripts.qwen_evaluation_catalog import load_evidence_calibration_reservations
+
+    reserved = load_evidence_calibration_reservations()[0]
+    row = rows()[0]
+    row.update(split=split, family='renamed-evidence-calibration-family')
+    if reuse == 'family':
+        row['family'] = reserved['family']
+    elif reuse == 'prompt':
+        row['messages'][1]['content'] = reserved['brief']
+    else:
+        row['messages'][1]['content'] = json.dumps(
+            {'renamed_wrapper': json.loads(reserved['brief'])}, ensure_ascii=False)
+    with pytest.raises(DatasetError, match=(
+            'reserved evaluation family' if reuse == 'family' else 'evaluation brief reused')):
+        validate_dataset(raw([row]))
+
+
+def test_unrelated_general_training_stays_allowed_after_evidence_reservation():
+    row = rows()[0]
+    row.update(split='train', family='unrelated-synthetic-evidence-task')
+    row['messages'][1]['content'] = json.dumps({
+        'facts': [{'id': 'X1', 'text': 'A fictional parcel is blue.'}],
+        'question': 'Repeat the explicitly supplied color without inference.'})
+    assert validate_dataset(raw([row]))[0][0]['family'] == row['family']
+
+
+def test_evidence_calibration_holdout_remains_allowed_as_test_archive():
+    from scripts.qwen_evaluation_catalog import load_evidence_calibration_reservations
+
+    reserved = load_evidence_calibration_reservations()[0]
+    row = rows()[0]
+    row.update(split='test', family=reserved['family'])
+    row['messages'][1]['content'] = reserved['brief']
+    checked, _ = validate_dataset(raw([row]))
+    assert checked[0]['split'] == 'test'
+
+
 @pytest.mark.parametrize('change', [
     lambda r: r.update(version='unknown'),
     lambda r: r.update(extra='bad'),
@@ -76,6 +158,61 @@ def test_leakage_and_duplicates_rejected(kind):
         data[1]['messages'] = copy.deepcopy(data[0]['messages'])
     with pytest.raises(DatasetError):
         validate_dataset(raw(data))
+
+
+@pytest.mark.parametrize('split', ['validation', 'test'])
+@pytest.mark.parametrize('representation', ['reserialized', 'nested', 'fenced'])
+@pytest.mark.parametrize('reverse', [False, True])
+def test_unregistered_task_cannot_cross_splits_by_reserialization(split, representation, reverse):
+    first = rows()[0]
+    second = copy.deepcopy(first)
+    second.update(id='new-holdout', family='new-holdout', split=split)
+    task = {'instruction': 'Return the fixture color.',
+            'facts': [{'id': 'fixture', 'color': 'copper', 'count': 7}]}
+    first['messages'][1]['content'] = json.dumps(task)
+    payload = {'outer': {'renamed': task}} if representation == 'nested' else task
+    content = json.dumps(payload, sort_keys=True, indent=2)
+    if representation == 'fenced': content = '```json\n' + content + '\n```'
+    second['messages'][1]['content'] = content
+    second['messages'][2]['content'] = 'Changed answer cannot conceal the same task.'
+    pair = [second, first] if reverse else [first, second]
+    with pytest.raises(DatasetError, match='same prompt crosses'):
+        validate_dataset(raw(pair))
+
+
+def test_reserialized_task_cannot_cross_separate_batches(tmp_path):
+    from scripts.prepare_training_data import load_batches
+    first, second = rows()[0], rows()[2]
+    task = {'facts': {'weight': 73}, 'question': 'Read the supplied weight.'}
+    first['messages'][1]['content'] = json.dumps(task)
+    second['messages'][1]['content'] = json.dumps({'renamed': task}, indent=2)
+    a, b = tmp_path/'a.jsonl', tmp_path/'b.jsonl'
+    a.write_bytes(raw([first])); b.write_bytes(raw([second]))
+    with pytest.raises(DatasetError, match='same prompt crosses'):
+        load_batches([a, b])
+
+
+@pytest.mark.parametrize('change', ['number', 'key', 'list_order'])
+def test_task_identity_preserves_meaningful_json_differences(change):
+    first, second = rows()[0], rows()[2]
+    task = {'facts': {'weight': 73}, 'steps': ['inspect', 'ship']}
+    changed = copy.deepcopy(task)
+    if change == 'number': changed['facts']['weight'] = 74
+    elif change == 'key': changed['facts'] = {'volume': 73}
+    else: changed['steps'].reverse()
+    first['messages'][1]['content'] = json.dumps(task)
+    second['messages'][1]['content'] = json.dumps(changed)
+    assert len(validate_dataset(raw([first, second]))[0]) == 2
+
+
+def test_reserialized_duplicate_in_same_split_rejected():
+    first, second = rows()[0], rows()[1]
+    task = {'question': 'Read count', 'count': 73}
+    first['messages'][1]['content'] = json.dumps(task)
+    second['messages'][1]['content'] = json.dumps(task, indent=2, sort_keys=True)
+    second['messages'][2]['content'] = first['messages'][2]['content']
+    with pytest.raises(DatasetError, match='duplicate example'):
+        validate_dataset(raw([first, second]))
 
 
 @pytest.mark.parametrize('data', [b'', b'null', b'{', b'{"id":1,"id":2}', b'NaN', b'\xff'])

@@ -388,3 +388,34 @@ Jeden przykład ROWEROWNIA otrzymał niezależną decyzję
 `eligible_for_curated_training`; rodzina i jej bliskie duplikaty są tylko train,
 poza ewaluacją. `ready_for_trainer=false`: nadal wymagany jest nowy spójny
 zbiór i niezależna ocena transferu. Nie jest to dowód poprawy wag modelu.
+
+### Kuracja doświadczenia do zbioru treningowego
+
+`scripts/curate_web_code_experience.py` przyjmuje trzy lokalne artefakty:
+kandydata, manifest dowodów oraz niezależną recenzję o decyzji
+`eligible_for_curated_training`. Sprawdza zwykłe pliki w Linux workspace,
+brak symlinków, wersje i dokładne pola, hashe oraz wszystkie osiem dowodów.
+Ponownie wykonuje walidację collectora i wymaga odtworzenia identycznego
+kandydata oraz manifestu; wykrycie zmiany wejść przerywa kurację.
+
+Wyjściem jest nowy, prywatny katalog z `train-candidate.jsonl` w schemacie
+`company-sft.v1` oraz `curation-receipt.json`. Rekord ma `split=train` i
+recenzję zatwierdzającą kurację. Odpowiedź treningowa zachowuje format
+`{"changes":{"app.py":"pełne źródło modelu"}}`. Ścieżki do dowodów są zastąpione
+referencjami hash; wiadomości zawierają tylko brief, opis usterki, błędne źródło
+i oryginalną poprawkę modelu. Ocena treści nadal wymaga niezależnej recenzji;
+narzędzie nie jest ogólnym wykrywaczem danych prywatnych ani parafraz.
+
+Receipt wiąże konkretną zapisaną zgodę na rozwój/trening i hashe wejść, ale nie
+deklaruje odbioru produktu przez właściciela. Pełna bramka `validate_dataset`
+działa przed zapisem. Pierwszy rzeczywisty rekord ma 1 train, 0 validation,
+0 test: `export_ready=false`, `ready_for_trainer=false`, `training_started=false`.
+Nie uruchomiono nowego treningu; wymogi zbioru i niewidzianego zadania oceny
+pozostają niespełnione.
+
+Przypięty `datasets/qwen/training-only-families-001.json` rezerwuje rodzinę
+ROWEROWNIA wyłącznie do treningu. Import validation/test i bezpośrednie loadery
+katalogu egzaminów odrzucają tę rodzinę nawet w osobnym pliku lub nowej,
+poprawnie zahashowanej wersji egzaminu. Brak lub zmiana rejestru blokują odczyt.
+Kurator przypisuje bliskie duplikaty do tej samej rodziny; sam rejestr sprawdza
+identyfikatory i nie rozpoznaje automatycznie pokrewieństwa semantycznego.
