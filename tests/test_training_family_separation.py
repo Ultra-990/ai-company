@@ -10,19 +10,20 @@ from scripts.prepare_training_data import DatasetError, load_batches, validate_d
 from tests.test_training_data import rows, raw
 
 
-FAMILY = 'rowerownia-query-parser-development'
+FAMILIES = ('rowerownia-query-parser-development','service-crema-responsive-nav-copy-development')
 
 
+@pytest.mark.parametrize('family',FAMILIES)
 @pytest.mark.parametrize('split', ['validation', 'test'])
-def test_training_only_family_cannot_be_imported_as_a_separate_eval_batch(tmp_path, split):
+def test_training_only_family_cannot_be_imported_as_a_separate_eval_batch(tmp_path, split,family):
     row = rows()[0]
-    row.update(family=FAMILY, split=split)
+    row.update(family=family, split=split)
     path = tmp_path / 'evaluation.jsonl'
     path.write_bytes(raw([row]))
     with pytest.raises(DatasetError, match='training-only family'):
         load_batches([path])
     row['split'] = 'train'
-    assert validate_dataset(raw([row]))[0][0]['family'] == FAMILY
+    assert validate_dataset(raw([row]))[0][0]['family'] == family
 
 
 @pytest.mark.parametrize('loader,path_attr,hash_attr', [
@@ -33,7 +34,7 @@ def test_training_only_family_cannot_be_imported_as_a_separate_eval_batch(tmp_pa
 def test_even_correctly_pinned_new_exam_cannot_use_training_family(
         tmp_path, monkeypatch, loader, path_attr, hash_attr):
     suite = getattr(catalog, loader)()
-    suite['cases'][0]['family'] = FAMILY
+    suite['cases'][0]['family'] = FAMILIES[1]
     payload = json.dumps(suite).encode()
     path = tmp_path / 'future-suite.json'
     path.write_bytes(payload)
@@ -46,7 +47,7 @@ def test_even_correctly_pinned_new_exam_cannot_use_training_family(
 def test_calibration_reservations_also_enforce_training_exclusion(monkeypatch):
     from scripts import evidence_calibration_data as evidence
     cases = evidence.cases()
-    next(case for case in cases if case['split'] == 'test')['family'] = FAMILY
+    next(case for case in cases if case['split'] == 'test')['family'] = FAMILIES[1]
     payload = json.dumps(cases, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
     monkeypatch.setattr(evidence, 'cases', lambda: cases)
     monkeypatch.setattr(catalog, 'EVIDENCE_CURRICULUM_CHECKSUM', sha256(payload).hexdigest())

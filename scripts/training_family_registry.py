@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 REGISTRY = Path(__file__).resolve().parents[1] / 'datasets/qwen/training-only-families-001.json'
-CHECKSUM = '00c35d459e179fdeea9fc69edf43eaea3c1622859fbaed4be11628d6aadc7858'
+CHECKSUM = 'bebefeea28d1e9c501041db272f80ec994e35f4bafd02f7e3642e04cdb737195'
 
 
 def load_training_only_families():

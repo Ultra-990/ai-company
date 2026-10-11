@@ -3,7 +3,8 @@ import pytest
 from app.models.artifact import Artifact
 from app.models.local_inference import LocalInference
 from app.services import application_revisions as revisions,local_inference
-from app.services.application_profile import REPAIR_PROFILE,assemble_repair,repair_base
+from app.services.application_profile import (PROFILE,REPAIR_PROFILE,EXPORTED_TASK_PREFIX,
+    assemble_repair,messages_for,parse_sources,repair_base)
 from app.services.agent_packets import digest
 from app.services.workspace_packages import read_package
 from tests.test_application_revisions import generated
@@ -39,6 +40,65 @@ def test_base_requires_a_bound_rejected_result():
     assert repair_base(packet)==FILES
     packet['revision']['rejected_checksum']='0'*64
     with pytest.raises(ValueError):repair_base(packet)
+
+
+def exported_messages(rejected=None):
+    rejected = rejected if rejected is not None else json.dumps({'files':FILES},ensure_ascii=False)
+    context={'task_id':7,'project_id':4,'department_id':23,'role':'builder',
+        'task_context':{'title':'Plan zajec','brief':'Pelny brief bez skrotow',
+                        'completion_criterion':'Dokladny wynik'},
+        'accepted_predecessor':None,
+        'revision':{'previous_attempt_id':3,'rejection_reason':'Napraw routing i UI.',
+                    'rejected_result':rejected,'rejected_checksum':'a'*64}}
+    return [{'role':'system','content':'policy'},
+            {'role':'user','content':EXPORTED_TASK_PREFIX+json.dumps(context,ensure_ascii=False,indent=2)}],context
+
+
+def test_repair_prompt_compacts_rejected_sources_losslessly_and_preserves_context():
+    messages,context=exported_messages()
+    result=messages_for(messages,REPAIR_PROFILE)
+    encoded=result[1]['content'];decoded=json.loads(encoded[len(EXPORTED_TASK_PREFIX):])
+    assert decoded['revision']['rejected_result']=={'files':FILES}
+    assert parse_sources(json.dumps(decoded['revision']['rejected_result'],ensure_ascii=False))==FILES
+    expected=context|{'revision':context['revision']|{'rejected_result':{'files':FILES}}}
+    assert decoded==expected
+    assert result[0]['content'].startswith('policy\nOUTPUT CONTRACT python-web-repair-v1:')
+    assert len(encoded.encode())<len(messages[1]['content'].encode())
+
+
+def test_lossless_encoding_can_cross_context_gate_without_reducing_output_budget():
+    sources={name:(value+'\n'+('const marker = "\\\\quoted\\\\";\n'*220))
+             for name,value in FILES.items()}
+    messages,context=exported_messages(json.dumps({'files':sources},ensure_ascii=False))
+    compact=messages_for(messages,REPAIR_PROFILE)
+    instruction_bytes=len(compact[0]['content'].encode())
+    raw_bytes=instruction_bytes+len(messages[1]['content'].encode())
+    compact_bytes=sum(len(item['content'].encode()) for item in compact)
+    context_capacity=(raw_bytes+compact_bytes)//2
+    assert compact_bytes <= context_capacity < raw_bytes
+    # The regression changes prompt representation, not the reserved generation budget.
+    num_ctx=context_capacity+4096+1024
+    assert compact_bytes <= num_ctx-4096-1024 < raw_bytes
+    decoded=json.loads(compact[1]['content'][len(EXPORTED_TASK_PREFIX):])
+    assert decoded['revision']['rejected_result']['files']==sources
+
+
+def test_nonrepair_and_unknown_legacy_user_messages_are_not_reencoded():
+    messages,context=exported_messages()
+    assert messages_for(messages,'text')==messages
+    assert messages_for(messages,PROFILE)[1]==messages[1]
+    legacy=[messages[0],{'role':'user','content':'legacy repair context'}]
+    assert messages_for(legacy,REPAIR_PROFILE)[1]==legacy[1]
+
+
+@pytest.mark.parametrize('content',[EXPORTED_TASK_PREFIX+'{',
+    EXPORTED_TASK_PREFIX+json.dumps({'revision':None}),
+    EXPORTED_TASK_PREFIX+json.dumps({'revision':{'rejected_result':None}}),
+    EXPORTED_TASK_PREFIX+json.dumps({'revision':{'rejected_result':'{"files":{}}'}}),
+    EXPORTED_TASK_PREFIX+'{"revision":{"rejected_result":"x","rejected_result":"y"}}'])
+def test_recognized_broken_repair_context_fails_closed(content):
+    with pytest.raises(ValueError):
+        messages_for([{'role':'system','content':'policy'},{'role':'user','content':content}],REPAIR_PROFILE)
 
 
 def test_real_service_keeps_raw_patch_and_assembled_result_separate(client,generated,task_repository):

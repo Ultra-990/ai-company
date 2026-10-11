@@ -5,6 +5,10 @@
     {
       "id": "rowerownia-query-parser-development",
       "reason": "The defect and repair feedback were exposed during development; this family and curator-assigned near duplicates are training-only."
+    },
+    {
+      "id": "service-crema-responsive-nav-copy-development",
+      "reason": "The responsive navigation and copy repair was exposed during development; this source lineage and equivalent repairs are training-only."
     }
   ]
 }
