@@ -8,7 +8,7 @@ from app.models.package_run import PackageRun
 from app.services import local_inference, package_runner
 from app.services.agent_packets import latest_attempt, prepare_packet, digest
 from app.services.application_profile import parse_sources, PROFILE, REPAIR_PROFILE
-from app.services.result_review import apply_review
+from app.services.result_review import apply_review, append_rejection_review
 from app.services.workspace_packages import read_package, canonical_json
 
 NAME='organization-os.application-revision.v1'
@@ -64,8 +64,13 @@ def create(session,*,reviewer_role='owner',output_profile=PROFILE,**data):
     if not origin or origin.metrics.get('package_id')!=source.id or origin.metrics.get('package_checksum')!=source.checksum:
         raise ValueError('Poprawki wymagają paczki powiązanej z wykonaniem Qwen.')
     reason=data['description']+'\n\nOczekiwany rezultat / test odbioru: '+data['expected_result']
-    apply_review(session,data['task_id'],attempt_id=attempt.id,result_checksum=attempt.result_checksum,
-                 accepted=False,reason=reason,evidence=data['evidence'],reviewer_role=reviewer_role)
+    if (attempt.status=='blocked' and attempt.verification_status=='rejected'):
+        append_rejection_review(session,data['task_id'],attempt_id=attempt.id,
+            result_checksum=attempt.result_checksum,reason=reason,evidence=data['evidence'],
+            reviewer_role=reviewer_role)
+    else:
+        apply_review(session,data['task_id'],attempt_id=attempt.id,result_checksum=attempt.result_checksum,
+                     accepted=False,reason=reason,evidence=data['evidence'],reviewer_role=reviewer_role)
     session.flush()
     packet=prepare_packet(session,data['task_id'])
     run=local_inference.enqueue(session,data['task_id'],packet.id,packet.checksum,data['request_id'],output_profile)

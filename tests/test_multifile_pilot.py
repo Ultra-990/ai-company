@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import subprocess
 from types import SimpleNamespace
 
 import pytest
@@ -94,3 +95,75 @@ def test_existing_production_staging_still_rejects_nested_sources(tmp_path):
     with pytest.raises(ValueError):
         container.ContainerRunner().stage_sources(folder, {'modules/logic.py': 'pass'})
     assert list(folder.iterdir()) == []
+
+
+@pytest.mark.parametrize('stage,reason',[('security','preflight_security_unavailable'),
+                                          ('image','preflight_image_unavailable')])
+def test_preflight_failures_are_typed_before_create(monkeypatch,tmp_path,stage,reason):
+    work=tmp_path/'runner';work.mkdir(mode=0o700)
+    monkeypatch.setattr(container,'WORK',work)
+    calls=[]
+    def docker(*args,**kwargs):
+        calls.append(args[0])
+        if args[0]=='info':
+            if stage=='security':raise subprocess.TimeoutExpired('docker',10)
+            return SimpleNamespace(returncode=0,stdout='["name=seccomp,profile=builtin","name=apparmor"]',stderr='')
+        if args[0]=='image':return SimpleNamespace(returncode=1,stdout='',stderr='missing')
+        pytest.fail('docker create must not run after preflight failure')
+    monkeypatch.setattr(container,'docker',docker)
+    runner=container.ContainerRunner()
+    config={'image':container.IMAGE,'harness_checksum':'unused'}
+    with pytest.raises(container.PreflightFailure) as exc:
+        runner._run({'app.py':'pass'},config,'aic-package-'+'a'*32)
+    assert exc.value.reason==reason and exc.value.container_started is False
+    assert 'create' not in calls
+
+
+def test_bounded_timeout_preserves_confirmed_cleanup_and_precise_phase(monkeypatch,tmp_path):
+    work=tmp_path/'runner';work.mkdir(mode=0o700)
+    monkeypatch.setattr(container,'WORK',work)
+    runner=container.ContainerRunner()
+    config={'image':container.IMAGE,'harness_checksum':container.sha256(runner.harness.read_bytes()).hexdigest()}
+    def docker(*args,**kwargs):
+        if args[0]=='info':return SimpleNamespace(returncode=0,stdout='["name=seccomp,profile=builtin","name=apparmor"]',stderr='')
+        if args[0]=='image':return SimpleNamespace(returncode=0,stdout=container.IMAGE+' null',stderr='')
+        if args[0]=='create':return SimpleNamespace(returncode=0,stdout='created',stderr='')
+        if args[0]=='inspect':return SimpleNamespace(returncode=0,stdout=json.dumps({'Status':'running'}),stderr='')
+        pytest.fail('unexpected docker call')
+    monkeypatch.setattr(container,'docker',docker)
+    monkeypatch.setattr(container,'bounded_start',lambda name:{'reason':'timeout','cli_exit_code':None,'log':''})
+    monkeypatch.setattr(runner,'cleanup',lambda name:True)
+    result=runner._run({'app.py':'pass'},config,'aic-package-'+'a'*32)
+    assert result['container_created'] is True and result['start_attempted'] is True
+    assert result['container_started'] is True
+    assert result['reason']=='timeout' and result['cleanup_confirmed'] is True
+
+
+def test_timeout_during_create_remains_ambiguous(monkeypatch,tmp_path):
+    work=tmp_path/'runner';work.mkdir(mode=0o700)
+    monkeypatch.setattr(container,'WORK',work)
+    runner=container.ContainerRunner()
+    config={'image':container.IMAGE,'harness_checksum':container.sha256(runner.harness.read_bytes()).hexdigest()}
+    def docker(*args,**kwargs):
+        if args[0]=='info':return SimpleNamespace(returncode=0,stdout='["name=seccomp,profile=builtin","name=apparmor"]',stderr='')
+        if args[0]=='image':return SimpleNamespace(returncode=0,stdout=container.IMAGE+' null',stderr='')
+        if args[0]=='create':raise subprocess.TimeoutExpired('docker create',10)
+        pytest.fail('unexpected docker call')
+    monkeypatch.setattr(container,'docker',docker)
+    monkeypatch.setattr(runner,'cleanup',lambda name:True)
+    result=runner._run({'app.py':'pass'},config,'aic-package-'+'a'*32)
+    assert result['reason']=='runner_TimeoutExpired'
+    assert result['container_created'] is False and result['start_attempted'] is False
+    assert result['container_started'] is False and result['cleanup_confirmed'] is False
+
+
+@pytest.mark.parametrize('stderr,absent',[
+    ('Error response from daemon: No such object: aic-package-'+('a'*32),True),
+    ('Error: No such container: aic-package-'+('a'*32),True),
+    ('docker: No such file or directory',False),
+    ('Error response from daemon: No such object: aic-package-'+('b'*32),False),
+])
+def test_confirm_absent_requires_exact_daemon_object_name(monkeypatch,stderr,absent):
+    name='aic-package-'+'a'*32
+    monkeypatch.setattr(container,'docker',lambda *a,**k:SimpleNamespace(returncode=1,stdout='',stderr=stderr))
+    assert container.ContainerRunner().confirm_absent(name) is absent

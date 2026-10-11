@@ -153,6 +153,17 @@ def test_unsafe_execution_does_not_trigger_blind_repairs(client,generated,task_r
     assert len(generated[2].calls)==1
 
 
+def test_typed_preflight_failure_never_triggers_model_repair(client,generated):
+    class Runner:
+        def run(self,*args):return result(False,'preflight_image_unavailable',True)|{'container_started':False}
+    app.dependency_overrides[get_runner]=Runner
+    cycle=create(client,body(generated))
+    done=run(client,cycle['id'])
+    assert done['state']=='needs_attention'
+    assert done['steps'][0]['state']=='failed'
+    assert len(generated[2].calls)==1  # Initial fixture generation only; no repair call.
+
+
 def test_changed_tests_cannot_make_cycle_green_and_budget_is_bounded(client,generated):
     class Provider:
         calls=0

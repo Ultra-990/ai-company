@@ -4,12 +4,14 @@ from pathlib import Path
 from zipfile import ZipFile
 from uuid import uuid4
 import pytest
+from sqlalchemy import select
 from app.main import app
 from app.api.local_inference import get_provider_factory
 from app.api.package_runner import get_runner
 from app.models.artifact import Artifact
-from app.models.task import TaskAttempt, TaskStatus
+from app.models.task import Task, TaskAttempt, TaskStatus, TaskTransitionError
 from app.services import local_inference
+from app.services.result_review import append_rejection_review
 from app.services.workspace_packages import read_package
 from app.services.package_runner import ISOLATION_KEYS
 from tests.conftest import OWNER_HEADERS,WORKER_HEADERS
@@ -111,6 +113,75 @@ def test_invalid_model_revision_never_runs_code(client,generated):
     assert response.status_code==200,response.text
     assert response.json()['state']=='failed' and response.json()['new_package_id'] is None
     assert response.json()['test_run_id'] is None
+
+
+def test_failed_revision_can_receive_richer_full_revision_without_fabricated_state(
+        client, generated, task_repository):
+    body, old, _ = generated
+    class Invalid:
+        def __init__(self, config): pass
+        def complete(self, messages):
+            return {'content':'not JSON','model':CONFIG['model'],
+                    'digest':CONFIG['digest'],'done_reason':'stop'}
+    app.dependency_overrides[get_provider_factory] = lambda: Invalid
+    first = client.post('/api/application-revisions', headers=OWNER_HEADERS, json=body).json()
+    with task_repository._session_factory() as session:
+        first_review = session.scalar(select(Artifact).where(
+            Artifact.task_attempt_id == old['attempt_id'],
+            Artifact.name == 'Odbiór wyniku zadania').order_by(Artifact.id))
+        old_review = (first_review.id, first_review.content, first_review.checksum)
+    failed = client.post(f"/api/application-revisions/{first['id']}/run", headers=OWNER_HEADERS)
+    assert failed.json()['state'] == 'failed'
+    with task_repository._session_factory() as session:
+        receipt = session.get(Artifact, first['id'])
+        old_receipt = (receipt.content, receipt.checksum)
+
+    richer = body | {'request_id': str(uuid4()),
+        'description': 'Pełna ponowna rewizja: popraw implementację i testy bez osłabiania asercji.',
+        'expected_result': 'Kompletna nowa wersja pozostaje do niezależnego testu.'}
+    second = client.post('/api/application-revisions', headers=OWNER_HEADERS, json=richer)
+    assert second.status_code == 200, second.text
+    assert second.json()['state'] == 'queued'
+    with task_repository._session_factory() as session:
+        attempt = session.get(TaskAttempt, old['attempt_id'])
+        task = session.get(Task, body['task_id'])
+        receipt = session.get(Artifact, first['id'])
+        assert (receipt.content, receipt.checksum) == old_receipt
+        first_review = session.get(Artifact, old_review[0])
+        assert (first_review.content, first_review.checksum) == old_review[1:]
+        assert attempt.status == 'blocked' and attempt.verification_status == 'rejected'
+        assert task.status is TaskStatus.BLOCKED
+        reviews = list(session.scalars(select(Artifact).where(
+            Artifact.task_attempt_id == attempt.id,
+            Artifact.name == 'Odbiór wyniku zadania').order_by(Artifact.id)))
+        assert len(reviews) == 2
+        assert richer['description'] in reviews[-1].content
+
+
+def test_appended_rejection_rejects_tampered_stale_and_accepted_attempts(
+        client, generated, task_repository):
+    body, old, _ = generated
+    created = client.post('/api/application-revisions', headers=OWNER_HEADERS, json=body)
+    assert created.status_code == 200
+    kwargs = dict(attempt_id=old['attempt_id'], result_checksum=old['result_checksum'],
+                  reason='Kolejne konkretne uwagi.', evidence=['Nowy raport testu.'],
+                  reviewer_role='automated_qa')
+    with task_repository._session_factory() as session:
+        with pytest.raises(TaskTransitionError, match='integralność'):
+            append_rejection_review(session, body['task_id'], **(kwargs | {'result_checksum':'f'*64}))
+        session.rollback()
+        attempt = session.get(TaskAttempt, old['attempt_id'])
+        attempt.status = 'completed'; attempt.verification_status = 'accepted'
+        session.get(Task, body['task_id']).status = TaskStatus.COMPLETED
+        session.flush()
+        with pytest.raises(TaskTransitionError, match='najnowszy odrzucony'):
+            append_rejection_review(session, body['task_id'], **kwargs)
+        session.rollback()
+        session.add(TaskAttempt(task_id=body['task_id'], worker_id='other', status='blocked',
+                                verification_status='rejected'))
+        session.flush()
+        with pytest.raises(TaskTransitionError, match='najnowszy odrzucony'):
+            append_rejection_review(session, body['task_id'], **kwargs)
 
 
 @pytest.mark.skipif(os.environ.get('AIC_REVISION_PILOT')!='1',reason='Real Qwen/Docker pilot requires explicit script invocation')

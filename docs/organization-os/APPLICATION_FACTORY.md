@@ -1,5 +1,10 @@
 # Fabryka aplikacji — pierwszy działający profil
 
+Aktualizacja 11.10.2026: sześcioplikowa generacja, pełna rewizja oraz zawężona
+poprawka ROWEROWNI przeszły opisane niżej kontrole. Jest to dowód jednego
+syntetycznego przebiegu, nie kwalifikacja modelu do samodzielnej realizacji
+dowolnej strony.
+
 Aktualizacja 19.09.2026: [syntetyczne zlecenie strony usługowej](UPWORK_WEB_PILOT.md)
 sprawdza Qwen → ograniczone poprawki → niezależne testy HTTP/przeglądarki →
 ZIP kandydata. To test istniejącego procesu, nie automatyczne przyjmowanie
@@ -138,12 +143,53 @@ Model nie może oznaczać testów jako wykonanych; ich wynik zapisuje runner.
 starej tabeli. Jedna instrukcja ma jeden profil wykonania. Wynik modelu,
 pakiet, raport i odbiór zachowują oddzielne identyfikatory oraz SHA-256.
 
+### Sześcioplikowy adapter generowania
+
+`scripts/filewise_application_provider.py` zachowuje profil `python-web-v1`,
+ale dla pierwszej wersji prosi lokalny model kolejno o dokładnie sześć plików:
+`app.py`, `test_app.py`, `index.html`, `style.css`, `app.js` i `README.md`.
+Każde wywołanie ma schemat `{"content":"..."}`, jawny typ pliku, miękki cel
+znaków i limit `num_predict <= 3000`. Adapter przekazuje oryginalny pakiet oraz
+dokładne, już wygenerowane źródła, aby model utrzymał zgodność plików. Przed
+każdym wywołaniem sprawdza wolny slot modelu; cały przebieg ma najwyżej sześć
+wywołań i deadline 600 s, a timeout pojedynczego wywołania nie przekracza
+pozostałego czasu ani 180 s.
+
+Żądanie i surowa odpowiedź każdego pliku są zapisywane przed parsowaniem wraz
+z hashami, tożsamością modelu i autorstwem (`code=local_model`,
+`orchestration=assistant`). Adapter nie minifikuje, nie poprawia i nie wykonuje
+kodu. Pusty, ucięty, zbyt duży wynik, zmiana modelu/digestu lub przekroczenie
+łącznego limitu 32 KB zatrzymują składanie; częściowe dowody pozostają, lecz nie
+powstaje końcowa paczka. Profil `python-web-repair-v1` nie uruchamia sześciu
+wywołań: przechodzi przez zwykły, pojedynczy dekoder poprawki i również zachowuje
+surową odpowiedź.
+
+### Uwagi po odrzuceniu i dwa rodzaje poprawki
+
+`append_rejection_review` może dopisać nowe, wersjonowane uzasadnienie i dowody
+wyłącznie do najnowszej, integralnej, już odrzuconej próby. Wymaga zgodnej sumy
+wyniku i nie tworzy nowej próby, nie zmienia odrzucenia w akceptację oraz nie
+udaje ponownego testu.
+
+Automatyczna poprawka pozostaje zawężona: `python-web-repair-v1` może zmienić
+1–2 istniejące pliki, a `test_app.py` jest składany z wersji bazowej bajt w bajt.
+Pełna rewizja jest osobną, jawną operacją `python-web-v1`: model ponownie pisze
+wszystkie sześć plików, w tym własny helper w `test_app.py`, gdy błąd dotyczy
+samej konstrukcji testu. Nie wolno osłabiać asercji; nowa wersja przechodzi
+niezmieniony, niezależny harness. Dzięki temu naprawa wadliwego helpera testowego
+nie obchodzi blokady testów automatycznego cyklu.
+
 ## Izolowany profil wykonania
 
-- Lokalny obraz `python:3.10-slim` przypięty do ID
-  `sha256:bef522938ef068e9fe7c1f078b1eb929cf32bbb2047b8e67723996c1e050e6e9`.
-  Brak pull przy wykonaniu, brak instalowania zależności. To zastany obraz,
-  nie deklaracja najnowszej poprawki bezpieczeństwa.
+- Lokalny obraz `python:3.10-slim` jest przypięty do ID
+  `sha256:0f61d91517f6602b9d99096696845f54ddfe01a52029b4f55fdddb277ebe034a`.
+  Obraz pobrano z repozytorium jako
+  `python@sha256:6ff506466f8b1e981719b468cc0023b8ef000b983cdec0eafe119d01f379e31d`;
+  wykonanie nadal używa `--pull=never` i nie instaluje zależności. Pin oznacza
+  sprawdzony lokalny artefakt, nie deklarację najnowszej poprawki bezpieczeństwa.
+  Raporty i certyfikaty utworzone z wcześniejszym image ID pozostają dowodami
+  historycznych wykonań; nie są przepisywane ani automatycznie uznawane za test
+  bieżącego profilu.
 - Docker pod stałym lokalnym socketem, `runc`, seccomp builtin i AppArmor.
   Brak uprzywilejowania, capabilities, nowych uprawnień, GPU, sieci zewnętrznej,
   mapowania portów, sekretów, docker.sock i katalogów repozytorium w kontenerze.
@@ -156,6 +202,17 @@ pakiet, raport i odbiór zachowują oddzielne identyfikatory oraz SHA-256.
 - Tester PID 1 ma alarm 35 s, transport hosta deadline 45 s i max 32768 B
   wyjścia; log testów w raporcie ograniczony do 12000 znaków. Kod paczki nie
   jest importowany do procesu API. Odpowiedź z kontenera jest danymi.
+- Kontrola przed `docker create` rozróżnia ograniczone przyczyny
+  `preflight_security_unavailable`, `preflight_image_unavailable` i
+  `preflight_harness_changed` oraz zapisuje `container_started=false`. Taki
+  wynik kończy się jako `failed` tylko po osobnym odczytowym potwierdzeniu, że
+  dokładna losowa nazwa kontenera nie istnieje. Jeżeli pod tą nazwą istnieje
+  własny albo obcy kontener lub odczyt jest niejednoznaczny, stan pozostaje
+  `uncertain`; preflight nie usuwa kontenera. Raport rozróżnia utworzenie
+  kontenera i próbę startu. Niejednoznaczny timeout samego `docker create`
+  pozostaje `uncertain`; ograniczony timeout po próbie startu zachowuje faktyczny
+  wynik sprzątania, więc potwierdzone usunięcie nie jest fałszywie oznaczane jako
+  niepewne. Awaria infrastruktury nie jest przekazywana modelowi jako błąd aplikacji.
 - Jeden globalny slot bazy i blokada katalogu runnera. Stan `uncertain`
   zatrzymuje kolejne uruchomienia. Przy przerwaniu procesu API po 90 s dostępne
   jest jawne uzgodnienie i sprzątanie wyłącznie zapisanej losowej nazwy kontenera,
@@ -247,3 +304,87 @@ Testy, HTML i README zachowane. Powstał ZIP kandydata, nie odebrane wydanie.
 Źródła końcowe przejrzano; tej nowej wersji nie poddano jeszcze audytowi Chrome.
 To pojedynczy sukces po wcześniejszych porażkach i doprecyzowaniu instrukcji,
 nie oszacowanie skuteczności ani obietnica realizacji dowolnego zlecenia.
+
+## ROWEROWNIA — pełna rewizja i poprawka krawędziowa
+
+Syntetyczny przebieg `business-website-pilot-fkf_d3w0` zachował surowe odpowiedzi
+sześcioplikowego generowania i wszystkie kolejne wersje. Pierwszy kandydat ujawnił
+błędny helper we własnym `test_app.py`, brak ścisłej odmowy dodatkowego parametru,
+brak widocznej informacji `file://` oraz braki prezentacyjne. Zamiast zmieniać
+zamrożony tester lub ręcznie pisać produkt, system wykonał jawną pełną rewizję
+sześciu plików przez lokalny model. Następnie dodatkowa kontrola znalazła pusty
+dodatkowy parametr gubiony przez parser; zawężona poprawka modelu zmieniła tylko
+`app.py`, zachowując `test_app.py` i pozostałe pliki bajt w bajt.
+
+Końcowa wersja to paczka **#24** o sumie
+`7e741d9607a1e157dd9f8ac9d08c6fe7477cb0cd2be378bf553873efb7dc9b16`.
+Zaliczyła 8 testów modelu w izolowanym runnerze, 16 zamrożonych niezależnych
+przypadków HTTP/HTML, 12 kontroli rzeczywistej przeglądarki oraz 3 dodatkowe
+próby API. Trzecia próba dodatkowa dla powtórzonego parametru była diagnostyczna,
+nie osobną bramką, ale również przeszła. Kontrole przeglądarki obejmowały oba
+viewporty, menu i Escape/fokus, FAQ oraz trzy rzeczywiste wyceny przez izolowany
+backend. Pierwotny raport zachowuje `accepted=false`, `visual_review=pending` i
+`deployed=false`. Późniejszy osobny `technical-assessment.json` dokumentuje
+przegląd pełnych screenshotów i ograniczony odbiór techniczny. Automatyczne
+testy nie stanowią decyzji właściciela. Nie wykonano publikacji produktu,
+pracy dla klienta ani treningu wag.
+
+Ten przebieg pokazuje, że system potrafił zachować autorstwo modelu, rozdzielić
+pełną rewizję od zablokowanej poprawki, przekazać obserwowany błąd z powrotem do
+modelu i związać wynik z konkretnymi źródłami oraz testerem. Nie mierzy skuteczności
+na nowych domenach, jakości premium, odporności na celowo wrogi kod ani zdolności
+do pracy bez nadzoru. Jedna rodzina briefu i poprawki po ujawnionych błędach nie
+jest testem generalizacji.
+
+## Scenariusz transferowy SERWIS CREMA
+
+`scripts/service_quote_transfer_case.py` definiuje nowy syntetyczny brief
+sześcioplikowej strony serwisu ekspresów, odmienny endpoint `/api/quote`, ceny,
+jednorazową opłatę dojazdową, kontrolki DOM i tryb `file://`. Dokładne 19 prób
+egzaminatora zostało zamrożonych poza publicznym briefem i obejmuje poprawne
+wyceny, brakujące, puste, dodatkowe i powtórzone parametry, 404, strukturę sześciu
+plików, lokalne assety, dostępność i README. `scripts/check_service_quote_transfer.py`
+uruchamia ten przypadek przez ten sam izolowany przepływ oraz filewise provider;
+przeglądarka ma osobną konfigurację scenariusza.
+
+Pierwszy przebieg `service-quote-transfer-q4ylytju` zakończył się stanem
+`needs_attention`, bez kandydata. Sześcioplikowe generowanie trwało 60,378 s
+i zwróciło 5540 tokenów. Niezależny runner wykazał cztery błędy testów modelu:
+helper tworzył obiekt `H` bez metody `do_GET`. HTML duplikował CSS/JS inline,
+zamiast łączyć wymagane lokalne `style.css` i `app.js`. Jedna automatyczna
+poprawka trwała 16,17 s i zwróciła 1921 tokenów, ale została odrzucona jako
+nieprawidłowa, ponieważ wskazany plik pozostał niezmieniony. System nie uznał
+deklaracji modelu za naprawę i nie utworzył wersji kandydata.
+
+Osobna pełna rewizja opisana niżej nie jest wynikiem pierwszego przebiegu. Po pokazaniu publicznego briefu i dodaniu
+scenariusza do repozytorium CREMA nie jest ślepym holdoutem; służy jako
+ograniczona próba transferu narzędzia do innej domeny. Dotychczasowy wynik jest
+negatywnym dowodem konkretnej próby, nie przykładem przyjętym do treningu,
+odbiorem właściciela, wdrożeniem ani podstawą deklaracji kwalifikacji modelu.
+
+
+Późniejsza pełna rewizja CREMA naprawiła helper testów i podłączenie zasobów:
+7 testów modelu i te same 19 zamrożonych prób HTTP przeszły. Odrębna poprawka
+modelu zmieniła tylko HTML/CSS: położenie rozwijanego menu, fikcyjne dane
+kontaktowe i polskie etykiety. Końcowa paczka #21 ma checksum
+`6fa35f42330f932b72a67cff50b073bb122a5e81817adb7eb5457bb839da0d03`.
+Egzaminator viewport.v3 zaliczył 15 kontroli, w tym rzeczywisty tryb file://,
+trzy wyceny przez Docker, geometrię/hit-test otwartego menu i ukrycie po Escape.
+Pełne screenshoty obu szerokości obejrzano; osobny technical-assessment zapisuje
+ograniczony odbiór techniczny. Brak odbioru właściciela, wdrożenia i treningu wag.
+
+Podczas audytu poprawiono też błędny predykat testera: pusty kontener nav może
+mieć prostokąt o wysokości zero, choć wszystkie linki są ukryte. viewport.v3
+bada widoczność i dostępność linków dla fokusu, zachowując kontrole geometrii.
+Ta sama wersja egzaminatora odrzuca źródła sprzed naprawy za menu poza ekranem
+i zalicza źródła poprawione. Stare raporty nie zostały nadpisane. To jawna
+korekta egzaminatora, nie wsteczne zaliczenie pierwszego transferu.
+
+`scripts/collect_web_code_experience.py` waliduje osobny kandydat doświadczenia
+naprawy parsera: surową odpowiedź modelu, model/digest, dokładny diff app.py,
+zachowane testy/frontend oraz powiązane surowe wyniki runnera, edge i browsera.
+Eksport nie uruchamia treningu ani nie trafia do istniejącego korpusu wizyjnego.
+Jeden przykład ROWEROWNIA otrzymał niezależną decyzję
+`eligible_for_curated_training`; rodzina i jej bliskie duplikaty są tylko train,
+poza ewaluacją. `ready_for_trainer=false`: nadal wymagany jest nowy spójny
+zbiór i niezależna ocena transferu. Nie jest to dowód poprawy wag modelu.

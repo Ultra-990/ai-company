@@ -15,10 +15,31 @@ ROOT=Path(__file__).resolve().parents[2]
 WORK=Path('/home/marcin/ai-company-workspaces/runner')
 CONFIG=ROOT/'config/package_runner.json'
 HARNESS=ROOT/'app/runner/harness.py'
-IMAGE='sha256:bef522938ef068e9fe7c1f078b1eb929cf32bbb2047b8e67723996c1e050e6e9'
+IMAGE='sha256:0f61d91517f6602b9d99096696845f54ddfe01a52029b4f55fdddb277ebe034a'
 DOCKER='/usr/bin/docker'
 LABEL='ai-company.package-runner'
 PROFILE='python-web-v1'
+PREFLIGHT_REASONS={'preflight_security_unavailable','preflight_image_unavailable','preflight_harness_changed'}
+
+
+class PreflightFailure(RuntimeError):
+    """Known failure before this invocation can issue docker create."""
+    def __init__(self,reason):
+        if reason not in PREFLIGHT_REASONS:raise ValueError('Invalid runner preflight reason')
+        self.reason=reason
+        self.container_started=False
+        super().__init__(reason)
+
+
+def confirmed_absent(result,name):
+    if result.returncode==0:return False
+    messages={
+        f'Error: No such object: {name}',
+        f'Error: No such container: {name}',
+        f'Error response from daemon: No such object: {name}',
+        f'Error response from daemon: No such container: {name}',
+    }
+    return any(line.strip() in messages for line in (result.stderr or '').splitlines())
 
 
 def configuration():
@@ -92,7 +113,13 @@ class ContainerRunner:
         checked=docker('inspect','--format','{{json .Config.Labels}}',name)
         if checked.returncode==0 and json.loads(checked.stdout).get(LABEL)==name:
             return docker('rm','--force',name).returncode==0
-        return checked.returncode!=0 and 'No such' in checked.stderr
+        return confirmed_absent(checked,name)
+
+    def confirm_absent(self,name):
+        """Read-only exact-name check. Existing own or foreign containers are not removed."""
+        if not re.fullmatch(r'aic-package-[0-9a-f]{32}',name):raise ValueError('Nieprawidłowa tożsamość kontenera.')
+        checked=docker('inspect','--format','{{json .Config.Labels}}',name)
+        return confirmed_absent(checked,name)
 
     def run(self,files,config,name):
         if not re.fullmatch(r'aic-package-[0-9a-f]{32}',name):raise ValueError('Nieprawidłowa tożsamość kontenera.')
@@ -108,16 +135,21 @@ class ContainerRunner:
             return self._run(files,config,name)
 
     def _run(self,files,config,name):
-        info=docker('info','--format','{{json .SecurityOptions}}')
+        try:info=docker('info','--format','{{json .SecurityOptions}}')
+        except Exception as exc:raise PreflightFailure('preflight_security_unavailable') from exc
         if info.returncode or 'name=seccomp,profile=builtin' not in info.stdout or 'name=apparmor' not in info.stdout:
-            raise ValueError('Wymagane działające Docker, seccomp i AppArmor.')
-        inspected=docker('image','inspect',config['image'],'--format','{{.Id}} {{json .Config.Volumes}}')
+            raise PreflightFailure('preflight_security_unavailable')
+        try:inspected=docker('image','inspect',config['image'],'--format','{{.Id}} {{json .Config.Volumes}}')
+        except Exception as exc:raise PreflightFailure('preflight_image_unavailable') from exc
         if inspected.returncode or inspected.stdout.strip()!=config['image']+' null':
-            raise ValueError('Brak przypiętego obrazu bez wolumenów. Nie pobrano zamiennika.')
-        if sha256(self.harness.read_bytes()).hexdigest()!=config['harness_checksum']:
-            raise ValueError('Tester zmienił się przed wykonaniem.')
+            raise PreflightFailure('preflight_image_unavailable')
+        try:harness_checksum=sha256(self.harness.read_bytes()).hexdigest()
+        except OSError as exc:raise PreflightFailure('preflight_harness_changed') from exc
+        if harness_checksum!=config['harness_checksum']:
+            raise PreflightFailure('preflight_harness_changed')
         output={'container_name':name,'profile':config,'cleanup_confirmed':False,'exit_code':None,
-                'cli_exit_code':None,'log':'','reason':None}
+                'cli_exit_code':None,'log':'','reason':None,'container_started':False,
+                'container_created':False,'start_attempted':False}
         with tempfile.TemporaryDirectory(prefix='source-',dir=WORK) as directory:
             folder=Path(directory)
             self.stage_sources(folder, files)
@@ -126,10 +158,14 @@ class ContainerRunner:
             try:
                 created=docker(*create_args(name,directory,config))
                 if created.returncode:raise ValueError('Nie udało się utworzyć izolowanego kontenera.')
+                output['container_created']=True
+                output['container_started']=None
+                output['start_attempted']=True
                 output.update(bounded_start(name))
                 state=docker('inspect','--format','{{json .State}}',name)
                 if state.returncode==0:
                     state=json.loads(state.stdout)
+                    if state.get('Status') in {'running','exited'}:output['container_started']=True
                     if state.get('Status')=='exited':output['exit_code']=state.get('ExitCode')
                     output['oom_killed']=state.get('OOMKilled',False)
             except Exception as exc:
@@ -138,5 +174,6 @@ class ContainerRunner:
                 # Exact random identity + label; NEVER touch other containers.
                 try:output['cleanup_confirmed']=self.cleanup(name)
                 except Exception:output['cleanup_confirmed']=False
-                if output['reason']=='runner_TimeoutExpired':output['cleanup_confirmed']=False
+                if output['reason']=='runner_TimeoutExpired':
+                    output['cleanup_confirmed']=False
             return output

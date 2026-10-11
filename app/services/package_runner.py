@@ -14,7 +14,7 @@ from app.models.task import Task, TaskAttempt, TaskStatus
 from app.models.local_inference import LocalInference
 from app.services.workspace_packages import read_package, canonical_json, PackageIntegrityError
 from app.services.application_profile import parse_sources
-from app.services.container_runner import configuration
+from app.services.container_runner import configuration, PreflightFailure
 from app.services.execution_profiles import multifile_configuration, capabilities
 from app.services.multifile_profile import PROFILE as MULTIFILE_PROFILE, require_sources
 from app.services.application_layout import execution_profile
@@ -75,8 +75,15 @@ def start(session,task_id,package_id,package_checksum,request_id,runner,preview_
                           reason=f'owner; run={run.id}; package={package_id}; sha256={package_checksum}; network=none'))
     session.commit();run_id=run.id
     try:result=runner.run(files,config,run.container_name)
+    except PreflightFailure as exc:
+        try:absent=runner.confirm_absent(run.container_name)
+        except Exception:absent=False
+        result={'reason':exc.reason,'cleanup_confirmed':absent,'container_started':False,
+                'container_created':False,'start_attempted':False,
+                'log':'','exit_code':None,'cli_exit_code':None}
     except Exception as exc:
-        result={'reason':'runner_'+type(exc).__name__,'cleanup_confirmed':False,'log':'','exit_code':None}
+        result={'reason':'runner_'+type(exc).__name__,'cleanup_confirmed':False,
+                'container_started':None,'log':'','exit_code':None,'cli_exit_code':None}
     session.execute(text('BEGIN IMMEDIATE'));session.expire_all();run=session.get(PackageRun,run_id)
     if run.state!='running':session.rollback();raise ValueError('Wykonanie zmieniło stan. Nie nadpisano raportu.')
     try:

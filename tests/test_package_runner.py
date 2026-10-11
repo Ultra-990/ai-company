@@ -7,6 +7,7 @@ from app.main import app
 from app.api.package_runner import get_runner
 from app.services import package_runner as service
 from app.services.container_runner import create_args
+from app.services.container_runner import PreflightFailure
 from app.models.package_run import PackageRun
 from tests.conftest import OWNER_HEADERS, WORKER_HEADERS
 from tests.test_agent_packets import assigned
@@ -91,6 +92,22 @@ def test_failure_uncertain_slot_and_recovery(client,task_repository):
     with task_repository._session_factory() as s:
         s.get(PackageRun,r['id']).created_at=utc_now()-timedelta(seconds=120);s.commit()
     assert client.post(path,headers=OWNER_HEADERS).json()['state']=='interrupted'
+
+
+@pytest.mark.parametrize('absent,state',[ (True,'failed'), (False,'uncertain') ])
+def test_typed_preflight_preserves_reason_and_requires_confirmed_absence(client,absent,state):
+    body=package(client)
+    class Failed:
+        def run(self,*a):raise PreflightFailure('preflight_image_unavailable')
+        def confirm_absent(self,name):
+            assert name.startswith('aic-package-')
+            return absent
+    app.dependency_overrides[get_runner]=Failed
+    result=client.post('/api/package-runs',headers=OWNER_HEADERS,json=body).json()
+    assert result['state']==state
+    assert result['result']['reason']=='preflight_image_unavailable'
+    assert result['result']['container_started'] is False
+    assert result['result']['cleanup_confirmed'] is absent
 
 
 def test_fixed_docker_profile_has_no_host_privileges():
