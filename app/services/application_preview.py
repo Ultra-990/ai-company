@@ -8,7 +8,9 @@ HARNESS = ROOT / 'app/runner/preview_harness.py'
 
 
 def validate_path(path):
-    if path != '/' and not re.fullmatch(r'/api/[A-Za-z0-9_-]+(?:\?[A-Za-z0-9_=&.%+,-]{0,800})?', path):
+    # Include the punctuation left unescaped by JavaScript encodeURIComponent.
+    # Only query characters expand; the local endpoint and length stay bounded.
+    if path != '/' and not re.fullmatch(r"/api/[A-Za-z0-9_-]+(?:\?[A-Za-z0-9_=&.%+,!~*'()-]{0,800})?", path):
         raise ValueError('Podgląd dopuszcza tylko GET / lub /api/nazwa z ograniczonym zapytaniem.')
     return path
 

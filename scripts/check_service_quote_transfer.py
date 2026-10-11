@@ -23,7 +23,8 @@ def main():
     destination = Path(tempfile.mkdtemp(prefix="service-quote-transfer-", dir=workspace))
     env = dict(os.environ, AIC_SERVICE_QUOTE_TRANSFER_PILOT="1",
                AIC_SERVICE_QUOTE_TRANSFER_OUTPUT=str(destination.resolve()),
-               AIC_BUSINESS_WEBSITE_PILOT="0", AIC_BUSINESS_WEBSITE_FILEWISE="1")
+               AIC_BUSINESS_WEBSITE_PILOT="0", AIC_WORKSHOP_CATALOG_PILOT="0",
+               AIC_BUSINESS_WEBSITE_FILEWISE="1")
     report = destination / "report.json"
     print(json.dumps({"report": str(report.resolve())}), flush=True)
     result = subprocess.run([sys.executable, "-m", "pytest", "-q",

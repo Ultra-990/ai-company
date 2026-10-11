@@ -11,7 +11,7 @@ import signal
 import subprocess
 import sys
 import tempfile
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlsplit
 from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -19,10 +19,18 @@ import websockets
 from scripts.web_trials.check_browser import Browser
 from scripts.compare_local_models import check_idle
 from app.services.application_preview import PreviewRunner, preview_configuration
+from scripts.workshop_catalog_case import SESSIONS as WORKSHOP_SESSIONS
 
 ORIGIN = 'https://business-website.test'
 WORKSPACE = Path('/home/marcin/ai-company-workspaces')
 BROWSER_DEADLINE_SECONDS = 180
+RUNTIME_NOTE_VISIBLE = """(() => {
+    const e=document.getElementById('runtime-note');
+    if (!e) return false;
+    const style=getComputedStyle(e), box=e.getBoundingClientRect();
+    return style.display!=='none' && style.visibility!=='hidden'
+        && box.width>0 && box.height>0 && e.innerText.includes('python app.py');
+})()"""
 SCENARIOS = {
     'business-website-delivery.v1': {
         'name': 'rowerownia', 'report_schema': 'business-website-browser.v1',
@@ -41,7 +49,25 @@ SCENARIOS = {
         # Browser-only interaction values differ from the frozen harness probes.
         'quotes': (('check', '2', False, 170), ('restore', '1', True, 305),
                    ('restore', '6', True, 1480))},
+    'workshop-catalog-delivery.v1': {
+        'name': 'workshop-catalog', 'report_schema': 'workshop-catalog-browser.v1',
+        'api_path': '/api/sessions', 'brand_pattern': 'plan zajęć',
+        'section_ids': ('catalog', 'schedule', 'faq', 'contact'),
+        'field_ids': ('day', 'level'), 'action_id': 'apply-filters',
+        'output_ids': ('sessions', 'filter-status'), 'live_ids': ('filter-status',),
+        'faq_id': 'faq-filtering', 'file_mode': True, 'viewport_menu_checks': True,
+        # Browser-only filters differ from the frozen harness probes.
+        'filters': (
+            ('tuesday', 'beginner', (WORKSHOP_SESSIONS[2],)),
+            ('saturday', 'advanced', (WORKSHOP_SESSIONS[5],)),
+            ('tuesday', 'intermediate', ()),
+        ),
+        'all_titles': ('Papierowy ogród','Historie z gliny','Błękitna cyjanotypia',
+                       'Notes szyty ręcznie','Roślinny druk','Mały drzeworyt')},
 }
+SCENARIOS['workshop-catalog-ui-repair.v1'] = SCENARIOS['workshop-catalog-delivery.v1']
+SCENARIOS['workshop-catalog-route-repair.v1'] = SCENARIOS['workshop-catalog-delivery.v1']
+SCENARIOS['workshop-catalog-route-refinement.v1'] = SCENARIOS['workshop-catalog-delivery.v1']
 # These reports preserve the same ROWEROWNIA UI/API contract at later workflow
 # stages. Their provenance differs, while the browser expectations do not.
 for _business_schema in ('business-website-resume.v1', 'business-website-revision.v1',
@@ -99,6 +125,43 @@ def quote_interaction(scenario, choice, count, enabled):
         + "if(flag.type==='checkbox'){flag.checked="+json.dumps(enabled)+";}else{" \
         + "flag.value="+json.dumps('1' if enabled else '0')+";}" \
         + "document.getElementById('calculate').click()}"
+
+
+def filter_interaction(scenario, day, level):
+    day_id,level_id=scenario['field_ids']
+    return "document.getElementById("+json.dumps(day_id)+").value="+json.dumps(day)+";" \
+        + "document.getElementById("+json.dumps(level_id)+").value="+json.dumps(level)+";" \
+        + "document.getElementById("+json.dumps(scenario['action_id'])+").click()"
+
+
+def filter_expectation(expected_sessions, all_titles):
+    wanted=[row['title'] for row in expected_sessions]
+    unwanted=[title for title in all_titles if title not in wanted]
+    return """(() => {const list=document.getElementById('sessions');
+        const status=document.getElementById('filter-status');const text=list?.innerText||'';
+        const wanted=__WANTED__;const unwanted=__UNWANTED__;
+        return !!list && !!status?.innerText.trim() && wanted.every(x=>text.includes(x))
+            && unwanted.every(x=>!text.includes(x)) && (wanted.length>0 || text.trim().length>0);})()""" \
+        .replace('__WANTED__',json.dumps(wanted,ensure_ascii=False)) \
+        .replace('__UNWANTED__',json.dumps(unwanted,ensure_ascii=False))
+
+
+def matching_filter_response(requests, start, scenario, day, level, expected_sessions):
+    matches=[]
+    expected_pairs=sorted((('day',day),('level',level)))
+    for item in requests[start:]:
+        parsed=urlsplit(item.get('path',''))
+        pairs=parse_qsl(parsed.query,keep_blank_values=True)
+        if parsed.path!=scenario['api_path'] or len(pairs)!=2 or sorted(pairs)!=expected_pairs:
+            continue
+        try:
+            raw=json.loads(item['run']['log'])['response']
+            body=json.loads(raw['body'])
+        except (KeyError,TypeError,ValueError,json.JSONDecodeError):
+            continue
+        if raw.get('status')==200 and body=={'sessions':list(expected_sessions)}:
+            matches.append(item)
+    return len(matches)==1
 
 
 def backend_response(files, path):
@@ -189,7 +252,7 @@ async def inspect(source, output_name='browser'):
     out = evidence_output(source, output_name)
     out.mkdir(mode=0o700)  # Never overwrite earlier evidence.
     report = {'schema': scenario['report_schema'], 'scenario': scenario['name'], 'status': 'running',
-              'examiner_version': '2026-10-11.viewport.v3',
+              'examiner_version': '2026-10-11.catalog.v4',
               'examiner_sha256': sha256(Path(__file__).read_bytes()).hexdigest(),
               'source_report_sha256': sha256(raw).hexdigest(),
               'source_sha256': {n: sha256(s.encode()).hexdigest() for n, s in files.items()},
@@ -200,7 +263,7 @@ async def inspect(source, output_name='browser'):
     env = {k:v for k,v in os.environ.items() if k not in ('DISPLAY','WAYLAND_DISPLAY','XAUTHORITY','DBUS_SESSION_BUS_ADDRESS')}
     env['DBUS_SESSION_BUS_ADDRESS'] = 'unix:path=/nonexistent'
     with tempfile.TemporaryDirectory(prefix='browser-', dir=out, ignore_cleanup_errors=True) as profile:
-        chrome = subprocess.Popen(['/usr/bin/google-chrome','--headless','--ozone-platform=headless',
+        chrome = subprocess.Popen(['/usr/bin/google-chrome','--headless','--ozone-platform=headless','--hide-scrollbars',
             '--disable-gpu','--disable-extensions','--disable-background-networking','--no-first-run',
             '--no-default-browser-check','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],
             env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
@@ -251,20 +314,39 @@ async def inspect(source, output_name='browser'):
                             'height': content['height'], 'scale': 1})
                     snap = await b.call('Page.captureScreenshot', params, session)
                     (out/name).write_bytes(base64.b64decode(snap['data']))
+                action_id=scenario.get('action_id','calculate')
+                output_ids=scenario.get('output_ids',('result',))
+                live_ids=scenario.get('live_ids',('result',))
                 required = ('main', *scenario['section_ids'], 'site-nav', 'menu-toggle',
-                            *scenario['field_ids'], 'calculate', 'result', scenario['faq_id'])
+                            *scenario['field_ids'], action_id, *output_ids, scenario['faq_id'])
                 await check('required-content', json.dumps(list(required))+".every(id=>document.getElementById(id)) && document.querySelectorAll('h1').length===1 && new RegExp("+json.dumps(scenario['brand_pattern'])+",'i').test(document.body.innerText)")
-                await check('labelled-fields', json.dumps(list(scenario['field_ids']))+".every(id=>document.getElementById(id)?.labels?.length) && document.getElementById('result')?.getAttribute('aria-live')==='polite'")
+                await check('labelled-fields', json.dumps(list(scenario['field_ids']))+".every(id=>document.getElementById(id)?.labels?.length) && "+json.dumps(list(live_ids))+".every(id=>document.getElementById(id)?.getAttribute('aria-live')==='polite')")
                 await check('desktop-no-overflow', 'document.documentElement.scrollWidth<=innerWidth')
                 await check('navigation', json.dumps(list(scenario['section_ids']))+".every(id=>document.querySelector('#site-nav a[href=\"#'+id+'\"]')) && !!document.querySelector('a[href=\"#main\"]')")
+                if 'filters' in scenario:
+                    # Added after reviewing the initial empty catalogue. This is
+                    # a separate UI acceptance check, not a changed API harness.
+                    initial=await b.wait(filter_expectation(WORKSHOP_SESSIONS,scenario['all_titles']),ctx,12)
+                    report['checks'].append({'name':'initial-catalog','passed':initial,
+                        'scope':'All six sessions and a status must be visible before interaction.'})
+                    persist()
                 await shot('desktop.png')
                 await shot('desktop-full.png', full_page=True)
-                for choice, count, enabled, total in scenario['quotes']:
-                    before = len(report['requests'])
-                    await b.js(quote_interaction(scenario, choice, count, enabled), ctx)
-                    matched = await b.wait('document.getElementById("result").textContent.trim()==='+json.dumps(f"{scenario['result_prefix']}: {total} PLN"), ctx, 12)
-                    report['checks'].append({'name':f'quote-{choice}-{count}-{enabled}','passed':matched and len(report['requests'])>before})
-                    persist()
+                if 'quotes' in scenario:
+                    for choice, count, enabled, total in scenario['quotes']:
+                        before = len(report['requests'])
+                        await b.js(quote_interaction(scenario, choice, count, enabled), ctx)
+                        matched = await b.wait('document.getElementById("result").textContent.trim()==='+json.dumps(f"{scenario['result_prefix']}: {total} PLN"), ctx, 12)
+                        report['checks'].append({'name':f'quote-{choice}-{count}-{enabled}','passed':matched and len(report['requests'])>before})
+                        persist()
+                else:
+                    for day,level,expected_sessions in scenario['filters']:
+                        before=len(report['requests']);await b.js(filter_interaction(scenario,day,level),ctx)
+                        expression=filter_expectation(expected_sessions,scenario['all_titles'])
+                        matched=await b.wait(expression,ctx,12)
+                        response_ok=matching_filter_response(report['requests'],before,scenario,day,level,expected_sessions)
+                        report['checks'].append({'name':f'filter-{day}-{level}','passed':matched and response_ok})
+                        persist()
                 await b.js("document.querySelector("+json.dumps('#'+scenario['faq_id']+' summary')+").click()", ctx)
                 await check('faq-opens', "document.getElementById("+json.dumps(scenario['faq_id'])+").open")
                 await size(390)
@@ -329,8 +411,8 @@ async def inspect(source, output_name='browser'):
                             if file_ctx: break
                             await asyncio.sleep(.1)
                         if file_ctx is None: raise ValueError('File-mode document did not load')
-                        visible = await b.js("!!(e=>e&&getComputedStyle(e).display!=='none'&&e.getClientRects().length)(document.getElementById('runtime-note'))", file_ctx)
-                        disabled = await b.js("document.getElementById('calculate')?.disabled===true", file_ctx)
+                        visible = await b.js(RUNTIME_NOTE_VISIBLE, file_ctx)
+                        disabled = await b.js("document.getElementById("+json.dumps(action_id)+")?.disabled===true", file_ctx)
                         unauthorized = [item for item in report['file_mode_requests'] if not item['allowed']]
                         report['checks'].append({'name':'file-mode-safe','passed':visible is True and disabled is True and not unauthorized,
                             'runtime_note_visible':visible,'calculate_disabled':disabled,'unauthorized_requests':unauthorized})

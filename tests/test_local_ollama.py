@@ -85,6 +85,23 @@ def test_default_qwen_thinking_unchanged():
     assert adapter.thinking_mode(CONFIG) is False
 
 
+@pytest.mark.parametrize('strategy',['single-call-v1','filewise-v1'])
+def test_application_generation_strategy_is_server_validated(tmp_path,monkeypatch,strategy):
+    path=tmp_path/'config.json';path.write_text(json.dumps(
+        CONFIG|{'enabled':True,'application_generation_strategy':strategy}))
+    monkeypatch.setattr(adapter,'CONFIG_PATH',path)
+    assert adapter.configuration()['application_generation_strategy']==strategy
+
+
+def test_application_generation_strategy_defaults_to_single_and_rejects_unknown(tmp_path,monkeypatch):
+    path=tmp_path/'config.json';monkeypatch.setattr(adapter,'CONFIG_PATH',path)
+    path.write_text(json.dumps(CONFIG|{'enabled':True}))
+    assert adapter.configuration().get('application_generation_strategy','single-call-v1')=='single-call-v1'
+    path.write_text(json.dumps(CONFIG|{'enabled':True,'application_generation_strategy':'caller-choice'}))
+    with pytest.raises(ValueError,match='konfiguracja'):
+        adapter.configuration()
+
+
 def test_deliberate_qwen_requires_explicit_named_profile_and_correct_model():
     assert adapter.thinking_mode(CONFIG | {'sampling_profile': 'qwen-deliberate-trial.v1'}) is True
     for extra in ({'think': True}, {'sampling_profile': 'qwen-deliberate-trial.v1', 'think': False},

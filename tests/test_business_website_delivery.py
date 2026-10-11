@@ -20,7 +20,7 @@ from app.services import application_quality, container_runner, local_inference,
 from app.services.agent_teams import team_key
 from app.services.local_ollama import OllamaProvider, configuration, ensure_idle
 from app.services.workspace_packages import read_package
-from scripts import business_website_case, service_quote_transfer_case
+from scripts import business_website_case, service_quote_transfer_case, workshop_catalog_case
 from scripts.compare_local_models import check_idle
 from tests.conftest import OWNER_HEADERS
 from tests.test_agent_packets import packet
@@ -30,8 +30,15 @@ from tests.test_agent_teams import delegate, setup
 def selected_delivery_case():
     transfer = os.environ.get("AIC_SERVICE_QUOTE_TRANSFER_PILOT") == "1"
     business = os.environ.get("AIC_BUSINESS_WEBSITE_PILOT") == "1"
-    if transfer and business:
+    workshop = os.environ.get("AIC_WORKSHOP_CATALOG_PILOT") == "1"
+    if sum((transfer,business,workshop)) > 1:
         raise ValueError("Select exactly one website delivery case")
+    if workshop:
+        return {"module": workshop_catalog_case,
+                "output_env": "AIC_WORKSHOP_CATALOG_OUTPUT",
+                "schema": "workshop-catalog-delivery.v1",
+                "task_title": "Implementacja strony PLAN ZAJĘĆ",
+                "archive": "workshop-catalog-candidate.zip"}
     if transfer:
         return {"module": service_quote_transfer_case,
                 "output_env": "AIC_SERVICE_QUOTE_TRANSFER_OUTPUT",
@@ -62,7 +69,8 @@ def test_business_harness_is_frozen_separate_and_syntax_valid():
 
 
 @pytest.mark.skipif(os.environ.get("AIC_BUSINESS_WEBSITE_PILOT") != "1"
-                    and os.environ.get("AIC_SERVICE_QUOTE_TRANSFER_PILOT") != "1",
+                    and os.environ.get("AIC_SERVICE_QUOTE_TRANSFER_PILOT") != "1"
+                    and os.environ.get("AIC_WORKSHOP_CATALOG_PILOT") != "1",
                     reason="Explicit local model and Docker pilot only")
 def test_fresh_business_website_delivery(client, task_repository, monkeypatch, tmp_path):
     resources = check_idle()

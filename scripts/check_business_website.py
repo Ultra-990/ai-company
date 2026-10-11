@@ -22,6 +22,7 @@ def main():
     destination = Path(tempfile.mkdtemp(prefix="business-website-pilot-", dir=workspace))
     env = dict(os.environ, AIC_BUSINESS_WEBSITE_PILOT="1",
                AIC_BUSINESS_WEBSITE_OUTPUT=str(destination.resolve()),
+               AIC_SERVICE_QUOTE_TRANSFER_PILOT="0", AIC_WORKSHOP_CATALOG_PILOT="0",
                AIC_BUSINESS_WEBSITE_FILEWISE="1" if args.filewise else "0")
     print(json.dumps({"report": str((destination / "report.json").resolve())}), flush=True)
     result = subprocess.run([sys.executable, "-m", "pytest", "-q",

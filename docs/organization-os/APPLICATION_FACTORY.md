@@ -145,7 +145,8 @@ pakiet, raport i odbiór zachowują oddzielne identyfikatory oraz SHA-256.
 
 ### Sześcioplikowy adapter generowania
 
-`scripts/filewise_application_provider.py` zachowuje profil `python-web-v1`,
+`app/services/filewise_application_provider.py` zachowuje profil `python-web-v1`
+(historyczny moduł w `scripts` jest zgodnym importem),
 ale dla pierwszej wersji prosi lokalny model kolejno o dokładnie sześć plików:
 `app.py`, `test_app.py`, `index.html`, `style.css`, `app.js` i `README.md`.
 Każde wywołanie ma schemat `{"content":"..."}`, jawny typ pliku, miękki cel
@@ -163,6 +164,34 @@ kodu. Pusty, ucięty, zbyt duży wynik, zmiana modelu/digestu lub przekroczenie
 powstaje końcowa paczka. Profil `python-web-repair-v1` nie uruchamia sześciu
 wywołań: przechodzi przez zwykły, pojedynczy dekoder poprawki i również zachowuje
 surową odpowiedź.
+
+Zwykła kolejka obsługuje serwerowy opt-in `application_generation_strategy:
+filewise-v1` wyłącznie dla `python-web-v1`. Brak pola lub `single-call-v1`
+zachowuje dotychczasowy przepływ. Strategia i stałe budżety trafiają do snapshotu
+wykonania; zadanie ani caller API nie podają parametrów modelu. Profile tekstu,
+modułów i zawężonej poprawki nadal używają jednego wywołania. Rezerwacja slotu
+obejmuje cały batch, a ponowienie trwającego wpisu wymaga upływu 600+15 sekund.
+
+Pakiet wejściowy jest kodowany bez dodatkowej warstwy JSON-string; wszystkie
+wartości i wcześniejsze źródła pozostają kompletne. Enqueue sprawdza dokładny
+pierwszy prompt, a każdy kolejny call ponownie mierzy pełne UTF-8 względem
+`num_ctx - num_predict - 1024`. Przekroczenie kończy batch przed kolejnym
+wywołaniem, bez częściowej próby zadania lub paczki. Przy początkowym kontekście
+16384 duży katalog PLAN ZAJĘĆ przekracza tę konserwatywną bramkę już przy drugim
+pliku; nie podniesiono limitów ani nie ogłoszono obsługi dowolnie dużego briefu.
+
+Dowody są zapisywane w prywatnym katalogu, a ograniczony, sprawdzony zestaw
+request/response/manifest trafia do artefaktu REPORT także po porażce lub zmianie
+instrukcji. Import kontroluje typ i rozmiar plików, hashe, liczniki wywołań,
+źródła i zgodność manifestu z rzeczywistym obiektem wykonania. Produkcyjny
+manifest identyfikuje deterministyczną usługę w `execution_context`; zachowuje
+historyczne autorstwo kodu modelu. Późna odpowiedź po 600 s zostaje dowodem,
+ale nie tworzy paczki. Niepewny transport nadal zajmuje slot do uzgodnienia.
+
+`scripts/filewise_production_canary.py` sprawdza tę ścieżkę na małym fikcyjnym
+LICZNIKU LITER, w oddzielnej bazie i z zamrożonym harness'em. Domyślnie pominięty
+test wymaga jawnego `--run` i nowego katalogu roboczego. Nie zmienia aktywnej
+konfiguracji, nie odbiera produktu ani go nie publikuje.
 
 ### Uwagi po odrzuceniu i dwa rodzaje poprawki
 
@@ -419,3 +448,79 @@ katalogu egzaminów odrzucają tę rodzinę nawet w osobnym pliku lub nowej,
 poprawnie zahashowanej wersji egzaminu. Brak lub zmiana rejestru blokują odczyt.
 Kurator przypisuje bliskie duplikaty do tej samej rodziny; sam rejestr sprawdza
 identyfikatory i nie rozpoznaje automatycznie pokrewieństwa semantycznego.
+
+### Wspólna poprawka HTML/CSS
+
+`collect_web_ui_experience.py` i `curate_web_ui_experience.py` zachowują jedną
+modelową interakcję poprawiającą dwa pliki CREMA. Próbka v2 zawiera pełny publiczny
+kontekst, dokładny feedback, dwa błędne i cztery zachowane źródła; target to
+oryginalne `changes` dla `index.html` i `style.css`. Nie dzieli zależnej naprawy
+na dwa pozornie niezależne przykłady. Collector wiąże 7 testów, 19 prób, browser
+before/after 14/15 i 15/15, raw model response, assembly i przegląd screenshotów.
+Kurator wymaga odrębnej recenzji nauki oraz odtwarza identyczne wejścia przez
+ponowną walidację collectora.
+
+Rodzina `service-crema-responsive-nav-copy-development` jest zarezerwowana
+wyłącznie do train razem z wcześniejszą rodziną ROWEROWNIA. Wspólna bramka obu
+rzeczywistych przykładów daje 2 zatwierdzone train, 0 validation i 0 test.
+`export_ready=false`, brak świeżego zastrzeżonego holdoutu, bez nowego treningu
+wag. Pokrewne wersje ujawnionych zadań nie są niezależną oceną generalizacji.
+
+## PLAN ZAJĘĆ — katalog z dwoma filtrami
+
+Trzeci syntetyczny scenariusz `workshop_catalog_case.py` ma sześć warsztatów,
+filtry dnia i poziomu łączone przez AND, pusty wynik oraz ścisłe API
+`/api/sessions`. Pierwsza generacja zaliczyła 16 własnych testów i 17 zamrożonych
+prób HTTP; przeglądarka wykazała niedziałające zasoby w trybie file://, a review
+pusty katalog przed pierwszą interakcją. Modelowa poprawka HTML/JS dodała
+początkowe pobranie sześciu rekordów, polskie etykiety i względne assety.
+
+Osobna diagnostyka wykryła akceptowanie ścieżek ze średnikiem. Kolejne poprawki
+modelu były sprawdzane tym samym zestawem czterech prób; dodano jawny piąty
+przypadek pustego średnika. Pierwsza poprawka nie działała, kolejna pomijała
+pusty parametr, a jedna odpowiedź była identyczna z bazą i została odrzucona.
+Końcowa wersja używa parsera zachowującego pełną ścieżkę i zalicza wszystkie pięć
+prób. Pozostałe pięć plików, w tym testy modelu, zachowano bajtowo.
+
+Końcowa paczka #36 ma checksum
+`e1eb01bd03d6be6e5797c68a84cf924a40eeb9cc7bbac650b97d5d33cd5fcd9b`:
+16 testów modelu, 17 frozen probes, 16 kontroli przeglądarki i 5 dodatkowych
+prób routingu passed. Pełne screenshoty 1440/390 px i trybu file:// obejrzano;
+oddzielny assessment stwierdza ograniczony odbiór techniczny. Kandydat nadal
+nie jest odebrany przez właściciela, wdrożony ani zatwierdzony do treningu.
+
+Egzaminator `catalog.v4` dodaje kontrolę sześciu początkowych rekordów i wymaga
+rzeczywistego tekstu instrukcji w file://. Ta sama wersja odrzuca pierwotny UI
+(14/16) i zalicza naprawiony (16/16). Oryginalne raporty i zamrożony harness
+pozostały niezmienione. Rozwijany przykład nie jest ślepym holdoutem.
+
+## Wynik próby zwykłej kolejki filewise
+
+LICZNIK LITER korzysta z normalnych `enqueue/execute` i `application_revisions`,
+bez podmiany fabryki na adapter w samym pilocie. Pierwsza próba 16k została
+zatrzymana przed piątym wywołaniem przez limit kontekstu; zachowała cztery
+odpowiedzi i nie utworzyła częściowej paczki. Jawnie zwięźlejsza druga próba
+złożyła sześć plików, ale runner odrzucił wadliwy konstruktor handlera w testach
+napisanych przez model.
+
+Pełna rewizja modelu, korzystająca z istniejącego kontekstu rewizji 32k,
+naprawiła testy bez zmiany niezależnego harnessu. Sześć wywołań trwało 41,273 s,
+2399 tokenów wyjściowych łącznie. Paczka #10
+`f54fce4f08227b96b7e2e103f25080aa74224f2254c996145ef5e25f3a47c4b7`
+zaliczyła 7 realnych testów HTTP modelu oraz 6 frozen probes/HTML. Pełne raw
+evidence jest związane z REPORT artifact w osobnej bazie. To dowód generowania,
+kontroli i pełnej rewizji małej aplikacji; nie sukces pierwszej próby, trening
+wag, automatyczny odbiór ani włączenie strategii w aktywnej konfiguracji serwera.
+
+Ten sam produkt przeszedł następnie 8 kontroli przeglądarki: formularz z polskimi
+literami, zero dla tekstu bez liter, błąd pustego pola bez wywołania API, układ
+mobilny i rzeczywisty widoczny komunikat file://. Trzy screenshoty obejrzano;
+osobna ocena dotyczy tylko tego zakresu integracji. Nie jest to pełny audyt tras
+ani wszystkich granic długości Unicode.
+
+Pierwsze badanie przeglądarki przerwała walidacja podglądu: `encodeURIComponent`
+pozostawia `!~*'()`, a query allowlist ich nie dopuszczała. API, broker właściciela
+i izolowana ramka akceptują teraz te znaki w zapytaniu. Zachowano lokalne trasy
+`/api/nazwa`, limit 800 znaków query i izolację; CR/LF są odrzucane również na
+końcu ciągu JavaScript. Poprawka dotyczy systemu, źródła modelu są niezmienione.
+Raport nieukończonej próby pozostał obok nowego wyniku 8/8.

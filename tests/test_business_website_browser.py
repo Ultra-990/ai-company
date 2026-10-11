@@ -2,6 +2,7 @@ import json
 import pytest
 from scripts import check_business_website_browser as browser
 from scripts.service_quote_transfer_case import PROBES as FROZEN_TRANSFER_PROBES
+from scripts.workshop_catalog_case import PROBES as FROZEN_WORKSHOP_PROBES
 
 
 def test_scenario_selection_preserves_business_and_adds_fresh_transfer_quotes():
@@ -32,6 +33,88 @@ def test_transfer_revision_uses_same_crema_contract_and_generic_boolean_interact
     assert 'flag.checked=true' in selected and 'flag.value="1"' in selected
     assert 'flag.checked=false' in cleared and 'flag.value="0"' in cleared
     assert 'getElementById("onsite")' in selected
+
+
+def test_workshop_scenario_uses_fresh_filters_and_public_dom_contract():
+    selected=browser.scenario_for({'schema':'workshop-catalog-delivery.v1'})
+    assert browser.scenario_for({'schema':'workshop-catalog-ui-repair.v1'}) is selected
+    assert selected['api_path']=='/api/sessions'
+    assert selected['field_ids']==('day','level')
+    assert selected['action_id']=='apply-filters'
+    assert selected['output_ids']==('sessions','filter-status')
+    assert selected['faq_id']=='faq-filtering' and selected['file_mode'] is True
+    frozen={path for path,_,_ in FROZEN_WORKSHOP_PROBES}
+    expected={('tuesday','beginner'):('Błękitna cyjanotypia',),
+              ('saturday','advanced'):('Mały drzeworyt',),('tuesday','intermediate'):()}
+    actual={(day,level):tuple(row['title'] for row in sessions)
+            for day,level,sessions in selected['filters']}
+    assert actual==expected
+    for day,level,_ in selected['filters']:
+        assert f'/api/sessions?day={day}&level={level}' not in frozen
+    expression=browser.filter_interaction(selected,'tuesday','beginner')
+    assert 'getElementById("day").value="tuesday"' in expression
+    assert 'getElementById("level").value="beginner"' in expression
+    assert 'getElementById("apply-filters").click()' in expression
+
+
+def test_filter_expectation_executes_for_list_empty_state_and_rejects_stale_ui():
+    import subprocess
+    selected=browser.scenario_for({'schema':'workshop-catalog-delivery.v1'})
+    one=selected['filters'][0][2]
+    expressions=[browser.filter_expectation(one,selected['all_titles']),
+                 browser.filter_expectation((),selected['all_titles'])]
+    script="""
+    const expressions=EXPRESSIONS;
+    function run(expression,text,status){
+      global.document={getElementById:id=>id==='sessions'?{innerText:text}:{innerText:status}};
+      return eval(expression);
+    }
+    process.stdout.write(JSON.stringify([
+      run(expressions[0],'Błękitna cyjanotypia','Znaleziono zajęcia'),
+      run(expressions[1],'Brak pasujących zajęć','Brak wyników'),
+      run(expressions[0],'Błękitna cyjanotypia Mały drzeworyt','Znaleziono zajęcia'),
+      run(expressions[1],'Brak pasujących zajęć','')
+    ]));
+    """.replace('EXPRESSIONS',json.dumps(expressions,ensure_ascii=False))
+    result=subprocess.run(['node','-'],input=script,text=True,capture_output=True,check=True,timeout=5)
+    assert json.loads(result.stdout)==[True,True,False,False]
+
+
+def test_file_warning_requires_visible_nonempty_startup_explanation():
+    import subprocess
+    script = """
+    function run(text, display='block', visibility='visible', width=300, height=24) {
+        global.document={getElementById:()=>({innerText:text,
+            getBoundingClientRect:()=>({width,height})})};
+        global.getComputedStyle=()=>({display,visibility});
+        return EXPRESSION;
+    }
+    process.stdout.write(JSON.stringify([
+        run('Uruchom python app.py'),run(''),run('Błąd'),
+        run('python app.py','none'),run('python app.py','block','hidden'),
+        run('python app.py','block','visible',0)
+    ]));
+    """.replace('EXPRESSION', browser.RUNTIME_NOTE_VISIBLE)
+    result=subprocess.run(['node','-'],input=script,text=True,capture_output=True,check=True,timeout=5)
+    assert json.loads(result.stdout)==[True,False,False,False,False,False]
+
+
+def test_filter_response_accepts_query_order_and_exact_body_but_rejects_duplicates():
+    selected=browser.scenario_for({'schema':'workshop-catalog-delivery.v1'})
+    expected=selected['filters'][0][2]
+    def request(path,sessions=expected,status=200):
+        response={'status':status,'body':json.dumps({'sessions':list(sessions)},ensure_ascii=False)}
+        return {'path':path,'run':{'log':json.dumps({'response':response},ensure_ascii=False)}}
+    unrelated=request('/api/sessions?day=all&level=all',())
+    reversed_order=request('/api/sessions?level=beginner&day=tuesday')
+    assert browser.matching_filter_response([unrelated,reversed_order],0,selected,
+        'tuesday','beginner',expected) is True
+    duplicate=request('/api/sessions?day=tuesday&day=tuesday&level=beginner')
+    wrong=request('/api/sessions?day=tuesday&level=beginner',())
+    assert browser.matching_filter_response([duplicate],0,selected,'tuesday','beginner',expected) is False
+    assert browser.matching_filter_response([wrong],0,selected,'tuesday','beginner',expected) is False
+    assert browser.matching_filter_response([reversed_order,reversed_order],0,selected,
+        'tuesday','beginner',expected) is False
 
 
 def test_unknown_or_missing_source_schema_cannot_select_a_case():

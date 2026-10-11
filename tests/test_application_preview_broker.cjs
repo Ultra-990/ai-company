@@ -71,3 +71,19 @@ test('PNG inventory requires provided images before preview opens',async()=>{
   await ui.send(frame,{kind:'application-ready'});
   assert.equal(frame.contentWindow.replies[0].files['static/photo.png'],'data:image/png;base64,aGVsbG8=');
 });
+
+test('browser-encoded punctuation reaches API unchanged, unsafe paths do not',async()=>{
+  const ui=setup();await ui.open();const frame=ui.frame();
+  const path='/api/count?text='+encodeURIComponent("Zażółć 123!~*'()");
+  await ui.send(frame,{kind:'application-request',id:1,path});
+  assert.equal(JSON.parse(ui.calls.at(-1).options.body).path,path);
+  assert.equal(frame.contentWindow.replies.at(-1).response.status,200);
+  const count=ui.calls.length;
+  for(const invalid of ['/api/count;ignored?text=x','/api/count/extra?text=x',
+    '/api/count?text=x#fragment','/api/count?text=x\n','/api/count?text=x\r',
+    '/api/count?text=a b','/api/count?text='+'a'.repeat(796)]){
+    await ui.send(frame,{kind:'application-request',id:2,path:invalid});
+    assert(frame.contentWindow.replies.at(-1).error,invalid);
+    assert.equal(ui.calls.length,count,invalid);
+  }
+});

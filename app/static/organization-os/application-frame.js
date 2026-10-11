@@ -9,7 +9,7 @@ window.addEventListener('message',e=>{
   }
   if(d?.kind!=='application-init'||initialized)return;initialized=true;
   window.fetch=(path,options={})=>new Promise((resolve,reject)=>{
-    if(typeof path!=='string'||!/^\/api\/[A-Za-z0-9_-]+(?:\?[A-Za-z0-9_=&.%+,-]{0,800})?$/.test(path)||
+    if(typeof path!=='string'||/[\r\n]/.test(path)||!/^\/api\/[A-Za-z0-9_-]+(?:\?[A-Za-z0-9_=&.%+,!~*'()-]{0,800})?$/.test(path)||
        (options.method&&options.method.toUpperCase()!=='GET')||options.body){reject(new Error('Podgląd obsługuje tylko bezstanowe GET /api/nazwa.'));return;}
     const id=++serial,timer=setTimeout(()=>{pending.delete(id);reject(new Error('Upłynął czas podglądu.'));},60000);
     pending.set(id,{resolve,reject,timer});parent.postMessage({kind:'application-request',id,path},'*');

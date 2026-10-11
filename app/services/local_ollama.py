@@ -82,6 +82,9 @@ def configuration():
             if type(data[key]) is not int or not low <= data[key] <= high:
                 raise ValueError('limits')
         generation_options(data)
+        strategy=data.get('application_generation_strategy','single-call-v1')
+        if strategy not in ('single-call-v1','filewise-v1'):
+            raise ValueError('application_generation_strategy')
         return data
     except (OSError, KeyError, TypeError, ValueError) as exc:
         raise ValueError('Lokalny model nie jest włączony lub konfiguracja wymaga poprawy.') from exc

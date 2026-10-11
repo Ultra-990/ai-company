@@ -39,7 +39,7 @@ window.createApplicationPreview=({request,message})=>{
     if(d?.kind!=='application-request'||!Number.isSafeInteger(d.id)||typeof d.path!=='string')return;
     const target=frame.contentWindow,ticket=version;
     const reply=value=>{if(ticket===version&&frame?.contentWindow===target)target.postMessage({kind:'application-reply',id:d.id,...value},'*');};
-    if(inFlight||requests>=30||!/^\/api\/[A-Za-z0-9_-]+(?:\?[A-Za-z0-9_=&.%+,-]{0,800})?$/.test(d.path)){reply({error:'Żądanie niedozwolone, limit podglądu lub trwa poprzednie obliczenie.'});return;}
+    if(inFlight||requests>=30||/[\r\n]/.test(d.path)||!/^\/api\/[A-Za-z0-9_-]+(?:\?[A-Za-z0-9_=&.%+,!~*'()-]{0,800})?$/.test(d.path)){reply({error:'Żądanie niedozwolone, limit podglądu lub trwa poprzednie obliczenie.'});return;}
     inFlight=true;requests++;
     try{const data=await rpc(d.path);reply({response:data.response});}
     catch(error){reply({error:'Błąd izolowanego podglądu.'});if(ticket===version)message(error.message);}

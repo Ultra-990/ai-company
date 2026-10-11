@@ -67,6 +67,25 @@ def test_preview_authorization_and_path_allowlist(client,preview_runner):
     assert preview_runner==[]
 
 
+def test_preview_preserves_browser_encoded_text_query(client, preview_runner):
+    path = "/api/count?text=Za%C5%BC%C3%B3%C5%82%C4%87%20123!~*'()"
+    body = package(client) | {'path': path}
+    response = client.post('/api/package-runs/preview', headers=OWNER_HEADERS, json=body)
+    assert response.status_code == 200, response.text
+    assert preview_runner == [path]
+
+
+@pytest.mark.parametrize('path', [
+    '/api/count;ignored?text=x', '/api/count/extra?text=x',
+    '/api/count?text=x#fragment', '/api/count?text=x\n',
+    '/api/count?text=x\r\nHost: evil', '/api/count?text=a b',
+    '/api/count?text=' + 'a' * 796,
+])
+def test_text_query_support_keeps_endpoint_and_request_bounds(path):
+    with pytest.raises(ValueError):
+        preview.validate_path(path)
+
+
 def test_frame_has_no_token_and_strict_sandbox(client):
     frame=client.get('/os/application-frame')
     assert frame.status_code==200
