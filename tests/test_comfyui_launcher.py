@@ -71,6 +71,8 @@ def test_desktop_does_not_replace_unknown_service(monkeypatch, tmp_path):
     start.assert_not_called()
 
 
+@pytest.mark.skipif(not launcher.MODEL_CONFIG.is_file(),
+                    reason='Optional private model-path configuration is not part of a clean checkout')
 def test_shared_config_is_not_a_download_or_plugin_directory():
     config = yaml.safe_load(launcher.MODEL_CONFIG.read_text())['windows_weights']
     assert config['base_path'] == str(launcher.SHARED_MODELS)
