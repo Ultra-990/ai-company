@@ -6,6 +6,12 @@ import os
 import json
 from pathlib import Path
 import subprocess
+import sys
+
+try:
+    from scripts.generation_limits import ensure_bounded_launch
+except ModuleNotFoundError:
+    from generation_limits import ensure_bounded_launch
 
 ROOT = Path('/home/marcin/ai-company-workspaces/comfyui')
 REVISION = '19e1058f4c445ef74047e77a23f9ca7684c1e4b6'
@@ -65,11 +71,12 @@ def main() -> None:
     if args.check:
         print('Files and revision OK; service NOT started; models NOT verified.')
         return
+    ensure_bounded_launch([sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]])
     # Disable automatic HF downloads/telemetry. This is NOT a network sandbox.
     environment = os.environ.copy()
     environment.update(HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1',
                        HF_HUB_DISABLE_TELEMETRY='1', DO_NOT_TRACK='1',
-                       OMP_NUM_THREADS='8')
+                       OMP_NUM_THREADS='4')
     os.chdir(ROOT / 'ComfyUI')
     os.execve(cmd[0], cmd, environment)
 

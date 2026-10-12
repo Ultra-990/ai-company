@@ -1,0 +1,24 @@
+[Unit]
+Description=AI Company local owner panel
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=exec
+WorkingDirectory=%h/ai-company
+EnvironmentFile=%h/ai-company/.env
+ExecStart=%h/ai-company/.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+KillMode=control-group
+MemoryAccounting=yes
+MemoryMax=2G
+MemorySwapMax=0
+OOMPolicy=kill
+CPUQuota=200%
+TasksMax=256
+UMask=0077
+
+[Install]
+WantedBy=default.target
