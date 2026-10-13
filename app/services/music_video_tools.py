@@ -167,7 +167,7 @@ def validate_edit_plan(value: dict, asset_root: Path) -> dict:
     if not isinstance(value, dict) or set(value) != {"clips", "audio", "output", "width", "height", "fps"}:
         raise MediaToolError("edit_plan_fields_invalid")
     clips = value.get("clips")
-    if not isinstance(clips, list) or not 1 <= len(clips) <= 64:
+    if not isinstance(clips, list) or not 1 <= len(clips) <= 512:
         raise MediaToolError("clips_invalid")
     normalized = []
     total_bytes = 0
@@ -185,7 +185,7 @@ def validate_edit_plan(value: dict, asset_root: Path) -> dict:
         normalized.append({"path": path, "duration": float(duration), "image": path.suffix.lower() != ".mp4" and path.suffix.lower() not in {".mov", ".mkv"}})
     audio = _safe_file(asset_root, value["audio"], {".wav", ".mp3", ".flac", ".m4a", ".ogg"})
     audio_size = audio.stat().st_size
-    if audio_size > 256 * 1024 * 1024 or total_bytes + audio_size > 512 * 1024 * 1024:
+    if audio_size > 512 * 1024 * 1024 or total_bytes + audio_size > 1024 * 1024 * 1024:
         raise MediaToolError("asset_size_invalid")
     output = value["output"]
     if not isinstance(output, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.mp4", output):
@@ -196,7 +196,7 @@ def validate_edit_plan(value: dict, asset_root: Path) -> dict:
     if any(type(item) is not int for item in (width, height, fps)) or (width, height) not in formats or fps not in {24, 25, 30}:
         raise MediaToolError("video_format_invalid")
     duration = sum(x["duration"] for x in normalized)
-    if duration > 300:
+    if duration > 900:
         raise MediaToolError("total_duration_invalid")
     return {"clips": normalized, "audio": audio, "output": output, "width": width, "height": height,
             "fps": fps, "duration": duration, "input_bytes": total_bytes + audio_size}
@@ -237,7 +237,7 @@ def build_ffmpeg_command(plan: dict, output_path: Path, ffmpeg: str = "ffmpeg") 
 def render_sequential(plan, temporary, staged, run):
     """One decoder at a time: the task/memory budget does not grow with shot count."""
     names = []
-    deadline = time.monotonic() + 600
+    deadline = time.monotonic() + max(600, plan['duration'] * 5)
     def remaining():
         seconds = deadline - time.monotonic()
         if seconds <= 0:
@@ -321,7 +321,7 @@ def probe_render(path: Path, run: Callable[..., subprocess.CompletedProcess] = s
     if not ffprobe:
         raise MediaToolError("ffprobe_missing")
     try:
-        result = run([ffprobe, "-v", "error", "-protocol_whitelist", "file,pipe", "-f", "mov",
+        result = run([ffprobe, "-v", "error", "-protocol_whitelist", "file,pipe", "-f", "matroska" if path.suffix==".mkv" else "mov",
                       "-show_entries", "format=duration:stream=codec_type,width,height,avg_frame_rate", "-of", "json", str(path)],
                      capture_output=True, text=True, timeout=20, check=False)
     except subprocess.TimeoutExpired as exc:
@@ -335,7 +335,7 @@ def probe_render(path: Path, run: Callable[..., subprocess.CompletedProcess] = s
         fps = float(numerator) / float(denominator)
     except (TypeError, KeyError, ValueError, StopIteration, ZeroDivisionError, json.JSONDecodeError) as exc:
         raise MediaToolError("ffprobe_invalid") from exc
-    if not 0 < duration <= 301 or streams != ["audio", "video"]:
+    if not 0 < duration <= 901 or streams != ["audio", "video"]:
         raise MediaToolError("ffprobe_invalid")
     return {"duration_seconds": duration, "stream_types": streams,
             'width': video['width'], 'height': video['height'], 'fps': fps}

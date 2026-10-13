@@ -91,7 +91,7 @@ def test_plan_rejects_escape_unknown_fields_and_unbounded_values(tmp_path):
     with pytest.raises(MediaToolError, match="asset_path"): validate_edit_plan(bad, root)
     bad = plan(); bad["command"] = "anything"
     with pytest.raises(MediaToolError, match="fields"): validate_edit_plan(bad, root)
-    bad = plan(); bad["clips"] *= 65
+    bad = plan(); bad["clips"] *= 513
     with pytest.raises(MediaToolError, match="clips"): validate_edit_plan(bad, root)
     for malformed in (None, [], [{}]):
         with pytest.raises(MediaToolError, match="edit_plan_fields"):
@@ -189,7 +189,7 @@ def test_output_directory_symlink_is_rejected(tmp_path):
 
 def test_total_duration_is_bounded(tmp_path):
     root = assets(tmp_path); value = plan()
-    value["clips"] = [{"file": "one.png", "duration_seconds": 60}] * 6
+    value["clips"] = [{"file": "one.png", "duration_seconds": 60}] * 16
     with pytest.raises(MediaToolError, match="total_duration"):
         validate_edit_plan(value, root)
 

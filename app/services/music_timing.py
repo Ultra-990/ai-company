@@ -22,7 +22,7 @@ def analyze_samples(samples, rate=RATE):
     if rate != RATE:
         raise ValueError('timing_sample_rate_invalid')
     samples = np.asarray(samples, dtype=np.float32)
-    if samples.ndim != 1 or len(samples) > RATE * 121 or not np.isfinite(samples).all():
+    if samples.ndim != 1 or len(samples) > RATE * 901 or not np.isfinite(samples).all():
         raise ValueError('timing_audio_invalid')
     length = len(samples) / RATE
     if length < 1:
@@ -31,7 +31,7 @@ def analyze_samples(samples, rate=RATE):
     window = np.hanning(WINDOW).astype(np.float32)
     envelope = []
     previous = np.zeros(WINDOW // 2 + 1)
-    # Batched FFT keeps two-minute input well below the panel memory budget.
+    # Batched FFT keeps fifteen-minute input well below the panel memory budget.
     for start in range(0, len(frames), 128):
         spectra = np.log1p(np.abs(np.fft.rfft(frames[start:start+128] * window)) * 10)
         difference = np.diff(np.vstack((previous, spectra)), axis=0)
@@ -84,13 +84,13 @@ def analyze_samples(samples, rate=RATE):
 
 def analyze_audio(path: Path):
     path = Path(path)
-    if path.is_symlink() or not path.is_file() or path.stat().st_size > 32 * 1024**2:
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 512 * 1024**2:
         raise ValueError('timing_audio_invalid')
     result = subprocess.run(['ffmpeg', '-v', 'error', '-nostdin', '-threads', '1',
-        '-protocol_whitelist', 'file,pipe', '-i', str(path), '-t', '121', '-vn',
+        '-protocol_whitelist', 'file,pipe', '-i', str(path), '-t', '901', '-vn',
         '-ac', '1', '-ar', str(RATE), '-threads', '1', '-f', 'f32le', 'pipe:1'],
         capture_output=True, timeout=30, check=True)
-    if len(result.stdout) > RATE * 121 * 4:
+    if len(result.stdout) > RATE * 901 * 4:
         raise ValueError('timing_audio_too_long')
     report = analyze_samples(np.frombuffer(result.stdout, dtype='<f4'))
     report['source_sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -98,7 +98,7 @@ def analyze_audio(path: Path):
 
 
 def edit_timing(duration, analysis=None):
-    if not math.isfinite(duration) or not 1 <= duration <= 120:
+    if not math.isfinite(duration) or not 1 <= duration <= 900:
         raise ValueError('timing_duration_invalid')
     total_frames = round(duration * FPS)
     usable = bool(analysis and analysis.get('pulse_usable'))
@@ -123,7 +123,7 @@ def edit_timing(duration, analysis=None):
             'start_seconds': start/FPS, 'duration_seconds': (end-start)/FPS,
             'energy': 'high' if e >= upper and upper > lower else 'low' if e <= lower and lower < upper else 'medium',
             'cut_on_estimated_beat': aligned[index] if index < len(aligned) else False})
-    if len(shots) > 64:
+    if len(shots) > 512:
         raise ValueError('timing_shot_budget_exceeded')
     return {'fps': FPS, 'duration_seconds': total_frames/FPS, 'shots': shots,
             'shot_count': len(shots), 'scene_count': math.ceil(len(shots)/3),

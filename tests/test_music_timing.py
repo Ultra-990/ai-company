@@ -46,7 +46,7 @@ def test_energy_changes_shot_density_without_retiming_dancers():
     assert np.mean(fast)<np.mean(slow)
 
 
-@pytest.mark.parametrize('duration',[0,121,float('nan'),float('inf')])
+@pytest.mark.parametrize('duration',[0,901,float('nan'),float('inf')])
 def test_invalid_duration_refused(duration):
     with pytest.raises(ValueError):edit_timing(duration)
 
