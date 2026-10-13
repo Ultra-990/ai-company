@@ -26,6 +26,37 @@ this, the initial notes can disappear. The private host translates verified
 FXP component state to the JUCE VST3 state wrapper; arbitrary FXP imports
 are intentionally unsupported.
 
+## Source integrity and automatic trance balance
+
+The renderer checks the synth signal **before** faders, filters or master
+attenuation. Nonfinite samples or an absolute source peak of at least 4.0
+stop rendering, with track, preset and first failing timestamp recorded in
+`source-failure.json`. No mix is exported. This conservative threshold catches
+extreme overload; it is not a general clipping, click or distortion detector.
+Attenuating an already damaged signal does not repair it.
+
+The default CLI profile `transparent.v1` preserves the composer's faders.
+`--mix-profile trance-auto.v1` adds an experimental automatic mix:
+
+- Per-role high-pass filters: kick/bass 24 Hz, lead 100 Hz, snare 80 Hz,
+  arpeggio 130 Hz, pad 140 Hz and hi-hat 180 Hz.
+- Level correction measured after the score's faders/pan and filters. The
+  75th percentile of active 100 ms RMS windows avoids treating a long silent
+  intro as a quiet instrument. Targets: kick/bass -18, lead -20, snare -23,
+  arpeggio -26, pad -28, hi-hat -29 dBFS RMS. These are tunable production
+  defaults, **not** LUFS measurements or universal genre standards. Automatic
+  correction can override the model's proposed balance, bounded to -18/+12 dB.
+- Stereo-linked bass ducking driven by actual kick note-on positions: up to
+  6 dB, smooth 2 ms attack, hold until 20 ms, and bounded release. Overlapping
+  kick envelopes combine without resetting gain; chunk boundaries do not
+  reset the envelope. Breakdowns without kicks do not pump automatically.
+
+Receipts retain source peaks, measured levels, applied correction, filter
+cutoffs, sidechain reduction, score hash and profile version. Processed stems
+still sum to the delivered mix. Original notes and prior renders are unchanged.
+Passing checks never sets `quality_accepted` to true. The private studio worker
+selects the automatic profile for trance/techno; other styles stay transparent.
+
 ## Provisioning and provenance
 
 `scripts/provision_instrument_runtime.py --install` downloads the pinned
@@ -54,7 +85,7 @@ MIDI exports notes, tempo and instrument labels, not audio or licensed plugins.
 The native WAV render is separate from any lower-precision editor preview.
 Tempo-synchronized effects inside presets may use the host's default tempo
 rather than the note tempo; transport synchronization needs further work.
-The renderer does not yet provide automated EQ, sidechain, compression,
+The renderer does not yet provide adaptive spectral EQ, compression,
 parameter automation, vocals or imported-audio remixing. A saved seed/score
 does not guarantee bit-identical modulation in another synth rendering.
 
@@ -63,3 +94,10 @@ polyphony, event ordering, transposition and binary state encoding. Real local
 pilots additionally checked short and seven-minute compositions, aligned
 stems, native resolution and agreement between stems and mix. Human listening
 remains required before accepting the music.
+
+Additional signal tests cover overload rejection before export, sparse audio
+level measurement, bounded gain correction, overlapping kick envelopes and
+chunk-independent stereo ducking. A real 29.83-second comparison preserved
+all five stems at 24-bit/96 kHz; their sum differed from the mix by at most
+four PCM24 quantization steps. This validates the signal path, not the rejected
+composition's melody, arrangement or instrument selection.
